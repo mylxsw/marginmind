@@ -17,6 +17,8 @@ import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
+import '../../map_generation/map_generation_controller.dart';
+import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../../study_notes/note_setup_sheet.dart';
 import '../../study_notes/note_updates.dart';
 import '../../study_notes/note_export_sheet.dart';
@@ -49,6 +51,8 @@ class WorkspaceSidebar extends ConsumerWidget {
     final query = state.sidebarQuery.trim().toLowerCase();
     bool matches(String text) => query.isEmpty || text.toLowerCase().contains(query);
 
+    final mapGen = ref.watch(mapGenerationControllerProvider(studySetId));
+
     final maps = [
       for (final map in content?.maps ?? const <MindMap>[])
         if (matches(map.title.isEmpty ? l.mainMap : map.title))
@@ -56,6 +60,39 @@ class WorkspaceSidebar extends ConsumerWidget {
             key: ValueKey('sidebar-map-${map.id}'),
             icon: MMIcons.mindMap,
             label: map.title.isEmpty ? l.mainMap : map.title,
+            trailing: () {
+              final isGenerating = mapGen != null &&
+                  mapGen.request.mapId == map.id &&
+                  (mapGen.phase == MapGenerationPhase.reading || mapGen.phase == MapGenerationPhase.streaming);
+              if (isGenerating) {
+                return SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
+                );
+              }
+              final hasUpdates = map.generation != null &&
+                  mapSourcesChanged(map.generation!, [
+                    for (final s in map.generation!.sources)
+                      MapSource(
+                        documentId: s.documentId,
+                        chapters: s.chapters,
+                        fingerprint: content?.document(s.documentId) == null ? '' : s.fingerprint,
+                        readThrough: s.readThrough,
+                      ),
+                  ]);
+              if (hasUpdates) {
+                return Semantics(
+                  label: l.mapHasUpdates,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: c.research, shape: BoxShape.circle),
+                  ),
+                );
+              }
+              return null;
+            }(),
             selected: state.tagFilter == null && state.activeNoteId == null && map.id == state.activeMapId,
             selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
             onTap: () async {
@@ -129,11 +166,34 @@ class WorkspaceSidebar extends ConsumerWidget {
             child: MMSidebarItem(
               icon: documentIcon(d),
               label: d.title,
-              trailing: d.capabilities().readingSettings
-                  ? null
-                  : ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
-                  ? Text(l.ocrRecognized, style: context.mmText.footnote)
-                  : null,
+              trailing: () {
+                final hasMap = content?.maps.any((m) => m.generation?.sources.any((s) => s.documentId == d.id) == true) == true;
+                final hasOcr = !d.capabilities().readingSettings &&
+                    ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true;
+                if (hasMap && hasOcr) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(l.ocrRecognized, style: context.mmText.footnote),
+                      const SizedBox(width: 6),
+                      Semantics(
+                        label: l.mapHasMap,
+                        child: Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
+                      ),
+                    ],
+                  );
+                }
+                if (hasMap) {
+                  return Semantics(
+                    label: l.mapHasMap,
+                    child: Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
+                  );
+                }
+                if (hasOcr) {
+                  return Text(l.ocrRecognized, style: context.mmText.footnote);
+                }
+                return null;
+              }(),
               selected: !browser.visible && d.id == state.activeDocumentId,
               selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
               onTap: () {
@@ -354,10 +414,18 @@ class WorkspaceSidebar extends ConsumerWidget {
           MMSidebarSection(
             title: l.sectionMaps,
             showTrailingOnHover: true,
-            trailing: MMIconButton(
-              icon: MMIcons.add,
+            trailing: MMDropdownButton<String>(
+              key: const ValueKey('add-map-menu'),
               tooltip: l.newMap,
-              onPressed: () => showNewMapSheet(context, ref, studySetId),
+              width: MMSizes.dropdownWideWidth,
+              icon: const Icon(MMIcons.add),
+              onSelected: (value) => value == 'generate'
+                  ? showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId)
+                  : showNewMapSheet(context, ref, studySetId),
+              itemBuilder: (_) => [
+                MMDropdownItem(value: 'new', child: Text(l.newMap)),
+                MMDropdownItem(value: 'generate', child: Text(l.mapGenerateMenu)),
+              ],
             ),
             children: maps,
           ),
@@ -401,6 +469,15 @@ class WorkspaceSidebar extends ConsumerWidget {
       position: position,
       entries: [
         MMMenuItem(l.open, () => controller.openDocument(doc.id)),
+        MMMenuItem(
+          l.mapGenerateDocumentMenu,
+          () => showGenerateMapSheet(
+            context,
+            ref,
+            studySetId,
+            preselectedDocId: doc.id,
+          ),
+        ),
         MMMenuItem(l.renameEllipsis, () async {
           final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);
           if (title != null) await controller.renameDocument(doc.id, title);

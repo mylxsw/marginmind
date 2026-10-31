@@ -220,6 +220,8 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
   void _command(MindMapCommand command) {
     final selected = widget.selectedCardId;
     switch (command) {
+      case MindMapCommand.generateFromDocument:
+        widget.onCommand?.call(command);
       case MindMapCommand.expandIdeas:
         break;
       case MindMapCommand.child:

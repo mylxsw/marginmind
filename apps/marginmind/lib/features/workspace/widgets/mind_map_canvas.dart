@@ -17,8 +17,11 @@ import '../../../app/app_commands.dart';
 import '../../assistant/widgets/dashed_border.dart';
 import '../../assistant/expansion_controller.dart';
 import '../../assistant/widgets/expansion_widgets.dart';
+import '../../map_generation/map_generation_controller.dart' show MapSkeletonItem;
 import 'card_field.dart';
 import 'map_drop.dart';
+import 'map_ghost_node.dart';
+import 'map_source_chip.dart';
 import 'mind_map_geometry.dart';
 import 'mind_map_style.dart';
 
@@ -140,6 +143,7 @@ class MindMapCanvas extends StatefulWidget {
     this.toolbarTopInset = 60,
     this.touchSelectionMode,
     this.expansion,
+    this.skeletons,
     this.onDraftToggle,
     this.onDraftEdit,
     this.onDraftMore,
@@ -150,6 +154,7 @@ class MindMapCanvas extends StatefulWidget {
 
   /// Virtual topics and their review actions; never part of [content].
   final ExpansionPreview? expansion;
+  final List<MapSkeletonItem>? skeletons;
   final ValueChanged<String>? onDraftToggle, onDraftMore;
   final void Function(String, String)? onDraftEdit;
   final VoidCallback? onExpansionKeep, onExpansionStop, onExpansionDiscard;
@@ -773,21 +778,28 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       : _workingTargetRef;
   List<ExpansionDraft> get _drafts => [
     ...?widget.expansion?.drafts,
-    if (widget.expansion?.phase == ExpansionPhase.generating)
+    if (widget.expansion?.phase == ExpansionPhase.generating &&
+        (widget.skeletons == null || widget.skeletons!.isEmpty))
       ExpansionDraft(id: '__expansion_placeholder__', parentRef: _workingTargetRef, title: '…'),
   ];
   int _draftDepth(String id) {
+    if (widget.skeletons?.any((s) => s.id == id) == true) return 1;
     var depth = 0;
-    var draft = widget.expansion!.drafts.firstWhere((d) => d.id == id);
+    final first = widget.expansion!.drafts.where((d) => d.id == id).firstOrNull;
+    if (first == null) return 1;
+    var node = first;
     while (true) {
       final request = widget.expansion!.request;
-      if (!(request.scope == ExpansionScope.map && request.plan.containsKey('new:${draft.id}'))) depth++;
-      if (!draft.parentRef.startsWith('new:')) return depth;
-      draft = widget.expansion!.drafts.firstWhere((d) => 'new:${d.id}' == draft.parentRef);
+      if (!(request.scope == ExpansionScope.map && request.plan.containsKey('new:${node.id}'))) depth++;
+      if (!node.parentRef.startsWith('new:')) return depth;
+      final next = widget.expansion!.drafts.where((d) => 'new:${d.id}' == node.parentRef).firstOrNull;
+      if (next == null) return depth;
+      node = next;
     }
   }
 
   bool _inExpansionBranch(String id) {
+    if (widget.skeletons != null && widget.skeletons!.isNotEmpty) return true;
     final preview = widget.expansion;
     if (preview == null) return true;
     final targets = preview.request.targetIds;
@@ -868,7 +880,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       }
     }
     switch (command) {
-      case MindMapCommand.expandIdeas:
+      case MindMapCommand.generateFromDocument || MindMapCommand.expandIdeas:
         widget.onCommand?.call(command);
       case MindMapCommand.child:
         widget.onAddChild();
@@ -1823,7 +1835,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                         }
                         widget.onContextMenu!(selected, position);
                       },
-                onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
+                onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null) || spec.source != null
                     ? () => widget.onReveal(id)
                     : null,
                 revealLabel: l.revealSource,
@@ -2100,25 +2112,30 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           id: ghostById.containsKey(id)
               ? (id == '__expansion_placeholder__'
                     ? const ExpansionWorking(placeholder: true)
-                    : MapGhostNode(
-                        key: _ghostKeys.putIfAbsent(id, () => GlobalKey<MapGhostNodeState>()),
-                        draft: ghostById[id]!,
-                        focused: _draftFocus == id,
-                        onHover: (hovered) {
-                          if (hovered && mounted && _draftHover != id) setState(() => _draftHover = id);
-                        },
-                        onEditingChanged: () {
-                          if (mounted) setState(() {});
-                        },
-                        generating: widget.expansion!.phase == ExpansionPhase.generating,
-                        onToggle: () {
-                          setState(() => _draftFocus = id);
-                          widget.onDraftToggle?.call(id);
-                          widget.focusNode.requestFocus();
-                        },
-                        onEdit: (text) => widget.onDraftEdit?.call(id, text),
-                        onMore: _draftDepth(id) >= 3 ? null : () => widget.onDraftMore?.call(id),
-                      ))
+                    : (widget.skeletons?.any((s) => s.id == id) == true
+                          ? MapSkeletonNode(
+                              title: ghostById[id]!.title,
+                              isCurrent: widget.skeletons!.firstWhere((s) => s.id == id).isCurrent,
+                            )
+                          : MapGhostNode(
+                              key: _ghostKeys.putIfAbsent(id, () => GlobalKey<MapGhostNodeState>()),
+                              draft: ghostById[id]!,
+                              focused: _draftFocus == id,
+                              onHover: (hovered) {
+                                if (hovered && mounted && _draftHover != id) setState(() => _draftHover = id);
+                              },
+                              onEditingChanged: () {
+                                if (mounted) setState(() {});
+                              },
+                              generating: widget.expansion!.phase == ExpansionPhase.generating,
+                              onToggle: () {
+                                setState(() => _draftFocus = id);
+                                widget.onDraftToggle?.call(id);
+                                widget.focusNode.requestFocus();
+                              },
+                              onEdit: (text) => widget.onDraftEdit?.call(id, text),
+                              onMore: _draftDepth(id) >= 3 ? null : () => widget.onDraftMore?.call(id),
+                            )))
               : widget.expansion == null
               ? _nodeWidget(id, specs[id]!, l, _lookOf(id, specs[id]!, palette, c))
               : IgnorePointer(
@@ -2817,7 +2834,25 @@ class _NodeView extends StatelessWidget {
       _Kind.topic =>
         editor == null
             ? Center(
-                child: Text(spec.title, style: t.headline.copyWith(color: look?.text)),
+                child: spec.source == null
+                    ? Text(spec.title, style: t.headline.copyWith(color: look?.text))
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              spec.title,
+                              style: t.headline.copyWith(color: look?.text),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _SourceChipHolder(
+                            page: spec.source!.page,
+                            selected: selected,
+                            onTap: onReveal,
+                          ),
+                        ],
+                      ),
               )
             : Center(child: editor),
       _Kind.note => Row(
@@ -3725,4 +3760,36 @@ class _FlatNodeStroke extends CustomPainter {
 
   @override
   bool shouldRepaint(_FlatNodeStroke old) => old.radius != radius || old.border != border || old.selection != selection;
+}
+
+class _SourceChipHolder extends StatefulWidget {
+  const _SourceChipHolder({required this.page, required this.selected, this.onTap});
+  final int page;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  State<_SourceChipHolder> createState() => _SourceChipHolderState();
+}
+
+class _SourceChipHolderState extends State<_SourceChipHolder> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isTouch = MMInput.touchInputOf(context);
+    final visible = _hovered || widget.selected || isTouch;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedOpacity(
+        duration: MMMotion.quick,
+        opacity: visible ? 1.0 : 0.0,
+        child: MapSourceChip(
+          page: widget.page,
+          onTap: visible ? widget.onTap : null,
+        ),
+      ),
+    );
+  }
 }

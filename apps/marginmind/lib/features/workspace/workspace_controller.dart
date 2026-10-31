@@ -2422,10 +2422,19 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     _flash(annotationId: annotation.id, cardId: cardId);
   }
 
-  /// Opens the source document of an excerpt and scrolls to it.
+  /// Opens the source document of an excerpt or generated topic and scrolls to it.
   void revealCard(String cardId) {
     final card = content.card(cardId);
     if (card == null) return;
+    if (card.source case final source?) {
+      openDocument(source.documentId);
+      state = state.copyWith(
+        selectedCardId: cardId,
+        reveal: RevealRequest(source.documentId, source.page, const [], ++_revealNonce),
+      );
+      _flash(cardId: cardId);
+      return;
+    }
     final firstSource = content.segmentsOf(card).indexWhere((s) => s.annotationId != null);
     revealSegment(cardId, firstSource);
   }
