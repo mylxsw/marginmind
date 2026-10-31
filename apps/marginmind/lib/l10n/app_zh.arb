@@ -2166,6 +2166,8 @@
   "phoneMoreClose": "关闭",
   "phoneMoreBack": "返回",
   "mapFailureDetails": "失败详情",
+  "mapFailureDialogTitle": "生成未完成",
+  "mapFailureDiagnostics": "诊断信息",
   "mapFailureCopy": "复制详情",
   "mapFailureTruncated": "模型输出被截断，请重试",
   "mapFailureInvalid": "模型返回内容未通过脑图格式校验",

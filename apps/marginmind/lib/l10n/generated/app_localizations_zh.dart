@@ -5265,6 +5265,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapFailureDetails => '失败详情';
 
   @override
+  String get mapFailureDialogTitle => '生成未完成';
+
+  @override
+  String get mapFailureDiagnostics => '诊断信息';
+
+  @override
   String get mapFailureCopy => '复制详情';
 
   @override

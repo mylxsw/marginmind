@@ -46,7 +46,13 @@ void main() {
     expect(find.text('模型返回内容未通过脑图格式校验'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('map-generation-error-details-button')));
     await tester.pumpAndSettle();
-    final details = tester.widget<SelectableText>(find.byType(SelectableText)).data!;
+    final details = mapGenerationFailureReport(AppLocalizationsZh(), controller.state!);
+    expect(find.text('生成未完成'), findsOneWidget);
+    expect(find.text('错误码'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('map-generation-diagnostics-0')));
+    await tester.pumpAndSettle();
+    expect(find.text('错误码'), findsOneWidget);
+    expect(find.text('protocol / noValidMapContent'), findsOneWidget);
     expect(details, contains('失败阶段: 组织脑图'));
     expect(details, contains('使用模型: deepseek-flash'));
     expect(details, contains('返回行数 / 通过校验行数: 4 / 0'));
@@ -61,7 +67,8 @@ void main() {
     await tester.pump();
     expect(copied, details);
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
-    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('关闭')));
+    expect(find.text('已拷贝'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('map-generation-close-error-button')));
     await tester.pumpAndSettle();
     fake.generationFailure = null;
     fake.generation.add('{"ref":"a","parent":"ROOT","title":"恢复后的主题"}');

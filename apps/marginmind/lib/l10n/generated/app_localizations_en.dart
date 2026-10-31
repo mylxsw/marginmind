@@ -5488,6 +5488,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapFailureDetails => 'Failure details';
 
   @override
+  String get mapFailureDialogTitle => 'Generation incomplete';
+
+  @override
+  String get mapFailureDiagnostics => 'Diagnostics';
+
+  @override
   String get mapFailureCopy => 'Copy details';
 
   @override

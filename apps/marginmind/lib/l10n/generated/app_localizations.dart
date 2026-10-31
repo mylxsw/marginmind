@@ -9638,6 +9638,18 @@ abstract class AppLocalizations {
   /// **'Failure details'**
   String get mapFailureDetails;
 
+  /// No description provided for @mapFailureDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation incomplete'**
+  String get mapFailureDialogTitle;
+
+  /// No description provided for @mapFailureDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get mapFailureDiagnostics;
+
   /// No description provided for @mapFailureCopy.
   ///
   /// In en, this message translates to:

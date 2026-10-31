@@ -2864,6 +2864,8 @@
   "phoneMoreClose": "Close",
   "phoneMoreBack": "Back",
   "mapFailureDetails": "Failure details",
+  "mapFailureDialogTitle": "Generation incomplete",
+  "mapFailureDiagnostics": "Diagnostics",
   "mapFailureCopy": "Copy details",
   "mapFailureTruncated": "The model output was cut off. Please retry.",
   "mapFailureInvalid": "The model response did not pass mind map validation.",
