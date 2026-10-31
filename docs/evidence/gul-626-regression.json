@@ -1,0 +1,34 @@
+{
+  "app": {
+    "summary": "07:28 +1217 ~38 -10: Some tests failed.",
+    "failures": [
+      "liquid_glass_test.dart: Android 411\u00d7914: the tab bar floats as a glass capsule clear of the safe area (variant: TargetPlatform.android)",
+      "liquid_glass_test.dart: iPhone 402\u00d7874: the tab bar floats as a glass capsule clear of the safe area (variant: TargetPlatform.iOS)",
+      "note_rich_export_test.dart: share night widget golden and 2x PNG",
+      "note_rich_export_test.dart: share paper widget golden and 2x PNG",
+      "note_rich_export_test.dart: share plain widget golden and 2x PNG",
+      "study_notes_ai_ui_test.dart: compact AI setup and outline wrap all footer actions without overflow (variant: TargetPlatform.android)",
+      "workspace_chrome_test.dart: phone map dock preserves items through hide and reveal at 393.0",
+      "workspace_chrome_test.dart: phone map dock preserves items through hide and reveal at 402.0",
+      "workspace_chrome_test.dart: phone reader dock preserves items through hide and reveal at 393.0",
+      "workspace_chrome_test.dart: phone reader dock preserves items through hide and reveal at 402.0"
+    ]
+  },
+  "main": {
+    "summary": "06:48 +1202 ~36 -10: Some tests failed.",
+    "failures": [
+      "liquid_glass_test.dart: Android 411\u00d7914: the tab bar floats as a glass capsule clear of the safe area (variant: TargetPlatform.android)",
+      "liquid_glass_test.dart: iPhone 402\u00d7874: the tab bar floats as a glass capsule clear of the safe area (variant: TargetPlatform.iOS)",
+      "note_rich_export_test.dart: share night widget golden and 2x PNG",
+      "note_rich_export_test.dart: share paper widget golden and 2x PNG",
+      "note_rich_export_test.dart: share plain widget golden and 2x PNG",
+      "study_notes_ai_ui_test.dart: compact AI setup and outline wrap all footer actions without overflow (variant: TargetPlatform.android)",
+      "workspace_chrome_test.dart: phone map dock preserves items through hide and reveal at 393.0",
+      "workspace_chrome_test.dart: phone map dock preserves items through hide and reveal at 402.0",
+      "workspace_chrome_test.dart: phone reader dock preserves items through hide and reveal at 393.0",
+      "workspace_chrome_test.dart: phone reader dock preserves items through hide and reveal at 402.0"
+    ]
+  },
+  "new_failures": [],
+  "baseline_only_failures": []
+}
