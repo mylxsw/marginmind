@@ -2647,6 +2647,21 @@ class _MMPdfViewState extends State<MMPdfView> {
                   _tapNearbyHighlight(details.documentPosition)) {
                 return true;
               }
+              if (details.type == PdfViewerGeneralTapType.doubleTap) {
+                if (widget.scrollProfile == MMPdfScrollProfile.phone) {
+                  final isZoomed = controller.currentZoom > widget.controller.widthZoom * 1.05;
+                  if (isZoomed) {
+                    controller.goTo(_fitWidthMatrix(centerY: details.documentPosition.dy), duration: _moveDuration);
+                  } else {
+                    final targetZoom = (widget.controller.widthZoom * 1.5).clamp(.1, 4.0);
+                    controller.goTo(
+                      controller.calcMatrixFor(details.documentPosition, zoom: targetZoom),
+                      duration: _moveDuration,
+                    );
+                  }
+                  return true;
+                }
+              }
               if (!widget.useTouchSelectionHandles ||
                   details.type != PdfViewerGeneralTapType.longPress ||
                   details.tapOn != PdfViewerPart.nonSelectedText) {

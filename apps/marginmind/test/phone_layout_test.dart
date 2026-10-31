@@ -356,7 +356,7 @@ void main() {
     }, variant: variant);
 
     testWidgets('${phone.name}: settings fill a bottom sheet with the sections on top', (tester) async {
-      await pumpPhone(tester, phone);
+      await openStudySet(tester, phone);
       await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(MMIcons.settings));

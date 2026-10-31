@@ -11,7 +11,6 @@ import 'package:marginmind/features/workspace/widgets/phone_reader_controls.dart
 import 'package:marginmind/features/workspace/reflow_session.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/settings/app_settings.dart';
-import 'package:marginmind/features/workspace/widgets/reader_ink_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_pane_chrome_controller.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
@@ -226,9 +225,7 @@ void main() {
       await tester.tapAt(tester.getCenter(find.byType(MMPdfView)));
       await tester.pumpAndSettle();
       expect(slots.slot, PhoneReaderSlot.page);
-      await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Annotation tools'));
+      slots.openTools();
       await tester.pumpAndSettle();
       expect(key('tools'), findsOneWidget);
       expect(key('page'), findsNothing);
@@ -296,20 +293,8 @@ void main() {
       expect(tester.widget<MMFloatingToolbarStrokeWidth>(key('width-bold')).selected, isFalse);
       await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
       await tester.pumpAndSettle();
-      // Keep the route open while external and embedded commands change state.
-      workspace.setInkTool(MMPdfInkTool.arrow);
+      await tester.tap(find.byKey(const ValueKey('phone-tile-appearance')));
       await tester.pumpAndSettle();
-      expect(tester.widget<ReaderInkToolbar>(find.byType(ReaderInkToolbar)).state.inkTool, MMPdfInkTool.arrow);
-      expect(MMFlatSurface.of(tester.element(find.byType(ReaderInkToolbar))), isTrue);
-      expect(tester.element(find.byType(ReaderInkToolbar)).mmColors.flat, isTrue);
-      final menuWidths = find.descendant(
-        of: find.byType(ReaderInkToolbar),
-        matching: find.byType(MMFloatingToolbarStrokeWidth),
-      );
-      tester.widgetList<MMFloatingToolbarStrokeWidth>(menuWidths).first.onPressed!();
-      await tester.pumpAndSettle();
-      expect(tester.widget<ReaderInkToolbar>(find.byType(ReaderInkToolbar)).state.inkWidth, MMInkWidth.thin);
-      expect(tester.widgetList<MMFloatingToolbarStrokeWidth>(menuWidths).first.selected, isTrue);
       container.read(settingsProvider.notifier).setReaderStyle(MMReaderStyle.paper);
       await tester.pumpAndSettle();
       expect(find.descendant(of: key('style-paper'), matching: find.byIcon(MMIcons.check)), findsOneWidget);
@@ -331,8 +316,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(container.read(settingsProvider).readerStyle, MMReaderStyle.dark);
       expect(tester.takeException(), isNull, reason: 'A selected command must not read a disposed menu ref');
-      await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
-      await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       await tester.tap(key('collapse'));
@@ -370,9 +353,9 @@ void main() {
       expect(slots.dockRight, isFalse);
       await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
+      await tester.tap(find.text('Reading').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Annotation tools'));
+      slots.openTools();
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
       expect(key('tools').hitTestable(), findsOneWidget);

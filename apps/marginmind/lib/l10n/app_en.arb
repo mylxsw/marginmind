@@ -2834,5 +2834,8 @@
   "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
   "translationEditSaved": "Changes Saved",
   "translationCopied": "Translation Copied",
-  "translationRemoved": "Translations Removed"
+  "translationRemoved": "Translations Removed",
+  "phoneMoreOutlineAndBookmarks": "Outline & Bookmarks",
+  "phoneMoreClose": "Close",
+  "phoneMoreBack": "Back"
 }
