@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import '../content/translation_store.dart';
+import 'in_memory_translation_store.dart';
+
 import 'package:crypto/crypto.dart';
 
 import '../content/research_repository.dart';
@@ -11,8 +14,18 @@ import '../content/study_set_content_repository.dart';
 
 /// Content kept in memory; files are "imported" by remembering their path.
 class InMemoryStudySetContentRepository
-    implements DocumentRepository, StudySetContentRepository, ResearchSessionRepository, ResearchSnapshotRepository {
+    implements
+        TranslationStoreRepository,
+        DocumentRepository,
+        StudySetContentRepository,
+        ResearchSessionRepository,
+        ResearchSnapshotRepository {
   InMemoryStudySetContentRepository([Map<String, StudySetContent>? initial]) : _content = {...?initial};
+
+  final _translations = <String, InMemoryTranslationStore>{};
+  @override
+  Future<TranslationStore> translationStore(String studySetId) async =>
+      _translations.putIfAbsent(studySetId, InMemoryTranslationStore.new);
 
   final Map<String, StudySetContent> _content;
   final _changes = StreamController<String>.broadcast();

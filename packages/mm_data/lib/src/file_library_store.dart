@@ -24,6 +24,7 @@ import 'file_translation_store.dart';
 /// replace this behind the same ports once data grows.
 class FileLibraryStore
     implements
+        TranslationStoreRepository,
         StudySetRepository,
         StudySetContentRepository,
         DocumentRepository,
@@ -202,6 +203,7 @@ class FileLibraryStore
   }
 
   /// Translation storage is separate from content snapshots and undo/redo.
+  @override
   Future<FileTranslationStore> translationStore(String studySetId) async {
     await _ensureLoaded();
     _require(studySetId);

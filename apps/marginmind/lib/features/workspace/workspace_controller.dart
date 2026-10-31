@@ -1,3 +1,4 @@
+import 'translation_schedulers.dart';
 import '../study_notes/note_update_sources.dart';
 import 'source_selection.dart';
 export 'source_selection.dart';
@@ -469,6 +470,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   @override
   WorkspaceState build() {
+    ref.watch(translationSchedulersProvider(studySetId));
     ref.onDispose(() {
       _flashTimer?.cancel();
       for (final timer in _pageTimers.values) {

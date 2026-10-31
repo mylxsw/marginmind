@@ -109,6 +109,9 @@ void main() {
     final recovered = (await store.loadJob('doc', 'zh'))!;
     expect(recovered.state, TranslationJobState.paused);
     expect(recovered.pauseReason, TranslationPauseReason.quit);
+    await store.saveJob(job(state: TranslationJobState.offline));
+    expect((await store.loadJob('doc', 'zh'))!.state, TranslationJobState.paused);
+    expect((await store.loadJob('doc', 'zh'))!.pauseReason, TranslationPauseReason.quit);
     await store.saveJob(job(state: TranslationJobState.review));
     expect((await store.loadJob('doc', 'zh'))!.state, TranslationJobState.review);
     for (final malformed in [

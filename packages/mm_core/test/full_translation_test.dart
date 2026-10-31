@@ -45,6 +45,14 @@ TranslationSegment segment() => TranslationSegment(
 );
 
 void main() {
+  test('error cause round trips, accepts old jobs and clears on state changes', () {
+    final error = job().copyWith(state: TranslationJobState.error, errorKind: 'authentication');
+    expect(TranslationJob.fromJson(error.toJson()).errorKind, 'authentication');
+    expect(error.copyWith(usage: TranslationUsage(requests: 1)).errorKind, 'authentication');
+    expect(error.copyWith(state: TranslationJobState.running).errorKind, isNull);
+    expect(TranslationJob.fromJson(error.toJson()..remove('errorKind')).errorKind, isNull);
+    expect(() => job().copyWith(errorKind: 'model'), throwsArgumentError);
+  });
   test('NFC and Unicode whitespace are stable; language and split version differ', () {
     expect(normalizeTranslationText(' \tCafe\u0301\u00a0\u2003hello\r\nworld　'), 'Café hello world');
     expect(textKey('Cafe\u0301\n world', 'zh'), textKey('Café world', 'zh'));

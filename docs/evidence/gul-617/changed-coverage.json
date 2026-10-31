@@ -1,0 +1,74 @@
+{
+  "base": "24d85a9032fb0b6edd0a76b311edf86839543159",
+  "covered": 570,
+  "lines": 605,
+  "percent": 94.21,
+  "files": [
+    {
+      "source": "apps/marginmind/lib/features/workspace/reader_translation.dart",
+      "covered": 22,
+      "lines": 27,
+      "percent": 81.48
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/translation_schedulers.dart",
+      "covered": 35,
+      "lines": 37,
+      "percent": 94.59
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/workspace_controller.dart",
+      "covered": 1,
+      "lines": 1,
+      "percent": 100.0
+    },
+    {
+      "source": "packages/mm_assistant/lib/src/providers.dart",
+      "covered": 6,
+      "lines": 6,
+      "percent": 100.0
+    },
+    {
+      "source": "packages/mm_assistant/lib/src/translation.dart",
+      "covered": 35,
+      "lines": 35,
+      "percent": 100.0
+    },
+    {
+      "source": "packages/mm_assistant/lib/src/translation_scheduler.dart",
+      "covered": 434,
+      "lines": 457,
+      "percent": 94.97
+    },
+    {
+      "source": "packages/mm_core/lib/src/content/translation_job.dart",
+      "covered": 5,
+      "lines": 5,
+      "percent": 100.0
+    },
+    {
+      "source": "packages/mm_core/lib/src/testing/in_memory_content_repository.dart",
+      "covered": 2,
+      "lines": 2,
+      "percent": 100.0
+    },
+    {
+      "source": "packages/mm_core/lib/src/testing/in_memory_translation_store.dart",
+      "covered": 24,
+      "lines": 29,
+      "percent": 82.76
+    },
+    {
+      "source": "packages/mm_data/lib/src/file_library_store.dart",
+      "covered": 1,
+      "lines": 1,
+      "percent": 100.0
+    },
+    {
+      "source": "packages/mm_data/lib/src/file_translation_store.dart",
+      "covered": 5,
+      "lines": 5,
+      "percent": 100.0
+    }
+  ]
+}

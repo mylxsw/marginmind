@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/workspace/translation_schedulers.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/workspace/reader_compare.dart';
 import 'package:marginmind/features/workspace/reader_translation.dart';
@@ -76,6 +77,7 @@ Future<ProviderContainer> setup(
   AssistantModel? selected = model,
   Map<String, Object> prefs = const {},
   List<TranslationParagraph>? pageContent,
+  TranslationStore? storage,
 }) async {
   final c = await pumpApp(
     tester,
@@ -84,6 +86,7 @@ Future<ProviderContainer> setup(
     prefs: prefs,
     content: InMemoryStudySetContentRepository({'demo-1': data ?? compareFixture()}),
     overrides: [
+      if (storage != null) translationStoreProvider('demo-1').overrideWith((ref) async => storage),
       assistantDefaultModelProvider.overrideWithValue(selected),
       assistantCredentialStateProvider.overrideWith(
         (ref) async => selected == null ? AssistantCredentialState.unconfigured : AssistantCredentialState.ready,
@@ -110,7 +113,57 @@ Future<void> finish(WidgetTester tester, TestTranslator translator) async {
   }
 }
 
+Future<Map<String, String>> saved(ProviderContainer c, {String document = 'c1', String language = 'en'}) async {
+  final store = await c.read(translationStoreProvider('demo-1').future);
+  return {for (final s in (await store.load(document, language)).segments.values) s.fingerprint: s.text};
+}
+
 void main() {
+  testWidgets('unfinished full job suppresses on-demand and reuses the same scheduler', (tester) async {
+    final storage = InMemoryTranslationStore(), translator = TestTranslator();
+    final now = DateTime.utc(2026, 10, 31);
+    await storage.saveJob(
+      TranslationJob(
+        id: 'full',
+        documentId: 'c1',
+        targetLang: 'en',
+        range: TranslationRange(1, 2),
+        mode: TranslationMode.batch,
+        batchSize: 5,
+        model: 'fixture',
+        state: TranslationJobState.review,
+        batch: TranslationBatch(index: 1, range: TranslationRange(1, 1)),
+        estimateTokens: 1000,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    final c = await setup(tester, translator, storage: storage);
+    await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
+    await frames(tester);
+    final controller = c.read(readerTranslationProvider('demo-1').notifier);
+    controller.prioritize([2], 2);
+    await frames(tester);
+    await controller.retry();
+    expect(translator.calls, isEmpty);
+    final registry = c.read(translationSchedulersProvider('demo-1'));
+    final content = c.read(workspaceProvider('demo-1').notifier).content;
+    final owner = await registry.get('c1', 'en', paragraphs('c1'), content: content);
+    expect(identical(owner, await registry.get('c1', 'en', paragraphs('c1'), content: content)), true);
+    final retry = owner.retry(owner.paragraphs[2]);
+    await frames(tester);
+    expect(translator.calls, [2]);
+    translator.pending[2]!.complete(const ParagraphTranslation('explicit'));
+    await retry;
+    expect(owner.job!.state, TranslationJobState.review);
+    await owner.stop();
+    controller.prioritize([0], 0);
+    await frames(tester);
+    expect(translator.calls.toSet(), {0, 1, 2});
+    await finish(tester, translator);
+    await tester.pumpWidget(const SizedBox());
+    await frames(tester);
+  });
   setUp(() {
     installTestPdfBackend();
     TestPdfRender.produceImages = true;
@@ -160,7 +213,8 @@ void main() {
     await finish(tester, t);
     expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
     final workspace = c.read(workspaceProvider('demo-1').notifier);
-    expect(workspace.content.translationCaches.single.paragraphs.length, 2);
+    expect(await saved(c), hasLength(2));
+    expect(workspace.content.translationCaches, isEmpty);
     expect(t.calls.toSet(), {0, 1});
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: Offset.zero);
@@ -189,7 +243,7 @@ void main() {
     await moving;
     expect(t.calls, contains(2));
     await finish(tester, t);
-    expect(workspace.content.translationCaches.single.paragraphs.length, 3);
+    expect(await saved(c), hasLength(3));
     final scrollable = tester.state<ScrollableState>(
       find
           .descendant(
@@ -232,7 +286,7 @@ void main() {
     await mouse.removePointer();
     await c.read(readerCompareProvider('demo-1').notifier).exit();
     await frames(tester);
-    expect(t.closed, true);
+    expect(t.closed, false);
     await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
     await frames(tester);
     expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
@@ -247,7 +301,7 @@ void main() {
     final compare = c.read(readerCompareProvider('demo-1').notifier);
     await compare.openAi('en');
     await frames(tester);
-    t.pending[0]!.completeError(StateError('offline'));
+    t.pending[0]!.completeError(const ResearchFailure(ResearchFailureKind.protocol));
     await frames(tester);
     await finish(tester, t);
     expect(find.text('Translation failed'), findsOneWidget);
@@ -260,7 +314,7 @@ void main() {
     expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
     await compare.select('c2', left: true);
     await frames(tester);
-    expect(t.closed, true);
+    expect(t.closed, false);
     expect(c.read(readerCompareProvider('demo-1'))!.leftDocumentId, 'c2');
     await compare.exit();
     await frames(tester);
@@ -351,7 +405,8 @@ void main() {
     await frames(tester, count: 20);
     expect(t.calls.toSet(), {0, 1});
     final cache = c.read(workspaceProvider('demo-1').notifier).content;
-    expect(cache.translationCaches.single.paragraphs.length, 2);
+    final storage = await c.read(translationStoreProvider('demo-1').future);
+    expect(await saved(c), hasLength(2));
     final controller = c.read(readerTranslationProvider('demo-1').notifier);
     controller.prioritize([2], 2);
     await frames(tester);
@@ -364,7 +419,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
     final offline = TestTranslator();
-    final reopened = await setup(tester, offline, data: cache, selected: null);
+    final reopened = await setup(tester, offline, data: cache, selected: null, storage: storage);
     await reopened.read(readerCompareProvider('demo-1').notifier).openAi('en');
     await frames(tester);
     expect(reopened.read(readerTranslationProvider('demo-1')).complete, true);
@@ -373,7 +428,7 @@ void main() {
     final restored = reopened.read(readerTranslationProvider('demo-1').notifier);
     restored.prioritize([2], 2);
     await frames(tester);
-    expect(reopened.read(readerTranslationProvider('demo-1')).failed, true);
+    expect(reopened.read(readerTranslationProvider('demo-1')).complete, true);
     restored.prioritize([0], 0);
     await frames(tester);
     expect(reopened.read(readerTranslationProvider('demo-1')).complete, true);
@@ -383,7 +438,7 @@ void main() {
     await frames(tester);
   });
 
-  testWidgets('turning a page cancels its outstanding work and ignores late results', (tester) async {
+  testWidgets('turning a page drains paid results before dispatching the visible page', (tester) async {
     final t = TestTranslator();
     final c = await setup(tester, t);
     await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
@@ -391,15 +446,19 @@ void main() {
     final pending = t.pending.values.toList();
     c.read(readerTranslationProvider('demo-1').notifier).prioritize([2], 2);
     await frames(tester);
-    expect(t.closed, true);
-    expect(t.calls, [0, 1, 2]);
+    expect(t.closed, false);
+    expect(t.calls, [0, 1]);
     for (final future in pending) {
       future.complete(const ParagraphTranslation('Late previous-page text', tokens: 5));
     }
+    await frames(tester);
     t.pending[2]!.complete(const ParagraphTranslation('Current-page text', tokens: 5));
     await frames(tester);
-    final cache = c.read(workspaceProvider('demo-1').notifier).content.translationCaches.single;
-    expect(cache.paragraphs, {'c1-2': 'Current-page text'});
+    expect(await saved(c), {
+      'c1-0': 'Late previous-page text',
+      'c1-1': 'Late previous-page text',
+      'c1-2': 'Current-page text',
+    });
     expect(c.read(readerTranslationProvider('demo-1')).page, 2);
     expect(c.read(readerTranslationProvider('demo-1')).complete, true);
     await tester.pumpWidget(const SizedBox());
@@ -416,7 +475,7 @@ void main() {
           documentId: 'c1',
           page: i == 26 ? 2 : 1,
           index: i,
-          text: 'An ordinary text run extracted from a PDF page, with enough content to translate.',
+          text: 'Ordinary source fragment $i, extracted PDF text.',
           fingerprint: 'c1-heavy-$i',
           rects: [PageRect(70, 650, 500, 630)],
         ),
@@ -432,7 +491,7 @@ void main() {
     }
     expect(c.read(readerTranslationProvider('demo-1')).complete, true);
     expect(t.calls.toSet(), {for (var i = 0; i < 26; i++) i});
-    expect(c.read(workspaceProvider('demo-1').notifier).content.translationCaches.single.paragraphs, hasLength(26));
+    expect(await saved(c), hasLength(26));
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
   });
@@ -451,6 +510,7 @@ void main() {
     await frames(tester);
     expect(t.calls, [2]);
     expect(c.read(readerTranslationProvider('demo-1')).page, 2);
+    await finish(tester, t);
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
   });
@@ -468,10 +528,7 @@ void main() {
     expect((c.read(readerCompareProvider('demo-1'))!.right as AiCompareTarget).targetLang, 'zh');
     expect(t.languages, ['zh', 'zh']);
     await finish(tester, t);
-    final cache = c.read(workspaceProvider('demo-1').notifier).content.translationCaches.single;
-    expect(cache.documentId, 'c2');
-    expect(cache.targetLang, 'zh');
-    expect(cache.paragraphs.length, 2);
+    expect(await saved(c, document: 'c2', language: 'zh'), hasLength(2));
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
   });

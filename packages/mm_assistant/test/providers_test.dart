@@ -43,6 +43,23 @@ AssistantModel config(AssistantProvider provider) => AssistantModel(
   localEnabled: provider == AssistantProvider.ollama,
 );
 void main() {
+  test('scheduler transport has no hidden retries and bounds bytes per request', () async {
+    final adapter = Adapter((o, n) => ResponseBody.fromString(n == 1 ? 'rate' : 'ok', n == 1 ? 429 : 200));
+    final connection = connectAssistant(
+      config(AssistantProvider.compatible),
+      'key',
+      adapter: adapter,
+      retryRequests: false,
+      perRequestBudget: true,
+      budget: const ResearchBudget(responseBytes: 4),
+    );
+    await expectLater(connection.dio.post('https://example.com/v1/chat/completions'), throwsA(isA<DioException>()));
+    expect(adapter.calls, 1);
+    for (var i = 0; i < 5; i++) {
+      expect((await connection.dio.post('https://example.com/v1/chat/completions')).data, 'ok');
+    }
+    connection.close();
+  });
   for (final provider in [AssistantProvider.compatible, AssistantProvider.ollama]) {
     test('$provider streams repeated, fragmented and cumulative tool names through execution', () async {
       for (final names in [
