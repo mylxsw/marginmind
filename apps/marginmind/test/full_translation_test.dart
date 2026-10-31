@@ -1,8 +1,12 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/rendering.dart';
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -25,24 +29,41 @@ import 'package:mm_design/mm_design.dart';
 import 'helpers.dart';
 import 'reader_compare_test.dart' show compareFixture;
 
-Directory _evidenceDir() {
-  var dir = Directory('docs/evidence/gul-618');
-  if (!dir.existsSync()) {
-    dir = Directory('../../docs/evidence/gul-618');
-  }
-  dir.createSync(recursive: true);
-  return dir;
-}
+final _captureLocale = ValueNotifier<Locale?>(null);
 
 Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
-  final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-  final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 2)))!;
-  final png = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.png)))!;
-  await tester.runAsync(() async {
-    final dir = _evidenceDir();
-    File('${dir.path}/$name.png').writeAsBytesSync(png.buffer.asUint8List());
-  });
-  image.dispose();
+  final evidence = Platform.environment['TRANSLATION_EVIDENCE_DIR'];
+  if (!{
+        'sheet-light',
+        'sheet-dark',
+        'panel-running-light',
+        'panel-running-dark',
+        'checkpoint-expanded-light',
+        'checkpoint-expanded-dark',
+      }.contains(name) &&
+      evidence == null) {
+    return;
+  }
+  if (evidence != null) {
+    final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 2)))!;
+    try {
+      final bytes = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.png)))!;
+      await tester.runAsync(() async {
+        final directory = Directory(evidence)..createSync(recursive: true);
+        File('${directory.path}/$name.png').writeAsBytesSync(bytes.buffer.asUint8List());
+      });
+    } finally {
+      image.dispose();
+    }
+    return;
+  }
+  _captureLocale.value = const Locale('en');
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  await expectLater(find.byKey(key), matchesGoldenFile('goldens/full_translation/$name.png'));
+  _captureLocale.value = null;
+  await tester.pump();
 }
 
 Widget testHost(
@@ -53,14 +74,18 @@ Widget testHost(
   ProviderContainer? container,
   List<Override> overrides = const [],
 }) {
-  final app = MaterialApp(
-    locale: locale,
-    theme: dark ? MMTheme.dark() : MMTheme.light(),
-    supportedLocales: AppLocalizations.supportedLocales,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    home: Scaffold(
-      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F7),
-      body: MMHudHost(child: Center(child: child)),
+  final app = ValueListenableBuilder<Locale?>(
+    valueListenable: _captureLocale,
+    builder: (_, captureLocale, _) => MaterialApp(
+      locale: captureLocale ?? locale,
+      theme: dark ? MMTheme.dark() : MMTheme.light(),
+      builder: (_, child) => MMHudHost(child: child!),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: Scaffold(
+        backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F7),
+        body: Center(child: child),
+      ),
     ),
   );
   if (container != null) {
@@ -72,8 +97,8 @@ Widget testHost(
   return app;
 }
 
-List<TranslationParagraph> _sampleParagraphs([String docId = 'c1']) => [
-  for (var p = 1; p <= 5; p++)
+List<TranslationParagraph> _sampleParagraphs([String docId = 'c1', int pages = 5]) => [
+  for (var p = 1; p <= pages; p++)
     for (var i = 0; i < 4; i++)
       TranslationParagraph(
         documentId: docId,
@@ -81,7 +106,7 @@ List<TranslationParagraph> _sampleParagraphs([String docId = 'c1']) => [
         index: (p - 1) * 4 + i,
         text: 'Page $p paragraph $i: Deep learning systems utilize multi-layer neural architectures.',
         fingerprint: '$docId-$p-$i',
-        rects: [const PageRect(50, 50, 400, 100)],
+        rects: [PageRect(50, 650 - i * 120, 400, 550 - i * 120)],
       ),
 ];
 
@@ -100,12 +125,7 @@ class MockReaderCompareSession extends ReaderCompareSession {
 }
 
 class MockFullTranslationController extends FullTranslationController {
-  MockFullTranslationController(
-    super.studySetId,
-    super.documentId,
-    super.targetLang,
-    this.presetState,
-  );
+  MockFullTranslationController(super.studySetId, super.documentId, super.targetLang, this.presetState);
 
   final FullTranslationState presetState;
   bool paused = false;
@@ -149,6 +169,13 @@ class MockFullTranslationController extends FullTranslationController {
   }
 }
 
+class SnapshotReaderTranslation extends ReaderTranslationController {
+  SnapshotReaderTranslation(super.studySetId, this.preset);
+  final ReaderTranslationState preset;
+  @override
+  ReaderTranslationState build() => preset;
+}
+
 class TestTranslator implements ParagraphTranslator {
   final calls = <int>[];
   int delayMs = 0;
@@ -174,6 +201,49 @@ class TestTranslator implements ParagraphTranslator {
 }
 
 void main() {
+  setUpAll(() async {
+    await (FontLoader(
+      'packages/cupertino_icons/CupertinoIcons',
+    )..addFont(rootBundle.load('packages/cupertino_icons/assets/CupertinoIcons.ttf'))).load();
+    if (Platform.environment['TRANSLATION_EVIDENCE_DIR'] != null) {
+      final bytes = ByteData.sublistView(
+        File('/System/Library/Fonts/Supplemental/Arial Unicode.ttf').readAsBytesSync(),
+      );
+      for (final family in [
+        'Roboto',
+        '.AppleSystemUIFont',
+        'CupertinoSystemText',
+        'CupertinoSystemDisplay',
+        'PingFang SC',
+        'Songti SC',
+        'Ahem',
+      ]) {
+        await (FontLoader(family)..addFont(Future.value(bytes))).load();
+      }
+      await (FontLoader(
+        'packages/lucide_icons_flutter/Lucide',
+      )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
+      return;
+    }
+    final config = File('../../.dart_tool/package_config.json').absolute;
+    final packages = (jsonDecode(config.readAsStringSync()) as Map)['packages'] as List;
+    final flutter = packages.singleWhere((p) => p['name'] == 'flutter') as Map;
+    final sdk = Directory.fromUri(config.uri.resolve(flutter['rootUri'] as String)).parent.parent;
+    final bytes = ByteData.sublistView(File('${sdk.path}/packages/flutter_tools/static/Ahem.ttf').readAsBytesSync());
+    for (final family in [
+      'Roboto',
+      '.AppleSystemUIFont',
+      'CupertinoSystemText',
+      'CupertinoSystemDisplay',
+      'Songti SC',
+      'SF Mono',
+    ]) {
+      await (FontLoader(family)..addFont(Future.value(bytes))).load();
+    }
+    await (FontLoader(
+      'packages/lucide_icons_flutter/Lucide',
+    )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
+  });
   group('FullTranslation Estimation & Formatting Unit Tests', () {
     test('formatTokens formats numbers correctly', () {
       expect(formatTokens(0), '0');
@@ -201,13 +271,7 @@ void main() {
       expect(emptyEst.minutes, 1);
 
       final paras = _sampleParagraphs();
-      final estAll = estimateFullTranslation(
-        paragraphs: paras,
-        from: 1,
-        to: 5,
-        targetLang: 'zh',
-        values: const {},
-      );
+      final estAll = estimateFullTranslation(paragraphs: paras, from: 1, to: 5, targetLang: 'zh', values: const {});
       expect(estAll.paras, 20);
       expect(estAll.chars > 0, true);
       expect(estAll.reused, 0);
@@ -215,20 +279,12 @@ void main() {
       expect(estAll.minutes >= 1, true);
 
       // Custom range: pages 2 to 3
-      final estSub = estimateFullTranslation(
-        paragraphs: paras,
-        from: 2,
-        to: 3,
-        targetLang: 'zh',
-        values: const {},
-      );
+      final estSub = estimateFullTranslation(paragraphs: paras, from: 2, to: 3, targetLang: 'zh', values: const {});
       expect(estSub.paras, 8);
       expect(estSub.chars < estAll.chars, true);
 
       // Reused segment
-      final existingValues = {
-        paras.first.fingerprint: '已翻译第一段',
-      };
+      final existingValues = {paras.first.fingerprint: '已翻译第一段'};
       final estReused = estimateFullTranslation(
         paragraphs: paras,
         from: 1,
@@ -279,9 +335,7 @@ void main() {
       );
 
       final paras = _sampleParagraphs().where((p) => p.page <= 5).toList();
-      final values = {
-        for (final p in paras.where((p) => p.page == 1)) textKey(p.text, 'en'): 'done',
-      };
+      final values = {for (final p in paras.where((p) => p.page == 1)) textKey(p.text, 'en'): 'done'};
 
       final state = FullTranslationState(
         studySetId: 'demo-1',
@@ -320,7 +374,13 @@ void main() {
 
     test('FullTranslationController manages reading page, collapsed checkpoint, and lifecycle', () async {
       final baseOverrides = await testOverrides(
-        content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 5, importedAt: testNow),
+            ],
+          ),
+        }),
       );
       final storage = InMemoryTranslationStore();
       final translator = TestTranslator()..delayMs = 100;
@@ -331,12 +391,14 @@ void main() {
           paragraphTranslatorProvider.overrideWithValue((_) async => translator),
           translationParagraphsProvider(('demo-1', 'c1')).overrideWith((ref) async => _sampleParagraphs('c1')),
           compareDocumentInfoProvider(('demo-1', 'c1')).overrideWith((ref) async => (language: 'zh', hasText: true)),
-          assistantDefaultModelProvider.overrideWithValue(const AssistantModel(
-            provider: AssistantProvider.ollama,
-            model: 'fixture',
-            endpoint: 'http://localhost:11434',
-            localEnabled: true,
-          )),
+          assistantDefaultModelProvider.overrideWithValue(
+            const AssistantModel(
+              provider: AssistantProvider.ollama,
+              model: 'fixture',
+              endpoint: 'http://localhost:11434',
+              localEnabled: true,
+            ),
+          ),
           assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready),
         ],
       );
@@ -397,14 +459,22 @@ void main() {
   });
 
   group('FullTranslation Widgets & Visual Evidence', () {
-    testWidgets('FullTranslationSheet renders light, dark, and blocked states and captures screenshots', (tester) async {
+    testWidgets('FullTranslationSheet renders light, dark, and blocked states and captures screenshots', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
       final key = GlobalKey();
       final baseOverrides = await testOverrides(
-        content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 5, importedAt: testNow),
+            ],
+          ),
+        }),
       );
 
       Widget buildSheet({
@@ -417,41 +487,33 @@ void main() {
           dark: dark,
           overrides: [
             ...baseOverrides,
-            translationParagraphsProvider(('demo-1', 'c1')).overrideWith(
-              (ref) async => hasText ? _sampleParagraphs('c1') : const <TranslationParagraph>[],
+            translationParagraphsProvider(('demo-1', 'c1'))
+                .overrideWith((ref) async => hasText ? _sampleParagraphs('c1') : const <TranslationParagraph>[]),
+            compareDocumentInfoProvider(('demo-1', 'c1'))
+                .overrideWith((ref) async => (language: 'zh', hasText: hasText)),
+            translationOnlineProvider('demo-1').overrideWith(() => MockTranslationOnlineNotifier('demo-1', isOnline)),
+            assistantDefaultModelProvider.overrideWithValue(
+              const AssistantModel(
+                provider: AssistantProvider.claude,
+                model: 'claude-3-5-sonnet',
+                endpoint: 'https://api.anthropic.com',
+              ),
             ),
-            compareDocumentInfoProvider(('demo-1', 'c1')).overrideWith(
-              (ref) async => (language: 'zh', hasText: hasText),
-            ),
-            translationOnlineProvider('demo-1').overrideWith(
-              () => MockTranslationOnlineNotifier('demo-1', isOnline),
-            ),
-            assistantDefaultModelProvider.overrideWithValue(const AssistantModel(
-              provider: AssistantProvider.claude,
-              model: 'claude-3-5-sonnet',
-              endpoint: 'https://api.anthropic.com',
-            )),
             assistantCredentialStateProvider.overrideWith((ref) async => cred),
             fullTranslationProvider(('demo-1', 'c1', 'en')).overrideWith(
               () => MockFullTranslationController(
                 'demo-1',
                 'c1',
                 'en',
-                const FullTranslationState(
-                  studySetId: 'demo-1',
-                  documentId: 'c1',
-                  targetLang: 'en',
-                  loading: false,
-                ),
+                const FullTranslationState(studySetId: 'demo-1', documentId: 'c1', targetLang: 'en', loading: false),
               ),
             ),
           ],
           RepaintBoundary(
             key: key,
-            child: const FullTranslationSheet(
-              studySetId: 'demo-1',
-              documentId: 'c1',
-              initialTargetLang: 'en',
+            child: const SizedBox(
+              width: 560,
+              child: FullTranslationSheet(studySetId: 'demo-1', documentId: 'c1', initialTargetLang: 'en'),
             ),
           ),
         );
@@ -497,7 +559,13 @@ void main() {
       final key = GlobalKey();
       final now = DateTime.utc(2026, 10, 31);
       final baseOverrides = await testOverrides(
-        content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 5, importedAt: testNow),
+            ],
+          ),
+        }),
       );
 
       FullTranslationState makeState(TranslationJobState jState) {
@@ -569,7 +637,13 @@ void main() {
       final key3 = GlobalKey();
       final now = DateTime.utc(2026, 10, 31);
       final baseOverrides = await testOverrides(
-        content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 5, importedAt: testNow),
+            ],
+          ),
+        }),
       );
 
       FullTranslationState makePanelState(TranslationJobState jState) {
@@ -592,9 +666,11 @@ void main() {
             createdAt: now,
             updatedAt: now,
           ),
-          paragraphs: _sampleParagraphs(),
-          values: {for (var i = 0; i < 4; i++) 'c1-1-$i': 'translated'},
-          runningKeys: jState == TranslationJobState.running ? {'c1-2-0'} : const {},
+          paragraphs: _sampleParagraphs('c1', 16),
+          values: {for (final p in _sampleParagraphs()) p.fingerprint: 'translated'},
+          runningKeys: jState == TranslationJobState.running
+              ? {textKey(_sampleParagraphs('c1', 16)[20].text, 'en')}
+              : const {},
           loading: false,
         );
       }
@@ -603,19 +679,12 @@ void main() {
         final mock = MockFullTranslationController('demo-1', 'c1', 'en', makePanelState(state));
         return testHost(
           dark: dark,
-          overrides: [
-            ...baseOverrides,
-            fullTranslationProvider(('demo-1', 'c1', 'en')).overrideWith(() => mock),
-          ],
+          overrides: [...baseOverrides, fullTranslationProvider(('demo-1', 'c1', 'en')).overrideWith(() => mock)],
           RepaintBoundary(
             key: boundaryKey,
             child: const SizedBox(
               width: 372,
-              child: FullTranslationPanel(
-                studySetId: 'demo-1',
-                documentId: 'c1',
-                targetLang: 'en',
-              ),
+              child: FullTranslationPanel(studySetId: 'demo-1', documentId: 'c1', targetLang: 'en'),
             ),
           ),
         );
@@ -651,7 +720,13 @@ void main() {
       final key3 = GlobalKey();
       final now = DateTime.utc(2026, 10, 31);
       final baseOverrides = await testOverrides(
-        content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 5, importedAt: testNow),
+            ],
+          ),
+        }),
       );
 
       FullTranslationState makeCkptState({bool collapsed = false}) {
@@ -674,8 +749,8 @@ void main() {
             createdAt: now,
             updatedAt: now,
           ),
-          paragraphs: _sampleParagraphs(),
-          values: {for (var i = 0; i < 4; i++) 'c1-1-$i': 'done'},
+          paragraphs: _sampleParagraphs('c1', 20),
+          values: {for (final p in _sampleParagraphs()) p.fingerprint: 'done'},
           loading: false,
           checkpointCollapsed: collapsed,
         );
@@ -685,19 +760,12 @@ void main() {
         final mock = MockFullTranslationController('demo-1', 'c1', 'en', makeCkptState(collapsed: collapsed));
         return testHost(
           dark: dark,
-          overrides: [
-            ...baseOverrides,
-            fullTranslationProvider(('demo-1', 'c1', 'en')).overrideWith(() => mock),
-          ],
+          overrides: [...baseOverrides, fullTranslationProvider(('demo-1', 'c1', 'en')).overrideWith(() => mock)],
           RepaintBoundary(
             key: boundaryKey,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: const FullTranslationCheckpoint(
-                studySetId: 'demo-1',
-                documentId: 'c1',
-                targetLang: 'en',
-              ),
+              child: const FullTranslationCheckpoint(studySetId: 'demo-1', documentId: 'c1', targetLang: 'en'),
             ),
           ),
         );
@@ -730,7 +798,13 @@ void main() {
 
       final key = GlobalKey();
       final baseOverrides = await testOverrides(
-        content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 5, importedAt: testNow),
+            ],
+          ),
+        }),
       );
       final now = DateTime.utc(2026, 10, 31);
 
@@ -769,11 +843,7 @@ void main() {
             readerCompareProvider('demo-1').overrideWith(
               () => MockReaderCompareSession(
                 'demo-1',
-                ComparePair(
-                  id: 'pair1',
-                  leftDocumentId: 'c1',
-                  right: AiCompareTarget('en'),
-                ),
+                ComparePair(id: 'pair1', leftDocumentId: 'c1', right: AiCompareTarget('en')),
               ),
             ),
             fullTranslationProvider(('demo-1', 'c1', 'en')).overrideWith(() => mock),
@@ -792,5 +862,98 @@ void main() {
 
       await _capture(tester, key, 'translation-placeholders');
     });
+    for (final dark in [false, true]) {
+      testWidgets('running reader and task panel ${dark ? 'dark' : 'light'}', (tester) async {
+        tester.view.physicalSize = const Size(1200, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final key = GlobalKey();
+        final baseOverrides = await testOverrides(
+          content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+        );
+        final paragraphs = _sampleParagraphs('c1', 16);
+        final values = {
+          for (final p in paragraphs.where((p) => p.page <= 5)) p.fingerprint: '深度学习系统使用多层神经网络架构，从数据中学习逐层的表示。',
+        };
+        final job = TranslationJob(
+          id: 'running-reader',
+          documentId: 'c1',
+          sourceLang: 'en',
+          targetLang: 'zh',
+          range: TranslationRange(1, 16),
+          mode: TranslationMode.batch,
+          batchSize: 5,
+          model: 'Qwen 2.5 72B',
+          state: TranslationJobState.running,
+          batch: TranslationBatch(index: 2, range: TranslationRange(6, 10)),
+          estimateTokens: 10000,
+          createdAt: testNow,
+          updatedAt: testNow,
+        );
+        await tester.pumpWidget(
+          testHost(
+            RepaintBoundary(
+              key: key,
+              child: ColoredBox(
+                color: dark ? MMColors.dark.windowBackground : MMColors.light.windowBackground,
+                child: const SizedBox(
+                  width: 1100,
+                  height: 800,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(child: ReaderTranslationView(studySetId: 'demo-1')),
+                      Positioned(
+                        top: 60,
+                        right: 24,
+                        width: 372,
+                        child: FullTranslationPanel(studySetId: 'demo-1', documentId: 'c1', targetLang: 'zh'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            dark: dark,
+            overrides: [
+              ...baseOverrides,
+              readerCompareProvider('demo-1').overrideWith(
+                () => MockReaderCompareSession(
+                  'demo-1',
+                  ComparePair(id: 'pair', leftDocumentId: 'c1', right: AiCompareTarget('zh')),
+                ),
+              ),
+              readerTranslationProvider('demo-1').overrideWith(
+                () => SnapshotReaderTranslation(
+                  'demo-1',
+                  ReaderTranslationState(paragraphs: paragraphs, values: values, loading: false),
+                ),
+              ),
+              fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(
+                () => MockFullTranslationController(
+                  'demo-1',
+                  'c1',
+                  'zh',
+                  FullTranslationState(
+                    studySetId: 'demo-1',
+                    documentId: 'c1',
+                    targetLang: 'zh',
+                    job: job,
+                    paragraphs: paragraphs,
+                    values: values,
+                    runningKeys: {textKey(paragraphs[20].text, 'zh')},
+                    loading: false,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.byType(FullTranslationPanel), findsOneWidget);
+        expect(find.text('全文翻译'), findsOneWidget);
+        await _capture(tester, key, 'running-reader-${dark ? 'dark' : 'light'}');
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }
