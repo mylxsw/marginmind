@@ -180,7 +180,7 @@ macOS 切换 Dock 图标，每次启动恢复选择，不修改已签名应用�
 
 `context.mmTouchPlatform` 决定手机和平板共用的组件外观：15pt 正文字号、32pt 按钮视觉尺寸与至少 44pt 独立触摸区域、相同圆角与选中状态，以及不透明的工具组、菜单和底部面板。`context.mmTablet` 仅用于平板专属的分栏、面板位置等布局判断；不能用它排除手机的共享样式。文档正文和脑图内容仍使用 `mmContentText`，不跟随界面字号调整。
 
-手机保留单栏与底部工具栏。设置分类按内容宽度横向滚动，选中分类自动露出，标题行常显关闭按钮；极窄或大字号下，设置行改为上下排列。阅读页码、进度和前后页合并为与 iPad 相同的单行胶囊；内容区不足 240pt 时先隐藏进度条，保留页码输入和前后页按钮。手机也使用触摸选区手柄。裁边建议不覆盖正文，裁边功能仍在工具菜单内。脑图样式弹窗以当前面板坐标限制左右边界，横屏空间不足时内部滚动。
+手机使用单栏；compact 阅读页使用下述共用位，其余布局保留底部工具栏。设置分类按内容宽度横向滚动，选中分类自动露出，标题行常显关闭按钮；极窄或大字号下，设置行改为上下排列。非手机 compact 阅读页的页码、进度和前后页合并为与 iPad 相同的单行胶囊；内容区不足 240pt 时先隐藏进度条，保留页码输入和前后页按钮。手机也使用触摸选区手柄。裁边建议不覆盖正文，裁边功能仍在工具菜单内。脑图样式弹窗以当前面板坐标限制左右边界，横屏空间不足时内部滚动。
 
 模拟器截图检查与复现命令见 `docs/evidence/phone-adaptation/README.md` 和 `tool/capture_mobile_ui.py`。
 
@@ -193,3 +193,14 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 `MMSizes` 新增 phoneTabBarHeight 64、phoneTabBarHorizontalInset 22、phoneTabBarBottomInset 26、phoneTopControl 44、phoneToolOrb 50、phoneToolBarHeight 56、phonePageCapsuleHeight 36、phoneDrawerWidth 328、phoneSheetPadding 8。`MMRadii.phoneTabBar` 为 32，`phoneSheet` 为 38；`MMMotion.phoneAnnotationCollapse` 为 650ms，`phoneSelectionCollapse` 为 500ms。36pt 页码视觉必须外包至少 44pt 热区，底部距离与安全区取最大值；具体控件负责本地化语义与焦点。
 
 交互模型、所有权与滑动物理方案见 `mobile-redesign-arch.md`；视觉源为 `design/prototype/mobile-redesign.html`。
+
+
+### 手机阅读控件（GUL-631）
+
+仅 `MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact` 启用三组悬浮玻璃顶部控件和底部共用位。顶部“阅读 / 脑图”使用滑动透镜；下读隐藏、回滚或正文单击显示，工具保持选中不阻止沉浸，实际选区、画笔/框选、滑块、菜单、键盘和无障碍状态仍保持顶部可达。
+
+`PhoneReaderSlot` 的 page / orb / tools / scrub 四态互斥：默认页码，更多菜单提供工具和跳页入口；选中工具收起后保留图标和颜色点。650ms 完成收回与 500ms 选择工具收回使用既有 `MMMotion` 令牌。手机笔形、线型、自定义颜色和撤销入口保留在更多菜单，后续由 GUL-633 替换面板。
+
+`MMPhoneReaderLayout` 对应原型 CSS：水平 inset 14、模式切换宽 170（窄屏可收缩）、底边 24、顶部 inset 4、组间距 10、scroll-edge 64 / 沉浸 6（均从状态栏安全区下方测量）、scrubHeight 74、colorHeight 46、progress 14、工具色点 8 / 球色点 10、toolInset 6。底部距离与原始安全区取最大值，36pt 页码包在至少 44pt 热区中。50pt 球左右拖动停靠，本机偏好保存停靠侧；切换文档重置瞬态控件并取消旧计时器。
+
+四态互斥优先于原型默认同时显示页码与工具球的示意。流式文档胶囊显示当前章节内页码，进度环和滑块仍覆盖全书；固定 EPUB 按源页面导航。原型已有上述几何值，无需改变视觉源。Linux 的 393×852 浅深色 golden 证据及复现命令见 `docs/evidence/gul-631/`。
