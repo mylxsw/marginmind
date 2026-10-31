@@ -412,16 +412,12 @@ class _ActionSheet extends StatelessWidget {
           MMMenuDivider() => null,
         },
     ].nonNulls.toList();
-    final touch = MMInput.of(context).touchPlatform;
     const radius = BorderRadius.all(Radius.circular(14));
-    // A touch platform's action sheet is mobile glass over the scrim.
-    Widget group(Widget child) => touch
-        ? MMLiquidGlass(borderRadius: radius, color: c.surface.withValues(alpha: 0.78), child: child)
-        : Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(color: c.surface, borderRadius: radius),
-            child: child,
-          );
+    Widget group(Widget child) => Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(color: c.surface, borderRadius: radius),
+      child: child,
+    );
     return Material(
       type: MaterialType.transparency,
       child: SafeArea(

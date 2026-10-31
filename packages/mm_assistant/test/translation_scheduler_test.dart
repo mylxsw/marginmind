@@ -116,6 +116,25 @@ Future<TranslationScheduler> scheduler(
   return s;
 }
 
+class DelayedPack extends FakePack {
+  final gate = Completer<PackedParagraphTranslation>();
+  @override
+  Future<PackedParagraphTranslation> translatePack(
+    List<TranslationParagraph> ps,
+    String language,
+    CancellationToken cancel,
+    int maxTokens, {
+    String? sourceLanguage,
+    String note = '',
+  }) {
+    if (ps.length == 1) {
+      return super.translatePack(ps, language, cancel, maxTokens, sourceLanguage: sourceLanguage, note: note);
+    }
+    packs.add(ps);
+    return gate.future;
+  }
+}
+
 class LedgerStore extends InMemoryTranslationStore {
   final writes = <TranslationJob>[];
   bool failAppend = false;
@@ -348,6 +367,55 @@ void main() {
     await run;
     expect(t.calls, hasLength(1));
     expect(s.job!.failures, isEmpty);
+    await s.close();
+  });
+
+  for (final count in [1, 2]) {
+    test('stopping during backoff prevents retries for $count paragraphs', () async {
+      final t = FakeTranslator()..answer = ((_) async => throw const ResearchFailure(ResearchFailureKind.unavailable));
+      final wait = Completer<void>();
+      final s = await scheduler([for (var i = 0; i < count; i++) p(i)], t, sleep: (_) => wait.future);
+      final run = s.start(job(pages: count));
+      await tick();
+      expect(t.calls, hasLength(count));
+      await s.stop();
+      wait.complete();
+      await run;
+      expect(t.calls, hasLength(count));
+      expect(s.job!.state, TranslationJobState.stopped);
+      expect(s.job!.failures, isEmpty);
+      expect((await s.store.loadJob('doc', 'zh'))!.failures, isEmpty);
+      await s.close();
+    });
+  }
+
+  test('a paragraph failure arriving after stop is not recorded', () async {
+    final t = FakeTranslator();
+    final s = await scheduler([p(0)], t);
+    final run = s.start(job(pages: 1));
+    await tick();
+    await s.stop();
+    t.pending.single.completeError(const ResearchFailure(ResearchFailureKind.protocol));
+    await run;
+    expect(t.calls, hasLength(1));
+    expect(s.job!.failures, isEmpty);
+    await s.close();
+  });
+
+  test('stopped bulk packs do not split, while explicit requests remain allowed', () async {
+    final t = DelayedPack();
+    final s = await scheduler([p(0, page: 1), p(1, page: 1)], t);
+    final run = s.start(job(pages: 1));
+    await tick();
+    await s.stop();
+    t.gate.complete(const PackedParagraphTranslation(['bad'], inputTokens: 3, outputTokens: 2));
+    await run;
+    expect(t.packs.map((ps) => ps.length), [2]);
+    expect(s.job!.failures, isEmpty);
+    await s.retry(s.paragraphs.first);
+    expect(t.packs.map((ps) => ps.length), [2, 1]);
+    expect(s.values['fp0'], '译0');
+    expect(s.job!.state, TranslationJobState.stopped);
     await s.close();
   });
 

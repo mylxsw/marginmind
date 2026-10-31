@@ -57,7 +57,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             icon: MMIcons.mindMap,
             label: map.title.isEmpty ? l.mainMap : map.title,
             selected: state.tagFilter == null && state.activeNoteId == null && map.id == state.activeMapId,
-            selectionStyle: context.mmTablet ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
+            selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
             onTap: () async {
               await controller.selectMap(map.id);
               controller.setLayout(MMSplitMode.secondary);
@@ -135,7 +135,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   ? Text(l.ocrRecognized, style: context.mmText.footnote)
                   : null,
               selected: !browser.visible && d.id == state.activeDocumentId,
-              selectionStyle: context.mmTablet ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
+              selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
               onTap: () {
                 browserOwner.hide();
                 controller.openDocument(d.id);
@@ -184,7 +184,9 @@ class WorkspaceSidebar extends ConsumerWidget {
                         ? session.url.host
                         : session.title,
                     selected: browser.visible,
-                    selectionStyle: context.mmTablet ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
+                    selectionStyle: context.mmTouchPlatform
+                        ? MMSidebarSelectionStyle.marker
+                        : MMSidebarSelectionStyle.filled,
                     onTap: browserOwner.show,
                   ),
                 ),

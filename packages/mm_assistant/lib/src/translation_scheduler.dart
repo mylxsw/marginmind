@@ -432,13 +432,15 @@ class TranslationScheduler {
   }
 
   Future<void> _dispatch(List<TranslationParagraph> pack, {bool explicit = false, int slot = 0}) async {
+    // Bind bulk attempts before observers can pause/stop the job in _emit.
+    final bulkJobId = !explicit && _job?.isActive == true ? _job!.id : null;
     final done = Completer<void>();
     for (final p in pack) {
       _active[keyOf(p)] = done.future;
     }
     _emit();
     try {
-      await _request(pack, explicit: explicit, slot: slot);
+      await _request(pack, explicit: explicit, slot: slot, bulkJobId: bulkJobId);
     } finally {
       for (final p in pack) {
         _active.remove(keyOf(p));
@@ -449,13 +451,22 @@ class TranslationScheduler {
     }
   }
 
-  Future<void> _request(List<TranslationParagraph> pack, {required bool explicit, int slot = 0}) async {
+  Future<void> _request(
+    List<TranslationParagraph> pack, {
+    required bool explicit,
+    int slot = 0,
+    String? bulkJobId,
+  }) async {
+    // A stopped job permits new on-demand work, but never revives its old bulk attempts.
+    bool bulkJobRunning() => bulkJobId == null || (_job?.id == bulkJobId && _job?.state == TranslationJobState.running);
+    bool canAttempt() =>
+        !_closed && !_closingRequested && _online && (explicit || (bulkJobRunning() && _gate && slot < concurrency));
     // Capture provenance before awaiting: edits to requirements affect later requests.
     final note = _job?.note ?? '';
     final profile = translationProfile(note, promptVersion: _job?.promptVersion ?? 1);
     final inputEstimate = 512 + utf8.encode(note + pack.map((p) => p.text).join()).length;
     for (var attempt = 0; attempt <= 3; attempt++) {
-      if (_closed || _closingRequested || !_online || (!explicit && (!_gate || slot >= concurrency))) return;
+      if (!canAttempt()) return;
       final remaining = explicit ? budget.outputTokens : budget.outputTokens - _reserved;
       if (remaining <= 0) {
         await _sleep(const Duration(milliseconds: 1));
@@ -468,13 +479,14 @@ class TranslationScheduler {
       final requestCancel = CancellationToken();
       try {
         await _persist();
-        if (_closed || _closingRequested || !_online || (!explicit && (!_gate || slot >= concurrency))) return;
+        if (!canAttempt()) return;
         final PackedParagraphTranslation response;
         saving = false;
         final t = await _getTranslator();
-        if (_closed || _closingRequested || !_online || (!explicit && (!_gate || slot >= concurrency))) return;
+        if (!canAttempt()) return;
         final requestModel = t is ModelParagraphTranslator ? t.model : model;
         if (pack.fold<int>(512 + note.length, (n, p) => n + p.text.length) > budget.inputCharacters) {
+          if (!bulkJobRunning()) return;
           await _recordFailure(pack, ResearchFailureKind.protocol, 0);
           return;
         }
@@ -581,7 +593,7 @@ class TranslationScheduler {
           _reserved -= reservation;
           try {
             for (final p in pack) {
-              await _request([p], explicit: explicit, slot: slot);
+              await _request([p], explicit: explicit, slot: slot, bulkJobId: bulkJobId);
             }
           } finally {
             _reserved += reservation;
@@ -611,6 +623,7 @@ class TranslationScheduler {
           await _sleep(retryAfter > jitter ? retryAfter : jitter);
           continue;
         }
+        if (!bulkJobRunning()) return;
         await _recordFailure(pack, kind, attempt + 1);
         return;
       } finally {

@@ -79,7 +79,7 @@ class MMToolbar extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   for (var i = 0; i < actions.length; i++) ...[
-                    if (i > 0) SizedBox(width: context.mmTablet ? MMToolbarSpacing.group : 10),
+                    if (i > 0) SizedBox(width: context.mmTouchPlatform ? MMToolbarSpacing.group : 10),
                     actions[i],
                   ],
                 ],
@@ -103,7 +103,9 @@ class MMToolbarGroup extends StatelessWidget {
     return MMGlass(
       toolbar: true,
       controlGroup: true,
-      padding: compact && !context.mmTouch && !context.mmTablet ? const EdgeInsets.all(2) : context.mmToolbarPadding,
+      padding: compact && !context.mmTouch && !context.mmTouchPlatform
+          ? const EdgeInsets.all(2)
+          : context.mmToolbarPadding,
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
@@ -148,7 +150,7 @@ class MMToolbarButton extends StatelessWidget {
     final c = context.mmColors;
     final t = context.mmText;
     final dock = MMThumbDockScope.of(context);
-    final size = compact && !dock && !context.mmTouch && !context.mmTablet
+    final size = compact && !dock && !context.mmTouch && !context.mmTouchPlatform
         ? const Size(30, 26)
         : context.mmToolbarButton;
     return MMInteractive(
@@ -168,15 +170,15 @@ class MMToolbarButton extends StatelessWidget {
         return MMControlFrame(
           child: AnimatedContainer(
             duration: MMMotion.quick,
-            height: context.mmTablet ? MMSizes.tabletControlVisual : size.height,
-            constraints: BoxConstraints(minWidth: context.mmTablet ? MMSizes.tabletControlVisual : size.width),
+            height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : size.height,
+            constraints: BoxConstraints(minWidth: context.mmTouchPlatform ? MMSizes.tabletControlVisual : size.width),
             padding: EdgeInsets.symmetric(horizontal: label != null ? 10 : (count > 0 ? MMSpacing.xs : 0)),
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(
                 dock
                     ? 22
-                    : context.mmTablet
+                    : context.mmTouchPlatform
                     ? MMSizes.tabletControlVisual / 2
                     : MMRadii.capsuleButton,
               ),
@@ -191,7 +193,7 @@ class MMToolbarButton extends StatelessWidget {
                     icon,
                     size: dock
                         ? 20
-                        : context.mmTablet
+                        : context.mmTouchPlatform
                         ? MMSizes.tabletToolbarIcon
                         : 16,
                     color: fg,
@@ -228,7 +230,7 @@ class MMToolbarDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 18,
-      margin: EdgeInsets.symmetric(horizontal: context.mmTablet ? (MMToolbarSpacing.group - 1) / 2 : 4),
+      margin: EdgeInsets.symmetric(horizontal: context.mmTouchPlatform ? (MMToolbarSpacing.group - 1) / 2 : 4),
       color: context.mmColors.separator,
     );
   }

@@ -9,3 +9,4 @@ export 'src/testing/in_memory_study_set_repository.dart';
 export 'src/testing/in_memory_vocabulary_repository.dart';
 
 export 'src/testing/in_memory_translation_store.dart';
+export 'src/testing/map_generator.dart';

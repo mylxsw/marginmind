@@ -211,7 +211,7 @@ class ReaderCompareMenu extends ConsumerWidget {
                 child: Icon(
                   MMIcons.compare,
                   semanticLabel: l.compareReading,
-                  size: context.mmTablet ? MMSizes.tabletToolbarIcon : MMSpacing.l,
+                  size: context.mmTouchPlatform ? MMSizes.tabletToolbarIcon : MMSpacing.l,
                   color: !enabled
                       ? c.label.withValues(alpha: .3)
                       : pair != null

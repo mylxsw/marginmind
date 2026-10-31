@@ -1,0 +1,14 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 en: all sections and large text stay usable
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 en: all sections and large text stay usable
+00:01 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: iPhone 402×874: page controls leave the first content line clear
+00:01 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 zh: all sections and large text stay usable
+00:01 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: Android portrait: library title fits and search still filters
+00:01 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 390.0 en: all sections and large text stay usable
+00:01 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: Android portrait: page controls leave the first content line clear
+00:01 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 390.0 zh: all sections and large text stay usable
+00:02 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: iPhone landscape 874×402: library title fits and search still filters
+00:02 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: iPhone landscape 874×402: page controls leave the first content line clear
+00:02 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: Android landscape: library title fits and search still filters
+00:02 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: Android landscape: page controls leave the first content line clear
+00:02 +12: All tests passed!

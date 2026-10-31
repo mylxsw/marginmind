@@ -496,7 +496,7 @@ class _RatingButton extends StatelessWidget {
           duration: MMMotion.quick,
           width: touch ? null : 104,
           height: touch ? MMSizes.reviewRatingTouch : null,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: touch ? 4 : 0),
           decoration: BoxDecoration(
             color: primary ? c.accentFill : (s.hovered ? c.hover : c.fill),
             borderRadius: BorderRadius.circular(12),
@@ -505,9 +505,19 @@ class _RatingButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(label, style: (touch ? t.title3 : t.headline).copyWith(color: fg)),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: (touch ? t.title3 : t.headline).copyWith(color: fg),
+              ),
               const SizedBox(height: 2),
-              Text(interval, style: t.footnote.copyWith(color: primary ? c.onAccent.withValues(alpha: 0.85) : null)),
+              Text(
+                interval,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: t.footnote.copyWith(color: primary ? c.onAccent.withValues(alpha: 0.85) : null),
+              ),
             ],
           ),
         );

@@ -294,6 +294,8 @@ class _OperationRow extends StatelessWidget {
       MapEditKind.addTopic || MapEditKind.addNote || MapEditKind.addReviewCard => ('+', c.positive),
       MapEditKind.move => ('→', c.accent),
       MapEditKind.rename => ('✎', c.caution),
+      MapEditKind.addExcerpt => ('+', c.positive),
+      MapEditKind.remove => ('−', c.caution),
     };
     final off = !checked && !stale;
     return MouseRegion(

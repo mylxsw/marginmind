@@ -85,28 +85,52 @@ class MMSettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final row = SizedBox(
-      height: context.mmTablet && height < 52 ? 52 : height,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Row(
-          children: [
-            if (leading != null)
-              Expanded(child: leading!)
-            else if (label != null)
-              Padding(
-                padding: const EdgeInsets.only(right: MMSpacing.m),
-                child: Text(label!, maxLines: 1, style: context.mmText.body.copyWith(color: context.mmColors.label)),
-              ),
-            if (leading == null)
-              Expanded(
-                child: Align(alignment: Alignment.centerRight, child: trailing),
-              )
-            else
-              trailing,
-          ],
-        ),
-      ),
+    final row = LayoutBuilder(
+      builder: (context, constraints) {
+        final largeText = MediaQuery.textScalerOf(context).scale(13) > 15;
+        final stacked = context.mmTouchPlatform && constraints.maxWidth < (largeText ? 480 : 300);
+        if (stacked && (leading != null || label != null)) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: MMSpacing.s),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                leading ?? Text(label!, style: context.mmText.body),
+                const SizedBox(height: MMSpacing.xs),
+                Align(alignment: Alignment.centerRight, child: trailing),
+              ],
+            ),
+          );
+        }
+        return SizedBox(
+          height: context.mmTouchPlatform && height < 52 ? 52 : height,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: [
+                if (leading != null)
+                  Expanded(child: leading!)
+                else if (label != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: MMSpacing.m),
+                    child: Text(
+                      label!,
+                      maxLines: 1,
+                      style: context.mmText.body.copyWith(color: context.mmColors.label),
+                    ),
+                  ),
+                if (leading == null)
+                  Expanded(
+                    child: Align(alignment: Alignment.centerRight, child: trailing),
+                  )
+                else
+                  trailing,
+              ],
+            ),
+          ),
+        );
+      },
     );
     if (onTap == null) return row;
     return MMInteractive(onTap: onTap, semanticLabel: label, builder: (context, s) => row);
@@ -161,11 +185,11 @@ class MMPopUpButton<T> extends StatelessWidget {
         child: AnimatedContainer(
           duration: MMMotion.quick,
           constraints: BoxConstraints(maxWidth: maxWidth),
-          height: context.mmTablet ? MMSizes.tabletControlVisual : 22,
+          height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : 22,
           padding: const EdgeInsets.only(left: MMSpacing.s, right: MMSpacing.xs),
           decoration: BoxDecoration(
             color: s.hovered ? c.fill : c.quaternaryFill,
-            borderRadius: BorderRadius.circular(context.mmTablet ? MMRadii.field : 6),
+            borderRadius: BorderRadius.circular(context.mmTouchPlatform ? MMRadii.field : 6),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -179,7 +203,7 @@ class MMPopUpButton<T> extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: MMSpacing.xs),
-              Icon(MMIcons.chevronUpDown, size: context.mmTablet ? 13 : 11, color: c.icon),
+              Icon(MMIcons.chevronUpDown, size: context.mmTouchPlatform ? 13 : 11, color: c.icon),
             ],
           ),
         ),

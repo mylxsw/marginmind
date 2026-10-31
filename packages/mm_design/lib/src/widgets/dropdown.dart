@@ -66,7 +66,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
     _activity = MMPopupActivity.maybeOf(context);
     final c = context.mmColors;
     // A dock keeps its geometry when input switches between pointer and touch.
-    final button = (MMThumbDockScope.of(context) || context.mmTouch || context.mmTablet)
+    final button = (MMThumbDockScope.of(context) || context.mmTouch || context.mmTouchPlatform)
         ? context.mmToolbarButton
         : MMSizes.readerToolbarButton;
     return Theme(
@@ -101,7 +101,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MMRadii.row)),
         ),
         iconSize: MMSpacing.l,
-        icon: context.mmTablet ? null : widget.icon,
+        icon: context.mmTouchPlatform ? null : widget.icon,
         color: c.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -123,8 +123,8 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
           widget.onSelected?.call(value);
         },
         itemBuilder: widget.itemBuilder,
-        borderRadius: context.mmTablet ? BorderRadius.circular(16) : null,
-        child: context.mmTablet
+        borderRadius: context.mmTouchPlatform ? BorderRadius.circular(16) : null,
+        child: context.mmTouchPlatform
             ? Semantics(
                 button: true,
                 enabled: widget.enabled,
@@ -217,7 +217,7 @@ class _MMDropdownItemState<T> extends PopupMenuItemState<T, MMDropdownItem<T>> {
       data: IconThemeData(size: MMSizes.dropdownIcon, color: context.mmColors.label),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          minHeight: context.mmTouch || context.mmTablet ? MMSizes.touchTarget : widget.height,
+          minHeight: context.mmTouch || context.mmTouchPlatform ? MMSizes.touchTarget : widget.height,
         ),
         child: super.build(context),
       ),

@@ -41,6 +41,12 @@ abstract final class MMRadii {
   /// tag or page chip on a draft node.
   static const double ideaSection = 10;
   static const double mapDraftTag = 4;
+
+  /// Mind map from a document (GUL-600): the empty state's icon tile and the
+  /// page chip of a generated topic (half its height). Diff tags reuse
+  /// [mapDraftTag].
+  static const double mapEmptyGlyph = 16;
+  static const double mapSourceChip = 9;
 }
 
 abstract final class MMSizes {
@@ -204,6 +210,27 @@ abstract final class MMSizes {
   static const double mapWorkingRing = 2;
   static const double mapWorkingHalo = 6;
   static const double mapWorkingHaloMax = 10;
+
+  /// Mind map from a document (GUL-600): the generate settings sheet and its
+  /// form (label column, document and chapter rows), the empty state, the
+  /// document banner, the update popover and diff panel, the source page
+  /// chip and its document dot, the header's "new material" badge, the lock
+  /// on protected topics and one segment of the reading progress.
+  static const double mapGenerateSheetWidth = 640;
+  static const double mapGenerateLabelWidth = 96;
+  static const double mapGenerateDocumentRow = 40;
+  static const double mapGenerateChapterRow = 30;
+  static const double mapEmptyStateWidth = 440;
+  static const double mapEmptyGlyph = 56;
+  static const double mapDocumentBanner = 44;
+  static const double mapUpdatePopoverWidth = 360;
+  static const double mapDiffPanelWidth = 340;
+  static const double mapSourceChip = 18;
+  static const double mapSourceDot = 6;
+  static const double mapUpdateBadge = 7;
+  static const double mapUpdateBadgeRing = 1.5;
+  static const double mapProtectedBadge = 18;
+  static const Size mapReadingStep = Size(16, 4);
 }
 
 /// Shared geometry for the source-anchored book reader.

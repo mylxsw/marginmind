@@ -102,7 +102,7 @@ class MMTextStyles {
 extension MMThemeContext on BuildContext {
   MMColors get mmColors => Theme.of(this).extension<MMColors>() ?? MMColors.light;
 
-  MMTextStyles get mmText => MMTextStyles(mmColors, tablet: mmTablet);
+  MMTextStyles get mmText => MMTextStyles(mmColors, tablet: mmTouchPlatform);
 
   /// Document and map content keep their designed size independently of chrome.
   MMTextStyles get mmContentText => MMTextStyles(mmColors);

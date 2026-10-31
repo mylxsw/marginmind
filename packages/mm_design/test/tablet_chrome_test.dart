@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
-  for (final tablet in [false, true]) {
-    testWidgets('${tablet ? 'tablet' : 'Mac'} control geometry and content typography', (t) async {
+  for (final device in ['Mac', 'tablet', 'phone']) {
+    final tablet = device != 'Mac';
+    testWidgets('$device control geometry and content typography', (t) async {
       var taps = 0;
       late BuildContext context;
       await t.pumpWidget(
@@ -13,6 +14,7 @@ void main() {
           theme: MMTheme.light(),
           home: MMInput(
             touchPlatform: tablet,
+            phone: device == 'phone',
             child: Builder(
               builder: (c) {
                 context = c;

@@ -257,4 +257,43 @@ import XCTest
   XCTAssertFalse(more.exists)
  }
 
+ func testPhoneKeyboardAndRotation() throws {
+  guard UIDevice.current.userInterfaceIdiom == .phone else { throw XCTSkip("Phone keyboard acceptance") }
+  continueAfterFailure = false
+  XCUIDevice.shared.orientation = .portrait
+  app.launch()
+  XCTAssertTrue(button("Show Sidebar").waitForExistence(timeout: 30))
+  let sample = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "示例：")).firstMatch
+  if sample.waitForExistence(timeout: 2) {
+   shot("01a-library-populated")
+   sample.tap()
+  } else { button("打开示例学习集").tap() }
+  XCTAssertTrue(button("脑图").waitForExistence(timeout: 15))
+  button("脑图").tap()
+  XCTAssertTrue(button("Style").waitForExistence(timeout: 10))
+  button("Style").tap()
+  let full = button("完整")
+  XCTAssertTrue(full.waitForExistence(timeout: 5))
+  XCTAssertGreaterThanOrEqual(full.frame.minX, app.frame.minX)
+  XCTAssertLessThanOrEqual(full.frame.maxX, app.frame.maxX)
+  shot("06c-map-style")
+  app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.25)).tap()
+  if button("阅读").exists { button("阅读").tap() }
+  XCTAssertTrue(button("Assistant").waitForExistence(timeout: 15))
+  button("Assistant").tap()
+  print("PHONE_INPUTS:\(app.textFields.debugDescription)")
+  let input = app.textFields.firstMatch
+  XCTAssertTrue(input.waitForExistence(timeout: 10))
+  input.tap()
+  XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
+  input.typeText("Explain active recall")
+  XCTAssertGreaterThan(app.keyboards.firstMatch.frame.height, 100)
+  XCTAssertLessThanOrEqual(input.frame.maxY, app.keyboards.firstMatch.frame.minY + 2)
+  XCTAssertTrue(button("Close").isHittable)
+  shot("15-native-keyboard")
+  button("Close").tap()
+  orient(.landscapeLeft)
+  shot("16-native-landscape")
+  orient(.portrait)
+ }
 }

@@ -122,13 +122,13 @@ class _StarButton extends StatelessWidget {
       builder: (context, s) => MMControlFrame(
         child: MMGlass(
           blurSigma: MMInput.of(context).touchPlatform ? 0 : 24,
-          borderRadius: BorderRadius.circular(context.mmTablet ? 16 : 13),
+          borderRadius: BorderRadius.circular(context.mmTouchPlatform ? 16 : 13),
           child: SizedBox(
-            width: context.mmTablet ? MMSizes.tabletControlVisual : 26,
-            height: context.mmTablet ? MMSizes.tabletControlVisual : 26,
+            width: context.mmTouchPlatform ? MMSizes.tabletControlVisual : 26,
+            height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : 26,
             child: Icon(
               starred ? MMIcons.starFill : MMIcons.star,
-              size: context.mmTablet ? MMSizes.tabletToolbarIcon : 13,
+              size: context.mmTouchPlatform ? MMSizes.tabletToolbarIcon : 13,
               color: starred ? const Color(0xFFC79A00) : context.mmColors.label,
             ),
           ),

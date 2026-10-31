@@ -32,6 +32,10 @@ abstract final class MMMotion {
   /// HUD capsule display time.
   static const hud = Duration(milliseconds: 2400);
 
+  /// One breath of the chapter skeleton being read (mind map from a
+  /// document): opacity 1 → 0.4 → 1.
+  static const breathe = Duration(milliseconds: 1200);
+
   static const Curve quickCurve = Curves.easeOut;
   static const Curve standardCurve = Curves.easeInOut;
 

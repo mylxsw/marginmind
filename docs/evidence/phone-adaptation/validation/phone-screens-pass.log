@@ -1,0 +1,27 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/phone_adaptation_test.dart
+Running Xcode build...
+Xcode build done.                                           24.4s
+00:00 +0: phone screens remain usable with the shared tablet design
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Application Support/Library/sets/0004f49427400f48bed8834fbb322cc3.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (5 ms)
+PHONE_SHOT:06c-map-style:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:06d-map-outline:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:06e-map-export:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:07-workspace-sidebar:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:08-note-setup:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:08a-study-note:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:08b-note-export:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:09-vocabulary:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:09a-vocabulary-detail:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:10-review:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:10a-review-answer:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:11-statistics:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Application Support/Library/sets/0004f49427400f48bed8834fbb322cc3.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (3 ms)
+PHONE_SHOT:11a-web-browser:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:11b-web-conversion:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:12-reader-dark:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PHONE_SHOT:13-map-dark:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Application Support/Library/sets/0004f49427400f48bed8834fbb322cc3.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (3 ms)
+PHONE_SHOT:14-reader-landscape:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Caches/phone-ui-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/667651A7-7CD9-4FAA-A662-B5D71513A822/Library/Application Support/Library/sets/0004f49427400f48bed8834fbb322cc3.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (2 ms)
+02:50 +1: (tearDownAll)
+02:51 +1: All tests passed!

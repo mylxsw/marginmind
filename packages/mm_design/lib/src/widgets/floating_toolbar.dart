@@ -90,10 +90,10 @@ class MMFloatingToolbarSwatch extends StatelessWidget {
       builder: (context, s) => MMControlFrame(
         child: AnimatedContainer(
           duration: MMMotion.quick,
-          width: context.mmTablet
+          width: context.mmTouchPlatform
               ? MMSizes.tabletControlVisual
               : (context.mmTouch ? MMSizes.touchTarget : MMSizes.floatingToolbarColor),
-          height: context.mmTablet
+          height: context.mmTouchPlatform
               ? MMSizes.tabletControlVisual
               : (context.mmTouch ? MMSizes.touchTarget : MMSizes.toolbarButton.height),
           alignment: Alignment.center,
@@ -103,7 +103,7 @@ class MMFloatingToolbarSwatch extends StatelessWidget {
                 : s.hovered
                 ? c.hover
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(context.mmTablet ? 16 : MMRadii.capsuleButton),
+            borderRadius: BorderRadius.circular(context.mmTouchPlatform ? 16 : MMRadii.capsuleButton),
           ),
           child: !c.flat
               ? Container(
@@ -165,8 +165,8 @@ class MMFloatingToolbarStrokeWidth extends StatelessWidget {
       builder: (context, s) => MMControlFrame(
         child: AnimatedContainer(
           duration: MMMotion.quick,
-          width: context.mmTablet ? MMSizes.tabletControlVisual : MMSizes.floatingToolbarColor,
-          height: context.mmTablet ? MMSizes.tabletControlVisual : MMSizes.floatingToolbarColor,
+          width: context.mmTouchPlatform ? MMSizes.tabletControlVisual : MMSizes.floatingToolbarColor,
+          height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : MMSizes.floatingToolbarColor,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected

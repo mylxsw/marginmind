@@ -34,8 +34,8 @@ class MMToolbarPreviewButton extends StatelessWidget {
       builder: (context, s) => MMControlFrame(
         child: AnimatedContainer(
           duration: MMMotion.quick,
-          width: context.mmTablet ? MMSizes.tabletControlVisual : context.mmToolbarButton.width,
-          height: context.mmTablet ? MMSizes.tabletControlVisual : context.mmToolbarButton.height,
+          width: context.mmTouchPlatform ? MMSizes.tabletControlVisual : context.mmToolbarButton.width,
+          height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : context.mmToolbarButton.height,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
@@ -45,7 +45,7 @@ class MMToolbarPreviewButton extends StatelessWidget {
                 : s.hovered
                 ? c.hover
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(context.mmTablet ? 16 : MMRadii.capsuleButton),
+            borderRadius: BorderRadius.circular(context.mmTouchPlatform ? 16 : MMRadii.capsuleButton),
             border: s.focused ? Border.all(color: c.accent, width: 2) : null,
           ),
           child: preview(

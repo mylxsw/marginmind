@@ -18,6 +18,7 @@ class ContinueCard extends StatelessWidget {
     final t = context.mmText;
     final l = context.l10n;
     final position = set.lastPosition;
+    final phone = MMInput.of(context).phone;
     return MMInteractive(
       onTap: onOpen,
       builder: (context, s) => AnimatedContainer(
@@ -43,7 +44,17 @@ class ContinueCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(set.title, style: t.headline, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(set.title, style: t.headline, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                      if (phone && set.dueCount > 0) ...[
+                        const SizedBox(width: 6),
+                        MMBadge(l.dueBadge(set.dueCount), prominent: true),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 3),
                   Text(
                     position == null
@@ -66,7 +77,10 @@ class ContinueCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (set.dueCount > 0) ...[const SizedBox(width: 10), MMBadge(l.dueBadge(set.dueCount), prominent: true)],
+            if (!phone && set.dueCount > 0) ...[
+              const SizedBox(width: 10),
+              MMBadge(l.dueBadge(set.dueCount), prominent: true),
+            ],
           ],
         ),
       ),

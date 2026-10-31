@@ -3871,6 +3871,338 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapIdeaBusy => '模型正忙，请稍后再试';
 
   @override
+  String get mapGenerate => '生成脑图';
+
+  @override
+  String get mapGenerateMenu => '从文档生成…';
+
+  @override
+  String get mapGenerateDocumentMenu => '生成脑图…';
+
+  @override
+  String get mapGenerateUpdate => '更新';
+
+  @override
+  String get mapGenerateRunning => '生成中';
+
+  @override
+  String get mapGenerateReviewing => '审阅中';
+
+  @override
+  String get mapHasUpdates => '有新内容';
+
+  @override
+  String get mapHasMap => '已有脑图';
+
+  @override
+  String mapGenerateFrom(String document) {
+    return '从「$document」生成脑图';
+  }
+
+  @override
+  String get mapGenerateSettings => '设置';
+
+  @override
+  String get mapGenerateStart => '生成';
+
+  @override
+  String get mapGenerateBlank => '新建空白主题';
+
+  @override
+  String get mapGenerateSuggestExam => '侧重考试要点';
+
+  @override
+  String get mapGenerateSuggestExplain => '每个主题附一句解释';
+
+  @override
+  String get mapGenerateSuggestQuotes => '保留原文关键句';
+
+  @override
+  String get mapGenerateSuggestExamples => '举例说明';
+
+  @override
+  String get mapGenerateDocuments => '文档';
+
+  @override
+  String mapGeneratePages(int count) {
+    return '$count 页';
+  }
+
+  @override
+  String mapGenerateSegments(int count) {
+    return '分 $count 段阅读';
+  }
+
+  @override
+  String get mapGenerateNeedsOcr => '需先识别文字';
+
+  @override
+  String get mapGenerateWholeDocument => '全文';
+
+  @override
+  String mapGenerateChapterCount(int selected, int total) {
+    return '$selected / $total 章';
+  }
+
+  @override
+  String get mapGenerateOrganization => '组织方式';
+
+  @override
+  String get mapGenerateByChapter => '按原文章节';
+
+  @override
+  String get mapGenerateByTopic => '按主题重组';
+
+  @override
+  String get mapGenerateMergeByTopic => '按主题合并';
+
+  @override
+  String get mapGenerateByQuestion => '按问题组织';
+
+  @override
+  String get mapGenerateDetail => '详细程度';
+
+  @override
+  String get mapGenerateDetailBrief => '概要';
+
+  @override
+  String get mapGenerateDetailMedium => '适中';
+
+  @override
+  String get mapGenerateDetailFull => '详细';
+
+  @override
+  String mapGenerateEstimate(int levels, int count) {
+    return '$levels 层 · 约 $count 个主题';
+  }
+
+  @override
+  String get mapGenerateContent => '内容';
+
+  @override
+  String get mapGenerateMyMarks => '放入我的高亮和批注';
+
+  @override
+  String mapGenerateMarkCount(int count) {
+    return '$count 条';
+  }
+
+  @override
+  String get mapGenerateQuotes => '摘录原文关键句';
+
+  @override
+  String get mapGenerateTarget => '生成到';
+
+  @override
+  String get mapGenerateTargetNew => '新脑图';
+
+  @override
+  String get mapGenerateTargetBranch => '当前脑图的新分支';
+
+  @override
+  String mapGenerateTargetReplace(String title) {
+    return '替换「$title」';
+  }
+
+  @override
+  String get mapGenerateInstructions => '要求';
+
+  @override
+  String mapGenerateReading(String document) {
+    return '阅读「$document」';
+  }
+
+  @override
+  String get mapGenerateBuilding => '生成脑图';
+
+  @override
+  String mapGenerateTopicCount(int count) {
+    return '$count 个主题';
+  }
+
+  @override
+  String get mapGenerateQueued => '等待中';
+
+  @override
+  String mapGenerateChapterFailed(String chapter) {
+    return '「$chapter」未生成';
+  }
+
+  @override
+  String get mapGenerateBlocked => '先保留（↩）或放弃（Esc）这次生成';
+
+  @override
+  String mapGenerateCreated(String title, int count) {
+    return '已生成脑图「$title」 · $count 个主题';
+  }
+
+  @override
+  String get mapGenerateNothing => '没有得到可用的结构，换个组织方式试试';
+
+  @override
+  String get mapGenerateStoppedEmpty => '已停止，没有生成内容';
+
+  @override
+  String mapGenerateDraftSemantics(String title, int page, String state) {
+    return 'AI 草稿，$title，第 $page 页，$state';
+  }
+
+  @override
+  String mapGenerateReadProgress(int done, int total) {
+    return '已读 $done / $total 章';
+  }
+
+  @override
+  String mapGenerateReady(int count) {
+    return '可以审阅，$count 个主题';
+  }
+
+  @override
+  String mapSourceSemantics(String document, int page) {
+    return '$document，第 $page 页';
+  }
+
+  @override
+  String mapBannerNoMap(String document) {
+    return '「$document」还没有脑图';
+  }
+
+  @override
+  String get mapBannerGenerate => '生成新脑图';
+
+  @override
+  String get mapBannerMerge => '并入当前脑图';
+
+  @override
+  String get mapBannerNeedsOcr => '先识别文字才能生成';
+
+  @override
+  String mapFollowSwitched(String title) {
+    return '已切换到「$title」';
+  }
+
+  @override
+  String get mapUpdateTitle => '更新脑图';
+
+  @override
+  String get mapUpdateSources => '依据';
+
+  @override
+  String get mapUpdateAddDocument => '添加文档';
+
+  @override
+  String get mapUpdateSince => '上次生成之后';
+
+  @override
+  String get mapUpdateNewHighlights => '新增高亮';
+
+  @override
+  String get mapUpdateNewNotes => '新增批注';
+
+  @override
+  String get mapUpdateReadTo => '读到';
+
+  @override
+  String mapUpdateReadRange(int from, int to) {
+    return 'p.$from → p.$to';
+  }
+
+  @override
+  String get mapUpdateScope => '范围';
+
+  @override
+  String get mapUpdateScopeNew => '只处理新内容';
+
+  @override
+  String get mapUpdateScopeAll => '全文重新梳理';
+
+  @override
+  String mapUpdateProtected(int count) {
+    return '你改过、添加的 $count 个节点保持不变';
+  }
+
+  @override
+  String get mapUpdatePreview => '预览更改';
+
+  @override
+  String get mapUpdateNothing => '没有需要更新的内容';
+
+  @override
+  String get mapDiffAdded => '新增';
+
+  @override
+  String get mapDiffRenamed => '改名';
+
+  @override
+  String get mapDiffMoved => '移动';
+
+  @override
+  String get mapDiffRemoved => '建议删除';
+
+  @override
+  String get mapDiffTagNew => '新';
+
+  @override
+  String mapDiffTagMovedFrom(String from) {
+    return '移自 $from';
+  }
+
+  @override
+  String get mapDiffTagRemove => '建议删除';
+
+  @override
+  String mapDiffMoveRoute(String from, String to) {
+    return '从「$from」移到「$to」';
+  }
+
+  @override
+  String mapDiffExcerpt(String text) {
+    return '摘录：$text';
+  }
+
+  @override
+  String get mapDiffProtected => '受保护';
+
+  @override
+  String mapUpdateApply(int count) {
+    return '应用 $count 项';
+  }
+
+  @override
+  String mapUpdateApplied(int count) {
+    return '已更新 $count 处';
+  }
+
+  @override
+  String get mapUpdateBlocked => '先应用（↩）或放弃（Esc）这次更新';
+
+  @override
+  String mapDiffAddSemantics(String title) {
+    return '建议新增，$title';
+  }
+
+  @override
+  String mapDiffRenameSemantics(String old, String title) {
+    return '建议改名，$old 改为 $title';
+  }
+
+  @override
+  String mapDiffMoveSemantics(String title, String from, String to) {
+    return '建议移动，$title，从$from移到$to';
+  }
+
+  @override
+  String mapDiffRemoveSemantics(String title, String reason) {
+    return '建议删除，$title，$reason';
+  }
+
+  @override
+  String get settingsMapFollowDocument => '随文档切换脑图';
+
+  @override
+  String get settingsMapClearCache => '清除生成缓存';
+
+  @override
   String get notesTitle => '笔记';
 
   @override

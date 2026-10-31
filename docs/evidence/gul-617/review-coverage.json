@@ -1,0 +1,11 @@
+{
+  "review_base": "d9d687a60832332e0a9c7d886faebfb56eb1280b",
+  "merged_main": "6de92638af0c1fd61b70d084eb6db5688584e259",
+  "source": "packages/mm_assistant/lib/src/translation_scheduler.dart",
+  "new_covered": 12,
+  "new_lines": 12,
+  "new_percent": 100.0,
+  "scheduler_covered": 440,
+  "scheduler_lines": 463,
+  "scheduler_percent": 95.03
+}

@@ -65,7 +65,7 @@ class MMButton extends StatelessWidget {
             duration: MMMotion.quick,
             opacity: s.enabled ? 1 : 0.4,
             child: Container(
-              height: context.mmTablet ? MMSizes.tabletControlVisual : 30,
+              height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : 30,
               padding: EdgeInsets.symmetric(horizontal: variant == MMButtonVariant.plain ? 12 : 16),
               foregroundDecoration: c.flat && s.focused
                   ? BoxDecoration(
@@ -75,7 +75,7 @@ class MMButton extends StatelessWidget {
                   : null,
               decoration: BoxDecoration(
                 color: Color.alphaBlend(pressedOverlay, bg),
-                borderRadius: BorderRadius.circular(context.mmTablet ? MMSizes.tabletControlVisual / 2 : 15),
+                borderRadius: BorderRadius.circular(context.mmTouchPlatform ? MMSizes.tabletControlVisual / 2 : 15),
                 boxShadow: c.flat
                     ? null
                     : s.focused
@@ -86,7 +86,7 @@ class MMButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: context.mmTablet ? 16 : 14, color: fg),
+                    Icon(icon, size: context.mmTouchPlatform ? 16 : 14, color: fg),
                     const SizedBox(width: 6),
                   ],
                   // A label wider than the room it is given ends in an ellipsis.
@@ -143,15 +143,17 @@ class MMIconButton extends StatelessWidget {
       builder: (context, s) => MMControlFrame(
         child: AnimatedContainer(
           duration: MMMotion.quick,
-          width: context.mmTablet && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
-          height: context.mmTablet && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
+          width: context.mmTouchPlatform && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
+          height: context.mmTouchPlatform && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
           decoration: BoxDecoration(
             color: s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent),
-            borderRadius: BorderRadius.circular(context.mmTablet ? MMRadii.row : size / 3.5),
+            borderRadius: BorderRadius.circular(context.mmTouchPlatform ? MMRadii.row : size / 3.5),
           ),
           child: Icon(
             icon,
-            size: context.mmTablet && iconSize < MMSizes.tabletToolbarIcon ? MMSizes.tabletToolbarIcon : iconSize,
+            size: context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
+                ? MMSizes.tabletToolbarIcon
+                : iconSize,
             color: s.enabled ? (color ?? (selected ? c.accent : c.icon)) : c.icon.withValues(alpha: 0.3),
           ),
         ),

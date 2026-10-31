@@ -240,7 +240,16 @@ class AssistantTools {
               'type': 'object',
               'properties': {
                 'id': {'type': 'string'},
-                'kind': {'type': 'string', 'enum': MapEditKind.values.map((k) => k.name).toList()},
+                'kind': {
+                  'type': 'string',
+                  'enum': [
+                    MapEditKind.addTopic,
+                    MapEditKind.addNote,
+                    MapEditKind.addReviewCard,
+                    MapEditKind.move,
+                    MapEditKind.rename,
+                  ].map((k) => k.name).toList(),
+                },
                 for (final key in ['nodeId', 'parentId', 'title', 'body', 'question', 'answer'])
                   key: {'type': 'string'},
               },

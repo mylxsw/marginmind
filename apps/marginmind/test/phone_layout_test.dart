@@ -277,6 +277,8 @@ void main() {
 
     testWidgets('${phone.name}: long press opens an action sheet that back and Cancel close', (tester) async {
       await pumpPhone(tester, phone);
+      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .2);
+      await tester.pumpAndSettle();
       await tester.longPress(find.text('注意力与专注').last);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('mm-action-sheet')), findsOneWidget);
@@ -287,6 +289,8 @@ void main() {
       expect(find.byKey(const ValueKey('mm-action-sheet')), findsNothing);
       expect(find.byType(LibraryScreen), findsOneWidget);
 
+      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .2);
+      await tester.pumpAndSettle();
       await tester.longPress(find.text('注意力与专注').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancel'));
@@ -294,6 +298,8 @@ void main() {
       expect(find.byKey(const ValueKey('mm-action-sheet')), findsNothing);
 
       // Choosing an item runs it: Rename opens its sheet from the bottom.
+      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .2);
+      await tester.pumpAndSettle();
       await tester.longPress(find.text('注意力与专注').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Rename…'));
@@ -364,7 +370,10 @@ void main() {
       expect(sections, findsOneWidget);
       expect(tester.getRect(find.byKey(const ValueKey('settings-window'))).width, phone.size.width);
       for (final label in ['Reading', 'Models', 'Web Search', 'Voice Input', 'General']) {
-        await tester.tap(find.descendant(of: sections, matching: find.text(label)));
+        final section = find.descendant(of: sections, matching: find.text(label));
+        await tester.ensureVisible(section);
+        await tester.pumpAndSettle();
+        await tester.tap(section);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: label);
       }

@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 
 import '../content/editor.dart';
 import '../content/models.dart';
+import '../content/map_generation.dart';
 import '../content/research.dart';
 import '../content/study_set_content.dart';
 import 'proposals.dart';
@@ -41,10 +42,23 @@ class AssistantWrites {
   StudySetContent apply(StudySetContent content, MapEditProposal proposal, Set<String> selected) {
     if (proposal.studySetId != studySetId) throw ArgumentError('Wrong study set');
     if (content.assistantReceipts.any((r) => r.proposalId == proposal.id)) return content;
-    if (content.map(proposal.mapId) == null) throw StateError('Map no longer exists');
+    final newMap = proposal.createMap;
+    if (newMap != null) {
+      if (!proposal.isDocumentGeneration ||
+          newMap.id != proposal.mapId ||
+          content.map(newMap.id) != null ||
+          content.cards.any((c) => c.id == newMap.id)) {
+        throw ArgumentError('Invalid new map');
+      }
+    } else if (content.map(proposal.mapId) == null) {
+      throw StateError('Map no longer exists');
+    }
     if (assistantMapRevision(content, proposal.mapId) != proposal.baseRevision) throw StateError('Map has changed');
+    if (proposal.generation?.sources.any((s) => content.document(s.documentId) == null) ?? false) {
+      throw StateError('Source document no longer exists');
+    }
     final ids = proposal.operations.map((o) => o.id).toSet();
-    if ((!proposal.isExpansion && proposal.operations.length > 50) ||
+    if ((!proposal.isExpansion && !proposal.isDocumentGeneration && proposal.operations.length > 50) ||
         (proposal.isExpansion &&
             proposal.operations.any((o) => o.kind != MapEditKind.addTopic && o.kind != MapEditKind.move)) ||
         ids.length != proposal.operations.length ||
@@ -53,15 +67,39 @@ class AssistantWrites {
       throw ArgumentError('Invalid operation selection');
     }
     final editor = StudySetEditor(newId: newId, now: now, mapId: proposal.mapId);
-    var next = content;
+    var next = newMap == null ? content : content.copyWith(maps: [...content.maps, newMap.copyWith(generation: null)]);
+    final generated = Map<String, String>.of(content.map(proposal.mapId)?.generation?.generated ?? {});
+    final aiChanged = <String>{};
     final temporary = <String, String>{};
     final applied = <String>[], nodes = <String>[];
     final skipped = <String, String>{};
     final earlierAdds = <String>{};
-    for (final raw in proposal.operations) {
+    // Explicit child removals happen first; never cascade into unselected content.
+    int depth(String? id) {
+      var n = content.node(id ?? '', mapId: proposal.mapId), d = 0;
+      final seen = <String>{};
+      while (n != null && seen.add(n.cardId)) {
+        d++;
+        n = content.node(n.parentId ?? '', mapId: proposal.mapId);
+      }
+      return d;
+    }
+
+    final removals = proposal.operations.where((o) => o.kind == MapEditKind.remove).toList()
+      ..sort((a, b) => depth(b.nodeId).compareTo(depth(a.nodeId)));
+    final operations = [...proposal.operations.where((o) => o.kind != MapEditKind.remove), ...removals];
+    for (final raw in operations) {
       // Validate even constructed operations; model-side validation is insufficient.
-      final op = MapEditOperation.fromJson(raw.toJson().cast<String, dynamic>());
-      final adding = {MapEditKind.addTopic, MapEditKind.addNote, MapEditKind.addReviewCard}.contains(op.kind);
+      final op = MapEditOperation.fromJson(
+        raw.toJson().cast<String, dynamic>(),
+        documentGeneration: proposal.isDocumentGeneration,
+      );
+      final adding = {
+        MapEditKind.addTopic,
+        MapEditKind.addNote,
+        MapEditKind.addReviewCard,
+        MapEditKind.addExcerpt,
+      }.contains(op.kind);
       for (final ref in [op.parentId, op.nodeId]) {
         if (ref != null && ref.startsWith('new:') && !earlierAdds.contains(ref)) {
           throw ArgumentError('Invalid operation dependency');
@@ -78,6 +116,17 @@ class AssistantWrites {
         skipped[op.id] = 'Target no longer exists or dependency was not selected';
         continue;
       }
+      if (proposal.isDocumentGeneration &&
+          {MapEditKind.rename, MapEditKind.move, MapEditKind.remove}.contains(op.kind)) {
+        if (node == null ||
+            isMapNodeProtected(content, proposal.mapId, node) ||
+            // A shared title mutation would also edit a different map.
+            (op.kind == MapEditKind.rename &&
+                content.nodes.any((n) => n.cardId == node && n.mapId != proposal.mapId))) {
+          skipped[op.id] = 'Protected node';
+          continue;
+        }
+      }
       final destination = root ? null : parent;
       String? created;
       switch (op.kind) {
@@ -85,6 +134,38 @@ class AssistantWrites {
           final result = editor.addTopic(next, title: op.title!, parentId: destination);
           next = result.$1;
           created = result.$2.id;
+          if (op.source case final source?) {
+            final doc = next.document(source.documentId);
+            if (doc != null &&
+                source.page <= doc.pageCount &&
+                proposal.generation!.sources.any((s) => s.documentId == source.documentId)) {
+              next = next.copyWith(
+                cards: [for (final c in next.cards) c.id == created ? c.copyWith(source: source) : c],
+              );
+            }
+          }
+          aiChanged.add(created);
+        case MapEditKind.addExcerpt:
+          final annotation = next.annotation(op.annotationId!);
+          if (annotation == null || !proposal.generation!.sources.any((s) => s.documentId == annotation.documentId)) {
+            skipped[op.id] = 'Annotation no longer exists or is outside sources';
+            continue;
+          }
+          final existing = next.cardForAnnotation(op.annotationId!);
+          if (existing != null && next.node(existing.id, mapId: proposal.mapId) != null) {
+            skipped[op.id] = 'Annotation already placed';
+            continue;
+          }
+          final result = editor.attachCard(next, op.annotationId!, parentId: destination);
+          next = result.$1;
+          created = result.$2.id;
+        case MapEditKind.remove:
+          if (next.childrenOf(node, mapId: proposal.mapId).isNotEmpty) {
+            skipped[op.id] = 'Remove requires explicit removal of every child';
+            continue;
+          }
+          next = editor.removeFromMap(next, node!);
+          generated.remove(node);
         case MapEditKind.addNote || MapEditKind.addReviewCard:
           final result = editor.addNote(next, text: op.title ?? op.question!, parentId: destination);
           created = result.$2.id;
@@ -99,17 +180,33 @@ class AssistantWrites {
             throw ArgumentError('Move would create a cycle');
           }
           next = editor.move(next, node!, destination);
+          aiChanged.add(node);
         case MapEditKind.rename:
           final card = next.card(node!);
           next = card?.researchNoteId == null
               ? editor.rename(next, node, op.title!)
               : editor.editResearchNote(next, card!.researchNoteId!, title: op.title!);
+          aiChanged.add(node);
       }
       applied.add(op.id);
       if (created != null) {
         temporary['new:${op.id}'] = created;
         nodes.add(created);
       }
+    }
+    if (proposal.generation case final metadata?) {
+      if (applied.isEmpty) throw StateError('No applicable changes');
+      for (final id in aiChanged) {
+        final card = next.card(id), node = next.node(id, mapId: proposal.mapId);
+        if (card != null && node != null) generated[id] = generatedNodeHash(card, node);
+      }
+      // Never rebaseline untouched user changes or trust caller-supplied hashes.
+      next = next.copyWith(
+        maps: [
+          for (final m in next.maps)
+            m.id == proposal.mapId ? m.copyWith(generation: metadata.withGenerated(generated)) : m,
+        ],
+      );
     }
     final receipt = MapEditReceipt(
       proposalId: proposal.id,

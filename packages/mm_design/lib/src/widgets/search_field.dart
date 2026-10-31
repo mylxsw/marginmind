@@ -89,7 +89,7 @@ class _MMSearchFieldState extends State<MMSearchField> {
         },
       },
       child: Container(
-        height: context.mmTablet && widget.height < MMSizes.touchTarget ? MMSizes.touchTarget : widget.height,
+        height: context.mmTouchPlatform && widget.height < MMSizes.touchTarget ? MMSizes.touchTarget : widget.height,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: widget.filled
             ? BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.field))
@@ -108,7 +108,7 @@ class _MMSearchFieldState extends State<MMSearchField> {
                   onSubmitted: widget.onSubmitted,
                   style: t.body,
                   cursorWidth: 1.5,
-                  cursorHeight: context.mmTablet ? 19 : 15,
+                  cursorHeight: context.mmTouchPlatform ? 19 : 15,
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration.collapsed(hintText: widget.placeholder, hintStyle: t.bodySecondary),
                 ),
@@ -120,8 +120,8 @@ class _MMSearchFieldState extends State<MMSearchField> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 4),
                   child: SizedBox(
-                    width: context.mmTablet ? MMSizes.touchTarget : null,
-                    height: context.mmTablet ? MMSizes.touchTarget : null,
+                    width: context.mmTouchPlatform ? MMSizes.touchTarget : null,
+                    height: context.mmTouchPlatform ? MMSizes.touchTarget : null,
                     child: Icon(MMIcons.clear, size: 14, color: c.secondaryLabel),
                   ),
                 ),
@@ -261,7 +261,7 @@ class _MMTextFieldState extends State<MMTextField> {
         textAlign: widget.textAlign,
         keyboardType: widget.maxLines == 1 ? null : TextInputType.multiline,
         cursorWidth: 1.5,
-        cursorHeight: context.mmTablet ? 19 : 15,
+        cursorHeight: context.mmTouchPlatform ? 19 : 15,
         decoration: InputDecoration.collapsed(
           hintText: widget.placeholder,
           hintStyle: t.bodySecondary,
@@ -269,9 +269,9 @@ class _MMTextFieldState extends State<MMTextField> {
       ),
     );
     final field = Container(
-      height: widget.maxLines == 1 ? (context.mmTablet ? MMSizes.touchTarget : MMSizes.field) : null,
+      height: widget.maxLines == 1 ? (context.mmTouchPlatform ? MMSizes.touchTarget : MMSizes.field) : null,
       constraints: BoxConstraints(
-        minHeight: context.mmTablet ? MMSizes.touchTarget : MMSizes.field,
+        minHeight: context.mmTouchPlatform ? MMSizes.touchTarget : MMSizes.field,
         maxWidth: widget._settings ? MMSizes.settingsFieldWidth : double.infinity,
       ),
       padding: EdgeInsets.symmetric(
@@ -297,7 +297,7 @@ class _MMTextFieldState extends State<MMTextField> {
       container: true,
       label: widget.semanticLabel,
       textField: true,
-      child: context.mmTablet
+      child: context.mmTouchPlatform
           ? GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: widget.enabled ? _focus.requestFocus : null,
