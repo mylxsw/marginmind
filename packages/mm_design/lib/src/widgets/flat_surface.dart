@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 
 /// Workspace material, captured by routes and overlay menus.
 class MMFlatSurface extends InheritedTheme {
-  const MMFlatSurface({super.key, required super.child});
+  const MMFlatSurface({super.key, this.enabled = true, required super.child});
 
-  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MMFlatSurface>() != null;
+  /// A local opt-out for floating controls within an otherwise flat workspace.
+  final bool enabled;
+
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MMFlatSurface>()?.enabled ?? false;
 
   @override
-  bool updateShouldNotify(MMFlatSurface oldWidget) => false;
+  bool updateShouldNotify(MMFlatSurface oldWidget) => oldWidget.enabled != enabled;
 
   @override
-  Widget wrap(BuildContext context, Widget child) => MMFlatSurface(child: child);
+  Widget wrap(BuildContext context, Widget child) => MMFlatSurface(enabled: enabled, child: child);
 }

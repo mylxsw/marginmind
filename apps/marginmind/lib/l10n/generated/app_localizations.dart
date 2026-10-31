@@ -8719,6 +8719,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opaque'**
   String get phoneGlassOpaque;
+
+  /// No description provided for @phoneReaderReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get phoneReaderReading;
+
+  /// No description provided for @phoneReaderTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotation tools'**
+  String get phoneReaderTools;
+
+  /// No description provided for @phoneReaderCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get phoneReaderCollapse;
+
+  /// No description provided for @phoneReaderExitTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish annotating'**
+  String get phoneReaderExitTools;
+
+  /// No description provided for @phoneReaderPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String phoneReaderPercent(int percent);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

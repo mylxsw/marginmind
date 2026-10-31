@@ -1764,5 +1764,11 @@
   "phoneGlassTitle": "手机 Liquid Glass",
   "phoneGlassRegular": "标准",
   "phoneGlassThick": "厚材质",
-  "phoneGlassOpaque": "不透明"
+  "phoneGlassOpaque": "不透明",
+  "phoneReaderReading": "阅读",
+  "phoneReaderTools": "标注工具",
+  "phoneReaderCollapse": "收起",
+  "phoneReaderExitTools": "结束标注",
+  "phoneReaderPercent": "{percent}%",
+  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}}
 }

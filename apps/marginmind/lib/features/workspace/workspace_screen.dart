@@ -8,6 +8,9 @@ import '../../app/app.dart';
 import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
 import 'workspace_chrome_controller.dart';
+import 'phone_reader_controls_controller.dart';
+import 'widgets/phone_reader_controls.dart';
+import 'widgets/reader_toolbar.dart';
 import 'reader_crop.dart';
 import '../../app/providers.dart';
 import '../../shared/card_image.dart';
@@ -44,6 +47,34 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   final _searchFocus = FocusNode();
   final _paneChrome = WorkspacePaneChromeController();
   final _chrome = WorkspaceChromeController();
+  late final PhoneReaderControlsController _phoneControls;
+  bool _phoneCompact = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefs = ref.read(sharedPreferencesProvider);
+    _phoneControls = PhoneReaderControlsController(
+      initiallyDockedRight: prefs.getBool('phoneReader.dockRight') ?? true,
+      initiallyArmed: ref.read(workspaceProvider(widget.studySetId)).tool != AnnotationTool.select,
+      onDockChanged: (right) => prefs.setBool('phoneReader.dockRight', right),
+    );
+    _phoneControls.addListener(_phoneControlsChanged);
+    _chrome.onReadingScroll = () {
+      if (_phoneCompact) _phoneControls.onReadingScroll();
+    };
+  }
+
+  void _phoneControlsChanged() {
+    if (_phoneCompact && _phoneControls.interacting) {
+      _chrome.hold(
+        _phoneControls,
+        reveal: _phoneControls.slot == PhoneReaderSlot.tools || _phoneControls.slot == PhoneReaderSlot.scrub,
+      );
+    } else {
+      _chrome.release(_phoneControls);
+    }
+  }
 
   /// Whether the sidebar drawer of a touch window is out. Touch windows
   /// start with it in, whatever the saved sidebar choice.
@@ -58,6 +89,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   void dispose() {
     _searchFocus.dispose();
     _paneChrome.dispose();
+    _phoneControls.dispose();
     _chrome.dispose();
     super.dispose();
   }
@@ -66,6 +98,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   Widget build(BuildContext context) {
     final provider = workspaceProvider(widget.studySetId);
     final touchPlatform = MMInput.of(context).touchPlatform;
+    _phoneCompact = usePhoneReaderControls(context);
+    Widget surface(Widget child) => MMFlatSurface(child: child);
     ref.listen(focusRequestsProvider, (_, next) {
       if (next?.$1 != FocusTarget.search) return;
       touchPlatform ? _setDrawer(true) : ref.read(provider.notifier).showSidebar();
@@ -125,7 +159,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       if (_drawer) 'drawer',
       if (state.panel != null) 'panel',
       if (state.pending != null ||
-          state.tool != AnnotationTool.select ||
+          (!_phoneCompact && state.tool != AnnotationTool.select) ||
           state.findVisible ||
           state.editingCardId != null ||
           state.editingMarkId != null ||
@@ -137,18 +171,21 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       for (final reason in ['accessibility', 'keyboard', 'drawer', 'panel', 'editing']) {
         holds.contains(reason) ? _chrome.hold(reason) : _chrome.release(reason);
       }
+      _phoneControls.reset(state.activeDocumentId, armed: state.tool != AnnotationTool.select);
+      _phoneControlsChanged();
       _chrome.reset(geometry);
     });
-    return WorkspaceChromeScope(
-      controller: _chrome,
+    return PhoneReaderWorkspaceScope(
+      controls: _phoneControls,
+      chrome: _chrome,
       child: MMPopupActivity(
         onChanged: (owner, open) => open ? _chrome.hold(owner) : _chrome.release(owner),
         child: Theme(
           data: Theme.of(context).copyWith(extensions: [context.mmColors.copyWith(flat: true)]),
           child: WorkspacePaneChromeScope(
             controller: _paneChrome,
-            child: MMFlatSurface(
-              child: AssistantScope(
+            child: surface(
+              AssistantScope(
                 studySetId: widget.studySetId,
                 child: CardImageScope(
                   resolve: controller.imagePath,
@@ -603,93 +640,186 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             collapseWhenNarrow: stacked || state.panel != RightPanel.assistant,
           ),
           child: phone
-              ? Stack(
-                  children: [
-                    Positioned.fill(
-                      child: MMChromeInsets(
-                        insets: const EdgeInsets.only(
-                          top: MMSizes.phoneWorkspaceToolbarHeight,
-                          bottom: MMSizes.thumbDock + 30,
-                        ),
-                        child: body,
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: WorkspaceChromeBar(
-                        child: SizedBox(
-                          height: MMSizes.phoneWorkspaceToolbarHeight,
-                          child: Container(
-                            color: context.mmColors.windowBackground,
-                            foregroundDecoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: context.mmColors.separator, width: MMSizes.hairline),
+              ? usePhoneReaderControls(context)
+                    ? Stack(
+                        children: [
+                          Positioned.fill(
+                            child: MMChromeInsets(
+                              insets: const EdgeInsets.only(
+                                top: MMSizes.phoneWorkspaceToolbarHeight,
+                                bottom: MMSizes.phoneToolBarHeight + MMPhoneReaderLayout.bottom,
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                ?leading,
-                                Expanded(
-                                  child: MMSegmentedControl<MMSplitMode>(
-                                    key: const ValueKey('workspace-pane-switch'),
-                                    expand: true,
-                                    segments: [
-                                      MMSegment(value: MMSplitMode.primary, label: l.paneSource),
-                                      MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
-                                    ],
-                                    value: layout == MMSplitMode.secondary
-                                        ? MMSplitMode.secondary
-                                        : MMSplitMode.primary,
-                                    onChanged: controller.setLayout,
-                                  ),
-                                ),
-                                if (MMPlatformCapabilities.current.assistant)
-                                  MMToolbarButton(
-                                    key: const ValueKey('toolbar-assistant'),
-                                    icon: MMIcons.ai,
-                                    tooltip: l.assistant,
-                                    tint: context.mmColors.research,
-                                    onPressed: () => toggleAssistant(ref, widget.studySetId),
-                                  ),
-                                MMDropdownButton<VoidCallback>(
-                                  key: const ValueKey('phone-workspace-more'),
-                                  tooltip: l.moreTools,
-                                  onOpened: () => _chrome.hold('phone-menu'),
-                                  onClosed: () => _chrome.release('phone-menu'),
-                                  onSelected: (action) => action(),
-                                  itemBuilder: (_) => [
-                                    MMDropdownItem(
-                                      key: const ValueKey('workspace-command-organize-note'),
-                                      value: () => showNoteSetupSheet(context, ref, widget.studySetId),
-                                      child: Text(l.organizeNotes),
-                                    ),
-                                    MMDropdownItem(
-                                      enabled: ref.read(studySetProvider(widget.studySetId)) != null,
-                                      value: () => ref.read(navigationProvider.notifier).startReview(widget.studySetId),
-                                      child: Text(l.review),
-                                    ),
-                                    MMDropdownItem(
-                                      value: () => ref
-                                          .read(navigationProvider.notifier)
-                                          .showVocabulary(studySetId: widget.studySetId),
-                                      child: Text(l.vocabularyTitle),
-                                    ),
-                                    MMDropdownItem(
-                                      value: () => ref.read(navigationProvider.notifier).showLibrary(),
-                                      child: Text(l.librarySection),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                              child: body,
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: PhoneReaderTopControls(
+                              leading: SizedBox.square(
+                                dimension: MMSizes.phoneTopControl,
+                                child: MMIconButton(
+                                  icon: MMIcons.sidebar,
+                                  tooltip: l.showSidebar,
+                                  size: context.mmToolbarIcon,
+                                  onPressed: () => _setDrawer(true),
+                                ),
+                              ),
+                              mode: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
+                              onMode: (mode) {
+                                _chrome.reveal();
+                                controller.setLayout(mode);
+                              },
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (MMPlatformCapabilities.current.assistant)
+                                    SizedBox.square(
+                                      dimension: MMSizes.phoneTopControl,
+                                      child: MMToolbarButton(
+                                        key: const ValueKey('toolbar-assistant'),
+                                        icon: MMIcons.ai,
+                                        tooltip: l.assistant,
+                                        tint: context.mmColors.research,
+                                        onPressed: () => toggleAssistant(ref, widget.studySetId),
+                                      ),
+                                    ),
+                                  SizedBox.square(
+                                    dimension: MMSizes.phoneTopControl,
+                                    child: MMDropdownButton<VoidCallback>(
+                                      key: const ValueKey('phone-workspace-more'),
+                                      tooltip: l.moreTools,
+                                      icon: const Icon(MMIcons.more),
+                                      onOpened: () => _chrome.hold('phone-menu'),
+                                      onClosed: () => _chrome.release('phone-menu'),
+                                      onSelected: (action) => action(),
+                                      itemBuilder: (_) => phoneReaderMenuEntries(
+                                        context,
+                                        ref,
+                                        widget.studySetId,
+                                        _paneChrome,
+                                        _phoneControls,
+                                        workspaceEntries: [
+                                          MMDropdownItem(
+                                            key: const ValueKey('workspace-command-organize-note'),
+                                            value: () => showNoteSetupSheet(context, ref, widget.studySetId),
+                                            child: Text(l.organizeNotes),
+                                          ),
+                                          MMDropdownItem(
+                                            enabled: ref.read(studySetProvider(widget.studySetId)) != null,
+                                            value: () =>
+                                                ref.read(navigationProvider.notifier).startReview(widget.studySetId),
+                                            child: Text(l.review),
+                                          ),
+                                          MMDropdownItem(
+                                            value: () => ref
+                                                .read(navigationProvider.notifier)
+                                                .showVocabulary(studySetId: widget.studySetId),
+                                            child: Text(l.vocabularyTitle),
+                                          ),
+                                          MMDropdownItem(
+                                            value: () => ref.read(navigationProvider.notifier).showLibrary(),
+                                            child: Text(l.librarySection),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Stack(
+                        children: [
+                          Positioned.fill(
+                            child: MMChromeInsets(
+                              insets: const EdgeInsets.only(
+                                top: MMSizes.phoneWorkspaceToolbarHeight,
+                                bottom: MMSizes.thumbDock + 30,
+                              ),
+                              child: body,
+                            ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: WorkspaceChromeBar(
+                              child: SizedBox(
+                                height: MMSizes.phoneWorkspaceToolbarHeight,
+                                child: Container(
+                                  color: context.mmColors.windowBackground,
+                                  foregroundDecoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(color: context.mmColors.separator, width: MMSizes.hairline),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ?leading,
+                                      Expanded(
+                                        child: MMSegmentedControl<MMSplitMode>(
+                                          key: const ValueKey('workspace-pane-switch'),
+                                          expand: true,
+                                          segments: [
+                                            MMSegment(value: MMSplitMode.primary, label: l.paneSource),
+                                            MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
+                                          ],
+                                          value: layout == MMSplitMode.secondary
+                                              ? MMSplitMode.secondary
+                                              : MMSplitMode.primary,
+                                          onChanged: controller.setLayout,
+                                        ),
+                                      ),
+                                      if (MMPlatformCapabilities.current.assistant)
+                                        MMToolbarButton(
+                                          key: const ValueKey('toolbar-assistant'),
+                                          icon: MMIcons.ai,
+                                          tooltip: l.assistant,
+                                          tint: context.mmColors.research,
+                                          onPressed: () => toggleAssistant(ref, widget.studySetId),
+                                        ),
+                                      MMDropdownButton<VoidCallback>(
+                                        key: const ValueKey('phone-workspace-more'),
+                                        tooltip: l.moreTools,
+                                        onOpened: () => _chrome.hold('phone-menu'),
+                                        onClosed: () => _chrome.release('phone-menu'),
+                                        onSelected: (action) => action(),
+                                        itemBuilder: (_) => [
+                                          MMDropdownItem(
+                                            key: const ValueKey('workspace-command-organize-note'),
+                                            value: () => showNoteSetupSheet(context, ref, widget.studySetId),
+                                            child: Text(l.organizeNotes),
+                                          ),
+                                          MMDropdownItem(
+                                            enabled: ref.read(studySetProvider(widget.studySetId)) != null,
+                                            value: () =>
+                                                ref.read(navigationProvider.notifier).startReview(widget.studySetId),
+                                            child: Text(l.review),
+                                          ),
+                                          MMDropdownItem(
+                                            value: () => ref
+                                                .read(navigationProvider.notifier)
+                                                .showVocabulary(studySetId: widget.studySetId),
+                                            child: Text(l.vocabularyTitle),
+                                          ),
+                                          MMDropdownItem(
+                                            value: () => ref.read(navigationProvider.notifier).showLibrary(),
+                                            child: Text(l.librarySection),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
               : body,
         ),
       );

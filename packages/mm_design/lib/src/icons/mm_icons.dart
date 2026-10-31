@@ -154,6 +154,7 @@ abstract final class MMIcons {
 /// Lucide vocabulary for reader commands, including toolbar overflow entries.
 abstract final class MMReaderIcons {
   static const select = LucideIcons.mousePointer2;
+  static const underline = LucideIcons.underline;
   static const pen = LucideIcons.pencil;
   static const area = LucideIcons.scan;
   static const syncToMap = LucideIcons.gitBranch;

@@ -7,6 +7,7 @@ import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/phone_tabs.dart';
 import 'package:marginmind/features/workspace/workspace_chrome_controller.dart';
+import 'package:marginmind/features/workspace/phone_reader_controls_controller.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:mm_design/mm_design.dart';
@@ -138,12 +139,12 @@ void main() {
       await drain(tester);
       expect(chrome.visible, isFalse);
       expect(tester.getSize(find.byType(MMPdfView)), viewportSize);
-      expect(find.byKey(const ValueKey('reader-more')).hitTestable(), findsNothing);
+      expect(find.byKey(ValueKey(phone ? 'phone-workspace-more' : 'reader-more')).hitTestable(), findsNothing);
       await tester.tapAt(tester.getCenter(find.byType(MMPdfView)));
       await tester.pumpAndSettle();
       expect(chrome.visible, isTrue);
       // Menu anchors stay visible until the menu closes.
-      await tester.tap(find.byKey(const ValueKey('reader-more')));
+      await tester.tap(find.byKey(ValueKey(phone ? 'phone-workspace-more' : 'reader-more')));
       await tester.pumpAndSettle();
       scroll(chrome, 100);
       expect(chrome.visible, isTrue);
@@ -151,7 +152,8 @@ void main() {
       await tester.pumpAndSettle();
       if (phone) {
         expect(find.byType(PhoneTabBar), findsNothing);
-        expect(tester.getSize(find.byType(MMThumbDockScope)).height, MMSizes.thumbDock);
+        expect(find.byType(MMThumbDockScope), findsNothing);
+        expect(find.byKey(const ValueKey('phone-reader-page')).hitTestable(), findsOneWidget);
       }
       await tester.pumpWidget(const SizedBox());
       await drain(tester);
@@ -179,6 +181,24 @@ void main() {
       await pointer.addPointer(location: const Offset(200, 300));
       await pointer.moveTo(const Offset(200, 310));
       await tester.pumpAndSettle();
+      if (!map) {
+        final chrome = WorkspaceChromeScope.maybeOf(tester.element(find.byType(ReaderPane)))!;
+        final menu = find.byKey(const ValueKey('phone-workspace-more'));
+        for (var cycle = 0; cycle < 3; cycle++) {
+          expect(menu.hitTestable(), findsOneWidget);
+          scroll(chrome, 24);
+          await tester.pumpAndSettle();
+          expect(menu.hitTestable(), findsNothing);
+          expect(find.byKey(const ValueKey('phone-reader-page')).hitTestable(), findsOneWidget);
+          chrome.reveal();
+          await tester.pumpAndSettle();
+        }
+        await pointer.removePointer();
+        await tester.pumpWidget(const SizedBox());
+        await drain(tester);
+        expect(tester.takeException(), isNull);
+        return;
+      }
       final dock = find.byType(MMThumbDockScope);
       List<String> visibleItems() => find
           .descendant(
@@ -270,8 +290,11 @@ void main() {
     await owner.setTool(AnnotationTool.ink);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    final slots = PhoneReaderControlsScope.maybeOf(tester.element(find.byType(ReaderPane)))!;
+    expect(slots.slot, PhoneReaderSlot.tools);
     scroll(chrome, 100);
-    expect(chrome.visible, isTrue);
+    expect(slots.slot, PhoneReaderSlot.orb);
+    expect(chrome.visible, isFalse);
     await owner.setTool(AnnotationTool.select);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
