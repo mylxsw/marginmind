@@ -2440,5 +2440,8 @@
   "phoneGlassTitle": "Phone Liquid Glass",
   "phoneGlassRegular": "Regular",
   "phoneGlassThick": "Thick",
-  "phoneGlassOpaque": "Opaque"
+  "phoneGlassOpaque": "Opaque",
+  "phoneNavigationCloseDrawer": "Close study set",
+  "phoneNavigationNotes": "Study notes",
+  "phoneNavigationSettings": "Settings"
 }

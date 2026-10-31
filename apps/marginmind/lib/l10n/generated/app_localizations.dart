@@ -8719,6 +8719,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opaque'**
   String get phoneGlassOpaque;
+
+  /// No description provided for @phoneNavigationCloseDrawer.
+  ///
+  /// In en, this message translates to:
+  /// **'Close study set'**
+  String get phoneNavigationCloseDrawer;
+
+  /// No description provided for @phoneNavigationNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Study notes'**
+  String get phoneNavigationNotes;
+
+  /// No description provided for @phoneNavigationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get phoneNavigationSettings;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

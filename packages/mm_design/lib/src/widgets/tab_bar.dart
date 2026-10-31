@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../foundation/appearance.dart';
+import '../foundation/adaptive.dart';
+import '../tokens/phone_glass.dart';
+import '../tokens/phone_navigation.dart';
 import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
@@ -22,7 +25,7 @@ class MMTab {
 /// inset from the screen sides and clear of the home indicator, with one
 /// equal-width button per tab. The selected tab sits on a highlight that
 /// slides between tabs; a pressed tab swells slightly. Android gets the
-/// same bar, taller for its hit areas.
+/// same phone material and geometry.
 class MMTabBar extends StatelessWidget {
   const MMTabBar({super.key, required this.tabs, required this.selected, required this.onSelected});
 
@@ -40,80 +43,104 @@ class MMTabBar extends StatelessWidget {
   /// pads its end by this much.
   static double heightOf(BuildContext context) => _height(context) + _bottomGap(context);
 
-  static double _height(BuildContext context) => _android(context) ? MMSizes.tabBarAndroid : MMSizes.tabBar;
+  static bool _phone(BuildContext context) =>
+      MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
 
-  static double _bottomGap(BuildContext context) =>
-      math.max(MediaQuery.paddingOf(context).bottom, MMSizes.tabBarBottomGap);
+  static double _height(BuildContext context) {
+    if (!_phone(context)) return _android(context) ? MMSizes.tabBarAndroid : MMSizes.tabBar;
+    final style = context.mmText.footnote;
+    final labelHeight = MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!;
+    // Keep all actions reachable at accessibility text sizes.
+    return math.max(MMSizes.phoneTabBarHeight, 20 + 2 + _inset * 2 + labelHeight);
+  }
+
+  static double _bottomGap(BuildContext context) => math.max(
+    MediaQuery.paddingOf(context).bottom,
+    _phone(context) ? MMSizes.phoneTabBarBottomInset : MMSizes.tabBarBottomGap,
+  );
 
   static bool _android(BuildContext context) => Theme.of(context).platform == TargetPlatform.android;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final android = _android(context);
+    final phone = _phone(context);
+    final android = !phone && _android(context);
     final safe = MediaQuery.paddingOf(context);
-    final duration = MMAppearance.duration(context, MMMotion.standard);
+    final duration = MMAppearance.duration(context, phone ? MMPhoneNavigation.tabDuration : MMMotion.standard);
     final height = _height(context);
-    return Padding(
-      padding: EdgeInsets.only(
-        left: safe.left + MMSizes.tabBarMargin,
-        right: safe.right + MMSizes.tabBarMargin,
-        bottom: _bottomGap(context),
-      ),
-      child: MMGlass(
-        key: const ValueKey('mm-tab-bar-glass'),
-        borderRadius: BorderRadius.circular(height / 2),
-        shadows: [_shadow(context)],
-        child: SizedBox(
-          height: height,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = (constraints.maxWidth - _inset * 2) / math.max(tabs.length, 1);
-              final current = selected;
-              return Stack(
-                children: [
-                  AnimatedPositioned(
-                    key: const ValueKey('mm-tab-highlight'),
-                    duration: duration,
-                    curve: MMMotion.layoutCurve,
-                    left: _inset + width * (current ?? 0),
-                    top: _inset,
-                    bottom: _inset,
-                    width: width,
-                    child: AnimatedOpacity(
-                      duration: duration,
-                      opacity: current == null ? 0 : 1,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: c.accentTint,
-                          borderRadius: BorderRadius.circular((height - _inset * 2) / 2),
+    final content = SizedBox(
+      height: height,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = (constraints.maxWidth - _inset * 2) / math.max(tabs.length, 1);
+          final current = selected;
+          return Stack(
+            children: [
+              AnimatedPositioned(
+                key: const ValueKey('mm-tab-highlight'),
+                duration: duration,
+                curve: phone ? MMPhoneNavigation.tabCurve : MMMotion.layoutCurve,
+                left: _inset + width * (current ?? 0),
+                top: _inset,
+                bottom: _inset,
+                width: width,
+                child: AnimatedOpacity(
+                  duration: duration,
+                  opacity: current == null ? 0 : 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: phone
+                          ? MMPhoneNavigation.lens(Theme.of(context).brightness == Brightness.dark)
+                          : c.accentTint,
+                      borderRadius: BorderRadius.circular((height - _inset * 2) / 2),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(_inset),
+                child: Row(
+                  children: [
+                    for (final (i, tab) in tabs.indexed)
+                      Expanded(
+                        child: _TabButton(
+                          key: ValueKey('mm-tab-$i'),
+                          tab: tab,
+                          selected: i == current,
+                          android: android,
+                          phone: phone,
+                          onTap: tab.enabled ? () => onSelected(i) : null,
                         ),
                       ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(_inset),
-                    child: Row(
-                      children: [
-                        for (final (i, tab) in tabs.indexed)
-                          Expanded(
-                            child: _TabButton(
-                              key: ValueKey('mm-tab-$i'),
-                              tab: tab,
-                              selected: i == current,
-                              android: android,
-                              onTap: tab.enabled ? () => onSelected(i) : null,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
+    );
+    final radius = BorderRadius.circular(phone ? MMRadii.phoneTabBar : height / 2);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: safe.left + (phone ? MMSizes.phoneTabBarHorizontalInset : MMSizes.tabBarMargin),
+        right: safe.right + (phone ? MMSizes.phoneTabBarHorizontalInset : MMSizes.tabBarMargin),
+        bottom: _bottomGap(context),
+      ),
+      child: phone
+          ? MMLiquidGlass(
+              key: const ValueKey('mm-tab-bar-glass'),
+              phoneStyle: MMPhoneGlass.regular,
+              borderRadius: radius,
+              child: content,
+            )
+          : MMGlass(
+              key: const ValueKey('mm-tab-bar-glass'),
+              borderRadius: radius,
+              shadows: [_shadow(context)],
+              child: content,
+            ),
     );
   }
 
@@ -129,11 +156,19 @@ class MMTabBar extends StatelessWidget {
 }
 
 class _TabButton extends StatelessWidget {
-  const _TabButton({super.key, required this.tab, required this.selected, required this.android, this.onTap});
+  const _TabButton({
+    super.key,
+    required this.tab,
+    required this.selected,
+    required this.android,
+    required this.phone,
+    this.onTap,
+  });
 
   final MMTab tab;
   final bool selected;
   final bool android;
+  final bool phone;
   final VoidCallback? onTap;
 
   /// How much a pressed tab swells.
@@ -151,7 +186,9 @@ class _TabButton extends StatelessWidget {
         final fg = !s.enabled
             ? c.secondaryLabel.withValues(alpha: 0.5)
             : selected
-            ? c.accent
+            ? phone
+                  ? MMPhoneNavigation.selectedAccent(c.accent, Theme.of(context).brightness == Brightness.dark)
+                  : c.accent
             : c.label;
         return AnimatedScale(
           duration: MMAppearance.duration(context, MMMotion.quick),

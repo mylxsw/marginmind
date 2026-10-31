@@ -193,3 +193,9 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 `MMSizes` 新增 phoneTabBarHeight 64、phoneTabBarHorizontalInset 22、phoneTabBarBottomInset 26、phoneTopControl 44、phoneToolOrb 50、phoneToolBarHeight 56、phonePageCapsuleHeight 36、phoneDrawerWidth 328、phoneSheetPadding 8。`MMRadii.phoneTabBar` 为 32，`phoneSheet` 为 38；`MMMotion.phoneAnnotationCollapse` 为 650ms，`phoneSelectionCollapse` 为 500ms。36pt 页码视觉必须外包至少 44pt 热区，底部距离与安全区取最大值；具体控件负责本地化语义与焦点。
 
 交互模型、所有权与滑动物理方案见 `mobile-redesign-arch.md`；视觉源为 `design/prototype/mobile-redesign.html`。
+
+### 手机导航（GUL-632）
+
+仅 `MMInput.phone && compact` 使用 `MMPhoneNavigation`：标签栏 64pt、左右 22pt、底部 `max(26pt, safeArea.bottom)`，regular Liquid Glass 材质；透镜以 420ms 回弹曲线滑动。选中透镜局部使用不透明底色，强调色按背景亮度调整至至少 4.5:1，彩色封面仍从其余玻璃区域透出。降低透明度与减少动态效果沿用 `MMAppearance`。
+
+`MMPhoneDrawer` 全高、最大宽 328pt，窄屏至少留下 32pt 正文/遮罩；左边缘右滑打开、向左拖动或点击遮罩关闭。`MMPhoneNavigationGroup/Row` 使用 14pt 分组圆角、46pt 最小行高（动态字号可增长）、15.5pt 正文，学习数量使用 `caution`。抽屉背景浅色 #F2F2F7 / 深色 #0E0E10。`MMPhoneReviewProgress` 以分段条表达复习位置，大队列按可用宽度合并段，保留整体进度语义；手机评分按钮高 58pt。iPad（含 compact 分屏）、桌面和非 compact 手机保留旧路径。

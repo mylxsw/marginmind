@@ -4928,4 +4928,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneGlassOpaque => 'Opaque';
+
+  @override
+  String get phoneNavigationCloseDrawer => 'Close study set';
+
+  @override
+  String get phoneNavigationNotes => 'Study notes';
+
+  @override
+  String get phoneNavigationSettings => 'Settings';
 }

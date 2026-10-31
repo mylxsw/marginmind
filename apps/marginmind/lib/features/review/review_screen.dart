@@ -84,6 +84,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
     final provider = reviewSessionProvider(widget.studySetId);
     final session = ref.watch(provider);
     final controller = ref.read(provider.notifier);
@@ -118,7 +119,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 4, 28, 0),
-            child: MMProgressBar(value: done, semanticLabel: l.reviewProgress),
+            child: phone
+                ? MMPhoneReviewProgress(total: session.queue.length, completed: session.index, label: l.reviewProgress)
+                : MMProgressBar(value: done, semanticLabel: l.reviewProgress),
           ),
           Expanded(
             child: LayoutBuilder(
@@ -185,7 +188,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         showsWindowButtons: WindowChrome.showsWindowButtons,
         toolbar: MMToolbar(
           title: l.reviewTitle,
-          subtitle: session.finished || !session.started
+          subtitle: phone || session.finished || !session.started
               ? scopeTitle
               : '$scopeTitle · ${l.reviewRemaining(session.remaining)}',
           leading: MMIconButton(
@@ -329,17 +332,19 @@ class ReviewCardView extends StatelessWidget {
             for (final block in answer) ...[block, const SizedBox(height: 12)],
             if (source != null)
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: Text(
-                      source.textAnchor != null
-                          ? source.documentTitle
-                          : '${source.documentTitle} · ${context.l10n.pageNumber(source.page)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.footnote,
+                  if (!(MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact))
+                    Expanded(
+                      child: Text(
+                        source.textAnchor != null
+                            ? source.documentTitle
+                            : '${source.documentTitle} · ${context.l10n.pageNumber(source.page)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.footnote,
+                      ),
                     ),
-                  ),
                   MMButton(
                     label: context.l10n.revealSource,
                     icon: MMIcons.revealSource,
@@ -495,7 +500,11 @@ class _RatingButton extends StatelessWidget {
         return AnimatedContainer(
           duration: MMMotion.quick,
           width: touch ? null : 104,
-          height: touch ? MMSizes.reviewRatingTouch : null,
+          height: touch
+              ? MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact
+                    ? MMPhoneNavigation.ratingHeight
+                    : MMSizes.reviewRatingTouch
+              : null,
           padding: EdgeInsets.symmetric(vertical: 8, horizontal: touch ? 4 : 0),
           decoration: BoxDecoration(
             color: primary ? c.accentFill : (s.hovered ? c.hover : c.fill),
