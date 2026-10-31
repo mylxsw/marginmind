@@ -149,6 +149,16 @@ abstract final class MMIcons {
   // document into the current map.
   static const IconData generateMap = LucideIcons.wandSparkles;
   static const IconData mergeIntoMap = LucideIcons.merge;
+
+  // Full-document translation (GUL-599).
+  static const IconData layers = LucideIcons.layers;
+  static const IconData pause = LucideIcons.pause;
+  static const IconData play = LucideIcons.play;
+  static const IconData retry = LucideIcons.rotateCcw;
+  static const IconData wifiOff = LucideIcons.wifiOff;
+  static const IconData key = LucideIcons.key;
+  static const IconData recycle = LucideIcons.recycle;
+  static const IconData skip = LucideIcons.stepForward;
 }
 
 /// Lucide vocabulary for reader commands, including toolbar overflow entries.

@@ -6,13 +6,7 @@ import '../../../shared/l10n.dart';
 /// Source chip displaying the document page (e.g. "p.N"), with an optional
 /// color dot for multi-document maps.
 class MapSourceChip extends StatelessWidget {
-  const MapSourceChip({
-    super.key,
-    required this.page,
-    this.documentTitle,
-    this.documentIndex,
-    this.onTap,
-  });
+  const MapSourceChip({super.key, required this.page, this.documentTitle, this.documentIndex, this.onTap});
 
   final int page;
   final String? documentTitle;
@@ -27,9 +21,7 @@ class MapSourceChip extends StatelessWidget {
 
     return Semantics(
       button: onTap != null,
-      label: documentTitle != null
-          ? l.mapSourceSemantics(documentTitle!, page)
-          : l.pageNumber(page),
+      label: documentTitle != null ? l.mapSourceSemantics(documentTitle!, page) : l.pageNumber(page),
       child: MMInteractive(
         onTap: onTap,
         builder: (context, state) {
@@ -40,10 +32,7 @@ class MapSourceChip extends StatelessWidget {
           return Container(
             height: MMSizes.mapSourceChip,
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(MMRadii.mapSourceChip),
-            ),
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(MMRadii.mapSourceChip)),
             alignment: Alignment.center,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -65,11 +54,7 @@ class MapSourceChip extends StatelessWidget {
                 ],
                 Text(
                   l.notePage(page),
-                  style: context.mmText.footnote.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                  ),
+                  style: context.mmText.footnote.copyWith(color: textColor, fontWeight: FontWeight.w500, height: 1),
                 ),
               ],
             ),

@@ -4696,6 +4696,450 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appIconChangeFailed => '图标更换失败，请重试。';
 
   @override
+  String get fullTranslationMenu => '翻译全文…';
+
+  @override
+  String get fullTranslationTokensUsed => '已用 ';
+
+  @override
+  String get fullTranslationTask => '全文翻译任务…';
+
+  @override
+  String fullTranslationTaskMenu(int percent) {
+    return '全文翻译任务… $percent%';
+  }
+
+  @override
+  String get fullTranslationCapsule => '翻译全文';
+
+  @override
+  String fullTranslationCapsuleRunning(int percent, int batch, int done, int total) {
+    return '$percent% 第 $batch 批 · $done/$total 页';
+  }
+
+  @override
+  String fullTranslationCapsuleRunningAll(int percent, int done, int total) {
+    return '$percent% $done/$total 页';
+  }
+
+  @override
+  String fullTranslationCapsuleReview(int batch) {
+    return '第 $batch 批待确认';
+  }
+
+  @override
+  String fullTranslationCapsulePaused(int done, int total) {
+    return '已暂停 $done/$total 页';
+  }
+
+  @override
+  String get fullTranslationCapsuleOffline => '等待网络';
+
+  @override
+  String get fullTranslationCapsuleBudget => '已暂停 · 超出预估';
+
+  @override
+  String get fullTranslationCapsuleError => '已暂停';
+
+  @override
+  String get fullTranslationCapsuleDone => '全文已译';
+
+  @override
+  String fullTranslationCapsuleDoneFailed(int count) {
+    return '已完成 · $count 段未译';
+  }
+
+  @override
+  String fullTranslationCapsuleStopped(int done, int total) {
+    return '已停止 $done/$total 页';
+  }
+
+  @override
+  String fullTranslationPlaceholderBatch(int batch) {
+    return '将在第 $batch 批翻译';
+  }
+
+  @override
+  String fullTranslationPlaceholderPageSub(int page) {
+    return '第 $page 页';
+  }
+
+  @override
+  String get fullTranslationPlaceholderOutOfRange => '不在本次翻译范围';
+
+  @override
+  String get fullTranslationPlaceholderUntranslated => '未翻译';
+
+  @override
+  String get fullTranslationTranslatePage => '翻译此页';
+
+  @override
+  String get fullTranslationTitle => '翻译全文';
+
+  @override
+  String fullTranslationDocSubtitle(String doc, int pages) {
+    return '$doc · $pages 页';
+  }
+
+  @override
+  String get fullTranslationSourceLangDetect => '检测';
+
+  @override
+  String get fullTranslationRange => '范围';
+
+  @override
+  String get fullTranslationRangeAll => '全部';
+
+  @override
+  String get fullTranslationRangePages => '页码';
+
+  @override
+  String get fullTranslationMode => '方式';
+
+  @override
+  String get fullTranslationModeBatch => '分批确认';
+
+  @override
+  String get fullTranslationModeBatchDesc => '每批完成后停下，检查后再继续';
+
+  @override
+  String get fullTranslationModeAll => '一次完成';
+
+  @override
+  String get fullTranslationModeAllDesc => '连续翻译到最后，可随时暂停';
+
+  @override
+  String get fullTranslationBatchSize => '每批';
+
+  @override
+  String fullTranslationBatchPages(int count) {
+    return '$count 页';
+  }
+
+  @override
+  String fullTranslationBatchCount(int count) {
+    return '共 $count 批';
+  }
+
+  @override
+  String get fullTranslationNote => '术语与要求';
+
+  @override
+  String get fullTranslationNotePlaceholder => '可选。例如：attention 统一译为“注意”；人名保留原文';
+
+  @override
+  String get fullTranslationNoteHint => '只用于之后的批次；已译段落不会自动重译。';
+
+  @override
+  String get fullTranslationNoteConfigured => ' · 已设置';
+
+  @override
+  String get fullTranslationFooterNote => '译文保存在学习集内，不修改 PDF';
+
+  @override
+  String fullTranslationStartBatch(int from, int to) {
+    return '开始 · 第 $from–$to 页';
+  }
+
+  @override
+  String get fullTranslationStartAll => '开始翻译';
+
+  @override
+  String get fullTranslationNothingToTranslate => '没有需要翻译的段落';
+
+  @override
+  String get fullTranslationBlockedScannedTitle => '这份文档没有可选文字';
+
+  @override
+  String get fullTranslationBlockedScannedDesc => '先在本机识别文字，再翻译全文。';
+
+  @override
+  String get fullTranslationActionOcr => '识别文字';
+
+  @override
+  String get fullTranslationBlockedNoModelTitle => '还没有可用的模型';
+
+  @override
+  String get fullTranslationBlockedBadKeyTitle => 'API Key 无效';
+
+  @override
+  String get fullTranslationBlockedModelDesc => '全文翻译使用助手的默认模型。';
+
+  @override
+  String get fullTranslationActionSettings => '打开助手设置';
+
+  @override
+  String get fullTranslationBlockedOfflineTitle => '网络不可用';
+
+  @override
+  String get fullTranslationBlockedOfflineDesc => '可以先开始，联网后自动翻译。';
+
+  @override
+  String fullTranslationEstChanged(int reused, int total) {
+    return '原文已重新识别 · 已有译文 $reused / $total 段仍可复用';
+  }
+
+  @override
+  String fullTranslationEstNeeds(String paras, String chars) {
+    return '需翻译 $paras 段 · 约 $chars 字符';
+  }
+
+  @override
+  String fullTranslationEstMinutes(int minutes) {
+    return '约 $minutes 分钟';
+  }
+
+  @override
+  String fullTranslationEstReused(int paras, int pages) {
+    return '已有 $paras 段译文（$pages 页），直接复用';
+  }
+
+  @override
+  String fullTranslationEstReusedNoPages(int paras) {
+    return '已有 $paras 段译文，直接复用';
+  }
+
+  @override
+  String fullTranslationEstSkip(String details) {
+    return '不发送：$details';
+  }
+
+  @override
+  String fullTranslationEstSkipMargin(int count) {
+    return '页眉页码 $count 处';
+  }
+
+  @override
+  String fullTranslationEstSkipSame(int count) {
+    return '已是中文 $count 段';
+  }
+
+  @override
+  String fullTranslationEstSkipDupe(int count) {
+    return '重复段落 $count 段';
+  }
+
+  @override
+  String fullTranslationEstModel(String model, String tokens) {
+    return '$model · 预计 $tokens token';
+  }
+
+  @override
+  String get fullTranslationEstBudgetWarning => '；超出 50% 时暂停询问';
+
+  @override
+  String get fullTranslationPanelTitle => '全文翻译';
+
+  @override
+  String fullTranslationStateRunningBatch(int batch, int from, int to) {
+    return '翻译中 · 第 $batch 批（$from–$to 页）';
+  }
+
+  @override
+  String get fullTranslationStateRunningAll => '翻译中 · 一次完成';
+
+  @override
+  String fullTranslationStateReview(int batch) {
+    return '第 $batch 批待确认';
+  }
+
+  @override
+  String get fullTranslationStatePaused => '已暂停';
+
+  @override
+  String get fullTranslationStateOffline => '等待网络';
+
+  @override
+  String get fullTranslationStateBudget => '已暂停 · 超出预估';
+
+  @override
+  String get fullTranslationStateError => '已暂停 · 需要处理';
+
+  @override
+  String get fullTranslationStateDone => '已完成';
+
+  @override
+  String get fullTranslationStateStopped => '已停止';
+
+  @override
+  String get fullTranslationLegendDone => '已译';
+
+  @override
+  String get fullTranslationLegendReused => '复用';
+
+  @override
+  String get fullTranslationLegendRunning => '翻译中';
+
+  @override
+  String get fullTranslationLegendQueued => '本批排队';
+
+  @override
+  String get fullTranslationLegendFailed => '有未译段落';
+
+  @override
+  String get fullTranslationLegendSkipped => '无需翻译';
+
+  @override
+  String get fullTranslationStatParas => '段落';
+
+  @override
+  String fullTranslationStatEstToken(String tokens) {
+    return '预估 $tokens';
+  }
+
+  @override
+  String get fullTranslationStatFailed => '未译';
+
+  @override
+  String get fullTranslationDetailReused => '复用已有译文';
+
+  @override
+  String fullTranslationDetailParas(int count) {
+    return '$count 段';
+  }
+
+  @override
+  String get fullTranslationDetailDedup => '重复段落只译一次';
+
+  @override
+  String get fullTranslationDetailSkipped => '不发送（页眉、页码、已是中文）';
+
+  @override
+  String fullTranslationDetailItems(int count) {
+    return '$count 处';
+  }
+
+  @override
+  String get fullTranslationDetailModelCalls => '模型 · 请求';
+
+  @override
+  String fullTranslationDetailCalls(String model, int calls) {
+    return '$model · $calls 次';
+  }
+
+  @override
+  String get fullTranslationDetailElapsed => '用时';
+
+  @override
+  String fullTranslationDetailTime(int minutes, int seconds) {
+    return '$minutes 分 $seconds 秒';
+  }
+
+  @override
+  String get fullTranslationActionStop => '停止';
+
+  @override
+  String get fullTranslationActionEnd => '结束';
+
+  @override
+  String get fullTranslationActionPause => '暂停';
+
+  @override
+  String get fullTranslationActionResume => '继续';
+
+  @override
+  String get fullTranslationActionNextBatch => '继续下一批';
+
+  @override
+  String fullTranslationActionRetryFailed(int count) {
+    return '重试 $count 段';
+  }
+
+  @override
+  String get fullTranslationActionContinueTranslation => '继续翻译…';
+
+  @override
+  String get fullTranslationActionClear => '移除译文…';
+
+  @override
+  String get fullTranslationClearTitle => '移除这份文档的全部 AI 译文？';
+
+  @override
+  String get fullTranslationClearMessage => '手动修改过的译文也会被移除。';
+
+  @override
+  String fullTranslationCkptBatchDone(int batch) {
+    return '第 $batch 批已完成';
+  }
+
+  @override
+  String fullTranslationCkptPages(int from, int to) {
+    return '第 $from–$to 页';
+  }
+
+  @override
+  String get fullTranslationCkptCollapseTip => '收起，先读一读';
+
+  @override
+  String get fullTranslationCkptExpandTip => '展开';
+
+  @override
+  String fullTranslationCkptMin(int batch) {
+    return '第 $batch 批待确认';
+  }
+
+  @override
+  String fullTranslationCkptNextBatch(int from, int to) {
+    return '继续第 $from–$to 页';
+  }
+
+  @override
+  String fullTranslationCkptFromPage(int page) {
+    return '从第 $page 页开始检查';
+  }
+
+  @override
+  String fullTranslationCkptRemain(int pages, String tokens) {
+    return '剩余 $pages 页 · 约 $tokens token';
+  }
+
+  @override
+  String get fullTranslationCkptTranslateRest => '翻译剩余全部';
+
+  @override
+  String fullTranslationHudStartBatch(int from, int to) {
+    return '开始翻译第 $from–$to 页';
+  }
+
+  @override
+  String get fullTranslationHudStartAll => '开始翻译全文';
+
+  @override
+  String get fullTranslationHudDone => '全文翻译完成';
+
+  @override
+  String fullTranslationHudDoneFailed(int count) {
+    return '全文翻译完成 · $count 段未译';
+  }
+
+  @override
+  String get fullTranslationHudView => '查看';
+
+  @override
+  String get fullTranslationHudStopped => '已停止 · 已译内容已保存';
+
+  @override
+  String fullTranslationHudPausedAt(int page) {
+    return '全文翻译已暂停在第 $page 页';
+  }
+
+  @override
+  String get fullTranslationHudContinue => '继续';
+
+  @override
+  String get fullTranslationHudRestAll => '剩余页面将一次翻译完成';
+
+  @override
+  String fullTranslationGridCell(int page, String state) {
+    return '第 $page 页 · $state';
+  }
+
+  @override
+  String fullTranslationCapsuleA11y(int percent, int batch, int done, int total) {
+    return '全文翻译，$percent%，第 $batch 批，$done / $total 页';
+  }
+
+  @override
   String get phoneGlassTitle => '手机 Liquid Glass';
 
   @override

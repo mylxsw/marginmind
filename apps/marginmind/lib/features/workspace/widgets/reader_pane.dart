@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'reading_settings.dart';
 import '../../vocabulary/pdf_hints.dart';
 import '../../vocabulary/hint_controls.dart';
@@ -31,6 +33,9 @@ import '../reader_compare.dart';
 import '../reader_translation.dart';
 import 'reader_compare_controls.dart';
 import 'reader_zoom_control.dart';
+import '../translation_task_summary.dart';
+import 'full_translation_sheet.dart';
+import 'full_translation_panel.dart';
 import '../reader_margin.dart';
 import 'reader_margin_notes.dart';
 import 'reader_crop_controls.dart';
@@ -424,6 +429,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final canAdjustCrop = capabilities.crop && !crop.editing && !crop.busy && _pdf.isReady;
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
+    final canFullTranslate =
+        MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact &&
+        document?.format == DocumentFormat.pdf;
+    final fullState = canFullTranslate
+        ? ref.watch(translationTaskSummaryProvider((widget.studySetId, document!.id))).value
+        : null;
+    final hasActiveFullJob = fullState?.isActive == true;
 
     final commands = <String, WorkspacePaneCommand>{};
     VoidCallback? command(String id, VoidCallback? invoke, {bool selected = false}) {
@@ -632,6 +645,22 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         icon: MMIcons.readingSettings,
         id: 'reader-settings',
       ),
+      if (canFullTranslate)
+        entry(
+          hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
+          () => unawaited(
+            hasActiveFullJob
+                ? showFullTranslationPanel(
+                    context,
+                    studySetId: widget.studySetId,
+                    documentId: document!.id,
+                    targetLang: fullState!.targetLang,
+                  )
+                : showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document!.id),
+          ),
+          icon: MMIcons.layers,
+          id: 'full-translation',
+        ),
       const PopupMenuDivider(),
       MMDropdownHeader<VoidCallback>(l.readerMenuPage),
       PopupMenuItem<VoidCallback>(
@@ -759,6 +788,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     ];
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
+    final fullState = document == null
+        ? null
+        : ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id))).value;
+    final targetLang = fullState?.targetLang ?? 'zh';
+    final hasActiveFullJob = fullState?.isActive == true;
+    final canFullTranslate =
+        MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact &&
+        document?.format == DocumentFormat.pdf;
     final marginButton = MMToolbarButton(
       key: const ValueKey('reader-margin'),
       compact: compact,
@@ -818,6 +856,21 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     }
                   }
                   if (value == 'vocabulary' && document != null) toggleVocabularyHints(context, ref, document.id);
+                  if (value == 'full-translation' && document != null) {
+                    unawaited(
+                      showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document.id),
+                    );
+                  }
+                  if (value == 'full-translation-task' && document != null) {
+                    unawaited(
+                      showFullTranslationPanel(
+                        context,
+                        studySetId: widget.studySetId,
+                        documentId: document.id,
+                        targetLang: targetLang,
+                      ),
+                    );
+                  }
                 },
                 itemBuilder: (_) => [
                   if (!extended) ...[
@@ -845,6 +898,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   MMDropdownItem<Object>(value: 'reading', child: _menuRow(MMIcons.readingSettings, l.readingSettings)),
                   if (document != null)
                     MMDropdownItem<Object>(value: 'vocabulary', child: _menuRow(MMIcons.vocabulary, l.vocabularyHints)),
+                  if (canFullTranslate)
+                    MMDropdownItem<Object>(
+                      value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
+                      child: _menuRow(
+                        MMIcons.layers,
+                        hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
+                      ),
+                    ),
                   const PopupMenuDivider(),
                   ...zoomItems,
                   ...cropItems,
@@ -888,8 +949,31 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               onSelected: (value) {
                 pageCommand(value);
                 if (value is MMReaderStyle) setStyle(value);
+                if (value == 'full-translation' && document != null) {
+                  unawaited(showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document.id));
+                }
+                if (value == 'full-translation-task' && document != null) {
+                  unawaited(
+                    showFullTranslationPanel(
+                      context,
+                      studySetId: widget.studySetId,
+                      documentId: document.id,
+                      targetLang: targetLang,
+                    ),
+                  );
+                }
               },
               itemBuilder: (_) => [
+                if (canFullTranslate) ...[
+                  MMDropdownItem<Object>(
+                    value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
+                    child: _menuRow(
+                      MMIcons.layers,
+                      hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                ],
                 ...zoomItems,
                 const PopupMenuDivider(),
                 ...cropItems,

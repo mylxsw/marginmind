@@ -16,6 +16,9 @@ import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../translation_task_summary.dart';
+import 'full_translation_sheet.dart';
+import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
 import '../../map_generation/map_generation_controller.dart';
 import '../../map_generation/map_updates.dart';
@@ -194,36 +197,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             child: MMSidebarItem(
               icon: documentIcon(d),
               label: d.title,
-              trailing: () {
-                final hasMap =
-                    content?.maps.any((m) => m.generation?.sources.any((s) => s.documentId == d.id) == true) == true;
-                final hasOcr =
-                    !d.capabilities().readingSettings &&
-                    ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true;
-                if (hasMap && hasOcr) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(l.ocrRecognized, style: context.mmText.footnote),
-                      const SizedBox(width: 6),
-                      Semantics(
-                        label: l.mapHasMap,
-                        child: Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
-                      ),
-                    ],
-                  );
-                }
-                if (hasMap) {
-                  return Semantics(
-                    label: l.mapHasMap,
-                    child: Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
-                  );
-                }
-                if (hasOcr) {
-                  return Text(l.ocrRecognized, style: context.mmText.footnote);
-                }
-                return null;
-              }(),
+              trailing: _DocumentTranslationTrailing(studySetId: studySetId, document: d),
               selected: !browser.visible && d.id == state.activeDocumentId,
               selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
               onTap: () {
@@ -541,15 +515,37 @@ class WorkspaceSidebar extends ConsumerWidget {
   void _documentMenu(BuildContext context, WidgetRef ref, Document doc, Offset position) {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(studySetId).notifier);
+    final fullState = ref.read(translationTaskSummaryProvider((studySetId, doc.id))).value;
+    final targetLang = fullState?.targetLang ?? 'zh';
+    final hasActiveFullJob = fullState?.isActive == true;
+    final canFullTranslate =
+        doc.format == DocumentFormat.pdf &&
+        MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact;
+
     showMMMenu(
       context,
       position: position,
       entries: [
         MMMenuItem(l.open, () => controller.openDocument(doc.id)),
+        if (canFullTranslate) ...[
+          if (hasActiveFullJob)
+            MMMenuItem(
+              l.fullTranslationTaskMenu(fullState!.percent),
+              () =>
+                  showFullTranslationPanel(context, studySetId: studySetId, documentId: doc.id, targetLang: targetLang),
+            )
+          else
+            MMMenuItem(
+              l.fullTranslationMenu,
+              () => showFullTranslationSheet(context, studySetId: studySetId, documentId: doc.id),
+            ),
+        ],
         MMMenuItem(
           l.mapGenerateDocumentMenu,
           () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: doc.id),
         ),
+
         MMMenuItem(l.renameEllipsis, () async {
           final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);
           if (title != null) await controller.renameDocument(doc.id, title);
@@ -569,6 +565,67 @@ class WorkspaceSidebar extends ConsumerWidget {
         }, destructive: true),
       ],
     );
+  }
+}
+
+class _DocumentTranslationTrailing extends ConsumerWidget {
+  const _DocumentTranslationTrailing({required this.studySetId, required this.document});
+
+  final String studySetId;
+  final Document document;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fullState = ref.watch(translationTaskSummaryProvider((studySetId, document.id))).value;
+    final job = fullState?.job;
+    final c = context.mmColors;
+
+    if (job != null && job.isActive) {
+      if (job.state == TranslationJobState.review) {
+        return Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
+        );
+      }
+      final pct = fullState!.percent;
+      return SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(
+          value: pct > 0 ? (pct / 100.0) : null,
+          strokeWidth: 1.5,
+          color: c.accent,
+          backgroundColor: c.quaternaryFill,
+        ),
+      );
+    }
+
+    final content = ref.watch(workspaceContentProvider(studySetId));
+    final hasMap =
+        content?.maps.any((m) => m.generation?.sources.any((s) => s.documentId == document.id) == true) == true;
+    final hasOcr =
+        !document.capabilities().readingSettings &&
+        ref
+                .watch(readerOcrProvider(ref.read(workspaceProvider(studySetId).notifier).filePath(document)))
+                .document
+                ?.hasCopy ==
+            true;
+    if (hasMap || hasOcr) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasOcr) Text(context.l10n.ocrRecognized, style: context.mmText.footnote),
+          if (hasOcr && hasMap) const SizedBox(width: 6),
+          if (hasMap)
+            Semantics(
+              label: context.l10n.mapHasMap,
+              child: Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
+            ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

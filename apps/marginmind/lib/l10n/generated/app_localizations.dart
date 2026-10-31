@@ -8696,6 +8696,726 @@ abstract class AppLocalizations {
   /// **'Could not change the icon. Please try again.'**
   String get appIconChangeFailed;
 
+  /// No description provided for @fullTranslationMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate Entire Document…'**
+  String get fullTranslationMenu;
+
+  /// No description provided for @fullTranslationTokensUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used '**
+  String get fullTranslationTokensUsed;
+
+  /// No description provided for @fullTranslationTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Translation…'**
+  String get fullTranslationTask;
+
+  /// No description provided for @fullTranslationTaskMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Translation… {percent}%'**
+  String fullTranslationTaskMenu(int percent);
+
+  /// No description provided for @fullTranslationCapsule.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate All'**
+  String get fullTranslationCapsule;
+
+  /// No description provided for @fullTranslationCapsuleRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% Batch {batch} · {done}/{total} pages'**
+  String fullTranslationCapsuleRunning(int percent, int batch, int done, int total);
+
+  /// No description provided for @fullTranslationCapsuleRunningAll.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% {done}/{total} pages'**
+  String fullTranslationCapsuleRunningAll(int percent, int done, int total);
+
+  /// No description provided for @fullTranslationCapsuleReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch {batch} Pending'**
+  String fullTranslationCapsuleReview(int batch);
+
+  /// No description provided for @fullTranslationCapsulePaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused {done}/{total} pages'**
+  String fullTranslationCapsulePaused(int done, int total);
+
+  /// No description provided for @fullTranslationCapsuleOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Network'**
+  String get fullTranslationCapsuleOffline;
+
+  /// No description provided for @fullTranslationCapsuleBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · Exceeded Estimate'**
+  String get fullTranslationCapsuleBudget;
+
+  /// No description provided for @fullTranslationCapsuleError.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get fullTranslationCapsuleError;
+
+  /// No description provided for @fullTranslationCapsuleDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Fully Translated'**
+  String get fullTranslationCapsuleDone;
+
+  /// No description provided for @fullTranslationCapsuleDoneFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed · {count} untranslated'**
+  String fullTranslationCapsuleDoneFailed(int count);
+
+  /// No description provided for @fullTranslationCapsuleStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped {done}/{total} pages'**
+  String fullTranslationCapsuleStopped(int done, int total);
+
+  /// No description provided for @fullTranslationPlaceholderBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Will translate in batch {batch}'**
+  String fullTranslationPlaceholderBatch(int batch);
+
+  /// No description provided for @fullTranslationPlaceholderPageSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page}'**
+  String fullTranslationPlaceholderPageSub(int page);
+
+  /// No description provided for @fullTranslationPlaceholderOutOfRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in translation range'**
+  String get fullTranslationPlaceholderOutOfRange;
+
+  /// No description provided for @fullTranslationPlaceholderUntranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Untranslated'**
+  String get fullTranslationPlaceholderUntranslated;
+
+  /// No description provided for @fullTranslationTranslatePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate This Page'**
+  String get fullTranslationTranslatePage;
+
+  /// No description provided for @fullTranslationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate Entire Document'**
+  String get fullTranslationTitle;
+
+  /// No description provided for @fullTranslationDocSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{doc} · {pages} pages'**
+  String fullTranslationDocSubtitle(String doc, int pages);
+
+  /// No description provided for @fullTranslationSourceLangDetect.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect'**
+  String get fullTranslationSourceLangDetect;
+
+  /// No description provided for @fullTranslationRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Range'**
+  String get fullTranslationRange;
+
+  /// No description provided for @fullTranslationRangeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get fullTranslationRangeAll;
+
+  /// No description provided for @fullTranslationRangePages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get fullTranslationRangePages;
+
+  /// No description provided for @fullTranslationMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get fullTranslationMode;
+
+  /// No description provided for @fullTranslationModeBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Review'**
+  String get fullTranslationModeBatch;
+
+  /// No description provided for @fullTranslationModeBatchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause after each batch to review before continuing'**
+  String get fullTranslationModeBatchDesc;
+
+  /// No description provided for @fullTranslationModeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate All'**
+  String get fullTranslationModeAll;
+
+  /// No description provided for @fullTranslationModeAllDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate continuously to the end, pause anytime'**
+  String get fullTranslationModeAllDesc;
+
+  /// No description provided for @fullTranslationBatchSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Per Batch'**
+  String get fullTranslationBatchSize;
+
+  /// No description provided for @fullTranslationBatchPages.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pages'**
+  String fullTranslationBatchPages(int count);
+
+  /// No description provided for @fullTranslationBatchCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} batches total'**
+  String fullTranslationBatchCount(int count);
+
+  /// No description provided for @fullTranslationNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Glossary & Requirements'**
+  String get fullTranslationNote;
+
+  /// No description provided for @fullTranslationNotePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. E.g. keep proper names untranslated'**
+  String get fullTranslationNotePlaceholder;
+
+  /// No description provided for @fullTranslationNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies only to subsequent batches; translated paragraphs won\'t be retranslated.'**
+  String get fullTranslationNoteHint;
+
+  /// No description provided for @fullTranslationNoteConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **' · Configured'**
+  String get fullTranslationNoteConfigured;
+
+  /// No description provided for @fullTranslationFooterNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations are saved in the study set without modifying the PDF'**
+  String get fullTranslationFooterNote;
+
+  /// No description provided for @fullTranslationStartBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Start · Pages {from}–{to}'**
+  String fullTranslationStartBatch(int from, int to);
+
+  /// No description provided for @fullTranslationStartAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Translation'**
+  String get fullTranslationStartAll;
+
+  /// No description provided for @fullTranslationNothingToTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'No paragraphs to translate'**
+  String get fullTranslationNothingToTranslate;
+
+  /// No description provided for @fullTranslationBlockedScannedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This document has no selectable text'**
+  String get fullTranslationBlockedScannedTitle;
+
+  /// No description provided for @fullTranslationBlockedScannedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize text on device first, then translate.'**
+  String get fullTranslationBlockedScannedDesc;
+
+  /// No description provided for @fullTranslationActionOcr.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize Text'**
+  String get fullTranslationActionOcr;
+
+  /// No description provided for @fullTranslationBlockedNoModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI model configured'**
+  String get fullTranslationBlockedNoModelTitle;
+
+  /// No description provided for @fullTranslationBlockedBadKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API Key Invalid'**
+  String get fullTranslationBlockedBadKeyTitle;
+
+  /// No description provided for @fullTranslationBlockedModelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full translation uses the assistant\'s default model.'**
+  String get fullTranslationBlockedModelDesc;
+
+  /// No description provided for @fullTranslationActionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Assistant Settings'**
+  String get fullTranslationActionSettings;
+
+  /// No description provided for @fullTranslationBlockedOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network Unavailable'**
+  String get fullTranslationBlockedOfflineTitle;
+
+  /// No description provided for @fullTranslationBlockedOfflineDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You can start now; translation resumes automatically when online.'**
+  String get fullTranslationBlockedOfflineDesc;
+
+  /// No description provided for @fullTranslationEstChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Source text re-recognized · {reused} / {total} existing translations reusable'**
+  String fullTranslationEstChanged(int reused, int total);
+
+  /// No description provided for @fullTranslationEstNeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs translation: {paras} paragraphs · ~{chars} chars'**
+  String fullTranslationEstNeeds(String paras, String chars);
+
+  /// No description provided for @fullTranslationEstMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'~{minutes} min'**
+  String fullTranslationEstMinutes(int minutes);
+
+  /// No description provided for @fullTranslationEstReused.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have {paras} translations ({pages} pages), reused directly'**
+  String fullTranslationEstReused(int paras, int pages);
+
+  /// No description provided for @fullTranslationEstReusedNoPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have {paras} translations, reused directly'**
+  String fullTranslationEstReusedNoPages(int paras);
+
+  /// No description provided for @fullTranslationEstSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent: {details}'**
+  String fullTranslationEstSkip(String details);
+
+  /// No description provided for @fullTranslationEstSkipMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'headers/footers {count}'**
+  String fullTranslationEstSkipMargin(int count);
+
+  /// No description provided for @fullTranslationEstSkipSame.
+  ///
+  /// In en, this message translates to:
+  /// **'already target language {count}'**
+  String fullTranslationEstSkipSame(int count);
+
+  /// No description provided for @fullTranslationEstSkipDupe.
+  ///
+  /// In en, this message translates to:
+  /// **'duplicate paragraphs {count}'**
+  String fullTranslationEstSkipDupe(int count);
+
+  /// No description provided for @fullTranslationEstModel.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} · Est. {tokens} tokens'**
+  String fullTranslationEstModel(String model, String tokens);
+
+  /// No description provided for @fullTranslationEstBudgetWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'; pauses for confirmation if 50% over estimate'**
+  String get fullTranslationEstBudgetWarning;
+
+  /// No description provided for @fullTranslationPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Translation'**
+  String get fullTranslationPanelTitle;
+
+  /// No description provided for @fullTranslationStateRunningBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating · Batch {batch} (pages {from}–{to})'**
+  String fullTranslationStateRunningBatch(int batch, int from, int to);
+
+  /// No description provided for @fullTranslationStateRunningAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating · All at once'**
+  String get fullTranslationStateRunningAll;
+
+  /// No description provided for @fullTranslationStateReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch {batch} Pending'**
+  String fullTranslationStateReview(int batch);
+
+  /// No description provided for @fullTranslationStatePaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get fullTranslationStatePaused;
+
+  /// No description provided for @fullTranslationStateOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Network'**
+  String get fullTranslationStateOffline;
+
+  /// No description provided for @fullTranslationStateBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · Exceeded Estimate'**
+  String get fullTranslationStateBudget;
+
+  /// No description provided for @fullTranslationStateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · Needs Attention'**
+  String get fullTranslationStateError;
+
+  /// No description provided for @fullTranslationStateDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get fullTranslationStateDone;
+
+  /// No description provided for @fullTranslationStateStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get fullTranslationStateStopped;
+
+  /// No description provided for @fullTranslationLegendDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Translated'**
+  String get fullTranslationLegendDone;
+
+  /// No description provided for @fullTranslationLegendReused.
+  ///
+  /// In en, this message translates to:
+  /// **'Reused'**
+  String get fullTranslationLegendReused;
+
+  /// No description provided for @fullTranslationLegendRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating'**
+  String get fullTranslationLegendRunning;
+
+  /// No description provided for @fullTranslationLegendQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get fullTranslationLegendQueued;
+
+  /// No description provided for @fullTranslationLegendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Untranslated'**
+  String get fullTranslationLegendFailed;
+
+  /// No description provided for @fullTranslationLegendSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'No Translation Needed'**
+  String get fullTranslationLegendSkipped;
+
+  /// No description provided for @fullTranslationStatParas.
+  ///
+  /// In en, this message translates to:
+  /// **'Paragraphs'**
+  String get fullTranslationStatParas;
+
+  /// No description provided for @fullTranslationStatEstToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Est. {tokens}'**
+  String fullTranslationStatEstToken(String tokens);
+
+  /// No description provided for @fullTranslationStatFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Untranslated'**
+  String get fullTranslationStatFailed;
+
+  /// No description provided for @fullTranslationDetailReused.
+  ///
+  /// In en, this message translates to:
+  /// **'Reused Translations'**
+  String get fullTranslationDetailReused;
+
+  /// No description provided for @fullTranslationDetailParas.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} paras'**
+  String fullTranslationDetailParas(int count);
+
+  /// No description provided for @fullTranslationDetailDedup.
+  ///
+  /// In en, this message translates to:
+  /// **'Deduplicated Paragraphs'**
+  String get fullTranslationDetailDedup;
+
+  /// No description provided for @fullTranslationDetailSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Sent (headers, page numbers, target language)'**
+  String get fullTranslationDetailSkipped;
+
+  /// No description provided for @fullTranslationDetailItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String fullTranslationDetailItems(int count);
+
+  /// No description provided for @fullTranslationDetailModelCalls.
+  ///
+  /// In en, this message translates to:
+  /// **'Model · Requests'**
+  String get fullTranslationDetailModelCalls;
+
+  /// No description provided for @fullTranslationDetailCalls.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} · {calls} calls'**
+  String fullTranslationDetailCalls(String model, int calls);
+
+  /// No description provided for @fullTranslationDetailElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed'**
+  String get fullTranslationDetailElapsed;
+
+  /// No description provided for @fullTranslationDetailTime.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} m {seconds} s'**
+  String fullTranslationDetailTime(int minutes, int seconds);
+
+  /// No description provided for @fullTranslationActionStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get fullTranslationActionStop;
+
+  /// No description provided for @fullTranslationActionEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get fullTranslationActionEnd;
+
+  /// No description provided for @fullTranslationActionPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get fullTranslationActionPause;
+
+  /// No description provided for @fullTranslationActionResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get fullTranslationActionResume;
+
+  /// No description provided for @fullTranslationActionNextBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Batch'**
+  String get fullTranslationActionNextBatch;
+
+  /// No description provided for @fullTranslationActionRetryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry {count} Untranslated'**
+  String fullTranslationActionRetryFailed(int count);
+
+  /// No description provided for @fullTranslationActionContinueTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Translation…'**
+  String get fullTranslationActionContinueTranslation;
+
+  /// No description provided for @fullTranslationActionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Translations…'**
+  String get fullTranslationActionClear;
+
+  /// No description provided for @fullTranslationClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all AI translations for this document?'**
+  String get fullTranslationClearTitle;
+
+  /// No description provided for @fullTranslationClearMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manually edited translations will also be removed.'**
+  String get fullTranslationClearMessage;
+
+  /// No description provided for @fullTranslationCkptBatchDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch {batch} Completed'**
+  String fullTranslationCkptBatchDone(int batch);
+
+  /// No description provided for @fullTranslationCkptPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages {from}–{to}'**
+  String fullTranslationCkptPages(int from, int to);
+
+  /// No description provided for @fullTranslationCkptCollapseTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse to read'**
+  String get fullTranslationCkptCollapseTip;
+
+  /// No description provided for @fullTranslationCkptExpandTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get fullTranslationCkptExpandTip;
+
+  /// No description provided for @fullTranslationCkptMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch {batch} Pending'**
+  String fullTranslationCkptMin(int batch);
+
+  /// No description provided for @fullTranslationCkptNextBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Pages {from}–{to}'**
+  String fullTranslationCkptNextBatch(int from, int to);
+
+  /// No description provided for @fullTranslationCkptFromPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Review starting from page {page}'**
+  String fullTranslationCkptFromPage(int page);
+
+  /// No description provided for @fullTranslationCkptRemain.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining {pages} pages · ~{tokens} tokens'**
+  String fullTranslationCkptRemain(int pages, String tokens);
+
+  /// No description provided for @fullTranslationCkptTranslateRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate Rest All'**
+  String get fullTranslationCkptTranslateRest;
+
+  /// No description provided for @fullTranslationHudStartBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting translation for pages {from}–{to}'**
+  String fullTranslationHudStartBatch(int from, int to);
+
+  /// No description provided for @fullTranslationHudStartAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting full document translation'**
+  String get fullTranslationHudStartAll;
+
+  /// No description provided for @fullTranslationHudDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Full translation completed'**
+  String get fullTranslationHudDone;
+
+  /// No description provided for @fullTranslationHudDoneFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Full translation completed · {count} untranslated'**
+  String fullTranslationHudDoneFailed(int count);
+
+  /// No description provided for @fullTranslationHudView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get fullTranslationHudView;
+
+  /// No description provided for @fullTranslationHudStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped · Translated content saved'**
+  String get fullTranslationHudStopped;
+
+  /// No description provided for @fullTranslationHudPausedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Full translation paused at page {page}'**
+  String fullTranslationHudPausedAt(int page);
+
+  /// No description provided for @fullTranslationHudContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get fullTranslationHudContinue;
+
+  /// No description provided for @fullTranslationHudRestAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining pages will be translated all at once'**
+  String get fullTranslationHudRestAll;
+
+  /// No description provided for @fullTranslationGridCell.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} · {state}'**
+  String fullTranslationGridCell(int page, String state);
+
+  /// No description provided for @fullTranslationCapsuleA11y.
+  ///
+  /// In en, this message translates to:
+  /// **'Full translation, {percent}%, batch {batch}, {done} / {total} pages'**
+  String fullTranslationCapsuleA11y(int percent, int batch, int done, int total);
+
   /// No description provided for @phoneGlassTitle.
   ///
   /// In en, this message translates to:
