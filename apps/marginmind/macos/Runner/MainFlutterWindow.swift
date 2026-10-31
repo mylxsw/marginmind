@@ -2,9 +2,11 @@ import Cocoa
 import FlutterMacOS
 import Security
 import LocalAuthentication
+import UserNotifications
 
 class MainFlutterWindow: NSWindow {
   private var speech: SpeechChannel?
+  private var systemNotification: SystemNotificationChannel?
   private var mapExport: MapExportChannel?
   private var articleParser: ArticleParserChannel?
   private var pdfOcr: PdfOcrChannel?
@@ -123,6 +125,7 @@ class MainFlutterWindow: NSWindow {
     appIcon = AppIconChannel(messenger: flutterViewController.engine.binaryMessenger)
 
     speech = SpeechChannel(messenger: flutterViewController.engine.binaryMessenger)
+    systemNotification = SystemNotificationChannel(messenger: flutterViewController.engine.binaryMessenger)
     let clipboard = FlutterMethodChannel(name: "marginmind/map_clipboard",
       binaryMessenger: flutterViewController.engine.binaryMessenger)
     mapClipboard = clipboard
@@ -527,4 +530,44 @@ final class SpeechChannel {
     else { result(FlutterError(code: "speech", message: nil, details: nil)) }
   }
   deinit { synthesizer.stopSpeaking() }
+}
+
+/// System notification channel for background task completion alerts.
+final class SystemNotificationChannel {
+  private let channel: FlutterMethodChannel
+  init(messenger: FlutterBinaryMessenger) {
+    channel = FlutterMethodChannel(name: "marginmind/system_notification", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      Self.handle(call, result: result, notify: { title, body in
+        guard Bundle.main.bundleIdentifier != nil else { return true }
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+          guard granted else { return }
+          let content = UNMutableNotificationContent()
+          content.title = title
+          content.body = body
+          content.sound = .default
+          let request = UNNotificationRequest(
+            identifier: "marginmind.translation.\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+          )
+          center.add(request, withCompletionHandler: nil)
+        }
+        return true
+      })
+    }
+  }
+  static func handle(_ call: FlutterMethodCall, result: FlutterResult,
+                     notify: (String, String) -> Bool) {
+    guard call.method == "notify" else { result(FlutterMethodNotImplemented); return }
+    guard let args = call.arguments as? [String: String],
+          let title = args["title"], let body = args["body"],
+          !title.isEmpty, !body.isEmpty,
+          title.count <= 256, body.count <= 512 else {
+      result(FlutterError(code: "invalid", message: nil, details: nil)); return
+    }
+    if notify(title, body) { result(nil) }
+    else { result(FlutterError(code: "notification", message: nil, details: nil)) }
+  }
 }
