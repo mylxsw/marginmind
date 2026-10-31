@@ -84,6 +84,9 @@ class MindMapCanvas extends StatefulWidget {
     super.key,
     required this.content,
     this.mapId = MindMap.defaultId,
+    this.diffLines = const [],
+    this.diffFocusId,
+    this.onDiffFocus,
     required this.rootTitle,
     required this.selectedCardId,
     required this.flashCardId,
@@ -205,6 +208,9 @@ class MindMapCanvas extends StatefulWidget {
   final bool loaded;
 
   final StudySetContent content;
+  final List<MapLine> diffLines;
+  final String? diffFocusId;
+  final ValueChanged<String>? onDiffFocus;
   final String mapId;
   final String rootTitle;
   final String? selectedCardId;
@@ -425,6 +431,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     for (final r in _cache._relations) _relationDraft?.id == r.id ? _relationDraft! : r,
   ];
 
+  /// Current parent title of a node under diff review, shown as the move origin.
+  String _diffParentTitle(String nodeId) {
+    final parentId = widget.content.nodes
+        .where((n) => n.mapId == widget.mapId && n.cardId == nodeId)
+        .firstOrNull
+        ?.parentId;
+    return (parentId == null ? null : widget.content.card(parentId)?.title) ??
+        widget.content.map(widget.mapId)?.title ??
+        '';
+  }
+
   String _storedLabel(String id) =>
       widget.content.relations.where((r) => r.id == id).firstOrNull?.label ??
       widget.content.summaries.where((s) => s.id == id).firstOrNull?.label ??
@@ -608,6 +625,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   @override
   void didUpdateWidget(MindMapCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.diffFocusId != oldWidget.diffFocusId) {
+      final line = widget.diffLines.where((l) => l.id == widget.diffFocusId).firstOrNull;
+      if (line != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _ensureVisible(line.nodeId ?? line.id, settled: true);
+        });
+      }
+    }
     final selected = widget.selectedCardId;
     final oldCard = selected == null ? null : oldWidget.content.card(selected);
     final newCard = selected == null ? null : widget.content.card(selected);
@@ -946,6 +971,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (preview == null || layout == null || _viewport.isEmpty) return;
     final rects = [
       for (final id in [
+        if (widget.diffLines.isNotEmpty) ...layout.rects.keys,
         ...preview.request.targetIds.map((id) => id == widget.mapId ? rootNodeId : id),
         ..._drafts.map((d) => d.id),
         ...preview.moves.keys,
@@ -2131,10 +2157,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                               onToggle: () {
                                 setState(() => _draftFocus = id);
                                 widget.onDraftToggle?.call(id);
+                                if (widget.diffLines.isNotEmpty) widget.onDiffFocus?.call(id);
                                 widget.focusNode.requestFocus();
                               },
                               onEdit: (text) => widget.onDraftEdit?.call(id, text),
-                              onMore: _draftDepth(id) >= 3 ? null : () => widget.onDraftMore?.call(id),
+                              onMore: widget.diffLines.isNotEmpty || _draftDepth(id) >= 3
+                                  ? null
+                                  : () => widget.onDraftMore?.call(id),
                             )))
               : widget.expansion == null
               ? _nodeWidget(id, specs[id]!, l, _lookOf(id, specs[id]!, palette, c))
@@ -2146,6 +2175,75 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
     };
+    if (widget.diffLines.isNotEmpty) {
+      for (final entry in nodes.entries.toList()) {
+        final changes = widget.diffLines.where((l) => (l.nodeId ?? l.id) == entry.key).toList();
+        final protected =
+            entry.key != rootNodeId &&
+            widget.content.card(entry.key) != null &&
+            isMapNodeProtected(widget.content, widget.mapId, entry.key);
+        if (changes.isEmpty && !protected) continue;
+        final label = changes.isEmpty
+            ? l.mapDiffProtected
+            : changes
+                  .map(
+                    (line) => switch (line.kind) {
+                      MapLineKind.add || MapLineKind.excerpt => l.mapDiffTagNew,
+                      MapLineKind.rename => line.title ?? '',
+                      MapLineKind.move => l.mapDiffTagMovedFrom(_diffParentTitle(entry.key)),
+                      MapLineKind.remove => l.mapDiffTagRemove,
+                      MapLineKind.point => '',
+                    },
+                  )
+                  .join(' · ');
+        nodes[entry.key] = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: changes.isEmpty ? null : () => widget.onDiffFocus?.call(changes.first.id),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              entry.value,
+              if (changes.any((line) => line.id == widget.diffFocusId))
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: c.research),
+                        borderRadius: BorderRadius.circular(MMRadii.card),
+                      ),
+                    ),
+                  ),
+                ),
+              if (changes.any((line) => line.kind == MapLineKind.remove && line.kept))
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Center(child: Divider(height: 0, color: c.critical)),
+                  ),
+                ),
+              Positioned(
+                top: -MMSpacing.l,
+                left: 0,
+                child: Semantics(
+                  label: label,
+                  child: changes.isEmpty
+                      ? ExcludeSemantics(
+                          child: Icon(MMIcons.lock, size: MMTypography.body.fontSize, color: c.secondaryLabel),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
+                          decoration: BoxDecoration(
+                            color: c.research,
+                            borderRadius: BorderRadius.circular(MMRadii.row),
+                          ),
+                          child: Text(label, style: context.mmText.footnote.copyWith(color: c.onResearch)),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
     final foldButtons = {
       for (final id in expandable.where((_) => widget.expansion == null))
         id: _FoldButton(
@@ -2567,7 +2665,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
               ),
-              if (widget.expansion != null && widget.expansion!.phase != ExpansionPhase.generating)
+              if (widget.expansion != null &&
+                  widget.expansion!.phase != ExpansionPhase.generating &&
+                  widget.diffLines.isEmpty)
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: Listenable.merge([widget.transformation, _motion]),
@@ -2594,7 +2694,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                 _ghostKeys[id]?.currentState?.beginEdit();
                                 setState(() {});
                               },
-                              onMore: _draftDepth(id) >= 3 ? null : () => widget.onDraftMore?.call(id),
+                              onMore: widget.diffLines.isNotEmpty || _draftDepth(id) >= 3
+                                  ? null
+                                  : () => widget.onDraftMore?.call(id),
                             ),
                           ),
                         ],

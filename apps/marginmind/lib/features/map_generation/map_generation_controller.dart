@@ -139,7 +139,7 @@ class MapGenerationPreview {
       if (l.kind == MapLineKind.add) l.toExpansionDraft(),
   ];
 
-  ExpansionPreview? toExpansionPreview() {
+  ExpansionPreview? toExpansionPreview({StudySetContent? content}) {
     final targetId = request.destination == MapGenerationDestination.newMap
         ? request.mapId
         : (request.parentId ?? request.mapId);
@@ -159,6 +159,7 @@ class MapGenerationPreview {
     }
     if (phase == MapGenerationPhase.streaming ||
         phase == MapGenerationPhase.review ||
+        phase == MapGenerationPhase.diff ||
         phase == MapGenerationPhase.stopped) {
       return ExpansionPreview(
         request: ExpansionRequest(
@@ -170,7 +171,18 @@ class MapGenerationPreview {
         baseRevision: baseRevision,
         proposalId: proposalId,
         phase: phase == MapGenerationPhase.streaming ? ExpansionPhase.generating : ExpansionPhase.review,
-        drafts: drafts,
+        drafts: [
+          ...drafts,
+          if (request.destination == MapGenerationDestination.update && content != null)
+            for (final line in lines.where((l) => l.kind == MapLineKind.excerpt))
+              ExpansionDraft(
+                id: line.id,
+                parentRef: line.parentId!,
+                kept: line.kept,
+                title: expansionTitle(content.annotation(line.annotationId!)?.quote ?? ''),
+                page: line.source?.page,
+              ),
+        ],
         failure: failure,
         isApplying: isApplying,
       );
@@ -314,6 +326,32 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     final builder = ref.read(documentDigestBuilderProvider(arg));
     final cancel = _cancel = CancellationToken();
 
+    final pendingSources = [
+      for (final selection in request.sources)
+        MapSource(
+          documentId: selection.documentId,
+          chapters: selection.chapters,
+          fingerprint: 'pending',
+          readThrough: snapshot.document(selection.documentId)?.lastPage ?? 1,
+        ),
+    ];
+    if (pendingSources.isEmpty) throw ArgumentError('No source documents');
+    final preparationEpoch = ++_generation;
+    _ownsBusy = true;
+    ref.read(expansionBusyProvider.notifier).set(true);
+    state = MapGenerationPreview(
+      request: request,
+      baseRevision: assistantMapRevision(snapshot, request.mapId),
+      proposalId: proposalId,
+      generation: MapGeneration(
+        sources: pendingSources,
+        organization: request.organization,
+        depth: request.depth,
+        instructions: request.instructions,
+        generatedAt: DateTime.now().toUtc(),
+      ),
+    );
+
     final skeletons = <MapSkeletonItem>[];
     final chapterProgress = <String, MapChapterStatus>{};
     final sources = <MapSource>[];
@@ -340,6 +378,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           cancellation: cancel,
         );
 
+        if (_disposed || preparationEpoch != _generation) return;
         sources.add(digest.source);
 
         final outline = snapshot.outlineOn(doc.id);
@@ -378,12 +417,15 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         }
       }
     } on MapDigestNeedsText {
+      if (_disposed || preparationEpoch != _generation) return;
+      _ownsBusy = false;
+      ref.read(expansionBusyProvider.notifier).set(false);
       state = MapGenerationPreview(
         request: request,
         baseRevision: assistantMapRevision(snapshot, request.mapId),
         proposalId: proposalId,
         generation: MapGeneration(
-          sources: const [],
+          sources: pendingSources,
           organization: request.organization,
           depth: request.depth,
           instructions: request.instructions,
@@ -394,13 +436,16 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       );
       return;
     } catch (e) {
+      if (_disposed || preparationEpoch != _generation) return;
+      _ownsBusy = false;
+      ref.read(expansionBusyProvider.notifier).set(false);
       final failure = e is ResearchFailure ? e : const ResearchFailure(ResearchFailureKind.unavailable);
       state = MapGenerationPreview(
         request: request,
         baseRevision: assistantMapRevision(snapshot, request.mapId),
         proposalId: proposalId,
         generation: MapGeneration(
-          sources: const [],
+          sources: pendingSources,
           organization: request.organization,
           depth: request.depth,
           instructions: request.instructions,
@@ -412,6 +457,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       return;
     }
 
+    if (_disposed || preparationEpoch != _generation) return;
     final generation = MapGeneration(
       sources: sources,
       organization: request.organization,
@@ -538,40 +584,57 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   Future<void> _streamBuild(MapGenerationRequest request, CancellationToken cancel, int epoch) async {
     final generator = _generator!;
-    final allPages = <int>{};
+    final allPages = <String, Set<int>>{};
+    final updating = request.destination == MapGenerationDestination.update;
+    final snapshot = ref.read(workspaceProvider(arg).notifier).content;
+    final nodes = snapshot.nodes.where((n) => n.mapId == request.mapId).toList();
+    final aliases = {for (final (i, n) in nodes.indexed) 'N${i + 1}': n.cardId};
+    final reverse = {for (final e in aliases.entries) e.value: e.key};
+    final titles = {for (final e in aliases.entries) e.key: snapshot.card(e.value)?.title ?? ''};
     final allAnnotations = <String, String>{};
     final allDocs = <String, String>{};
 
     for (final task in _tasks.values) {
-      allPages.addAll(task.pages);
-      allAnnotations.addAll(task.input.context.annotations);
+      for (final doc in task.input.context.documents.keys) {
+        allPages.putIfAbsent(doc, () => <int>{}).addAll(task.pages);
+      }
+      for (final id in task.input.context.annotations.values) {
+        if (!allAnnotations.containsValue(id)) allAnnotations['A${allAnnotations.length + 1}'] = id;
+      }
       allDocs.addAll(task.input.context.documents);
     }
 
     final buildContext = MapLineContext(
-      phase: MapLinePhase.generation,
-      mapId: request.mapId,
-      draftPrefix: '${state!.proposalId}-gen-',
-      documents: allDocs.isNotEmpty ? allDocs : {'D1': request.sources.first.documentId},
-      pages: {
-        for (final docAlias in (allDocs.isNotEmpty ? allDocs.keys : const ['D1'])) docAlias: allPages,
+      phase: updating ? MapLinePhase.diff : MapLinePhase.generation,
+      nodes: updating ? aliases : const {},
+      protectedNodeIds: {
+        for (final n in nodes)
+          if (isMapNodeProtected(snapshot, request.mapId, n.cardId)) n.cardId,
       },
+      mapId: request.mapId,
+      draftPrefix: '${state!.proposalId}-gen-${state!.round}-',
+      documents: allDocs.isNotEmpty ? allDocs : {'D1': request.sources.first.documentId},
+      pages: allPages,
       annotations: allAnnotations,
       maxDepth: request.depth,
       rootParentId: request.parentId,
-      existingTitles: state!.editedTitles.values,
+      existingTitles: titles.values,
     );
 
     final buildInput = MapBuildInput(
       title: request.title,
+      onlyNewContent: request.onlyNewContent,
+      titleConstraints: state!.editedTitles.values.toList(),
       generation: state!.generation,
       context: buildContext,
       points: List.unmodifiable(_collectedPoints),
-      existingTitles: state!.editedTitles,
+      existingTitles: updating ? titles : state!.editedTitles,
+      existingParents: updating ? {for (final n in nodes) reverse[n.cardId]!: reverse[n.parentId] ?? 'ROOT'} : const {},
     );
 
     final lines = <MapLine>[];
-    await for (final line in generator.generate(buildInput, cancel)) {
+    await for (final line
+        in (updating ? generator.update(buildInput, cancel) : generator.generate(buildInput, cancel))) {
       if (_disposed || epoch != _generation) return;
       lines.add(line);
       state = state!.copyWith(lines: List.unmodifiable(lines));
@@ -584,7 +647,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           failure: const ResearchFailure(ResearchFailureKind.protocol, 'noValidMapContent'),
         );
       } else {
-        state = state!.copyWith(phase: MapGenerationPhase.review);
+        state = state!.copyWith(phase: updating ? MapGenerationPhase.diff : MapGenerationPhase.review);
       }
     }
   }
@@ -729,6 +792,8 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   void edit(String id, String title) {
     if (!_reviewable || normalizeExpansionTitle(title).isEmpty) return;
+    final line = state!.lines.where((l) => l.id == id).firstOrNull;
+    if (line == null || (line.kind != MapLineKind.add && line.kind != MapLineKind.rename)) return;
     final edited = Map<String, String>.from(state!.editedTitles);
     edited[id] = title.trim();
     state = state!.copyWith(
@@ -740,7 +805,12 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
   bool get _reviewable =>
       state != null &&
       !state!.isApplying &&
-      {MapGenerationPhase.review, MapGenerationPhase.stopped, MapGenerationPhase.failed}.contains(state!.phase);
+      {
+        MapGenerationPhase.review,
+        MapGenerationPhase.diff,
+        MapGenerationPhase.stopped,
+        MapGenerationPhase.failed,
+      }.contains(state!.phase);
 
   Future<void> regenerate([MapGenerationRequest? settings]) async {
     if (!_reviewable || ref.read(assistantControllerProvider.notifier).busy) return;
@@ -787,15 +857,24 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
     try {
       final isNewMap = old.request.destination == MapGenerationDestination.newMap;
-      final proposal = generationToProposal(
-        proposalId: old.proposalId,
-        studySetId: old.request.studySetId,
-        mapId: old.request.mapId,
-        baseRevision: old.baseRevision,
-        generation: old.generation,
-        lines: old.lines.where((l) => l.kept).toList(),
-        createMap: isNewMap ? MindMap(id: old.request.mapId, title: old.request.title) : null,
-      );
+      final proposal = old.request.destination == MapGenerationDestination.update
+          ? diffToProposal(
+              proposalId: old.proposalId,
+              studySetId: old.request.studySetId,
+              mapId: old.request.mapId,
+              baseRevision: old.baseRevision,
+              generation: old.generation,
+              lines: old.lines,
+            )
+          : generationToProposal(
+              proposalId: old.proposalId,
+              studySetId: old.request.studySetId,
+              mapId: old.request.mapId,
+              baseRevision: old.baseRevision,
+              generation: old.generation,
+              lines: old.lines,
+              createMap: isNewMap ? MindMap(id: old.request.mapId, title: old.request.title) : null,
+            );
 
       final executor = ref.read(assistantMapEditExecutorProvider(arg));
       final receipt = await executor.apply(proposal, proposal.operations.map((o) => o.id).toSet());
@@ -806,7 +885,9 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           await ref.read(workspaceProvider(arg).notifier).selectMap(old.request.mapId);
         }
       }
-      return receipt.nodeIds.length;
+      return old.request.destination == MapGenerationDestination.update
+          ? receipt.operationIds.length
+          : receipt.nodeIds.length;
     } catch (e) {
       if (!_disposed) {
         state = old.copyWith(

@@ -21,6 +21,7 @@ import 'full_translation_sheet.dart';
 import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
 import '../../map_generation/map_generation_controller.dart';
+import '../../map_generation/map_updates.dart';
 import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../../study_notes/note_setup_sheet.dart';
 import '../../study_notes/note_updates.dart';
@@ -75,17 +76,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
                 );
               }
-              final hasUpdates =
-                  map.generation != null &&
-                  mapSourcesChanged(map.generation!, [
-                    for (final s in map.generation!.sources)
-                      MapSource(
-                        documentId: s.documentId,
-                        chapters: s.chapters,
-                        fingerprint: content?.document(s.documentId) == null ? '' : s.fingerprint,
-                        readThrough: s.readThrough,
-                      ),
-                  ]);
+              final hasUpdates = ref.watch(mapHasUpdatesProvider((studySetId, map.id)));
               if (hasUpdates) {
                 return Semantics(
                   label: l.mapHasUpdates,

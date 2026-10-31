@@ -1,12 +1,12 @@
 {
-  "baseline": "62c179ecbb4f6dbe0bb3d7812b0ebef21a1a1d46",
-  "covered": 1599,
-  "lines": 1831,
-  "percent": 87.33,
+  "baseline": "95c79ceea5bd0710790880df05c8a0d52a7aefd1",
+  "covered": 1586,
+  "lines": 1807,
+  "percent": 87.77,
   "files": [
     {
       "path": "apps/marginmind/lib/app/app_commands.dart",
-      "covered": 729,
+      "covered": 731,
       "lines": 801,
       "changed_covered": 17,
       "changed_lines": 22,
@@ -16,18 +16,6 @@
         1186,
         1189,
         1194
-      ]
-    },
-    {
-      "path": "apps/marginmind/lib/features/map_generation/map_generation_controller.dart",
-      "covered": 383,
-      "lines": 434,
-      "changed_covered": 14,
-      "changed_lines": 17,
-      "uncovered_changed": [
-        236,
-        239,
-        509
       ]
     },
     {
@@ -295,14 +283,6 @@
       "uncovered_changed": []
     },
     {
-      "path": "apps/marginmind/lib/features/workspace/widgets/mind_map_canvas.dart",
-      "covered": 1927,
-      "lines": 1993,
-      "changed_covered": 5,
-      "changed_lines": 5,
-      "uncovered_changed": []
-    },
-    {
       "path": "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart",
       "covered": 250,
       "lines": 264,
@@ -394,13 +374,13 @@
     },
     {
       "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
-      "covered": 290,
-      "lines": 331,
-      "changed_covered": 43,
-      "changed_lines": 45,
+      "covered": 179,
+      "lines": 324,
+      "changed_covered": 41,
+      "changed_lines": 43,
       "uncovered_changed": [
-        473,
-        546
+        536,
+        537
       ]
     },
     {
@@ -413,20 +393,11 @@
     },
     {
       "path": "packages/mm_core/lib/src/testing/map_generator.dart",
-      "covered": 27,
+      "covered": 38,
       "lines": 38,
-      "changed_covered": 4,
+      "changed_covered": 12,
       "changed_lines": 12,
-      "uncovered_changed": [
-        50,
-        51,
-        52,
-        53,
-        54,
-        63,
-        64,
-        65
-      ]
+      "uncovered_changed": []
     },
     {
       "path": "packages/mm_design/lib/src/icons/mm_icons.dart",

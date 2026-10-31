@@ -24,12 +24,13 @@
 
 Flutter 3.47.2 / Dart 3.13.2，Linux。
 
-- `dart format --output=none --set-exit-if-changed apps packages`：800 个文件，0 个改动。
+- `dart format --output=none --set-exit-if-changed apps packages`：805 个文件，0 个改动。
 - `flutter analyze --no-pub`：No issues found。
 - `python3 -m unittest discover -s tool/tests`：26 个测试通过。
 - `flutter test --no-pub --concurrency=2 --coverage test/full_translation_test.dart test/translation_controls_test.dart test/translation_lifecycle_test.dart test/translation_entry_points_test.dart test/translation_page_grid_test.dart`（`apps/marginmind`）：45 个测试通过，包含六张 Linux golden 的正常比对。
-- 新增/变更执行行覆盖率 **87.33%**；全仓合并覆盖率 **91.18%**。完整文件表与方法见 [coverage.md](coverage.md)。
-- 全量应用：1,246 通过、36 跳过、10 个 main 基线失败；另有设计包 golden 79px 基线差异，均已独立复现。详细结果和复现命令见覆盖率报告。
+- 新增/变更执行行覆盖率 **87.77%**；全仓合并覆盖率 **88.08%**。完整文件表与方法见 [coverage.md](coverage.md)。
+- 合并最新 main 前的全量应用：1,246 通过、36 跳过、10 个 main 基线失败；另有设计包 golden 79px 基线差异，均已独立复现。详细结果和复现命令见覆盖率报告。
+- 同步最新 main（95c79cee）后：全文翻译及脑图生成/更新相关应用测试共 67 项通过，模型生成器 13 项通过，分析无问题；覆盖率按最新源码重新合并。
 
 ## 截图
 
