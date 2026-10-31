@@ -423,7 +423,10 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                         tooltip: l.moreTools,
                         icon: const Icon(MMIcons.more),
                         onSelected: (command) => command(),
-                        itemBuilder: (_) => [for (final action in scope.actions) action.menuEntry],
+                        itemBuilder: (_) => [
+                          for (final action in scope.actions) action.menuEntry,
+                          ...scope.menuEntries,
+                        ],
                       ),
                     if (globalMenu) const SizedBox(width: MMSpacing.s),
                   ],

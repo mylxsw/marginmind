@@ -11,12 +11,14 @@ class WorkspaceToolbarScope extends InheritedWidget {
     super.key,
     required super.child,
     required this.actions,
+    this.menuEntries = const [],
     this.primary = true,
     required this.leading,
     required this.ownsActions,
     required this.ownsLeading,
   });
   final List<MMToolbarItem> actions;
+  final List<PopupMenuEntry<VoidCallback>> menuEntries;
   final Widget? leading;
   final bool ownsActions, ownsLeading;
   final bool primary;
@@ -56,6 +58,17 @@ class WorkspaceToolbar extends StatelessWidget {
     final leading = ownsLeading ? scope?.leading : null;
     final inset = ownsLeading ? MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0 : 0.0;
     final phone = MMInput.of(context).phone;
+    final portraitTablet = context.mmTablet && MediaQuery.orientationOf(context) == Orientation.portrait;
+    final readerCompanions = portraitTablet && menuIcon != null
+        ? items.where((item) => item.id == 'compare' || item.id == 'documents').toList()
+        : <MMToolbarItem>[];
+    final actions = ownsActions && scope != null ? scope.actions : <MMToolbarItem>[];
+    final toolbarItems = [
+      ...items.where((item) => !readerCompanions.contains(item)),
+      ...actions.where((item) => item.id != 'assistant'),
+      ...readerCompanions,
+      ...actions.where((item) => item.id == 'assistant'),
+    ];
     final toolbar = ColoredBox(
       color: phone ? context.mmColors.surface : context.mmColors.windowBackground,
       child: MMToolbar.content(
@@ -81,15 +94,19 @@ class WorkspaceToolbar extends StatelessWidget {
               if (leading != null) ...[leading, const SizedBox(width: MMSpacing.s)],
               Expanded(
                 child: MMAdaptiveToolbar(
-                  items: [...items, if (ownsActions && scope != null) ...scope.actions],
+                  items: toolbarItems,
                   menuLabel: label,
                   overflowLabel: overflowLabel,
-                  spacing: phone ? MMSpacing.xs : MMToolbarSpacing.group,
+                  spacing: phone
+                      ? MMSpacing.xs
+                      : context.mmTablet
+                      ? MMSpacing.m
+                      : MMToolbarSpacing.group,
                   menuIcon: menuIcon,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                   trailingIds: {
-                    if (menuIcon != null) 'compare',
-                    if (menuIcon != null) 'documents',
+                    if (menuIcon != null && !portraitTablet) ...{'compare', 'documents'},
+                    if (readerCompanions.isNotEmpty && actions.isEmpty) ...{'compare', 'documents'},
                     if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),
                     ':menu',
                   },
@@ -99,12 +116,18 @@ class WorkspaceToolbar extends StatelessWidget {
                           if (menuIcon != null) {'select', 'highlight', 'underline', 'ink', 'area', 'sync'},
                           if (context.mmTablet) ...[
                             {'map-view', 'map-style'},
-                            {'compare', 'documents'},
+                            if (!portraitTablet) {'compare', 'documents'},
                           ],
                           {'layout-reader', 'layout-split', 'layout-map'},
-                          {'organize-note', 'assistant'},
+                          if (portraitTablet) {'compare', 'documents', 'assistant'} else {'assistant'},
                         ],
-                  menuEntries: menuEntries,
+                  menuEntries: [
+                    ...menuEntries,
+                    if (ownsActions && scope != null && scope.menuEntries.isNotEmpty) ...[
+                      if (menuEntries.isNotEmpty) const PopupMenuDivider(),
+                      ...scope.menuEntries,
+                    ],
+                  ],
                 ),
               ),
             ],

@@ -290,13 +290,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     }) => MMToolbarItem(
       id: id,
       priority: priority,
-      key: id == 'organize-note' ? ValueKey('toolbar-$id') : null,
-      compactChild: id == 'organize-note' && !touchPlatform
-          ? MMToolbarButton(icon: icon, tooltip: label, selected: selected, tint: tint, onPressed: invoke)
-          : null,
       child: MMToolbarButton(
-        key: id == 'organize-note' ? null : ValueKey('toolbar-$id'),
-        label: id == 'organize-note' && !touchPlatform ? l.organizeNotes : null,
+        key: ValueKey('toolbar-$id'),
         icon: icon,
         tooltip: label,
         selected: selected,
@@ -344,12 +339,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         () => controller.setLayout(MMSplitMode.secondary),
         selected: layout == MMSplitMode.secondary,
       ),
-      action(
-        'organize-note',
-        MMIcons.organizeNote,
-        AppShortcuts.tip(l.organizeNotes, AppShortcuts.organizeStudyNote),
-        () => showNoteSetupSheet(context, ref, widget.studySetId),
-      ),
       if (MMPlatformCapabilities.current.assistant)
         action(
           'assistant',
@@ -361,10 +350,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           priority: 80,
         ),
     ];
+    final globalMenuEntries = <PopupMenuEntry<VoidCallback>>[
+      action(
+        'organize-note',
+        MMIcons.organizeNote,
+        AppShortcuts.tip(l.organizeNotes, AppShortcuts.organizeStudyNote),
+        () => showNoteSetupSheet(context, ref, widget.studySetId),
+      ).menuEntry,
+    ];
     Widget paneChrome(Widget child, {required bool primary}) => !mergedToolbar
         ? child
         : WorkspaceToolbarScope(
             actions: phone ? const [] : globalActions,
+            menuEntries: phone ? const [] : globalMenuEntries,
             primary: primary,
             leading: phone ? null : leading,
             ownsLeading: !phone && (primary || layout == MMSplitMode.secondary),
@@ -468,13 +466,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           ),
         MMToolbarGroup(
           children: [
-            MMToolbarButton(
-              key: const ValueKey('toolbar-organize-note'),
-              icon: MMIcons.organizeNote,
-              label: compact || touchPlatform ? null : l.organizeNotes,
-              tooltip: AppShortcuts.tip(l.organizeNotes, AppShortcuts.organizeStudyNote),
-              onPressed: () => showNoteSetupSheet(context, ref, widget.studySetId),
-            ),
             if (MMPlatformCapabilities.current.assistant)
               MMToolbarButton(
                 key: const ValueKey('toolbar-assistant'),
@@ -485,6 +476,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 onPressed: () => toggleAssistant(ref, widget.studySetId),
               ),
           ],
+        ),
+        MMDropdownButton<VoidCallback>(
+          key: const ValueKey('workspace-more'),
+          tooltip: l.moreTools,
+          itemBuilder: (_) => globalMenuEntries,
+          onSelected: (command) => command(),
         ),
       ],
     );

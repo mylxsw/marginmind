@@ -9,6 +9,7 @@ import 'package:marginmind/app/window_title.dart';
 import 'package:marginmind/shared/pdf_picker.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
+import 'package:mm_design/mm_design.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final testNow = DateTime(2026, 10, 25, 12);
@@ -172,10 +173,25 @@ Future<void> tapWorkspaceCommand(WidgetTester tester, String id) async {
   if (direct.evaluate().isNotEmpty) {
     await tester.tap(direct.first);
   } else {
-    final phoneMenu = find.byKey(const ValueKey('phone-workspace-more')).hitTestable();
-    final menu = phoneMenu.evaluate().isNotEmpty
-        ? phoneMenu
-        : find.byKey(const ValueKey('note-workspace-more')).hitTestable();
+    final dedicatedMenu = find
+        .byWidgetPredicate(
+          (widget) =>
+              widget is MMDropdownButton<VoidCallback> &&
+              [
+                const ValueKey('phone-workspace-more'),
+                const ValueKey('note-workspace-more'),
+                const ValueKey('workspace-more'),
+              ].contains(widget.key),
+        )
+        .hitTestable();
+    final adaptiveMenu = find.byType(MMAdaptiveToolbar).evaluate().where((element) {
+      final toolbar = element.widget as MMAdaptiveToolbar;
+      return toolbar.menuEntries.any((entry) => entry.key == ValueKey('workspace-command-$id')) ||
+          toolbar.items.any((item) => item.menuEntry.key == ValueKey('workspace-command-$id'));
+    });
+    final menu = dedicatedMenu.evaluate().isNotEmpty
+        ? dedicatedMenu.first
+        : find.byKey((adaptiveMenu.first.widget as MMAdaptiveToolbar).menuKey!).hitTestable();
     await tester.tap(menu);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey('workspace-command-$id')).hitTestable());

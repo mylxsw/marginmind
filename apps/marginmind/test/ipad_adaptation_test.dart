@@ -5,6 +5,7 @@ import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/widgets/reader_toolbar.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -64,13 +65,47 @@ void main() {
       final view = find.byWidget(mapToolbar.items.firstWhere((item) => item.id == 'map-view').child);
       final style = find.byKey(const ValueKey('map-style-button'));
       expect(t.getRect(style).left, t.getRect(view).right, reason: 'map tools follow the same compact rhythm');
+      final readerToolbar = t.widget<MMAdaptiveToolbar>(find.byType(MMAdaptiveToolbar).first);
+      Rect readerAction(String id) =>
+          t.getRect(find.byWidget(readerToolbar.items.firstWhere((item) => item.id == id).child));
+      final layout = readerAction('layout-map');
+      final compare = readerAction('compare');
+      final documents = readerAction('documents');
+      final assistant = readerAction('assistant');
+      expect(compare.left - layout.right, 12);
+      expect(documents.left, compare.right);
+      expect(assistant.left, documents.right);
+      expect(find.byKey(const ValueKey('toolbar-organize-note')), findsNothing);
+      await t.tap(find.byKey(const ValueKey('reader-more')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-command-organize-note')).hitTestable(), findsOneWidget);
+      await t.tapAt(const Offset(8, 300));
+      await t.pumpAndSettle();
       final appearance = dark ? 'dark' : 'light';
+      await screenshot(t, 'reader-toolbar-$appearance', target: find.byType(ReaderToolbar));
       controller.selectCards({'c3', 'c4'});
       await t.pumpAndSettle();
       expect(find.byType(MapSelectionBar), findsOneWidget);
       await screenshot(t, 'shared-tools-$appearance', target: find.byType(AppShell));
       controller.selectCards({});
       await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('map-more')));
+      await t.pumpAndSettle();
+      for (final label in ['添加子主题', '在后面添加同级节点', '添加关联线', '添加概要', '添加笔记', '插入图片…', '标签…', '显示详情', '定位选中节点', '多选']) {
+        final row = find.ancestor(of: find.text(label), matching: find.byType(MMDropdownItem<VoidCallback>));
+        expect(row, findsOneWidget);
+        expect(
+          find.descendant(
+            of: row,
+            matching: find.byWidgetPredicate((widget) => widget is Icon || widget is MMNodeActionIcon),
+          ),
+          findsOneWidget,
+        );
+      }
+      await screenshot(t, 'map-menu-$appearance', target: find.byType(AppShell));
+      await t.tapAt(const Offset(8, 300));
+      await t.pumpAndSettle();
+
       final grip = find.byKey(const ValueKey('split-divider-grip'));
       expect(grip, findsOneWidget);
       expect(t.getSize(grip), const Size(32, 2));

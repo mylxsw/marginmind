@@ -640,6 +640,20 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final l = context.l10n;
     final c = context.mmColors;
     final t = context.mmText;
+    Widget nodeMenuIcon(MMNodeAction action) => Builder(
+      builder: (context) =>
+          MMNodeActionIcon(action, color: IconTheme.of(context).color ?? c.label, size: MMSizes.dropdownIcon),
+    );
+    Widget menuLabel(String label, Widget icon) => Row(
+      children: [
+        SizedBox.square(
+          dimension: MMSizes.dropdownIcon,
+          child: Center(child: icon),
+        ),
+        const SizedBox(width: MMSpacing.s),
+        Expanded(child: Text(label)),
+      ],
+    );
     final provider = workspaceProvider(widget.studySetId);
     ref.listen(provider.select((s) => s.layout), (_, _) {
       if (_styleOpen) _closeStyle();
@@ -1060,7 +1074,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         value: () =>
                                             controller.setMapView(outline ? MapViewMode.map : MapViewMode.outline),
                                         enabled: expansion == null,
-                                        child: Text(outline ? l.mapView : l.outlineView),
+                                        child: menuLabel(
+                                          outline ? l.mapView : l.outlineView,
+                                          Icon(outline ? MMIcons.mindMap : MMIcons.outline),
+                                        ),
                                       ),
                                     ),
                                     MMToolbarItem(
@@ -1082,7 +1099,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       menuEntry: MMDropdownItem<VoidCallback>(
                                         value: _showStyleDialog,
                                         enabled: map != null,
-                                        child: Text(l.mapStyle),
+                                        child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
                                       ),
                                     ),
                                     if (phone) ...[
@@ -1103,7 +1120,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         ),
                                         menuEntry: MMDropdownItem<VoidCallback>(
                                           value: () => _paneChrome?.map?.execute('actual-size'),
-                                          child: Text(l.pdfActualSize),
+                                          child: menuLabel(l.pdfActualSize, const Icon(MMIcons.actualSize)),
                                         ),
                                       ),
                                       for (final command in [
@@ -1121,41 +1138,41 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                           ),
                                           menuEntry: MMDropdownItem<VoidCallback>(
                                             value: () => _paneChrome?.map?.execute(command.$1),
-                                            child: Text(command.$3),
+                                            child: menuLabel(command.$3, Icon(command.$2)),
                                           ),
                                         ),
                                     ],
                                   ],
                                   menuEntries: [
                                     for (final command in [
-                                      (l.addChildTopic, commandBar.onChild),
-                                      (l.addSiblingAfter, commandBar.onSibling),
-                                      (l.addRelation, commandBar.onRelation),
-                                      (l.addSummary, commandBar.onSummary),
-                                      (l.addNote, commandBar.onNote),
-                                      (l.insertImage, commandBar.onImage),
-                                      (l.cardTags, commandBar.onTags),
-                                      (l.showCardDetails, commandBar.onDetails),
+                                      (l.addChildTopic, commandBar.onChild, nodeMenuIcon(MMNodeAction.child)),
+                                      (l.addSiblingAfter, commandBar.onSibling, nodeMenuIcon(MMNodeAction.sibling)),
+                                      (l.addRelation, commandBar.onRelation, nodeMenuIcon(MMNodeAction.relation)),
+                                      (l.addSummary, commandBar.onSummary, nodeMenuIcon(MMNodeAction.summary)),
+                                      (l.addNote, commandBar.onNote, const Icon(MMIcons.addNote)),
+                                      (l.insertImage, commandBar.onImage, const Icon(MMIcons.image)),
+                                      (l.cardTags, commandBar.onTags, const Icon(MMIcons.tag)),
+                                      (l.showCardDetails, commandBar.onDetails, const Icon(MMIcons.info)),
                                     ])
                                       MMDropdownItem<VoidCallback>(
                                         value: command.$2,
                                         enabled: command.$2 != null,
-                                        child: Text(command.$1),
+                                        child: menuLabel(command.$1, command.$3),
                                       ),
                                     MMDropdownItem<VoidCallback>(
                                       value: () => viewCommand('center', () => _viewCommand(MindMapCommand.center)),
-                                      child: Text(l.centerCurrentNode),
+                                      child: menuLabel(l.centerCurrentNode, const Icon(MMIcons.locate)),
                                     ),
                                     if (MMInput.touchInputOf(context))
                                       MMDropdownItem<VoidCallback>(
                                         value: () => setState(() => _touchSelection = !_touchSelection),
-                                        child: Text(l.mapMultiSelect),
+                                        child: menuLabel(l.mapMultiSelect, const Icon(MMIcons.areaSelect)),
                                       ),
                                     if (outline)
                                       MMDropdownItem<VoidCallback>(
                                         value: remove,
                                         enabled: state.selectedCardId != null,
-                                        child: Text(l.removeFromMap),
+                                        child: menuLabel(l.removeFromMap, const Icon(MMIcons.trash)),
                                       ),
                                   ],
                                 ),
