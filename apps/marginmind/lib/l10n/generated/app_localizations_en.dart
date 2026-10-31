@@ -872,6 +872,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allTags => 'All Tags';
 
   @override
+  String get backToMap => 'Back to Map';
+
+  @override
+  String get viewInMap => 'View in Map';
+
+  @override
+  String tagNodesInMap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count related nodes · Current map',
+      one: '1 related node · Current map',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagNoNodes => 'No nodes with this tag';
+
+  @override
   String get addRelation => 'Add Relationship';
 
   @override

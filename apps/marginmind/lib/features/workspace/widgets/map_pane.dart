@@ -34,6 +34,7 @@ import 'outline_view.dart';
 import 'map_selection_bar.dart';
 import 'map_header.dart';
 import 'workspace_toolbar.dart';
+import 'tag_content_pane.dart';
 import '../workspace_chrome_controller.dart';
 import '../workspace_pane_chrome_controller.dart';
 
@@ -658,10 +659,20 @@ class _MapPaneState extends ConsumerState<MapPane> {
     ref.listen(provider.select((s) => s.layout), (_, _) {
       if (_styleOpen) _closeStyle();
     });
+    ref.listen(provider.select((s) => s.tagFilter), (previous, next) {
+      if (next != null) {
+        _closeStyle();
+      } else if (previous != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _focus.requestFocus();
+        });
+      }
+    });
     ref.watch(
       provider.select(
         (s) => (
           s.activeMapId,
+          s.tagFilter,
           s.selectedCardId,
           s.rootSelected,
           s.selectedCardIds,
@@ -798,7 +809,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       }
     }
 
-    return LayoutBuilder(
+    final mapPane = LayoutBuilder(
       builder: (context, paneConstraints) {
         final controls = Row(
           mainAxisSize: MainAxisSize.min,
@@ -1382,6 +1393,20 @@ class _MapPaneState extends ConsumerState<MapPane> {
           ),
         );
       },
+    );
+    final tag = state.tagFilter;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Offstage(
+          offstage: tag != null,
+          child: TickerMode(
+            enabled: tag == null,
+            child: ExcludeFocus(excluding: tag != null, child: mapPane),
+          ),
+        ),
+        if (tag != null) TagContentPane(key: ValueKey(tag), studySetId: widget.studySetId, tag: tag),
+      ],
     );
   }
 }

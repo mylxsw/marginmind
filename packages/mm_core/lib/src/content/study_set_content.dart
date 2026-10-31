@@ -301,25 +301,38 @@ class StudySetContent {
   /// Titles of the topics/cards above [cardId], root first.
   List<String> pathOf(String cardId, {String mapId = MindMap.defaultId}) {
     final titles = <String>[];
-    var parent = node(cardId, mapId: mapId)?.parentId;
+    var parent = parentOf(cardId, mapId: mapId);
     final seen = <String>{};
     while (parent != null && seen.add(parent)) {
       final card = this.card(parent);
       if (card == null) break;
       titles.insert(0, notePlainText(card.title, card.textFormat));
-      parent = node(parent, mapId: mapId)?.parentId;
+      parent = parentOf(parent, mapId: mapId);
     }
     return titles;
   }
 
-  List<String> tags({String mapId = MindMap.defaultId}) {
+  /// Effective parent, including a summary topic's placement outside [nodes].
+  String? parentOf(String cardId, {String mapId = MindMap.defaultId}) =>
+      node(cardId, mapId: mapId)?.parentId ??
+      summaries.where((s) => s.mapId == mapId && s.cardId == cardId && summaryRange(s) != null).firstOrNull?.parentId;
+
+  List<String> tags({String mapId = MindMap.defaultId}) => tagCounts(mapId: mapId).keys.toList();
+
+  /// Distinct tagged nodes per tag, using the same scope as [search].
+  Map<String, int> tagCounts({String mapId = MindMap.defaultId}) {
     final names = <String, String>{};
+    final counts = <String, int>{};
     for (final c in _cardsInMapOrder(mapId)) {
+      final seen = <String>{};
       for (final tag in c.tags) {
-        names.putIfAbsent(tag.toLowerCase(), () => tag);
+        final key = tag.toLowerCase();
+        names.putIfAbsent(key, () => tag);
+        if (seen.add(key)) counts[key] = (counts[key] ?? 0) + 1;
       }
     }
-    return names.values.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final sorted = names.keys.toList()..sort();
+    return {for (final key in sorted) names[key]!: counts[key]!};
   }
 
   /// Cards whose title, quote or tags contain [query] (case-insensitive),

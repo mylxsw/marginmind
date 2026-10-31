@@ -165,7 +165,7 @@ class _MMSidebarSectionState extends State<MMSidebarSection> {
 /// Sidebar row (height 28; 44 under touch): accent-tinted icon, label, optional count.
 /// Selection is a gray rounded fill; text weight does not change.
 /// VoiceOver reads the label and the count once each.
-enum MMSidebarSelectionStyle { filled, marker }
+enum MMSidebarSelectionStyle { filled, marker, accent }
 
 class MMSidebarItem extends StatelessWidget {
   const MMSidebarItem({
@@ -228,7 +228,11 @@ class MMSidebarItem extends StatelessWidget {
         height: context.mmSidebarRow,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: selected && !marker ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
+          color: selected && !marker
+              ? selectionStyle == MMSidebarSelectionStyle.accent
+                    ? c.accentTint
+                    : c.selectedRow
+              : (s.hovered ? c.hover : Colors.transparent),
           borderRadius: BorderRadius.circular(MMRadii.row),
           border: s.focused ? Border.all(color: c.accent, width: 2) : null,
         ),

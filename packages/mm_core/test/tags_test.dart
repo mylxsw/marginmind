@@ -34,6 +34,7 @@ void main() {
     tagged = editor.setTags(tagged, '2', ['science', '知识']);
     tagged = editor.setCollapsed(tagged, '1', collapsed: true);
     expect(tagged.tags(), ['Science', '知识']);
+    expect(tagged.tagCounts(), {'Science': 2, '知识': 1});
     expect(tagged.search('SCI').map((c) => c.id), ['1', '2']);
     expect(tagged.search('', tag: 'SCIENCE').map((c) => c.id), ['1', '2']);
     expect(tagged.search('child', tag: '知识').map((c) => c.id), ['2']);
@@ -62,6 +63,8 @@ void main() {
     tagged = editor.setTags(tagged, note.id, ['science']);
     tagged = editor.setCollapsed(tagged, '1', collapsed: true);
     expect(tagged.tags(), ['Science']);
+    expect(tagged.tagCounts(), {'Science': 2});
+    expect(tagged.pathOf(note.id), ['Parent', 'Summary', 'Nested summary']);
     expect(tagged.search('', tag: 'SCIENCE').map((c) => c.id), [summary.cardId, note.id]);
     expect(tagged.search('passage', tag: 'science').single.id, note.id);
     expect(tagged.search('summary').map((c) => c.id), [summary.cardId, nested.value!.cardId]);

@@ -56,7 +56,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             key: ValueKey('sidebar-map-${map.id}'),
             icon: MMIcons.mindMap,
             label: map.title.isEmpty ? l.mainMap : map.title,
-            selected: state.activeNoteId == null && map.id == state.activeMapId,
+            selected: state.tagFilter == null && state.activeNoteId == null && map.id == state.activeMapId,
             selectionStyle: context.mmTablet ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
             onTap: () async {
               await controller.selectMap(map.id);
@@ -225,20 +225,19 @@ class WorkspaceSidebar extends ConsumerWidget {
           onTap: () => ref.read(navigationProvider.notifier).showStats(studySetId),
         ),
     ];
-    final tagNames = content?.tags(mapId: state.activeMapId) ?? const <String>[];
-    // A deleted tag must not leave the results trapped behind a stale filter.
-    final tagFilter = tagNames.any((tag) => tag.toLowerCase() == state.tagFilter?.toLowerCase())
-        ? state.tagFilter
-        : null;
+    final tagCounts = content?.tagCounts(mapId: state.activeMapId) ?? const <String, int>{};
+    final tagFilter = state.tagFilter;
     final tags = [
-      for (final tag in tagNames)
+      for (final tag in tagCounts.keys)
         if (matches(tag) || tag.toLowerCase() == tagFilter?.toLowerCase())
           MMSidebarItem(
             key: ValueKey('sidebar-tag-$tag'),
             icon: MMIcons.tag,
             label: tag,
             selected: tag.toLowerCase() == tagFilter?.toLowerCase(),
-            onTap: () => controller.filterTag(tag.toLowerCase() == tagFilter?.toLowerCase() ? null : tag),
+            selectionStyle: MMSidebarSelectionStyle.accent,
+            trailing: MMBadge('${tagCounts[tag]}'),
+            onTap: () => controller.filterTag(tag),
             onContextMenu: content!.dueCount(now, mapId: state.activeMapId, tag: tag) > 0
                 ? (position) => showMMMenu(
                     context,
@@ -255,9 +254,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                 : null,
           ),
     ];
-    final hits = content == null
-        ? const <Card>[]
-        : content.search(query, mapId: state.activeMapId, tag: tagFilter).toList();
+    final hits = content == null ? const <Card>[] : content.search(query, mapId: state.activeMapId).toList();
     final cards = [
       for (final card in hits)
         MMSidebarItem(
@@ -374,13 +371,7 @@ class WorkspaceSidebar extends ConsumerWidget {
           ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
         if (cards.isNotEmpty) MMSidebarSection(title: l.sectionCards, children: cards),
-        if (tags.isNotEmpty)
-          _SidebarTags(
-            key: ValueKey((studySetId, state.activeMapId)),
-            tags: tags,
-            filtered: tagFilter != null,
-            onClear: () => controller.filterTag(null),
-          ),
+        if (tags.isNotEmpty) _SidebarTags(key: ValueKey((studySetId, state.activeMapId)), tags: tags),
       ],
     );
   }
@@ -431,11 +422,9 @@ class WorkspaceSidebar extends ConsumerWidget {
 }
 
 class _SidebarTags extends StatefulWidget {
-  const _SidebarTags({super.key, required this.tags, required this.filtered, required this.onClear});
+  const _SidebarTags({super.key, required this.tags});
 
   final List<MMSidebarItem> tags;
-  final bool filtered;
-  final VoidCallback onClear;
 
   @override
   State<_SidebarTags> createState() => _SidebarTagsState();
@@ -456,13 +445,6 @@ class _SidebarTagsState extends State<_SidebarTags> {
     return MMSidebarSection(
       title: l.sectionTags,
       children: [
-        MMSidebarItem(
-          key: const ValueKey('sidebar-all-tags'),
-          icon: MMIcons.tag,
-          label: l.allTags,
-          selected: !widget.filtered,
-          onTap: widget.onClear,
-        ),
         ...visible,
         if (tags.length > _previewCount)
           MMSidebarItem(

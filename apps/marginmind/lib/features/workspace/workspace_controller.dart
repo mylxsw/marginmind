@@ -727,6 +727,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       clearMark: mark == null,
       clearConnecting: !connecting,
       activeMapId: mapId,
+      clearTagFilter: mapId != s.activeMapId,
       openDocumentIds: open,
       activeDocumentId: active,
       clearActive: active == null,
@@ -748,6 +749,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       if (!ref.mounted || _clipboardBusy || content.map(id) == null) return;
       state = state.copyWith(
         closeNote: true,
+        clearTagFilter: true,
         activeMapId: id,
         selectRoot: true,
         clearConnecting: true,
@@ -1572,6 +1574,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (content.studyNote(id) == null) return;
     state = state.copyWith(
       activeNoteId: id,
+      clearTagFilter: true,
       layout: onePane ? MMSplitMode.secondary : MMSplitMode.split,
       clearPending: true,
     );
@@ -2089,6 +2092,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         if (!ref.mounted) return false;
         state = state.copyWith(
           selectedCardId: cardId,
+          clearTagFilter: true,
+          closeNote: true,
           locateCardTick: state.locateCardTick + 1,
           mapView: MapViewMode.map,
           layout: _layoutShowingMap,
@@ -2123,18 +2128,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   StudySetContent _expandAncestors(StudySetContent c, String cardId) {
-    String? parentOf(String id) =>
-        c.node(id, mapId: state.activeMapId)?.parentId ??
-        c.summaries
-            .where((s) => s.mapId == state.activeMapId && s.cardId == id && c.summaryRange(s) != null)
-            .firstOrNull
-            ?.parentId;
-    var parent = parentOf(cardId);
+    var parent = c.parentOf(cardId, mapId: state.activeMapId);
     final seen = <String>{};
     while (parent != null && seen.add(parent)) {
       final node = c.node(parent, mapId: state.activeMapId);
       if (node?.collapsed == true) c = _editor.setCollapsed(c, parent, collapsed: false);
-      parent = parentOf(parent);
+      parent = c.parentOf(parent, mapId: state.activeMapId);
     }
     return c;
   }
@@ -2461,7 +2460,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return card;
   }
 
-  void filterTag(String? tag) => state = state.copyWith(tagFilter: tag, clearTagFilter: tag == null);
+  /// Tags navigate to their own content view; they do not filter sidebar search.
+  void filterTag(String? tag) {
+    if (tag != null && _blockExpansionEdit()) return;
+    state = state.copyWith(
+      tagFilter: tag,
+      clearTagFilter: tag == null,
+      closeNote: tag != null,
+      layout: tag == null ? null : _layoutShowingMap,
+    );
+  }
 
   Future<void> setTags(String cardId, Iterable<String> tags) {
     final values = tags.toList();

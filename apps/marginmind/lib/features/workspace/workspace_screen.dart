@@ -82,6 +82,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     ref.listen(provider.select((s) => s.activeDocumentId), (_, _) {
       if (touchPlatform) _setDrawer(false);
     });
+    ref.listen(provider.select((s) => s.tagFilter), (_, next) {
+      if (touchPlatform && next != null) _setDrawer(false);
+    });
 
     ref.watch(
       provider.select(

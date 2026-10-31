@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
+import 'package:marginmind/features/workspace/widgets/tag_content_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
@@ -70,7 +71,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('sidebar tags filter cards and combine with search', (tester) async {
+  testWidgets('tags open a content view independently of sidebar search', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
     await controller.setTags('c3', ['Science']);
@@ -80,8 +81,9 @@ void main() {
     Finder inSidebar(String text) => find.descendant(of: sidebar, matching: find.text(text));
     await tester.tap(find.byKey(const ValueKey('sidebar-tag-Science')));
     await tester.pumpAndSettle();
-    expect(inSidebar('遗忘的规律'), findsOneWidget);
+    expect(inSidebar('遗忘的规律'), findsNothing);
     expect(inSidebar('对策一：间隔重复'), findsNothing);
+    expect(find.descendant(of: find.byType(TagContentPane), matching: find.text('遗忘的规律')), findsOneWidget);
     await tester.enterText(find.byType(TextField).first, 'science');
     await tester.pumpAndSettle();
     expect(inSidebar('遗忘的规律'), findsOneWidget);
@@ -90,7 +92,7 @@ void main() {
     expect(inSidebar('遗忘的规律'), findsNothing);
     expect(inSidebar('Cards'), findsNothing);
     await tester.enterText(find.byType(TextField).first, '');
-    await tester.tap(inSidebar('All Tags'));
+    await tester.tap(find.byKey(const ValueKey('tag-back-to-map')));
     await tester.pumpAndSettle();
     expect(container.read(workspaceProvider('demo-1')).tagFilter, isNull);
     await tester.enterText(find.byType(TextField).first, 'practice');

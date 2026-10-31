@@ -836,6 +836,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get allTags => '全部标签';
 
   @override
+  String get backToMap => '返回脑图';
+
+  @override
+  String get viewInMap => '在脑图中查看';
+
+  @override
+  String tagNodesInMap(int count) {
+    return '$count 个相关节点 · 当前脑图';
+  }
+
+  @override
+  String get tagNoNodes => '没有带此标签的节点';
+
+  @override
   String get addRelation => '添加关联线';
 
   @override

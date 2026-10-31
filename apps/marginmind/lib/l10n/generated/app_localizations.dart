@@ -1598,6 +1598,30 @@ abstract class AppLocalizations {
   /// **'All Tags'**
   String get allTags;
 
+  /// No description provided for @backToMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Map'**
+  String get backToMap;
+
+  /// No description provided for @viewInMap.
+  ///
+  /// In en, this message translates to:
+  /// **'View in Map'**
+  String get viewInMap;
+
+  /// No description provided for @tagNodesInMap.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 related node · Current map} other{{count} related nodes · Current map}}'**
+  String tagNodesInMap(int count);
+
+  /// No description provided for @tagNoNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'No nodes with this tag'**
+  String get tagNoNodes;
+
   /// No description provided for @addRelation.
   ///
   /// In en, this message translates to:
