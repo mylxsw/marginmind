@@ -29,6 +29,10 @@ import 'mind_map_canvas.dart';
 import 'notices.dart';
 import 'map_export_sheet.dart';
 import '../../study_notes/note_setup_sheet.dart';
+import '../../map_generation/map_generation_controller.dart';
+import '../../map_generation/widgets/generate_map_sheet.dart';
+import '../../map_generation/widgets/map_empty_state.dart';
+import '../../map_generation/widgets/map_generation_bar.dart';
 import 'map_style_popover.dart';
 import 'outline_view.dart';
 import 'map_selection_bar.dart';
@@ -337,10 +341,30 @@ class _MapPaneState extends ConsumerState<MapPane> {
     _focus.requestFocus();
   }
 
+  Future<void> _keepMapGeneration() async {
+    final count = await ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).keep();
+    if (!mounted) return;
+    if (count > 0) {
+      final title = ref.read(mapGenerationControllerProvider(widget.studySetId))?.request.title ?? '';
+      MMHud.show(
+        context,
+        context.l10n.mapGenerateCreated(title, count),
+        action: (context.l10n.undo, () => ref.read(workspaceProvider(widget.studySetId).notifier).undo()),
+      );
+    }
+    _focus.requestFocus();
+  }
+
   void _command(MindMapCommand command) {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     switch (command) {
+      case MindMapCommand.generateFromDocument:
+        final state = ref.read(workspaceProvider(widget.studySetId));
+        if (state.mapView == MapViewMode.outline) {
+          controller.setMapView(MapViewMode.map);
+        }
+        showGenerateMapSheet(context, ref, widget.studySetId, preselectedDocId: state.activeDocumentId);
       case MindMapCommand.expandIdeas:
         _expandIdeas();
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
@@ -538,7 +562,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
             () => rename(card.id),
             shortcut: 'F2',
           ),
-          if (content.annotation(card.annotationId ?? '') != null)
+          if (card.source != null || content.annotation(card.annotationId ?? '') != null)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
           if (node?.width != null) MMMenuItem(l.resetCardWidth, () => controller.setCardWidth(card.id, null)),
           const MMMenuDivider(),
@@ -705,6 +729,26 @@ class _MapPaneState extends ConsumerState<MapPane> {
     // A preview belongs to the map it was opened on.
     ref.listen(provider.select((s) => (s.activeMapId, s.mapView)), (_, _) => _closeStyle());
     final expansion = ref.watch(expansionControllerProvider(widget.studySetId));
+    final mapGen = ref.watch(mapGenerationControllerProvider(widget.studySetId));
+    ref.listen(mapGenerationControllerProvider(widget.studySetId), (previous, next) {
+      if (previous != null &&
+          (previous.phase == MapGenerationPhase.reading || previous.phase == MapGenerationPhase.streaming) &&
+          previous.lines.isEmpty &&
+          next == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) MMHud.show(context, context.l10n.mapIdeaStoppedEmpty);
+        });
+      }
+      if (next != null &&
+          next.lines.isEmpty &&
+          (next.phase == MapGenerationPhase.review || next.failure?.message == 'noValidContent')) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !identical(ref.read(mapGenerationControllerProvider(widget.studySetId)), next)) return;
+          ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).discard();
+          MMHud.show(context, context.l10n.mapGenerateNothing);
+        });
+      }
+    });
     ref.listen(expansionControllerProvider(widget.studySetId), (previous, next) {
       if (previous?.phase == ExpansionPhase.generating && previous!.drafts.isEmpty && next == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -769,7 +813,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final map = content.map(state.activeMapId);
     final single = state.selectedCardIds.length <= 1 && state.selectedCardId != null;
     final ready =
-        expansion == null && loadedContent != null && state.selectedMarkId == null && state.connectingFromId == null;
+        expansion == null &&
+        mapGen == null &&
+        loadedContent != null &&
+        state.selectedMarkId == null &&
+        state.connectingFromId == null;
     final target = ready && (single || state.rootSelected);
     final insert = ready && state.selectedCardIds.length <= 1;
     final commandBar = MapCommandBar(
@@ -908,30 +956,68 @@ class _MapPaneState extends ConsumerState<MapPane> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final toolbarTopInset = _headerGeometry.toolbarTopInset;
+                          final isGenNewMap =
+                              mapGen != null && mapGen.request.destination == MapGenerationDestination.newMap;
+                          final canvasMapId = isGenNewMap ? mapGen.request.mapId : state.activeMapId;
+                          final canvasRootTitle = isGenNewMap ? mapGen.request.title : rootTitle;
                           return SizedBox.expand(
                             child: Padding(
                               padding: EdgeInsets.only(top: 0, bottom: 0),
                               child: state.mapView == MapViewMode.map
                                   ? MindMapCanvas(
-                                      key: ValueKey(state.activeMapId),
-                                      expansion: expansion,
+                                      key: ValueKey(canvasMapId),
+                                      expansion: expansion ?? mapGen?.toExpansionPreview(),
+                                      skeletons: mapGen?.phase == MapGenerationPhase.reading ? mapGen?.skeletons : null,
                                       onDraftToggle: (id) {
-                                        final d = expansion!.drafts.firstWhere((d) => d.id == id);
-                                        ref
-                                            .read(expansionControllerProvider(widget.studySetId).notifier)
-                                            .toggle(id, !d.kept);
+                                        if (mapGen != null) {
+                                          final d = mapGen.drafts.where((d) => d.id == id).firstOrNull;
+                                          if (d != null) {
+                                            ref
+                                                .read(mapGenerationControllerProvider(widget.studySetId).notifier)
+                                                .toggle(id, !d.kept);
+                                          }
+                                        } else if (expansion != null) {
+                                          final d = expansion.drafts.firstWhere((d) => d.id == id);
+                                          ref
+                                              .read(expansionControllerProvider(widget.studySetId).notifier)
+                                              .toggle(id, !d.kept);
+                                        }
                                       },
-                                      onDraftEdit: (id, text) => ref
-                                          .read(expansionControllerProvider(widget.studySetId).notifier)
-                                          .edit(id, text),
-                                      onDraftMore: (id) => ref
-                                          .read(expansionControllerProvider(widget.studySetId).notifier)
-                                          .continueFromDraft(id),
-                                      onExpansionKeep: _keepExpansion,
-                                      onExpansionStop: () =>
-                                          ref.read(expansionControllerProvider(widget.studySetId).notifier).stop(),
-                                      onExpansionDiscard: () =>
-                                          ref.read(expansionControllerProvider(widget.studySetId).notifier).discard(),
+                                      onDraftEdit: (id, text) {
+                                        if (mapGen != null) {
+                                          ref
+                                              .read(mapGenerationControllerProvider(widget.studySetId).notifier)
+                                              .edit(id, text);
+                                        } else if (expansion != null) {
+                                          ref
+                                              .read(expansionControllerProvider(widget.studySetId).notifier)
+                                              .edit(id, text);
+                                        }
+                                      },
+                                      onDraftMore: (id) {
+                                        if (mapGen == null && expansion != null) {
+                                          ref
+                                              .read(expansionControllerProvider(widget.studySetId).notifier)
+                                              .continueFromDraft(id);
+                                        }
+                                      },
+                                      onExpansionKeep: mapGen != null ? _keepMapGeneration : _keepExpansion,
+                                      onExpansionStop: () {
+                                        if (mapGen != null) {
+                                          ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).stop();
+                                        } else if (expansion != null) {
+                                          ref.read(expansionControllerProvider(widget.studySetId).notifier).stop();
+                                        }
+                                      },
+                                      onExpansionDiscard: () {
+                                        if (mapGen != null) {
+                                          ref
+                                              .read(mapGenerationControllerProvider(widget.studySetId).notifier)
+                                              .discard();
+                                        } else if (expansion != null) {
+                                          ref.read(expansionControllerProvider(widget.studySetId).notifier).discard();
+                                        }
+                                      },
                                       toolbarTopInset: toolbarTopInset,
                                       touchSelectionMode: _touchSelection,
                                       selectionToolbar: state.selectedCardIds.length < 2
@@ -964,8 +1050,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       flashAnnotationId: state.flashAnnotationId,
                                       onRevealSegment: controller.revealSegment,
                                       content: content,
-                                      mapId: state.activeMapId,
-                                      rootTitle: rootTitle,
+                                      mapId: canvasMapId,
+                                      rootTitle: canvasRootTitle,
                                       selectedCardId: state.selectedCardId,
                                       rootSelected: state.rootSelected,
                                       onSelectRoot: controller.selectMapRoot,
@@ -1042,8 +1128,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       ),
                                       key: ValueKey(state.activeMapId),
                                       content: content,
-                                      mapId: state.activeMapId,
-                                      rootTitle: rootTitle,
+                                      mapId: canvasMapId,
+                                      rootTitle: canvasRootTitle,
                                       selectedCardId: state.selectedCardId,
                                       rootSelected: state.rootSelected,
                                       onSelectRoot: controller.selectMapRoot,
@@ -1129,6 +1215,30 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         value: _showStyleDialog,
                                         enabled: map != null,
                                         child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
+                                      ),
+                                    ),
+                                    MMToolbarItem(
+                                      id: 'map-generate',
+                                      priority: 55,
+                                      child: GenerateMapButton(studySetId: widget.studySetId),
+                                      compactChild: GenerateMapButton(studySetId: widget.studySetId, compact: true),
+                                      menuEntry: MMDropdownItem<VoidCallback>(
+                                        value: () {
+                                          final docId =
+                                              state.activeDocumentId ?? content.documents.firstOrNull?.id ?? '';
+                                          showGenerateMapSheet(
+                                            context,
+                                            ref,
+                                            widget.studySetId,
+                                            preselectedDocId: docId,
+                                          );
+                                        },
+                                        enabled:
+                                            map != null &&
+                                            (mapGen == null ||
+                                                (mapGen.phase != MapGenerationPhase.reading &&
+                                                    mapGen.phase != MapGenerationPhase.streaming)),
+                                        child: menuLabel(l.mapGenerateMenu, const Icon(MMIcons.generateMap)),
                                       ),
                                     ),
                                     if (phone) ...[
@@ -1259,16 +1369,25 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     child: ExpansionBar(studySetId: widget.studySetId, onKeep: _keepExpansion),
                   ),
                 ),
+              if (mapGen != null)
+                Positioned(
+                  left: MMSpacing.m,
+                  right: MMSpacing.m,
+                  bottom: MMSizes.ideaBarBottomInset + chrome.bottom,
+                  child: Center(
+                    child: MapGenerationBar(studySetId: widget.studySetId, onKeep: _keepMapGeneration),
+                  ),
+                ),
               if (expansion == null &&
+                  mapGen == null &&
                   content.nodes.every((n) => n.mapId != state.activeMapId) &&
                   state.mapView == MapViewMode.map)
                 Positioned(
+                  top: _headerGeometry.toolbarTopInset,
                   left: 0,
                   right: 0,
-                  bottom: 72 + chrome.bottom,
-                  child: IgnorePointer(
-                    child: Text(l.mapEmptyTitle, textAlign: TextAlign.center, style: t.headline),
-                  ),
+                  bottom: 0,
+                  child: MapEmptyState(studySetId: widget.studySetId, mapId: state.activeMapId),
                 ),
               if (_styleOpen && (merged || !outline) && map != null)
                 Positioned(

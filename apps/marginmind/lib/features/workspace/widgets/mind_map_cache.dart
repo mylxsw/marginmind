@@ -486,9 +486,11 @@ class _NodeSpec {
     this.maxLines = maxQuoteLines,
     this.resizable = false,
     this.segments = const [],
+    this.source,
   }) : label = label ?? title;
 
   final _Kind kind;
+  final CardSource? source;
 
   /// Shown title; empty for an excerpt or image without one (no title row).
   final String title;
@@ -610,14 +612,19 @@ class _NodeSpec {
     switch (card.kind) {
       case CardKind.topic:
         final s = cache._measure(card.title, MMTypography.headline, 220 - 28).size;
+        final source = card.source;
+        final extraWidth = source != null
+            ? cache._measure(l.notePage(source.page), MMTypography.footnote, 120).size.width + 12 + 6
+            : 0.0;
         return _NodeSpec._(
           _Kind.topic,
           card.title,
           null,
           null,
           null,
-          Size(s.width + 32, s.height + 18),
+          Size(s.width + 32 + extraWidth, s.height + 18),
           suspended: card.suspended,
+          source: source,
         );
       case CardKind.research when note != null:
         // The card's width is the user's; a compact map shows the title
