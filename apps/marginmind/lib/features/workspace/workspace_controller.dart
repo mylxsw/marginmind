@@ -1,3 +1,4 @@
+import '../map_generation/document_map_navigation.dart';
 import 'translation_schedulers.dart';
 import '../study_notes/note_update_sources.dart';
 import 'source_selection.dart';
@@ -744,11 +745,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       c.relationsOf(mapId).any((r) => r.id == id) || c.summariesOf(mapId).any((s) => s.$1.id == id);
 
   /// Switch only after queued writes; inline editors must finish first.
-  Future<void> selectMap(String id) async {
+  Future<void> selectMap(String id, {String? forDocumentId}) async {
     if (_blockExpansionEdit()) return;
     if (_creating || _editing != null || _markEditing != null || _clipboardBusy) return;
     await _enqueue(() async {
-      if (!ref.mounted || _clipboardBusy || content.map(id) == null) return;
+      if (!ref.mounted ||
+          _clipboardBusy ||
+          content.map(id) == null ||
+          (forDocumentId != null && state.activeDocumentId != forDocumentId)) {
+        return;
+      }
       state = state.copyWith(
         closeNote: true,
         clearTagFilter: true,
@@ -759,6 +765,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         clearPending: true,
         clearFlash: true,
       );
+      ref.read(documentMapNavigationProvider(studySetId).notifier).recordMap(id);
     });
   }
 
@@ -1154,7 +1161,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Opens (or focuses) a document tab. In map-only layout the source pane
   /// comes back, since the user asked to see a document.
-  void openDocument(String id) {
+  void openDocument(String id, {bool followMap = true}) {
+    if (content.document(id) == null) return;
+    final changed = state.activeDocumentId != id;
     final open = state.openDocumentIds.contains(id) ? state.openDocumentIds : [...state.openDocumentIds, id];
     state = state.copyWith(
       openDocumentIds: open,
@@ -1164,6 +1173,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       clearPending: true,
       layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
     );
+    if (changed) {
+      unawaited(ref.read(documentMapNavigationProvider(studySetId).notifier).documentChanged(id, followMap: followMap));
+    }
   }
 
   void closeDocument(String id) {
@@ -1176,6 +1188,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       findVisible: wasActive ? false : null,
       clearPending: true,
     );
+    if (wasActive) {
+      unawaited(ref.read(documentMapNavigationProvider(studySetId).notifier).documentChanged(state.activeDocumentId));
+    }
   }
 
   // ---- documents ------------------------------------------------------------
@@ -2422,12 +2437,19 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     _flash(annotationId: annotation.id, cardId: cardId);
   }
 
+  void revealMapSource(CardSource source) {
+    final document = content.document(source.documentId);
+    if (document == null || source.page < 1 || source.page > document.pageCount) return;
+    openDocument(source.documentId, followMap: false);
+    state = state.copyWith(reveal: RevealRequest(source.documentId, source.page, const [], ++_revealNonce));
+  }
+
   /// Opens the source document of an excerpt or generated topic and scrolls to it.
   void revealCard(String cardId) {
     final card = content.card(cardId);
     if (card == null) return;
     if (card.source case final source?) {
-      openDocument(source.documentId);
+      openDocument(source.documentId, followMap: false);
       state = state.copyWith(
         selectedCardId: cardId,
         reveal: RevealRequest(source.documentId, source.page, const [], ++_revealNonce),

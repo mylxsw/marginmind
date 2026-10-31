@@ -87,38 +87,18 @@ class MapGenerationRequest {
 
 enum MapChapterStatus { pending, reading, done, failed }
 
-enum MapGenerationPhase {
-  reading,
-  streaming,
-  review,
-  kept,
-  discarded,
-  failed,
-  stopped,
-  update,
-  diff,
-  applied,
-}
+enum MapGenerationPhase { reading, streaming, review, kept, discarded, failed, stopped, update, diff, applied }
 
 class MapSkeletonItem {
-  const MapSkeletonItem({
-    required this.id,
-    required this.title,
-    this.isCurrent = false,
-    this.isDone = false,
-  });
+  const MapSkeletonItem({required this.id, required this.title, this.isCurrent = false, this.isDone = false});
 
   final String id;
   final String title;
   final bool isCurrent;
   final bool isDone;
 
-  MapSkeletonItem copyWith({bool? isCurrent, bool? isDone}) => MapSkeletonItem(
-    id: id,
-    title: title,
-    isCurrent: isCurrent ?? this.isCurrent,
-    isDone: isDone ?? this.isDone,
-  );
+  MapSkeletonItem copyWith({bool? isCurrent, bool? isDone}) =>
+      MapSkeletonItem(id: id, title: title, isCurrent: isCurrent ?? this.isCurrent, isDone: isDone ?? this.isDone);
 }
 
 class MapGenerationPreview {
@@ -174,14 +154,7 @@ class MapGenerationPreview {
         baseRevision: baseRevision,
         proposalId: proposalId,
         phase: ExpansionPhase.generating,
-        drafts: [
-          for (final s in skeletons)
-            ExpansionDraft(
-              id: s.id,
-              parentRef: targetId,
-              title: s.title,
-            ),
-        ],
+        drafts: [for (final s in skeletons) ExpansionDraft(id: s.id, parentRef: targetId, title: s.title)],
       );
     }
     if (phase == MapGenerationPhase.streaming ||
@@ -196,9 +169,7 @@ class MapGenerationPreview {
         ),
         baseRevision: baseRevision,
         proposalId: proposalId,
-        phase: phase == MapGenerationPhase.streaming
-            ? ExpansionPhase.generating
-            : ExpansionPhase.review,
+        phase: phase == MapGenerationPhase.streaming ? ExpansionPhase.generating : ExpansionPhase.review,
         drafts: drafts,
         failure: failure,
         isApplying: isApplying,
@@ -254,26 +225,23 @@ final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, Str
     filePath: workspace.filePath,
     pageText: ref.read(assistantPageTextProvider),
   );
-  return DocumentDigestBuilder(
-    reader,
-    repository: repo is DocumentRepository ? repo as DocumentRepository : null,
-  );
+  return DocumentDigestBuilder(reader, repository: repo is DocumentRepository ? repo as DocumentRepository : null);
 });
 
-final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>((ref) => () async {
-  final model = ref.read(assistantDefaultModelProvider);
-  if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable);
-  final key = await assistantModelKey(ref.read(assistantSecretsProvider), model);
-  if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
-    throw const ResearchFailure(ResearchFailureKind.authentication);
-  }
-  return ModelMapGenerator(connectAssistant(model, key ?? ''), model.model);
-});
-
-final mapGenerationControllerProvider =
-    NotifierProvider.autoDispose.family<MapGenerationController, MapGenerationPreview?, String>(
-  MapGenerationController.new,
+final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>(
+  (ref) => () async {
+    final model = ref.read(assistantDefaultModelProvider);
+    if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable);
+    final key = await assistantModelKey(ref.read(assistantSecretsProvider), model);
+    if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
+      throw const ResearchFailure(ResearchFailureKind.authentication);
+    }
+    return ModelMapGenerator(connectAssistant(model, key ?? ''), model.model);
+  },
 );
+
+final mapGenerationControllerProvider = NotifierProvider.autoDispose
+    .family<MapGenerationController, MapGenerationPreview?, String>(MapGenerationController.new);
 
 class _ChapterTask {
   _ChapterTask({
@@ -538,10 +506,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       if (_collectedPoints.isEmpty && failures.isNotEmpty) {
         final firstFailure = failures.values.first;
         if (!_disposed && epoch == _generation) {
-          state = state!.copyWith(
-            phase: MapGenerationPhase.failed,
-            failure: firstFailure,
-          );
+          state = state!.copyWith(phase: MapGenerationPhase.failed, failure: firstFailure);
         }
         return;
       }
@@ -573,26 +538,29 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   Future<void> _streamBuild(MapGenerationRequest request, CancellationToken cancel, int epoch) async {
     final generator = _generator!;
-    final allPages = <int>{};
-    final allAnnotations = <String, String>{};
-    final allDocs = <String, String>{};
-
+    final pages = <String, Set<int>>{};
+    final annotations = <String, String>{};
+    final documents = <String, String>{};
     for (final task in _tasks.values) {
-      allPages.addAll(task.pages);
-      allAnnotations.addAll(task.input.context.annotations);
-      allDocs.addAll(task.input.context.documents);
+      final hasPoints = _collectedPoints.any(
+        (point) => point.source?.documentId == task.source.documentId && task.pages.contains(point.source?.page),
+      );
+      if (state!.chapterProgress[task.id] != MapChapterStatus.done && !hasPoints) continue;
+      documents.addAll(task.input.context.documents);
+      for (final entry in task.input.context.pages.entries) {
+        pages.putIfAbsent(entry.key, () => <int>{}).addAll(entry.value);
+      }
+      for (final id in task.input.context.annotations.values) {
+        if (!annotations.containsValue(id)) annotations['A${annotations.length + 1}'] = id;
+      }
     }
-
     final buildContext = MapLineContext(
       phase: MapLinePhase.generation,
       mapId: request.mapId,
       draftPrefix: '${state!.proposalId}-gen-',
-      documents: allDocs.isNotEmpty ? allDocs : {'D1': request.sources.first.documentId},
-      pages: {
-        for (final docAlias in (allDocs.isNotEmpty ? allDocs.keys : const ['D1']))
-          docAlias: allPages,
-      },
-      annotations: allAnnotations,
+      documents: documents,
+      pages: pages,
+      annotations: annotations,
       maxDepth: request.depth,
       rootParentId: request.parentId,
       existingTitles: state!.editedTitles.values,
@@ -716,10 +684,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     if (state == null || state!.phase != MapGenerationPhase.failed) return;
     final req = state!.request;
     if (_collectedPoints.isNotEmpty && state!.chapterFailures.isEmpty) {
-      state = state!.copyWith(
-        phase: MapGenerationPhase.streaming,
-        failure: null,
-      );
+      state = state!.copyWith(phase: MapGenerationPhase.streaming, failure: null);
       final epoch = ++_generation;
       final cancel = _cancel = CancellationToken();
       _ownsBusy = true;

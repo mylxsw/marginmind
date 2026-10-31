@@ -144,6 +144,9 @@ class MindMapCanvas extends StatefulWidget {
     this.touchSelectionMode,
     this.expansion,
     this.skeletons,
+    this.draftSources = const {},
+    this.sourceDocumentIds = const [],
+    this.onRevealDraftSource,
     this.onDraftToggle,
     this.onDraftEdit,
     this.onDraftMore,
@@ -155,6 +158,9 @@ class MindMapCanvas extends StatefulWidget {
   /// Virtual topics and their review actions; never part of [content].
   final ExpansionPreview? expansion;
   final List<MapSkeletonItem>? skeletons;
+  final Map<String, CardSource> draftSources;
+  final List<String> sourceDocumentIds;
+  final ValueChanged<CardSource>? onRevealDraftSource;
   final ValueChanged<String>? onDraftToggle, onDraftMore;
   final void Function(String, String)? onDraftEdit;
   final VoidCallback? onExpansionKeep, onExpansionStop, onExpansionDiscard;
@@ -778,8 +784,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       : _workingTargetRef;
   List<ExpansionDraft> get _drafts => [
     ...?widget.expansion?.drafts,
-    if (widget.expansion?.phase == ExpansionPhase.generating &&
-        (widget.skeletons == null || widget.skeletons!.isEmpty))
+    if (widget.expansion?.phase == ExpansionPhase.generating && (widget.skeletons == null || widget.skeletons!.isEmpty))
       ExpansionDraft(id: '__expansion_placeholder__', parentRef: _workingTargetRef, title: '…'),
   ];
   int _draftDepth(String id) {
@@ -1724,6 +1729,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       spec.quote,
       spec.meta,
       spec.color,
+      spec.source,
+      spec.sourceDocumentTitle,
+      spec.sourceDocumentIndex,
       spec.size,
       spec.attachedNotes,
       spec.notesExpanded,
@@ -1835,7 +1843,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                         }
                         widget.onContextMenu!(selected, position);
                       },
-                onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null) || spec.source != null
+                onReveal:
+                    spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null) || spec.source != null
                     ? () => widget.onReveal(id)
                     : null,
                 revealLabel: l.revealSource,
@@ -2120,6 +2129,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                           : MapGhostNode(
                               key: _ghostKeys.putIfAbsent(id, () => GlobalKey<MapGhostNodeState>()),
                               draft: ghostById[id]!,
+                              sourceChip: widget.draftSources[id] == null
+                                  ? null
+                                  : MapSourceChip(
+                                      page: widget.draftSources[id]!.page,
+                                      documentTitle: widget.content
+                                          .document(widget.draftSources[id]!.documentId)
+                                          ?.title,
+                                      documentIndex: widget.sourceDocumentIds.length > 1
+                                          ? widget.sourceDocumentIds.indexOf(widget.draftSources[id]!.documentId)
+                                          : null,
+                                      onTap: () => widget.onRevealDraftSource?.call(widget.draftSources[id]!),
+                                    ),
                               focused: _draftFocus == id,
                               onHover: (hovered) {
                                 if (hovered && mounted && _draftHover != id) setState(() => _draftHover = id);
@@ -2840,14 +2861,13 @@ class _NodeView extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Flexible(
-                            child: Text(
-                              spec.title,
-                              style: t.headline.copyWith(color: look?.text),
-                            ),
+                            child: Text(spec.title, style: t.headline.copyWith(color: look?.text)),
                           ),
                           const SizedBox(width: 6),
                           _SourceChipHolder(
                             page: spec.source!.page,
+                            documentTitle: spec.sourceDocumentTitle,
+                            documentIndex: spec.sourceDocumentIndex,
                             selected: selected,
                             onTap: onReveal,
                           ),
@@ -3763,7 +3783,15 @@ class _FlatNodeStroke extends CustomPainter {
 }
 
 class _SourceChipHolder extends StatefulWidget {
-  const _SourceChipHolder({required this.page, required this.selected, this.onTap});
+  const _SourceChipHolder({
+    required this.page,
+    required this.selected,
+    this.documentTitle,
+    this.documentIndex,
+    this.onTap,
+  });
+  final String? documentTitle;
+  final int? documentIndex;
   final int page;
   final bool selected;
   final VoidCallback? onTap;
@@ -3787,6 +3815,8 @@ class _SourceChipHolderState extends State<_SourceChipHolder> {
         opacity: visible ? 1.0 : 0.0,
         child: MapSourceChip(
           page: widget.page,
+          documentTitle: widget.documentTitle,
+          documentIndex: widget.documentIndex,
           onTap: visible ? widget.onTap : null,
         ),
       ),

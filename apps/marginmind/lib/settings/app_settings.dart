@@ -59,6 +59,7 @@ class ReadingSettings {
 
 class AppSettings {
   const AppSettings({
+    this.mapFollowDocument = true,
     this.bookReading = const ReadingSettings(),
     this.articleReading = const ReadingSettings(font: ReaderFont.serif, paged: false),
     this.appearance = AppearancePreference.system,
@@ -72,6 +73,7 @@ class AppSettings {
     this.selectionTranslationDirection = SelectionTranslationDirection.automatic,
   });
 
+  final bool mapFollowDocument;
   final ReadingSettings bookReading, articleReading;
   ReadingSettings reading(DocumentFormat format) => ReadingSettings.isArticle(format) ? articleReading : bookReading;
   final AppearancePreference appearance;
@@ -98,6 +100,7 @@ class AppSettings {
   };
 
   AppSettings copyWith({
+    bool? mapFollowDocument,
     ReadingSettings? bookReading,
     ReadingSettings? articleReading,
     AppearancePreference? appearance,
@@ -110,6 +113,7 @@ class AppSettings {
     double? readerSidebarWidth,
     SelectionTranslationDirection? selectionTranslationDirection,
   }) => AppSettings(
+    mapFollowDocument: mapFollowDocument ?? this.mapFollowDocument,
     bookReading: bookReading ?? this.bookReading,
     articleReading: articleReading ?? this.articleReading,
     appearance: appearance ?? this.appearance,
@@ -144,6 +148,7 @@ class SettingsController extends Notifier<AppSettings> {
       paged: prefs.getBool('$key.paged') ?? false,
     );
     return AppSettings(
+      mapFollowDocument: prefs.getBool('settings.mapFollowDocument') ?? true,
       bookReading: reading('settings.reading.book'),
       articleReading: reading('settings.reading.article', article: true).font == ReaderFont.original
           ? reading('settings.reading.article', article: true).copyWith(font: ReaderFont.serif)
@@ -210,6 +215,11 @@ class SettingsController extends Notifier<AppSettings> {
     final value = width.clamp(MMSizes.readerSidebarMinWidth, MMSizes.readerSidebarMaxWidth);
     state = state.copyWith(readerSidebarWidth: value);
     if (persist) await ref.read(sharedPreferencesProvider).setDouble('settings.readerSidebarWidth', value);
+  }
+
+  Future<void> setMapFollowDocument(bool value) async {
+    state = state.copyWith(mapFollowDocument: value);
+    await ref.read(sharedPreferencesProvider).setBool('settings.mapFollowDocument', value);
   }
 
   Future<void> setReaderStyle(MMReaderStyle value) async {

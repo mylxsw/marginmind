@@ -234,6 +234,9 @@ abstract final class MMSizes {
   static const double mapEmptyStateWidth = 440;
   static const double mapEmptyGlyph = 56;
   static const double mapDocumentBanner = 44;
+  static const double mapDocumentBannerCompactWidth = 480;
+  static const double mapFollowNotice = 34;
+  static const double mapDocumentLegendLabelWidth = 96;
   static const double mapUpdatePopoverWidth = 360;
   static const double mapDiffPanelWidth = 340;
   static const double mapSourceChip = 18;

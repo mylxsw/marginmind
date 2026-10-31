@@ -13,7 +13,7 @@ import '../shared/l10n.dart';
 import 'app_settings.dart';
 import 'app_icon_picker.dart';
 
-enum SettingsTab { general, reading, models, webSearch, voice }
+enum SettingsTab { general, reading, maps, models, webSearch, voice }
 
 /// The app's settings (⌘,): a centered dialog in the main window's own
 /// language — a floating glass sidebar of sections beside a titled,
@@ -55,7 +55,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
 
   late SettingsTab _tab =
       MMPlatformCapabilities.current.externalCredentials ||
-          [SettingsTab.general, SettingsTab.reading].contains(widget.initialTab)
+          [SettingsTab.general, SettingsTab.reading, SettingsTab.maps].contains(widget.initialTab)
       ? widget.initialTab
       : SettingsTab.general;
 
@@ -74,6 +74,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
     final tabs = [
       (SettingsTab.general, MMIcons.settings, l.settingsGeneral),
       (SettingsTab.reading, MMIcons.reading, l.settingsReading),
+      (SettingsTab.maps, MMIcons.mindMap, l.mapView),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.models, MMIcons.ai, l.settingsModels),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
@@ -82,6 +83,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
     final page = switch (_tab) {
       SettingsTab.general => const _GeneralPage(),
       SettingsTab.reading => const _ReadingPage(),
+      SettingsTab.maps => const _MapsPage(),
       SettingsTab.models => const ModelSettingsPage(),
       SettingsTab.webSearch => const WebSearchSettingsPage(),
       SettingsTab.voice => const VoiceSettingsPage(),
@@ -439,4 +441,34 @@ class _ReadingPage extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _MapsPage extends ConsumerWidget {
+  const _MapsPage();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => SettingsPage(
+    children: [
+      MMSettingsGroup(
+        children: [
+          MMSettingsRow(
+            leading: Padding(
+              padding: const EdgeInsets.only(right: MMSpacing.m),
+              child: Text(
+                context.l10n.settingsMapFollowDocument,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.mmText.body,
+              ),
+            ),
+            trailing: MMSwitch(
+              key: const ValueKey('settings-map-follow-document'),
+              value: ref.watch(settingsProvider.select((s) => s.mapFollowDocument)),
+              semanticLabel: context.l10n.settingsMapFollowDocument,
+              onChanged: ref.read(settingsProvider.notifier).setMapFollowDocument,
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
 }
