@@ -273,6 +273,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     }
     final stacked = tablet ? tabletLayout.splitAxis == Axis.vertical : sizeClass == MMSizeClass.medium;
     final phone = MMInput.of(context).phone;
+    final phoneDrawer = phone && compact;
     final mergedToolbar = !compact || touchPlatform;
     final leading = sidebarVisible && !touchPlatform
         ? null
@@ -564,7 +565,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     if (mergedToolbar) {
-      return MMWindowScaffold.contentBuilder(
+      final scaffold = MMWindowScaffold.contentBuilder(
         // A compact window has no room beside or over the panes: the panel
         // rises from the bottom.
         sheet: !tablet && compact && panel != null
@@ -576,13 +577,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 child: panel,
               )
             : null,
-        sidebarVisible: touchPlatform ? _drawer : sidebarVisible,
+        sidebarVisible: phoneDrawer
+            ? false
+            : touchPlatform
+            ? _drawer
+            : sidebarVisible,
         sidebarOverlay: touchPlatform,
         onSidebarDismiss: () => _setDrawer(false),
         onDragStart: WindowChrome.onDragStart,
         onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
         showsWindowButtons: WindowChrome.showsWindowButtons,
-        sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
+        sidebar: phoneDrawer ? null : WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
         contentBuilder: (context, constraints) => WorkspaceLayoutGeometryScope(
           geometry: WorkspaceLayoutGeometry.resolve(
             size: constraints.biggest,
@@ -693,6 +698,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               : body,
         ),
       );
+      return phoneDrawer ? _phoneDrawer(context, scaffold) : scaffold;
     }
     return MMWindowScaffold(
       extendBody: true,
@@ -718,6 +724,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       body: body,
     );
   }
+
+  Widget _phoneDrawer(BuildContext context, Widget child) => MMPhoneDrawer(
+    open: _drawer,
+    onChanged: _setDrawer,
+    dismissLabel: context.l10n.phoneNavigationCloseDrawer,
+    drawer: WorkspaceSidebar(
+      studySetId: widget.studySetId,
+      searchFocus: _searchFocus,
+      onDismiss: () => _setDrawer(false),
+    ),
+    child: child,
+  );
 }
 
 /// The right panel floating over the panes: a rounded, shadowed card.

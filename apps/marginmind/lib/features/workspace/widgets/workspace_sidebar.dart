@@ -24,14 +24,16 @@ import '../../study_notes/note_setup_sheet.dart';
 import '../../study_notes/note_updates.dart';
 import '../../study_notes/note_export_sheet.dart';
 import 'notices.dart';
+import 'phone_workspace_sidebar.dart';
 
 /// Study set sidebar: documents, mind maps, notes and learning tools,
 /// followed by matching cards and tags. Search filters every section at once.
 class WorkspaceSidebar extends ConsumerWidget {
-  const WorkspaceSidebar({super.key, required this.studySetId, required this.searchFocus});
+  const WorkspaceSidebar({super.key, required this.studySetId, required this.searchFocus, this.onDismiss});
 
   final String studySetId;
   final FocusNode searchFocus;
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,6 +53,39 @@ class WorkspaceSidebar extends ConsumerWidget {
     final documents = content?.documents ?? const [];
     final query = state.sidebarQuery.trim().toLowerCase();
     bool matches(String text) => query.isEmpty || text.toLowerCase().contains(query);
+
+    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+    Widget phoneRow(Widget widget, {bool cautionCount = false, bool? mapDestination, bool document = false}) {
+      if (widget is DecoratedBox) {
+        return DecoratedBox(
+          key: widget.key,
+          decoration: widget.decoration,
+          child: phoneRow(widget.child!, mapDestination: mapDestination, document: true),
+        );
+      }
+      if (widget is! MMSidebarItem) return widget;
+      return MMPhoneNavigationRow(
+        key: widget.key,
+        cautionCount: cautionCount,
+        item: MMSidebarItem(
+          icon: widget.icon,
+          label: widget.label,
+          selected:
+              widget.selected && (mapDestination == null || mapDestination == (state.layout == MMSplitMode.secondary)),
+          leading: widget.leading,
+          labelColor: widget.labelColor,
+          // A document row needs only its title, never OCR/map metadata.
+          trailing: document ? null : widget.trailing,
+          onContextMenu: widget.onContextMenu,
+          onTap: widget.onTap == null
+              ? null
+              : () {
+                  widget.onTap!();
+                  onDismiss?.call();
+                },
+        ),
+      );
+    }
 
     final mapGen = ref.watch(mapGenerationControllerProvider(studySetId));
 
@@ -226,23 +261,28 @@ class WorkspaceSidebar extends ConsumerWidget {
               ? const SizedBox.shrink()
               : Tooltip(
                   message: l.browserUnsaved,
-                  child: MMSidebarItem(
-                    icon: MMIcons.web,
-                    leading: session.loading
-                        ? SizedBox.square(
-                            dimension: MMSpacing.l,
-                            child: CircularProgressIndicator(strokeWidth: MMSpacing.xxs, color: c.secondaryLabel),
-                          )
-                        : null,
-                    labelColor: c.secondaryLabel,
-                    label: session.phase == BrowserPhase.loading || session.title.isEmpty
-                        ? session.url.host
-                        : session.title,
-                    selected: browser.visible,
-                    selectionStyle: context.mmTouchPlatform
-                        ? MMSidebarSelectionStyle.marker
-                        : MMSidebarSelectionStyle.filled,
-                    onTap: browserOwner.show,
+                  child: Builder(
+                    builder: (context) {
+                      final item = MMSidebarItem(
+                        icon: MMIcons.web,
+                        leading: session.loading
+                            ? SizedBox.square(
+                                dimension: MMSpacing.l,
+                                child: CircularProgressIndicator(strokeWidth: MMSpacing.xxs, color: c.secondaryLabel),
+                              )
+                            : null,
+                        labelColor: c.secondaryLabel,
+                        label: session.phase == BrowserPhase.loading || session.title.isEmpty
+                            ? session.url.host
+                            : session.title,
+                        selected: browser.visible,
+                        selectionStyle: context.mmTouchPlatform
+                            ? MMSidebarSelectionStyle.marker
+                            : MMSidebarSelectionStyle.filled,
+                        onTap: browserOwner.show,
+                      );
+                      return phone ? phoneRow(item) : item;
+                    },
                   ),
                 ),
         ),
@@ -286,7 +326,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final tagFilter = state.tagFilter;
     final tags = [
       for (final tag in tagCounts.keys)
-        if (matches(tag) || tag.toLowerCase() == tagFilter?.toLowerCase())
+        if (matches(tag) || (!phone && tag.toLowerCase() == tagFilter?.toLowerCase()))
           MMSidebarItem(
             key: ValueKey('sidebar-tag-$tag'),
             icon: MMIcons.tag,
@@ -332,6 +372,48 @@ class WorkspaceSidebar extends ConsumerWidget {
         ),
     ];
     final empty = maps.isEmpty && docs.isEmpty && notes.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty;
+
+    if (phone) {
+      return PhoneWorkspaceSidebar(
+        key: ValueKey(studySetId),
+        title: studyTitle ?? '',
+        mapId: state.activeMapId,
+        searchFocus: searchFocus,
+        onSearch: controller.setSidebarQuery,
+        onDismiss: onDismiss ?? controller.toggleSidebar,
+        documents: [for (final row in docs) phoneRow(row, mapDestination: false)],
+        maps: [for (final row in maps) phoneRow(row, mapDestination: true)],
+        notes: [for (final row in notes) phoneRow(row)],
+        showNotes: matches(l.phoneNavigationNotes) || notes.isNotEmpty,
+        learning: [
+          if (matches(l.sectionCards))
+            MMPhoneNavigationRow(
+              item: MMSidebarItem(
+                icon: MMIcons.review,
+                label: l.sectionCards,
+                trailing: MMBadge(
+                  '${content?.cards.where((card) => content.isPlaced(card.id, mapId: state.activeMapId)).length ?? 0}',
+                ),
+                onTap: () {
+                  controller.filterTag(null);
+                  controller.setLayout(MMSplitMode.secondary);
+                  onDismiss?.call();
+                },
+              ),
+            ),
+          for (final row in learn)
+            if (row.icon != MMIcons.vocabulary) phoneRow(row, cautionCount: row.icon == MMIcons.review),
+        ],
+        tags: [for (final row in tags) phoneRow(row) as MMPhoneNavigationRow],
+        results: query.isEmpty ? const [] : [for (final row in cards) phoneRow(row)],
+        searching: query.isNotEmpty,
+        onAddDocument: () => pickAndImportDocuments(context, ref, studySetId),
+        onAddWebPage: ref.watch(canAddWebPageProvider) ? () => dispatchAddWebPage(context, ref, studySetId) : null,
+        onAddMap: () => showNewMapSheet(context, ref, studySetId),
+        onGenerateMap: () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId),
+        onAddNote: () => showNoteSetupSheet(context, ref, studySetId),
+      );
+    }
 
     return MMSidebar(
       topTrailing: MMIconButton(

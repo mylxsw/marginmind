@@ -89,8 +89,8 @@ void main() {
 
       // The bar floats above the home indicator inset, over the content.
       final bar = tester.getRect(find.byKey(const ValueKey('mm-tab-bar-glass')));
-      expect(bar.bottom, phone.size.height - phone.safe.bottom);
-      expect(bar.height, phone.platform == TargetPlatform.android ? MMSizes.tabBarAndroid : MMSizes.tabBar);
+      expect(bar.bottom, phone.size.height - (phone.safe.bottom < 26 ? 26 : phone.safe.bottom));
+      expect(bar.height, MMSizes.phoneTabBarHeight);
 
       nav.openStudySet('demo-1');
       await tester.pumpAndSettle();
@@ -209,16 +209,10 @@ void main() {
       // Then the sidebar drawer.
       await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
-      final scrim = find.byKey(const ValueKey('mm-drawer-scrim'));
-      expect(
-        tester.widget<IgnorePointer>(find.ancestor(of: scrim, matching: find.byType(IgnorePointer)).first).ignoring,
-        isFalse,
-      );
+      final scrim = find.byKey(const ValueKey('phone-drawer-scrim'));
+      expect(scrim, findsOneWidget);
       await systemBack(tester);
-      expect(
-        tester.widget<IgnorePointer>(find.ancestor(of: scrim, matching: find.byType(IgnorePointer)).first).ignoring,
-        isTrue,
-      );
+      expect(scrim, findsNothing);
       expect(container.read(navigationProvider), isA<WorkspaceRoute>());
 
       // A sheet route pops before the page.
@@ -394,7 +388,7 @@ void main() {
         for (final r in ['again', 'hard', 'good', 'easy']) tester.getRect(find.byKey(ValueKey('rate-$r'))),
       ];
       for (final b in buttons) {
-        expect(b.height, MMSizes.reviewRatingTouch);
+        expect(b.height, MMPhoneNavigation.ratingHeight);
       }
       // The four share the width inside the margins.
       expect(buttons.first.left, MMSpacing.l);

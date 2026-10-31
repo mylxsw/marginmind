@@ -4706,4 +4706,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneGlassOpaque => '不透明';
+
+  @override
+  String get phoneNavigationCloseDrawer => '关闭学习集抽屉';
+
+  @override
+  String get phoneNavigationNotes => '学习笔记';
 }

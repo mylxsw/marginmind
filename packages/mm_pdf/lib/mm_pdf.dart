@@ -17,3 +17,5 @@ export 'src/annotation_line.dart';
 export 'src/annotation_hit.dart';
 
 export 'src/stylus_region.dart';
+
+export 'src/phone_scroll_physics.dart';

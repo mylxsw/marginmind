@@ -40,6 +40,7 @@ import 'stylus_region.dart';
 import 'pdf_navigation.dart';
 import 'pdf_pixel_grid.dart';
 import 'preview_cache.dart';
+import 'phone_scroll_physics.dart';
 
 const _pageShadow = BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2));
 
@@ -818,6 +819,7 @@ class MMPdfView extends StatefulWidget {
     this.onHighlightTap,
     this.onViewportChanged,
     this.onUserScroll,
+    this.scrollProfile,
     this.areaSelecting = false,
     this.onAreaSelected,
     this.inkStrokes = const [],
@@ -840,6 +842,9 @@ class MMPdfView extends StatefulWidget {
   final String? hoveredParagraph;
   final ValueChanged<String?>? onParagraphHover;
   final String filePath;
+
+  /// Explicit host-selected pan behavior; null preserves all existing defaults.
+  final MMPdfScrollProfile? scrollProfile;
   final MMPdfMargin? margin;
 
   /// When set, pages use a hairline border instead of a drop shadow.
@@ -1508,6 +1513,8 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   void _searchChanged() => widget.controller._syncSearch();
 
+  bool _phonePanActive = false;
+  late final _phoneScrollPhysics = MMPhoneScrollPhysics(userGestureInProgress: () => _phonePanActive);
   PdfScrollPosition? _userScrollPosition;
   void _userScrollUpdate(ScaleUpdateDetails details) {
     final previous = _userScrollPosition;
@@ -2583,9 +2590,18 @@ class _MMPdfViewState extends State<MMPdfView> {
           initialPageNumber: widget.initialPage,
           params: PdfViewerParams(
             backgroundColor: widget.backgroundColor,
-            onInteractionStart: (_) => _userScrollPosition = widget.controller.scrollPosition,
+            scrollPhysics: widget.scrollProfile == MMPdfScrollProfile.phone ? _phoneScrollPhysics : null,
+            // Never amplify pinch/trackpad scale offsets with the phone pan profile.
+            scrollPhysicsScale: widget.scrollProfile == MMPdfScrollProfile.phone ? const BouncingScrollPhysics() : null,
+            onInteractionStart: (_) {
+              _phonePanActive = true;
+              _userScrollPosition = widget.controller.scrollPosition;
+            },
             onInteractionUpdate: _userScrollUpdate,
-            onInteractionEnd: (_) => _userScrollPosition = null,
+            onInteractionEnd: (_) {
+              _phonePanActive = false;
+              _userScrollPosition = null;
+            },
             layoutPages: widget.margin == null && widget.topInset == 0
                 ? null
                 : (pages, params) => _layoutWithMargin(pages, params, constraints.maxWidth),
