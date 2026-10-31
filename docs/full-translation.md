@@ -341,3 +341,13 @@ stateDiagram-v2
 1. 默认每批 10 页是否合适？学术论文（10–30 页）可能更适合 5 页。
 2. 预算阈值 150% 是否需要在设置中可调？本期固定。
 3. 是否允许同一学习集同时运行两个文档的全文任务？本期每个学习集窗口同时只运行一个，开始第二个时提示先暂停当前任务。
+
+## 15. 第 1 阶段接口约定（GUL-616）
+
+- `FileLibraryStore.translationStore(setId)` 返回学习集作用域的 `FileTranslationStore`，供调度器持有；文档删除后，已持有的实例也会拒绝迟到的追加/任务保存。清理目录失败记在 `translationCleanupErrors`，下次打开重试，不影响已经提交的编辑或学习集加载。
+- `TranslationStore.load(documentId, targetLang)` 返回 `TranslationSnapshot`：最新值映射、完整行数、中间损坏行数、尾部丢弃标记、覆盖行数。`needsCorruptionWarning` / `needsCompaction` 分别实现 > 1% / > 30% 阈值；调度器空闲时调用 `compact`，不另启无人管理的后台写入。
+- `loadJob` 返回 `null` 代表没有可恢复的任务（不存在、损坏或版本不支持，行为等同 stopped）。running 记录加载成 paused/quit；review 原样保留。段落状态由 `deriveTranslationSegmentState` 重建，已保存译文优先于旧失败记录；重开缓存记为 reused，本次成功键可通过 `completedKeys` 标记为 done。
+- 切分后先调用 `importLegacy(documentId, targetLang, paragraphs: ..., caches: content.translationCaches)`：只迁移 fingerprint 精确命中的项，新存储优先，旧 JSON 不变。之后调度器统一写新存储。显式移除某语言译文时，在文档目录保存 `.removed-legacy-<lang>` 标记，避免下次打开又从只读旧缓存恢复已移除的译文；删除文档会一并删除标记。
+- `translationMarginFingerprints` 需要整份文档的页高（包含空白页）：页顶/底 10% 内、位置误差 ≤ 3 PDF 点、至少两页且占比 ≥ 30%。要求两页是为了避免单页文档的所有边缘内容被误当作重复页眉。
+- `translationSkipReason` 接受可靠的 `detectedLanguage`；缺省使用本地脚本/常用词启发式，短文本、混合语言、无法确定简繁的汉字等保留为未知并发送。为什么不同：规范未指定语言检测器，不能把共享文字系统直接等同于目标语言而漏译；后续可接入更准确的检测器，端口无需改变。语言代码按 `TranslationLanguage.code` 精确匹配。
+- NFC 使用纯 Dart 的 `unorm_dart`，原生 JSONL 解析放在 isolate；浏览器沿用 IndexedDB 原子提交适配，不宣称具有文件系统 fsync 语义。
