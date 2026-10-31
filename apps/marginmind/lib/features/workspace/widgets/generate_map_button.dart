@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
 import '../../map_generation/map_generation_controller.dart';
+import '../../map_generation/map_updates.dart';
+import '../../map_generation/widgets/update_map_sheet.dart';
 import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../workspace_controller.dart';
 
@@ -31,7 +32,7 @@ class GenerateMapButton extends ConsumerWidget {
     final isGenerating =
         preview != null &&
         (preview.phase == MapGenerationPhase.reading || preview.phase == MapGenerationPhase.streaming);
-    final isReviewing = preview != null && preview.phase == MapGenerationPhase.review;
+    final isReviewing = preview != null && !isGenerating;
     final hasGeneration = map.generation != null;
 
     final String label;
@@ -58,7 +59,7 @@ class GenerateMapButton extends ConsumerWidget {
       icon = MMIcons.generateMap;
       selected = false;
       onPressed = () {
-        showGenerateMapSheet(context, ref, studySetId, preselectedDocId: workspace.activeDocumentId);
+        showUpdateMapSheet(context, studySetId, map.id);
       };
     } else {
       label = l.mapGenerate;
@@ -70,17 +71,7 @@ class GenerateMapButton extends ConsumerWidget {
       };
     }
 
-    final hasUpdates =
-        hasGeneration &&
-        mapSourcesChanged(map.generation!, [
-          for (final s in map.generation!.sources)
-            MapSource(
-              documentId: s.documentId,
-              chapters: s.chapters,
-              fingerprint: content.document(s.documentId) == null ? '' : s.fingerprint,
-              readThrough: s.readThrough,
-            ),
-        ]);
+    final hasUpdates = ref.watch(mapHasUpdatesProvider((studySetId, map.id)));
 
     Widget button = MMToolbarButton(
       key: ValueKey(compact ? 'map-generate-header-button-compact' : 'map-generate-header-button'),

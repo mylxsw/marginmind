@@ -1,6 +1,8 @@
 import 'package:flutter/animation.dart';
 
 abstract final class MMMotion {
+  static const phoneAnnotationCollapse = Duration(milliseconds: 650);
+  static const phoneSelectionCollapse = Duration(milliseconds: 500);
   static const double chromeHideDistance = 24;
   static const double chromeRevealDistance = 8;
 

@@ -8695,6 +8695,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not change the icon. Please try again.'**
   String get appIconChangeFailed;
+
+  /// No description provided for @phoneGlassTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Liquid Glass'**
+  String get phoneGlassTitle;
+
+  /// No description provided for @phoneGlassRegular.
+  ///
+  /// In en, this message translates to:
+  /// **'Regular'**
+  String get phoneGlassRegular;
+
+  /// No description provided for @phoneGlassThick.
+  ///
+  /// In en, this message translates to:
+  /// **'Thick'**
+  String get phoneGlassThick;
+
+  /// No description provided for @phoneGlassOpaque.
+  ///
+  /// In en, this message translates to:
+  /// **'Opaque'**
+  String get phoneGlassOpaque;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -183,3 +183,13 @@ macOS 切换 Dock 图标，每次启动恢复选择，不修改已签名应用�
 手机保留单栏与底部工具栏。设置分类按内容宽度横向滚动，选中分类自动露出，标题行常显关闭按钮；极窄或大字号下，设置行改为上下排列。阅读页码、进度和前后页合并为与 iPad 相同的单行胶囊；内容区不足 240pt 时先隐藏进度条，保留页码输入和前后页按钮。手机也使用触摸选区手柄。裁边建议不覆盖正文，裁边功能仍在工具菜单内。脑图样式弹窗以当前面板坐标限制左右边界，横屏空间不足时内部滚动。
 
 模拟器截图检查与复现命令见 `docs/evidence/phone-adaptation/README.md` 和 `tool/capture_mobile_ui.py`。
+
+### 手机重设计基础（GUL-630）
+
+`MMLiquidGlass(phoneStyle: MMPhoneGlass.regular)` 显式选择手机原型材质，`thick` 用于厚底面板。业务接入仅在 `MMInput.of(context).phone` 且 `MMSizeClass.of(context) == MMSizeClass.compact` 时使用；旧构造、MMGlass 和 iPad/macOS 默认外观不变。Gallery 的控件页提供两种预设及不透明退化预览。
+
+regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1.8、1.0。浅深色底、边缘高光与阴影来自 `MMPhoneGlass`，顶部径向高光近似原型 CSS 椭圆光斑。嵌套玻璃只染色，降低透明度与 flat surface 不进行背景过滤，降低透明度强制不透明底。
+
+`MMSizes` 新增 phoneTabBarHeight 64、phoneTabBarHorizontalInset 22、phoneTabBarBottomInset 26、phoneTopControl 44、phoneToolOrb 50、phoneToolBarHeight 56、phonePageCapsuleHeight 36、phoneDrawerWidth 328、phoneSheetPadding 8。`MMRadii.phoneTabBar` 为 32，`phoneSheet` 为 38；`MMMotion.phoneAnnotationCollapse` 为 650ms，`phoneSelectionCollapse` 为 500ms。36pt 页码视觉必须外包至少 44pt 热区，底部距离与安全区取最大值；具体控件负责本地化语义与焦点。
+
+交互模型、所有权与滑动物理方案见 `mobile-redesign-arch.md`；视觉源为 `design/prototype/mobile-redesign.html`。

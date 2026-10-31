@@ -22,6 +22,8 @@ abstract final class MMToolbarSpacing {
 
 /// Concentric radii: inner radius = outer radius − inset.
 abstract final class MMRadii {
+  static const double phoneTabBar = 32;
+  static const double phoneSheet = 38;
   static const double vocabularyCard = 10;
   static const double vocabularyPos = 4;
   static const double window = 24;
@@ -50,6 +52,15 @@ abstract final class MMRadii {
 }
 
 abstract final class MMSizes {
+  static const double phoneTabBarHeight = 64;
+  static const double phoneTabBarHorizontalInset = 22;
+  static const double phoneTabBarBottomInset = 26;
+  static const double phoneTopControl = 44;
+  static const double phoneToolOrb = 50;
+  static const double phoneToolBarHeight = 56;
+  static const double phonePageCapsuleHeight = 36;
+  static const double phoneDrawerWidth = 328;
+  static const double phoneSheetPadding = 8;
   static const double hairline = .5;
   static const double nodeStroke = 1;
   static const double paneHeaderHeight = 52;

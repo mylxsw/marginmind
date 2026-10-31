@@ -34,6 +34,7 @@ import '../../study_notes/note_setup_sheet.dart';
 import '../../map_generation/map_generation_controller.dart';
 import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../../map_generation/widgets/map_empty_state.dart';
+import '../../map_generation/widgets/map_diff_panel.dart';
 import '../../map_generation/widgets/map_generation_bar.dart';
 import 'map_style_popover.dart';
 import 'outline_view.dart';
@@ -343,14 +344,19 @@ class _MapPaneState extends ConsumerState<MapPane> {
     _focus.requestFocus();
   }
 
+  double _diffExtent = MMSizes.bottomSheetMedium;
+
   Future<void> _keepMapGeneration() async {
+    final before = ref.read(mapGenerationControllerProvider(widget.studySetId));
     final count = await ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).keep();
     if (!mounted) return;
     if (count > 0) {
-      final title = ref.read(mapGenerationControllerProvider(widget.studySetId))?.request.title ?? '';
+      final title = before?.request.title ?? '';
       MMHud.show(
         context,
-        context.l10n.mapGenerateCreated(title, count),
+        before?.request.destination == MapGenerationDestination.update
+            ? context.l10n.mapUpdateApplied(count)
+            : context.l10n.mapGenerateCreated(title, count),
         action: (context.l10n.undo, () => ref.read(workspaceProvider(widget.studySetId).notifier).undo()),
       );
     }
@@ -732,7 +738,22 @@ class _MapPaneState extends ConsumerState<MapPane> {
     ref.listen(provider.select((s) => (s.activeMapId, s.mapView)), (_, _) => _closeStyle());
     final expansion = ref.watch(expansionControllerProvider(widget.studySetId));
     final mapGen = ref.watch(mapGenerationControllerProvider(widget.studySetId));
+    final diffReview =
+        mapGen?.request.destination == MapGenerationDestination.update &&
+        mapGen?.request.mapId == ref.read(provider).activeMapId &&
+        (mapGen?.phase == MapGenerationPhase.diff || mapGen?.phase == MapGenerationPhase.stopped);
+    final diffFocus = ref.watch(mapDiffFocusProvider(widget.studySetId));
     ref.listen(mapGenerationControllerProvider(widget.studySetId), (previous, next) {
+      if (next?.request.destination == MapGenerationDestination.update &&
+          previous?.request.destination != MapGenerationDestination.update) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted &&
+              ref.read(mapGenerationControllerProvider(widget.studySetId))?.request.destination ==
+                  MapGenerationDestination.update) {
+            ref.read(workspaceProvider(widget.studySetId).notifier).setLayout(MMSplitMode.secondary);
+          }
+        });
+      }
       if (previous != null &&
           (previous.phase == MapGenerationPhase.reading || previous.phase == MapGenerationPhase.streaming) &&
           previous.lines.isEmpty &&
@@ -743,11 +764,16 @@ class _MapPaneState extends ConsumerState<MapPane> {
       }
       if (next != null &&
           next.lines.isEmpty &&
-          (next.phase == MapGenerationPhase.review || next.failure?.message == 'noValidContent')) {
+          (next.phase == MapGenerationPhase.review || next.failure?.message == 'noValidMapContent')) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || !identical(ref.read(mapGenerationControllerProvider(widget.studySetId)), next)) return;
           ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).discard();
-          MMHud.show(context, context.l10n.mapGenerateNothing);
+          MMHud.show(
+            context,
+            next.request.destination == MapGenerationDestination.update
+                ? context.l10n.mapUpdateNothing
+                : context.l10n.mapGenerateNothing,
+          );
         });
       }
     });
@@ -862,6 +888,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
     final mapPane = LayoutBuilder(
       builder: (context, paneConstraints) {
+        final bottomDiff = paneConstraints.maxWidth < MMSizes.mapDiffPanelWidth + MMSizes.mapMinWidth;
         final styleWidth = phone
             ? (paneConstraints.maxWidth - MMSpacing.m * 2).clamp(0.0, MMSizes.mapStylePopoverWidth)
             : MMSizes.mapStylePopoverWidth;
@@ -964,11 +991,22 @@ class _MapPaneState extends ConsumerState<MapPane> {
                           final canvasRootTitle = isGenNewMap ? mapGen.request.title : rootTitle;
                           return SizedBox.expand(
                             child: Padding(
-                              padding: EdgeInsets.only(top: 0, bottom: 0),
+                              padding: EdgeInsets.only(
+                                right: diffReview && !bottomDiff ? MMSizes.mapDiffPanelWidth : 0,
+                                bottom: diffReview && bottomDiff ? paneConstraints.maxHeight * _diffExtent : 0,
+                              ),
                               child: state.mapView == MapViewMode.map
                                   ? MindMapCanvas(
                                       key: ValueKey(canvasMapId),
-                                      expansion: expansion ?? mapGen?.toExpansionPreview(),
+                                      expansion:
+                                          expansion ??
+                                          (mapGen?.request.mapId == canvasMapId
+                                              ? mapGen?.toExpansionPreview(content: content)
+                                              : null),
+                                      diffLines: diffReview ? mapGen!.lines : const [],
+                                      diffFocusId: diffFocus,
+                                      onDiffFocus: (id) =>
+                                          ref.read(mapDiffFocusProvider(widget.studySetId).notifier).select(id),
                                       draftSources: {
                                         for (final line in mapGen?.lines ?? <MapLine>[])
                                           if (line.source != null) line.id: line.source!,
@@ -979,7 +1017,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       skeletons: mapGen?.phase == MapGenerationPhase.reading ? mapGen?.skeletons : null,
                                       onDraftToggle: (id) {
                                         if (mapGen != null) {
-                                          final d = mapGen.drafts.where((d) => d.id == id).firstOrNull;
+                                          final d = mapGen.lines.where((d) => d.id == id).firstOrNull;
                                           if (d != null) {
                                             ref
                                                 .read(mapGenerationControllerProvider(widget.studySetId).notifier)
@@ -1378,7 +1416,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     child: ExpansionBar(studySetId: widget.studySetId, onKeep: _keepExpansion),
                   ),
                 ),
-              if (mapGen != null)
+              if (mapGen != null && !diffReview)
                 Positioned(
                   left: MMSpacing.m,
                   right: MMSpacing.m,
@@ -1386,6 +1424,41 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   child: Center(
                     child: MapGenerationBar(studySetId: widget.studySetId, onKeep: _keepMapGeneration),
                   ),
+                ),
+              if (diffReview)
+                Positioned(
+                  top: bottomDiff ? 0 : _headerGeometry.toolbarTopInset,
+                  bottom: chrome.bottom,
+                  right: 0,
+                  left: bottomDiff ? 0 : null,
+                  width: bottomDiff ? null : MMSizes.mapDiffPanelWidth,
+                  child: bottomDiff
+                      ? NotificationListener<DraggableScrollableNotification>(
+                          onNotification: (notification) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted && _diffExtent != notification.extent) {
+                                setState(() => _diffExtent = notification.extent);
+                              }
+                            });
+                            return false;
+                          },
+                          child: DraggableScrollableSheet(
+                            initialChildSize: MMSizes.bottomSheetMedium,
+                            minChildSize: (MMSizes.toolbarHeight * 3 / paneConstraints.maxHeight).clamp(
+                              0.0,
+                              MMSizes.bottomSheetMedium,
+                            ),
+                            snap: true,
+                            snapSizes: const [MMSizes.bottomSheetMedium],
+                            shouldCloseOnMinExtent: false,
+                            builder: (_, scroll) => MapDiffPanel(
+                              studySetId: widget.studySetId,
+                              onApply: _keepMapGeneration,
+                              scrollController: scroll,
+                            ),
+                          ),
+                        )
+                      : MapDiffPanel(studySetId: widget.studySetId, onApply: _keepMapGeneration),
                 ),
               if (expansion == null &&
                   mapGen == null &&
@@ -1454,8 +1527,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
               if (state.mapView == MapViewMode.map && !phone)
                 Positioned(
                   left: MMSpacing.m,
-                  right: MMSpacing.m,
-                  bottom: MMSpacing.m + chrome.bottom,
+                  right: MMSpacing.m + (diffReview && !bottomDiff ? MMSizes.mapDiffPanelWidth : 0),
+                  bottom:
+                      MMSpacing.m +
+                      chrome.bottom +
+                      (diffReview && bottomDiff ? paneConstraints.maxHeight * _diffExtent : 0),
                   child: WorkspaceChromeBar(
                     bottom: true,
                     child: Row(

@@ -2436,5 +2436,9 @@
   "appIconDockHint": "Changes the Dock icon. Finder keeps the default icon.",
   "appIconHomeHint": "Changes the Home Screen icon. iOS may show a confirmation.",
   "appIconChanging": "Changing icon…",
-  "appIconChangeFailed": "Could not change the icon. Please try again."
+  "appIconChangeFailed": "Could not change the icon. Please try again.",
+  "phoneGlassTitle": "Phone Liquid Glass",
+  "phoneGlassRegular": "Regular",
+  "phoneGlassThick": "Thick",
+  "phoneGlassOpaque": "Opaque"
 }

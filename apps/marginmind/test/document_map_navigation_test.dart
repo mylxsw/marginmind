@@ -152,8 +152,13 @@ void main() {
     await c.read(documentMapNavigationProvider('demo-1').notifier).documentChanged('missing');
   });
 
-  testWidgets('merge selects current sources plus document, topic and branch', (tester) async {
-    final fake = FakeMapGenerator(chapters: {}, generation: ['{"ref":"a","title":"合并主题"}']);
+  testWidgets('merge selects current sources plus document, topic and reviews as a diff', (tester) async {
+    final fake = FakeMapGenerator(
+      chapters: {
+        '*': ['{"k":"point","id":"p1","title":"Point","page":1}'],
+      },
+      diff: ['{"op":"add","ref":"a","parent":"ROOT","title":"合并主题","doc":"D1","page":1}'],
+    );
     final c = await harness.openWorkspace(
       tester,
       content: InMemoryStudySetContentRepository({'demo-1': multiDocumentContent()}),
@@ -170,9 +175,13 @@ void main() {
     final r = c.read(mapGenerationControllerProvider('demo-1'))?.request;
     expect(r?.sources.map((s) => s.documentId).toSet(), {'c1', 'new-doc'});
     expect(r?.organization, MapOrganization.topic);
-    expect(r?.destination, MapGenerationDestination.branch);
-    expect(r?.parentId, MindMap.defaultId);
+    expect(r?.destination, MapGenerationDestination.update);
+    expect(r?.parentId, isNull);
     expect(find.byKey(const ValueKey('document-map-banner')), findsNothing);
+    final preview = c.read(mapGenerationControllerProvider('demo-1'))!;
+    expect(preview.phase, MapGenerationPhase.diff);
+    expect(fake.calls, contains('update'));
+    expect(preview.lines.single.title, '合并主题');
     c.read(mapGenerationControllerProvider('demo-1').notifier).discard();
   });
 

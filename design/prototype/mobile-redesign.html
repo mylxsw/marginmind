@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foliarc 手机端体验重设计 · 高保真交互原型（GUL-629）</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMReaderStyle); glass values are the proposed phone Liquid Glass material. */
+:root{
+  --win:#FFFFFF; --grouped:#F2F2F7; --card:#FFFFFF; --reader:#E9E9EC;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#3A3A3C; --sep:rgba(60,60,67,.14);
+  --fill:rgba(120,120,128,.12); --fill2:rgba(120,120,128,.08); --pressed:rgba(0,0,0,.08);
+  --accent:#007AFF; --accentTint:rgba(0,122,255,.12);
+  --research:#5E5CE6; --researchTint:rgba(94,92,230,.12);
+  --ok:#248A3D; --caution:#C93400;
+  /* Liquid Glass */
+  --lg:rgba(255,255,255,.46); --lgThick:rgba(250,250,252,.80); --lgRim:rgba(255,255,255,.95); --lgRim2:rgba(255,255,255,.35);
+  --lgEdge:rgba(0,0,0,.07); --lgShadow:0 8px 28px rgba(0,0,0,.10),0 1px 3px rgba(0,0,0,.06);
+  --lgSel:rgba(120,120,128,.17); --scrim:rgba(0,0,0,.26); --edgeFade:rgba(255,255,255,.92);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+  /* reading appearance (MMReaderStyle) */
+  --paper:#FFFFFF; --ink:#1D1D1F; --ink2:#55555A;
+}
+.dark{
+  --win:#000000; --grouped:#000000; --card:#1C1C1E; --reader:#111113;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#E5E5EA; --sep:rgba(84,84,88,.55);
+  --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.16); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.22);
+  --research:#7D7AFF; --researchTint:rgba(125,122,255,.2);
+  --lg:rgba(36,36,40,.62); --lgThick:rgba(36,36,40,.84); --lgRim:rgba(255,255,255,.28); --lgRim2:rgba(255,255,255,.06);
+  --lgEdge:rgba(0,0,0,.55); --lgShadow:0 8px 28px rgba(0,0,0,.45);
+  --lgSel:rgba(255,255,255,.14); --scrim:rgba(0,0,0,.5); --edgeFade:rgba(0,0,0,.88);
+}
+.look-white{--paper:#FFFFFF;--ink:#1D1D1F;--ink2:#55555A}
+.look-paper{--paper:#F4ECD8;--ink:#3B2F20;--ink2:#6B5B45}
+.look-green{--paper:#E1EDD9;--ink:#22301D;--ink2:#4D5E46}
+.look-dark{--paper:#1C1C1E;--ink:#D1D1D6;--ink2:#98989D}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;color:#1D1D1F;-webkit-font-smoothing:antialiased}
+body{background:#E6E7EC;overflow:hidden;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+svg.i.s{width:17px;height:17px}svg.i.xs{width:14px;height:14px}svg.i.l{width:26px;height:26px}
+
+/* ---------- Prototype chrome ---------- */
+#top{flex:none;display:flex;align-items:center;gap:12px;padding:10px 18px;background:#fff;border-bottom:1px solid rgba(0,0,0,.08)}
+#top h1{font-size:14px;margin:0;font-weight:700}
+#top .sub{color:#8e8e93;font-size:12px}
+#top .sp{flex:1}
+.seg{display:inline-flex;background:rgba(120,120,128,.12);border-radius:8px;padding:2px;gap:2px}
+.seg button{height:26px;padding:0 10px;border-radius:6px;font-size:12px;color:#3a3a3c;white-space:nowrap}
+.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);color:#000;font-weight:600}
+.ctl{display:flex;align-items:center;gap:6px;font-size:11px;color:#8e8e93}
+#main{flex:1;display:flex;min-height:0}
+#scenes{flex:none;width:230px;background:#fff;border-right:1px solid rgba(0,0,0,.08);overflow:auto;padding:12px 10px}
+#scenes h3{font-size:11px;color:#8e8e93;margin:10px 8px 6px;font-weight:600;letter-spacing:.02em}
+#scenes button{display:flex;gap:8px;width:100%;text-align:left;padding:7px 8px;border-radius:8px;font-size:12.5px;line-height:1.35;color:#1d1d1f}
+#scenes button .n{flex:none;width:20px;color:#8e8e93;font-variant-numeric:tabular-nums}
+#scenes button:hover{background:rgba(0,0,0,.04)}
+#scenes button.on{background:rgba(0,122,255,.1);color:#0a5bc4;font-weight:600}
+#stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(circle at 28% 18%,#f6f7fb,#dcdfe7)}
+#scaler{transform-origin:center center}
+#info{flex:none;width:380px;background:#fff;border-left:1px solid rgba(0,0,0,.08);overflow:auto;padding:18px 20px 48px;line-height:1.55;color:#1d1d1f}
+#info h2{font-size:17px;margin:0 0 2px}
+#info .lead{color:#636366;font-size:12.5px;margin:0 0 12px}
+#info h4{font-size:11.5px;margin:18px 0 6px;color:#8e8e93;font-weight:600;letter-spacing:.03em}
+#info ul{margin:0;padding-left:18px}#info li{margin:4px 0;font-size:12.5px}
+#info .try{background:rgba(0,122,255,.07);border-radius:10px;padding:8px 12px;font-size:12.5px;margin-top:10px}
+#info .crit{background:rgba(255,149,0,.09);border-radius:10px;padding:8px 12px;font-size:12.5px}
+#info code{font-size:11px;background:rgba(120,120,128,.12);padding:1px 4px;border-radius:4px}
+#info table{border-collapse:collapse;width:100%;font-size:12px}
+#info td{border-top:1px solid rgba(0,0,0,.07);padding:6px 4px;vertical-align:top}
+#info td:first-child{color:#8e8e93;width:34%}
+
+/* ---------- Device ---------- */
+.device{position:relative;background:#0c0c0e;border-radius:62px;padding:12px;box-shadow:0 40px 90px rgba(0,0,0,.28),0 0 0 1.5px #2b2b2f inset,0 0 0 1px rgba(0,0,0,.5)}
+#screen{position:relative;width:393px;height:852px;border-radius:52px;overflow:hidden;background:var(--win);color:var(--label);user-select:none;-webkit-user-select:none}
+.sbar{position:absolute;left:0;right:0;top:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:4px 34px 0 42px;font-size:16px;font-weight:600;z-index:80;pointer-events:none;color:var(--label);transition:color .2s}
+.sbar .r{display:flex;gap:6px;align-items:center}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:124px;height:36px;border-radius:20px;background:#000;z-index:90}
+.homeind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:138px;height:5px;border-radius:3px;background:var(--label);opacity:.9;z-index:90;pointer-events:none}
+.view{position:absolute;inset:0;display:none}
+.view.on{display:block}
+
+/* ---------- Liquid Glass ---------- */
+.lg{position:relative;background:var(--lg);
+  backdrop-filter:blur(10px) saturate(190%) brightness(1.03);-webkit-backdrop-filter:blur(10px) saturate(190%) brightness(1.03);
+  box-shadow:var(--lgShadow),0 0 0 .5px var(--lgEdge)}
+.lg::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;padding:1px;
+  background:linear-gradient(160deg,var(--lgRim) 0%,var(--lgRim2) 30%,transparent 50%,var(--lgRim2) 78%,var(--lgRim) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.lg::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 70% at 30% 0%,rgba(255,255,255,.22),transparent 60%)}
+.dark .lg::after{background:radial-gradient(120% 70% at 30% 0%,rgba(255,255,255,.06),transparent 60%)}
+.lg.thick{background:var(--lgThick);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+.notrans .lg{background:var(--card)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.press{transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
+.press:active{transform:scale(.92)}
+
+/* ---------- Tab bar ---------- */
+#tabbar{position:absolute;left:22px;right:22px;bottom:26px;height:64px;border-radius:32px;z-index:40;display:flex;padding:4px;transition:transform .35s cubic-bezier(.3,1.2,.5,1),opacity .25s}
+#tabbar.hide{transform:translateY(120px);opacity:0;pointer-events:none}
+#tabbar .lens{position:absolute;top:4px;bottom:4px;border-radius:28px;background:var(--lgSel);transition:left .42s cubic-bezier(.3,1.35,.45,1),width .42s;z-index:0;
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.6)}
+#tabbar button{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--label);border-radius:28px}
+#tabbar button.on{color:var(--accent)}
+#tabbar button:disabled{opacity:.35}
+#tabbar button:active svg{transform:scale(1.15)}
+#tabbar button svg{transition:transform .2s}
+
+/* ---------- Library ---------- */
+.scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.lib{padding:58px 20px 120px;background:var(--win)}
+.libhead{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
+.libhead h1{font-size:34px;font-weight:700;margin:0;letter-spacing:.2px}
+.circ{width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:var(--label)}
+.search{height:38px;border-radius:12px;background:var(--fill);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--label3);font-size:16px}
+.sec{font-size:20px;font-weight:700;margin:24px 0 10px}
+.cont{display:flex;gap:14px;padding:14px;border-radius:20px;background:var(--grouped)}
+.dark .cont{background:var(--card)}
+.cover{flex:none;border-radius:8px;position:relative;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.cover::after{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(90deg,rgba(0,0,0,.18),transparent)}
+.cover b{position:absolute;left:12px;right:8px;bottom:10px;color:#fff;font-family:var(--serif);font-size:12px;line-height:1.3;font-weight:600}
+.cont .t{font-size:16px;font-weight:600;margin-top:2px}
+.cont .m{font-size:13px;color:var(--label2);margin-top:4px}
+.prog{height:4px;border-radius:2px;background:var(--fill);margin-top:14px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 16px}
+.grid .cover{width:100%;aspect-ratio:3/4}
+.grid .t{font-size:14px;font-weight:600;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grid .m{font-size:12px;color:var(--label3);margin-top:2px}
+
+/* ---------- Reader ---------- */
+#reader{background:var(--reader)}
+#vp{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab}
+#vp.drawing{cursor:crosshair}
+#pages{position:absolute;left:0;top:0;width:393px;transform-origin:0 0;will-change:transform}
+.page{position:relative;width:393px;height:556px;background:var(--paper);color:var(--ink);padding:34px 30px 30px;font-family:var(--serif);font-size:11.6px;line-height:1.9;overflow:hidden;transition:background .3s,color .3s}
+.page + .page{border-top:1px solid rgba(0,0,0,.06)}
+.page h2{font-size:17px;font-weight:600;margin:0 0 3px;letter-spacing:.5px}
+.page .cap{font-family:var(--sans);font-size:8.5px;color:var(--ink2);margin-bottom:16px}
+.page h3{font-size:12.5px;margin:14px 0 6px;font-weight:600}
+.page p{margin:0 0 8px;text-indent:2em;text-align:justify}
+.page .pno{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-family:var(--sans);font-size:8.5px;color:var(--ink2)}
+.page svg.ink{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.s{border-radius:2px;transition:background .25s,box-shadow .25s}
+.tool-highlight .s:hover,.tool-underline .s:hover{background:rgba(0,122,255,.08)}
+.s.hl{background:var(--hc)}
+.s.ul{box-shadow:inset 0 -1.6px 0 var(--hc)}
+.s.flash{animation:flash 1s}
+@keyframes flash{0%{background:rgba(0,122,255,.35)}100%{}}
+.mnote{position:absolute;right:6px;width:16px;height:16px;border-radius:5px;background:#FFCC00;box-shadow:0 1px 2px rgba(0,0,0,.2);display:none}
+.margins .mnote{display:block}
+.vh .vw{border-bottom:1px dotted #0D8480}
+
+/* scroll-edge effect: content fades under the floating top controls */
+#edge{position:absolute;left:0;right:0;top:0;height:118px;background:linear-gradient(var(--edgeFade) 38%,transparent);pointer-events:none;z-index:20;transition:height .3s}
+#reader.immersive #edge{height:60px}
+#rtop{position:absolute;left:0;right:0;top:54px;height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;z-index:30;transition:transform .35s cubic-bezier(.3,1.1,.4,1),opacity .25s}
+#reader.immersive #rtop{transform:translateY(-110px);opacity:0}
+#rtop .circ{width:44px;height:44px}
+.pseg{position:relative;display:flex;height:44px;border-radius:22px;padding:4px;margin:0 auto}
+.pseg .lens{position:absolute;top:4px;bottom:4px;border-radius:18px;background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.12);transition:left .38s cubic-bezier(.3,1.3,.45,1),width .38s}
+.dark .pseg .lens{background:rgba(255,255,255,.18)}
+.pseg button{position:relative;z-index:1;display:flex;align-items:center;gap:6px;padding:0 15px;font-size:14px;font-weight:600;color:var(--label2);border-radius:18px;transition:color .2s}
+.pseg button.on{color:var(--label)}
+.capsule{display:flex;height:44px;border-radius:22px;align-items:center}
+.capsule button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:22px}
+.capsule .ai{color:var(--research)}
+
+/* bottom row: page pill / tool orb / toolbar share one slot */
+#pill{position:absolute;left:50%;bottom:30px;height:36px;border-radius:18px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;transition:opacity .22s,transform .32s cubic-bezier(.3,1.3,.45,1),width .3s;cursor:pointer;white-space:nowrap}
+#pill .ring{width:14px;height:14px}
+#pill .of{color:var(--label3);font-weight:500}
+#reader.tools #pill,#reader.scrub #pill{opacity:0;transform:translateX(-50%) scale(.85);pointer-events:none}
+#scrub{position:absolute;left:14px;right:14px;bottom:24px;height:74px;border-radius:28px;z-index:31;padding:10px 18px;opacity:0;transform:scale(.6,.4);transform-origin:50% 100%;pointer-events:none;transition:opacity .2s,transform .34s cubic-bezier(.3,1.25,.45,1)}
+#reader.scrub #scrub{opacity:1;transform:none;pointer-events:auto}
+#scrub .ch{display:flex;justify-content:space-between;font-size:12.5px;color:var(--label2)}
+#scrub .ch b{color:var(--label);font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#scrub input{width:100%;margin:10px 0 0;accent-color:var(--label)}
+#orb{position:absolute;bottom:24px;width:50px;height:50px;border-radius:25px;z-index:33;display:flex;align-items:center;justify-content:center;color:var(--label);cursor:pointer;touch-action:none;
+  transition:left .38s cubic-bezier(.3,1.3,.45,1),opacity .2s,transform .3s cubic-bezier(.3,1.4,.5,1)}
+#orb .dot{position:absolute;right:9px;bottom:9px;width:10px;height:10px;border-radius:5px;border:1.5px solid var(--card);display:none}
+#orb.active{color:var(--accent)}
+#orb.active .dot{display:block}
+#orb.active::before{background:linear-gradient(160deg,var(--accent),rgba(0,122,255,.25) 40%,transparent 55%,rgba(0,122,255,.3))}
+#reader.tools #orb,#reader.scrub #orb{opacity:0;transform:scale(.6);pointer-events:none}
+#tbar{position:absolute;left:12px;right:12px;bottom:24px;height:56px;border-radius:28px;z-index:32;display:flex;align-items:center;padding:0 6px;gap:2px;
+  clip-path:inset(0 0 0 calc(100% - 50px) round 28px);opacity:0;pointer-events:none;transition:clip-path .42s cubic-bezier(.3,1.08,.4,1),opacity .2s}
+#tbar.left{clip-path:inset(0 calc(100% - 50px) 0 0 round 28px)}
+#reader.tools #tbar{clip-path:inset(0 0 0 0 round 28px);opacity:1;pointer-events:auto}
+#tbar button{width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:var(--label);position:relative;flex:none}
+#tbar button.on{background:var(--accentTint);color:var(--accent)}
+#tbar button .cd{position:absolute;right:7px;bottom:7px;width:8px;height:8px;border-radius:4px}
+#tbar .div{width:1px;height:24px;background:var(--sep);margin:0 3px;flex:none}
+#tbar .sp{flex:1}
+#tbar button.sync.on{background:none;color:var(--accent)}
+#sw{position:absolute;bottom:90px;height:46px;border-radius:23px;z-index:32;display:flex;align-items:center;gap:6px;padding:0 10px;opacity:0;transform:translateY(10px) scale(.95);pointer-events:none;transition:opacity .18s,transform .28s cubic-bezier(.3,1.3,.5,1)}
+#reader.tools.swatch #sw{opacity:1;transform:none;pointer-events:auto}
+#sw button{width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center}
+#sw button i{width:20px;height:20px;border-radius:10px;display:block;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+#sw button.on{box-shadow:0 0 0 2px var(--accent)}
+#sw .w i{background:var(--label)!important;border-radius:50%}
+
+/* HUD */
+#hud{position:absolute;left:50%;bottom:98px;transform:translate(-50%,16px);opacity:0;z-index:60;height:40px;border-radius:20px;display:flex;align-items:center;gap:12px;padding:0 6px 0 16px;font-size:13.5px;font-weight:500;white-space:nowrap;pointer-events:none;transition:opacity .2s,transform .3s cubic-bezier(.3,1.3,.5,1)}
+#hud.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#hud button{height:30px;padding:0 12px;border-radius:15px;background:var(--accentTint);color:var(--accent);font-weight:600;font-size:13px}
+#hud.noact{padding-right:16px}#hud.noact button{display:none}
+
+/* ---------- Map ---------- */
+#map{background:var(--win)}
+#map .canvas{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.node{position:absolute;padding:6px 10px;border-radius:9px;font-size:12px;background:var(--card);border:1px solid var(--sep);white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.node.root{background:var(--label);color:var(--win);font-weight:600;border:0;padding:9px 14px;font-size:13px}
+.node.ex{font-family:var(--serif);border-left:3px solid #FFCC00}
+#mapbar{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;height:52px;border-radius:26px;display:flex;align-items:center;padding:0 6px;gap:2px;z-index:30}
+#mapbar button{width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center}
+#mapbar .pct{font-size:13px;font-weight:600;width:52px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* ---------- Review ---------- */
+.rv{padding:58px 20px 120px}
+.rvhead{display:flex;align-items:center;gap:10px;margin:6px 0 4px}
+.rvhead h1{font-size:28px;margin:0}
+.rvsub{color:var(--label2);font-size:14px}
+.rvprog{display:flex;gap:4px;margin:14px 0 26px}.rvprog i{flex:1;height:4px;border-radius:2px;background:var(--fill)}.rvprog i.d{background:var(--accent)}
+.rcard{background:var(--card);border-radius:24px;padding:22px;box-shadow:0 2px 14px rgba(0,0,0,.07);border:.5px solid var(--sep)}
+.rq{font-family:var(--serif);font-size:19px;line-height:1.7;border-left:3px solid #FFCC00;padding:4px 0 4px 14px}
+.rsrc{display:flex;justify-content:space-between;align-items:center;margin-top:20px;font-size:13px;color:var(--label2)}
+.rsrc button{color:var(--accent);font-weight:600;display:flex;gap:4px;align-items:center}
+.rshow{margin-top:26px;height:50px;border-radius:25px;background:var(--fill);font-size:16px;font-weight:600;width:100%}
+.rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:22px}
+.rate button{height:58px;border-radius:18px;background:var(--fill);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;font-weight:600}
+.rate button small{font-size:11px;color:var(--label2);font-weight:500;margin-top:2px}
+.rate button.g{background:var(--accent);color:#fff}.rate button.g small{color:rgba(255,255,255,.85)}
+
+/* ---------- Drawer ---------- */
+#scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none;z-index:70;transition:opacity .3s}
+#scrim.on{opacity:1;pointer-events:auto}
+#scrim.light{background:rgba(0,0,0,.08)}
+#drawer{position:absolute;left:0;top:0;bottom:0;width:328px;z-index:75;background:var(--grouped);transform:translateX(-102%);transition:transform .38s cubic-bezier(.25,1,.35,1);display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.18)}
+.dark #drawer{background:#0E0E10;border-right:.5px solid var(--sep)}
+#drawer.on{transform:none}
+#drawer .dh{padding:58px 18px 10px}
+#drawer .back{display:inline-flex;align-items:center;gap:2px;color:var(--accent);font-size:16px;height:36px;margin-left:-6px}
+#drawer .st{font-size:24px;font-weight:700;margin-top:8px;line-height:1.25}
+#drawer .sm{color:var(--label2);font-size:13px;margin-top:4px}
+#drawer .search{margin-top:14px;height:36px;background:var(--fill)}
+#drawer .db{flex:1;overflow:auto;padding:4px 16px 16px;scrollbar-width:none}
+#drawer .gt{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:var(--label2);margin:18px 4px 6px}
+#drawer .gt button{color:var(--accent);width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.grp{background:var(--card);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;min-height:46px;padding:0 14px;font-size:15.5px;position:relative;width:100%;text-align:left}
+.row + .row::before{content:"";position:absolute;top:0;left:48px;right:0;height:.5px;background:var(--sep)}
+.row .ic{color:var(--accent);width:22px;display:flex;justify-content:center}
+.row .tx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .tx small{display:block;font-size:12px;color:var(--label3);margin-top:-1px}
+.row .v{color:var(--label3);font-size:14px;display:flex;align-items:center;gap:4px}
+.row.cur{background:var(--accentTint)}
+.row.cur .tx{font-weight:600}
+.row:active{background:var(--pressed)}
+#drawer .df{display:flex;justify-content:space-between;align-items:center;padding:10px 18px 34px;border-top:.5px solid var(--sep)}
+#drawer .df button{display:flex;gap:6px;align-items:center;color:var(--label2);font-size:14px;height:40px}
+
+/* ---------- Sheet (More / Appearance) ---------- */
+#sheet{position:absolute;left:8px;right:8px;bottom:8px;border-radius:38px;z-index:75;overflow:hidden;transform:translateY(110%);transition:transform .42s cubic-bezier(.25,1.1,.35,1),height .35s cubic-bezier(.3,1,.4,1)}
+#sheet.on{transform:none}
+#sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--label3);opacity:.45;margin:7px auto 0}
+.spages{display:flex;width:200%;transition:transform .36s cubic-bezier(.3,1,.4,1);align-items:flex-start}
+#sheet.look .spages{transform:translateX(-50%)}
+.sp{width:50%;padding:6px 16px 26px}
+.shd{display:flex;align-items:center;gap:12px;height:56px}
+.shd .ti{flex:1;min-width:0}
+.shd .ti b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shd .ti small{font-size:12.5px;color:var(--label2)}
+.shd .x{width:36px;height:36px;border-radius:18px;background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--label2)}
+.shd .bk{width:36px;height:36px;border-radius:18px;background:var(--fill);display:flex;align-items:center;justify-content:center}
+.shd.c .ti{text-align:center}
+.doci{width:36px;height:46px;border-radius:5px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18);flex:none;padding:7px 6px;display:flex;flex-direction:column;gap:3px}
+.doci i{height:2px;background:#d1d1d6;border-radius:1px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0 14px}
+.tile{height:84px;border-radius:20px;background:var(--card);display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:12px;text-align:left;transition:background .2s,color .2s}
+.tile b{font-size:13.5px;font-weight:600;display:block}
+.tile small{font-size:11.5px;color:var(--label2)}
+.tile.on{background:var(--accent);color:#fff}.tile.on small{color:rgba(255,255,255,.85)}
+.tile .sw{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:13px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.18)}
+.sp .grp{margin-bottom:12px}
+.sp .grp .row{min-height:48px}
+.hint{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--label2);padding:4px 6px 0;line-height:1.5}
+.looks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 12px}
+.lk{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.lk .pv{width:100%;aspect-ratio:3/4;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;font-family:var(--serif);box-shadow:inset 0 0 0 .5px rgba(0,0,0,.14);transition:box-shadow .2s,transform .25s cubic-bezier(.3,1.4,.5,1)}
+.lk .pv b{font-size:22px;font-weight:600}
+.lk .pv i{display:block;width:56%;height:2px;border-radius:1px;background:currentColor;opacity:.28}
+.lk .pv i + i{width:44%}
+.lk.on .pv{box-shadow:0 0 0 2.5px var(--accent);transform:scale(1.03)}
+.lk .ck{width:20px;height:20px;border-radius:10px;border:1.5px solid var(--label3);display:flex;align-items:center;justify-content:center;color:#fff}
+.lk .ck svg{visibility:hidden}
+.lk.on .ck{background:var(--accent);border-color:var(--accent)}
+.lk.on .ck svg{visibility:visible}
+.lk.on span{font-weight:600}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3.5"/><path d="M9.5 4v16M5.8 8h1.4M5.8 11h1.4"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2.5 4h6a3.5 3.5 0 0 1 3.5 3.5V20a2.6 2.6 0 0 0-2.6-2.6H2.5zM21.5 4h-6A3.5 3.5 0 0 0 12 7.5V20a2.6 2.6 0 0 1 2.6-2.6h6.9z"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1.5"/><rect x="2.5" y="16.5" width="6" height="5" rx="1.5"/><rect x="15.5" y="16.5" width="6" height="5" rx="1.5"/><path d="M12 7.5V12M5.5 16.5V13.5a1.5 1.5 0 0 1 1.5-1.5h10a1.5 1.5 0 0 1 1.5 1.5v3"/></symbol>
+    <symbol id="i-ai" viewBox="0 0 24 24"><path d="M10 15.4a2 2 0 0 0-1.4-1.4l-5.6-1.5a.5.5 0 0 1 0-1l5.6-1.5A2 2 0 0 0 10 8.6l1.5-5.6a.5.5 0 0 1 1 0L14 8.6a2 2 0 0 0 1.4 1.4l5.6 1.5a.5.5 0 0 1 0 1L15.4 14a2 2 0 0 0-1.4 1.4L12.5 21a.5.5 0 0 1-1 0z"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-select" viewBox="0 0 24 24"><path d="M5 4l6.5 16 2.3-6.7L20.5 11z"/></symbol>
+    <symbol id="i-hl" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></symbol>
+    <symbol id="i-ul" viewBox="0 0 24 24"><path d="M6.5 4v6.5a5.5 5.5 0 0 0 11 0V4M4.5 20.5h15"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M20.7 7.3a2.3 2.3 0 0 0-3.3-3.3L4.3 17.1a2 2 0 0 0-.5.8l-1.2 4 4-1.2a2 2 0 0 0 .8-.5z"/></symbol>
+    <symbol id="i-area" viewBox="0 0 24 24"><path d="M5 3a2 2 0 0 0-2 2M19 3a2 2 0 0 1 2 2M21 19a2 2 0 0 1-2 2M5 21a2 2 0 0 1-2-2M9 3h1.5M9 21h1.5M13.5 3H15M13.5 21H15M3 9v1.5M21 9v1.5M3 13.5V15M21 13.5V15"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 1 1 0 10h-2M8.5 12h7"/></symbol>
+    <symbol id="i-tools" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="3"/><path d="M7 4h10"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z"/><path d="M14 2.5V8h5.5M8.5 13h7M8.5 17h5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-vocab" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="m8 13 2.7-7h.6l2.7 7M9 11h4"/></symbol>
+    <symbol id="i-toc" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+    <symbol id="i-docs" viewBox="0 0 24 24"><path d="M15 2.5H8.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M3.5 7v13.5a1.5 1.5 0 0 0 1.5 1.5h11"/></symbol>
+    <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/></symbol>
+    <symbol id="i-notes" viewBox="0 0 24 24"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4M2 6h4M2 10h4M2 14h4M2 18h4"/><path d="M21.4 5.6a2 2 0 1 0-2.9-2.9l-5 5a2 2 0 0 0-.5.9l-.8 2.9 2.9-.8a2 2 0 0 0 .9-.5z"/></symbol>
+    <symbol id="i-pinch" viewBox="0 0 24 24"><path d="M4 4l5 5M4 4v4M4 4h4M20 20l-5-5M20 20v-4M20 20h-4"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-locate" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 9.5 5L12 12 2.5 7z"/><path d="m2.5 12 9.5 5 9.5-5M2.5 17l9.5 5 9.5-5"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24"><path d="m9.1 11.4 9.6-9.6a2 2 0 0 1 2.9 2.9l-9.6 9.6M7 14.5c-1.7 0-3 1.3-3 3 0 1.3-2.5 1.5-2 2 1.1 1.1 2.5 2 4 2 2.2 0 4-1.8 4-4 0-1.7-1.3-3-3-3z"/></symbol>
+  </defs>
+</svg>
+
+<div id="top">
+  <h1>Foliarc 手机端体验重设计</h1>
+  <span class="sub">高保真交互原型 · GUL-629 · iPhone 6.3″（393×852 pt）</span>
+  <span class="sp"></span>
+  <div class="ctl">外观 <div class="seg" id="themeSeg"><button data-v="light" class="on">浅色</button><button data-v="dark">深色</button></div></div>
+  <div class="ctl">滑动手感 <div class="seg" id="physSeg"><button data-v="old">现状</button><button data-v="new" class="on">优化后</button></div></div>
+  <div class="ctl">材质 <div class="seg" id="transSeg"><button data-v="glass" class="on">Liquid Glass</button><button data-v="solid">降低透明度</button></div></div>
+</div>
+
+<div id="main">
+  <nav id="scenes"></nav>
+  <div id="stage"><div id="scaler"><div class="device"><div id="screen">
+    <div class="island"></div>
+    <div class="sbar"><span>9:41</span><span class="r">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 8 1C5.4 1 3 2 1.2 3.8l1.1 1.1A8 8 0 0 1 8 2.6zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1A6.4 6.4 0 0 0 8 4.2 6.4 6.4 0 0 0 3.5 6.1l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4zM8 9a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.8" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="20" height="9" rx="2.5" fill="currentColor"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"/></svg>
+    </span></div>
+
+    <!-- Library -->
+    <section class="view" id="library"><div class="scroll"><div class="lib">
+      <div class="libhead"><h1>资料库</h1><button class="circ lg press" style="border-radius:22px" onclick="hud('新建学习集 / 导入 PDF / 添加网页')"><svg class="i"><use href="#i-plus"/></svg></button></div>
+      <div class="search"><svg class="i s"><use href="#i-search"/></svg>搜索学习集与文档</div>
+      <div class="sec">继续阅读</div>
+      <div class="cont press" onclick="go('reader')" style="cursor:pointer">
+        <div class="cover" style="width:64px;height:86px;background:linear-gradient(150deg,#3E7BFA,#7F5AF0)"><b>遗忘曲线</b></div>
+        <div style="flex:1;min-width:0">
+          <div class="t">示例：遗忘曲线与间隔重复</div>
+          <div class="m">第二章</div>
+          <div class="prog"><i style="width:25%"></i></div>
+        </div>
+      </div>
+      <div class="sec">全部学习集</div>
+      <div class="grid">
+        <div onclick="go('reader')" style="cursor:pointer"><div class="cover" style="background:linear-gradient(150deg,#3E7BFA,#7F5AF0)"><b>示例：遗忘曲线与间隔重复</b></div><div class="t">示例：遗忘曲线与间隔重复</div></div>
+        <div><div class="cover" style="background:linear-gradient(150deg,#FF8A3D,#E3405F)"><b>思考，快与慢</b></div><div class="t">思考，快与慢</div></div>
+        <div><div class="cover" style="background:linear-gradient(150deg,#1FB57A,#0E7C86)"><b>认知心理学导论</b></div><div class="t">认知心理学导论</div></div>
+        <div><div class="cover" style="background:linear-gradient(150deg,#2B2D42,#5C6784)"><b>Attention Is All You Need</b></div><div class="t">Attention Is All You Need</div></div>
+        <div><div class="cover" style="background:linear-gradient(150deg,#F7B733,#FC4A1A)"><b>学习之道</b></div><div class="t">学习之道</div></div>
+        <div><div class="cover" style="background:linear-gradient(150deg,#A770EF,#CF8BF3)"><b>设计心理学</b></div><div class="t">设计心理学</div></div>
+      </div>
+    </div></div></section>
+
+    <!-- Reader -->
+    <section class="view" id="reader">
+      <div id="vp"><div id="pages"></div></div>
+      <div id="edge"></div>
+      <div id="rtop">
+        <button class="circ lg press" style="border-radius:22px" onclick="openDrawer()" aria-label="学习集"><svg class="i"><use href="#i-sidebar"/></svg></button>
+        <div class="pseg lg" id="paneSeg">
+          <div class="lens"></div>
+          <button data-v="reader" class="on"><svg class="i s"><use href="#i-book"/></svg>阅读</button>
+          <button data-v="map"><svg class="i s"><use href="#i-map"/></svg>脑图</button>
+        </div>
+        <div class="capsule lg">
+          <button class="ai press" onclick="hud('打开助手：沿用现有底部面板，统一为玻璃材质')" aria-label="助手"><svg class="i"><use href="#i-ai"/></svg></button>
+          <button class="press" onclick="openSheet('more')" aria-label="更多"><svg class="i"><use href="#i-more"/></svg></button>
+        </div>
+      </div>
+      <div id="pill" class="lg" onclick="openScrub()">
+        <svg class="ring" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2" fill="none" stroke="var(--fill)" stroke-width="2.4"/><circle id="ringp" cx="8" cy="8" r="6.2" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="39" stroke-dashoffset="39" transform="rotate(-90 8 8)"/></svg>
+        <span id="pnum">1</span><span class="of">/ 12</span>
+      </div>
+      <div id="scrub" class="lg">
+        <div class="ch"><b id="schap">第二章 遗忘曲线与间隔重复</b><span id="spage">1 / 12</span></div>
+        <input id="srange" type="range" min="1" max="12" value="1">
+      </div>
+      <div id="sw" class="lg"></div>
+      <div id="tbar" class="lg">
+        <button data-t="select" aria-label="选择"><svg class="i"><use href="#i-select"/></svg></button>
+        <button data-t="highlight" aria-label="高亮"><svg class="i"><use href="#i-hl"/></svg><span class="cd"></span></button>
+        <button data-t="underline" aria-label="下划线"><svg class="i"><use href="#i-ul"/></svg><span class="cd"></span></button>
+        <button data-t="pen" aria-label="画笔"><svg class="i"><use href="#i-pen"/></svg><span class="cd"></span></button>
+        <button data-t="area" aria-label="框选"><svg class="i"><use href="#i-area"/></svg></button>
+        <span class="div"></span>
+        <button class="sync on" id="syncBtn" aria-label="摘录同步到脑图"><svg class="i"><use href="#i-sync"/></svg></button>
+        <span class="sp"></span>
+        <button id="tbClose" aria-label="收起" style="background:var(--fill)"><svg class="i s"><use href="#i-down"/></svg></button>
+      </div>
+      <div id="orb" class="lg" aria-label="标注工具"><svg class="i" id="orbIcon"><use href="#i-tools"/></svg><span class="dot"></span></div>
+    </section>
+
+    <!-- Map -->
+    <section class="view" id="map">
+      <div class="canvas" id="mapCanvas"></div>
+      <div id="edge2" style="position:absolute;left:0;right:0;top:0;height:118px;background:linear-gradient(var(--edgeFade) 38%,transparent);pointer-events:none;z-index:20"></div>
+      <div id="rtop2" style="position:absolute;left:0;right:0;top:54px;height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;z-index:30"></div>
+      <div id="mapbar" class="lg">
+        <button><svg class="i s"><use href="#i-layers"/></svg></button>
+        <button><svg class="i s"><use href="#i-brush"/></svg></button>
+        <span class="pct">100%</span>
+        <button><svg class="i s"><use href="#i-fit"/></svg></button>
+        <button><svg class="i s"><use href="#i-minus"/></svg></button>
+        <button><svg class="i s"><use href="#i-plus"/></svg></button>
+      </div>
+    </section>
+
+    <!-- Review -->
+    <section class="view" id="review"><div class="scroll"><div class="rv">
+      <div class="rvhead"><h1>复习</h1></div>
+      <div class="rvsub">示例：遗忘曲线与间隔重复</div>
+      <div class="rvprog"><i class="d"></i><i></i><i></i></div>
+      <div class="rcard">
+        <div class="rq">人在学习新知识之后，记忆并不是匀速流失的。</div>
+        <div class="rsrc"><span></span><button onclick="go('reader')"><svg class="i xs"><use href="#i-locate"/></svg>定位原文</button></div>
+      </div>
+      <div class="rate">
+        <button>重来<small>1 分钟</small></button><button>困难<small>5 分钟</small></button><button class="g">良好<small>10 分钟</small></button><button>简单<small>16 天</small></button>
+      </div>
+    </div></div></section>
+
+    <nav id="tabbar" class="lg">
+      <span class="lens"></span>
+      <button data-v="library"><svg class="i"><use href="#i-grid"/></svg>资料库</button>
+      <button data-v="reader"><svg class="i"><use href="#i-book"/></svg>阅读</button>
+      <button data-v="map"><svg class="i"><use href="#i-map"/></svg>脑图</button>
+      <button data-v="review"><svg class="i"><use href="#i-cards"/></svg>复习</button>
+    </nav>
+
+    <div id="scrim"></div>
+
+    <aside id="drawer">
+      <div class="dh">
+        <button class="back" onclick="closeDrawer();go('library')"><svg class="i"><use href="#i-left"/></svg>资料库</button>
+        <div class="st">示例：遗忘曲线与间隔重复</div>
+        
+        <div class="search"><svg class="i s"><use href="#i-search"/></svg>在学习集中搜索</div>
+      </div>
+      <div class="db">
+        <div class="gt">文档<button onclick="hud('导入 PDF / 添加网页')"><svg class="i s"><use href="#i-plus"/></svg></button></div>
+        <div class="grp">
+          <button class="row cur" onclick="closeDrawer();go('reader')"><span class="ic"><svg class="i s"><use href="#i-file"/></svg></span><span class="tx">遗忘曲线与间隔重复.pdf</span></button>
+          <button class="row"><span class="ic"><svg class="i s"><use href="#i-globe"/></svg></span><span class="tx">Spaced repetition – Wikipedia</span></button>
+        </div>
+        <div class="gt">脑图<button onclick="hud('新建脑图')"><svg class="i s"><use href="#i-plus"/></svg></button></div>
+        <div class="grp">
+          <button class="row" onclick="closeDrawer();go('map')"><span class="ic"><svg class="i s"><use href="#i-map"/></svg></span><span class="tx">主脑图</span></button>
+        </div>
+        <div class="gt">学习</div>
+        <div class="grp">
+          <button class="row"><span class="ic"><svg class="i s"><use href="#i-notes"/></svg></span><span class="tx">学习笔记</span><span class="v"><svg class="i xs"><use href="#i-right"/></svg></span></button>
+          <button class="row"><span class="ic"><svg class="i s"><use href="#i-cards"/></svg></span><span class="tx">卡片</span><span class="v">3</span></button>
+          <button class="row" onclick="closeDrawer();go('review')"><span class="ic"><svg class="i s"><use href="#i-cards"/></svg></span><span class="tx">复习</span><span class="v" style="color:var(--caution);font-weight:600">3</span></button>
+        </div>
+        <div class="gt">标签</div>
+        <div class="grp">
+          <button class="row"><span class="ic"><svg class="i s"><use href="#i-tag"/></svg></span><span class="tx">记忆规律</span><span class="v">2</span></button>
+        </div>
+      </div>
+      <div class="df"><button onclick="hud('设置')"><svg class="i s"><use href="#i-gear"/></svg>设置</button><button onclick="closeDrawer()" style="color:var(--accent)">完成</button></div>
+    </aside>
+
+    <section id="sheet" class="lg thick">
+      <div class="grab"></div>
+      <div class="spages">
+        <div class="sp" id="spMore">
+          <div class="shd">
+            <div class="doci"><i></i><i></i><i style="width:70%"></i><i></i><i style="width:60%"></i></div>
+            <div class="ti"><b>遗忘曲线与间隔重复</b></div>
+            <button class="x press" onclick="closeSheet()"><svg class="i xs"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tiles">
+            <button class="tile press" id="tileLook" onclick="setSheetPage('look')"><span class="sw" id="lookSw">Aa</span><b>阅读外观</b></button>
+            <button class="tile press" id="tileMargin" onclick="toggleTile('margins')"><svg class="i"><use href="#i-note"/></svg><b>页边批注</b></button>
+            <button class="tile press" id="tileVocab" onclick="toggleTile('vh')"><svg class="i"><use href="#i-vocab"/></svg><b>生词提示</b></button>
+          </div>
+          <div class="grp">
+            <button class="row" onclick="closeSheet();hud('目录 · 缩略图 · 书签 · 标注（底部面板）')"><span class="ic"><svg class="i s"><use href="#i-toc"/></svg></span><span class="tx">目录与书签</span><span class="v"><svg class="i xs"><use href="#i-right"/></svg></span></button>
+            <button class="row" onclick="closeSheet();hud('切换到学习集里的其他文档')"><span class="ic"><svg class="i s"><use href="#i-docs"/></svg></span><span class="tx">切换文档</span><span class="v">1 / 2 <svg class="i xs"><use href="#i-right"/></svg></span></button>
+            <button class="row" onclick="closeSheet();hud('进入裁边：拖动页边调整')"><span class="ic"><svg class="i s"><use href="#i-crop"/></svg></span><span class="tx">裁掉白边</span></button>
+          </div>
+          <div class="grp">
+            <button class="row" onclick="closeSheet();hud('整理笔记')"><span class="ic"><svg class="i s"><use href="#i-notes"/></svg></span><span class="tx">整理笔记</span><span class="v"><svg class="i xs"><use href="#i-right"/></svg></span></button>
+            <button class="row" onclick="closeSheet();go('review')"><span class="ic"><svg class="i s"><use href="#i-cards"/></svg></span><span class="tx">复习</span><span class="v">3 <svg class="i xs"><use href="#i-right"/></svg></span></button>
+            <button class="row" onclick="closeSheet();hud('生词本')"><span class="ic"><svg class="i s"><use href="#i-vocab"/></svg></span><span class="tx">生词本</span><span class="v"><svg class="i xs"><use href="#i-right"/></svg></span></button>
+          </div>
+        </div>
+        <div class="sp" id="spLook">
+          <div class="shd c">
+            <button class="bk press" onclick="setSheetPage('more')"><svg class="i s"><use href="#i-left"/></svg></button>
+            <div class="ti"><b>阅读外观</b></div>
+            <button class="x press" onclick="closeSheet()"><svg class="i xs"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="looks" id="looks"></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="hud" class="lg"><span id="hudText"></span><button id="hudAct">撤销</button></div>
+    <div class="homeind"></div>
+  </div></div></div></div>
+  <aside id="info"></aside>
+</div>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const screen = $('#screen'), reader = $('#reader');
+
+/* ---------- Document content ---------- */
+const PAGES = [
+  {h:'第二章　遗忘曲线与间隔重复', cap:'Foliarc 示例文档 · 原创示例文字，可自由使用', parts:[
+    ['h3','一、记忆是怎样流失的'],
+    ['p','人在学习新知识之后，记忆并不是匀速流失的。|最初的几个小时里遗忘最快，之后速度逐渐放缓，剩下的部分会保持很长时间。|这条先陡后平的曲线，被称为<span class="vw">遗忘曲线</span>。'],
+    ['p','遗忘并不完全是坏事。|大脑会主动筛掉很少被再次调用的信息，把有限的资源留给更常用的内容。|问题在于，我们无法直接告诉大脑哪些内容是重要的，只能通过“再次使用”来表明它值得保留。'],
+    ['p','一个常见的误解是：读得越熟，记得越牢。|事实上，流畅地重读带来的熟悉感，并不等于真正记住了。|熟悉感只说明我们“认得”这段内容，却不能保证在需要时把它“想起来”。'],
+  ]},
+  {parts:[
+    ['h3','二、间隔重复'],
+    ['p','间隔重复利用的正是遗忘的规律：|在快要遗忘的时候复习，每一次成功的回忆都会让下一次遗忘来得更慢。|因此，复习间隔可以逐步拉长，从一天、三天，到一周、一个月。'],
+    ['p','如果在刚学完的时候就反复复习，大脑会觉得这些内容“随手可得”，复习带来的收益很小。|适当地遗忘一些，让回忆变得有点费力，再去主动提取，效果反而更好。|这种“有一点难”的感觉，正是记忆加固的信号。'],
+    ['p','安排复习时，比起复习次数更重要的是时机。|一份合理的复习计划，应该根据每条内容的掌握程度单独调整，而不是所有内容都按同一个固定日程。'],
+    ['h3','三、主动提取'],
+    ['p','主动提取指的是不看原文，尝试把内容从记忆里“取出来”。|与重读相比，提取需要更多的努力，但正是这种努力让记忆更牢固。'],
+  ]},
+  {parts:[
+    ['p','做题、自问自答、合上书复述，都是主动提取的方式。|即使提取失败，紧接着查看答案，也比单纯重读更有帮助。|失败的提取会提醒大脑：这里有一个需要补上的缺口。'],
+    ['h3','四、把三者结合起来'],
+    ['p','一个实用的学习循环可以是：阅读时摘出关键句，把它们整理成脑图，再把重要的句子变成卡片。|之后按照间隔重复的节奏复习卡片，每次复习都先尝试回忆，再翻看原文确认。'],
+    ['p','脑图负责结构，卡片负责记忆，原文负责出处。|三者之间可以随时来回跳转：从卡片回到原文，从原文找到脑图上的位置。|这样，理解与记忆就不再是两件分开的事情。'],
+    ['p','在这个循环里，最容易被忽略的是“回到原文”。|脱离上下文的句子很容易被误读，定期回看出处，可以纠正我们在整理过程中无意引入的偏差。'],
+  ]},
+];
+// pad to 12 pages with continuation text so the scroll test is meaningful
+const FILL = ['p','学习的效率往往取决于反馈的速度。|当我们能很快知道自己哪里记错了，修正就会变得容易。|间隔重复把这种反馈安排在恰当的时间点上，让每一次复习都有针对性。'];
+const FILL2 = ['p','长期来看，稳定的小剂量练习胜过偶尔的大量突击。|每天十几分钟的复习，持续几个月后，留下的记忆远比考前通宵更多。|关键不在于一次投入多少，而在于让回忆反复发生。'];
+const FILL3 = ['p','为不同类型的内容选择不同的复习方式也很重要。|概念适合用自己的话解释，步骤适合按顺序复述，事实则适合用卡片快速检验。'];
+for (let i = 3; i < 12; i++) PAGES.push({parts:[['h3',`${['五','六','七','八','九','十','十一','十二','十三'][i-3]}、延伸阅读 ${i-2}`],FILL,FILL2,FILL3,FILL,FILL2]});
+// the heading in force on page p: the last one at or before it
+function chapterOf(p){
+  for (let i = p - 1; i >= 0; i--) { const hs = PAGES[i].parts.filter(x => x[0] === 'h3'); if (i === p - 1 && PAGES[i].h) return PAGES[i].h; if (hs.length) return hs[hs.length-1][1]; }
+  return PAGES[0].h;
+}
+
+let sid = 0;
+function renderPages(){
+  $('#pages').innerHTML = PAGES.map((pg, i) => `<div class="page" data-p="${i+1}">${pg.h?`<h2>${pg.h}</h2><div class="cap">${pg.cap}</div>`:''}${pg.parts.map(([t,txt]) => t==='h3'?`<h3>${txt}</h3>`:`<p>${txt.split('|').map(s=>`<span class="s" data-s="${sid++}">${s}</span>`).join('')}</p>`).join('')}<span class="mnote" style="top:${150+i%3*60}px"></span><svg class="ink"></svg><div class="pno">${i+1}</div></div>`).join('');
+}
+renderPages();
+
+/* ---------- Scroll physics (the part being compared) ---------- */
+// "old" approximates the current phone reader: 1:1 fling, heavy friction.
+// "new": velocity × 1.6 and iOS-like deceleration (0.998 / ms).
+const PHYS = { old:{fling:1.0, decay:.9945, wheel:1.0}, new:{fling:1.6, decay:.998, wheel:1.6} };
+let phys = PHYS.new;
+const S = { x:0, y:0, s:1, vy:0, vx:0, raf:0 };
+const vp = $('#vp'), pagesEl = $('#pages');
+const contentH = () => PAGES.length * 556 * S.s;
+function clamp(){
+  const maxY = 0, minY = Math.min(0, vp.clientHeight - contentH() - 96);
+  const minX = Math.min(0, 393 - 393*S.s);
+  S.y = Math.max(minY - 0, Math.min(maxY + 108, S.y));
+  S.x = Math.max(minX, Math.min(0, S.x));
+}
+function paint(){ clamp(); pagesEl.style.transform = `translate(${S.x}px,${S.y}px) scale(${S.s})`; updatePage(); }
+let lastY = 108;
+function updatePage(){
+  const p = Math.max(1, Math.min(PAGES.length, Math.floor((-S.y + 360) / (556*S.s)) + 1));
+  $('#pnum').textContent = p; $('#spage').textContent = `${p} / ${PAGES.length}`; $('#srange').value = p;
+  $('#schap').textContent = chapterOf(p);
+  $('#ringp').setAttribute('stroke-dashoffset', 39 * (1 - p/PAGES.length));
+  // auto-hide top controls when reading forward; reveal on scroll back
+  const d = S.y - lastY;
+  if (Math.abs(d) > 30) { if (!state.lockChrome) setImmersive(d < 0 && S.y < 0); lastY = S.y; }
+}
+function fling(){
+  cancelAnimationFrame(S.raf);
+  let t0 = performance.now();
+  const step = t => {
+    const dt = Math.min(32, t - t0); t0 = t;
+    const k = Math.pow(phys.decay, dt);
+    S.vy *= k; S.vx *= k;
+    S.y += S.vy * dt; S.x += S.vx * dt; paint();
+    if (Math.abs(S.vy) > .02 || Math.abs(S.vx) > .02) S.raf = requestAnimationFrame(step);
+  };
+  S.raf = requestAnimationFrame(step);
+}
+vp.addEventListener('wheel', e => { e.preventDefault(); cancelAnimationFrame(S.raf); S.y -= e.deltaY * phys.wheel; S.x -= e.deltaX * phys.wheel; paint(); collapseTools(); closeScrub(); }, {passive:false});
+
+let ptr = null, lastTap = 0, tapTimer = 0;
+vp.addEventListener('pointerdown', e => {
+  cancelAnimationFrame(S.raf);
+  vp.setPointerCapture(e.pointerId);
+  ptr = { id:e.pointerId, x0:e.clientX, y0:e.clientY, hist:[[e.clientX, e.clientY, performance.now()]], moved:false, target:e.target, stroke:null };
+  if (state.tool === 'pen') startStroke(e);
+});
+vp.addEventListener('pointermove', e => {
+  if (!ptr || ptr.id !== e.pointerId) return;
+  const sc = scale(); const h = ptr.hist[ptr.hist.length-1];
+  const dx = (e.clientX - h[0]) / sc, dy = (e.clientY - h[1]) / sc;
+  if (Math.hypot(e.clientX - ptr.x0, e.clientY - ptr.y0) > 6 * sc) ptr.moved = true;
+  ptr.hist.push([e.clientX, e.clientY, performance.now()]); if (ptr.hist.length > 8) ptr.hist.shift();
+  if (ptr.stroke) return moveStroke(e);
+  if (ptr.moved) { S.y += dy; S.x += dx; paint(); collapseTools(); closeScrub(); }
+});
+vp.addEventListener('pointerup', e => {
+  if (!ptr || ptr.id !== e.pointerId) return;
+  const p = ptr; ptr = null;
+  if (p.stroke) return endStroke();
+  if (!p.moved) return tap(p.target, e);
+  const sc = scale(), now = performance.now();
+  const a = p.hist.find(h => now - h[2] < 100) || p.hist[0], b = p.hist[p.hist.length-1];
+  const dt = Math.max(8, b[2] - a[2]);
+  S.vy = (b[1] - a[1]) / sc / dt * phys.fling; S.vx = (b[0] - a[0]) / sc / dt * phys.fling;
+  S.vy = Math.max(-9, Math.min(9, S.vy));
+  fling();
+});
+function scale(){ return $('#scaler').getBoundingClientRect().width / ($('#scaler').offsetWidth || 1); }
+
+function tap(target, e){
+  const now = performance.now();
+  if (now - lastTap < 280) { clearTimeout(tapTimer); lastTap = 0; return zoomToggle(e); }
+  lastTap = now;
+  const sEl = target.closest && target.closest('.s');
+  if (sEl && (state.tool === 'highlight' || state.tool === 'underline')) return annotate(sEl);
+  if (state.tool === 'area') { hud('拖出矩形以摘录', false); return; }
+  tapTimer = setTimeout(() => {
+    if ($('#reader').classList.contains('tools')) return collapseTools();
+    if ($('#reader').classList.contains('scrub')) return closeScrub();
+    setImmersive(!reader.classList.contains('immersive'));
+  }, 260);
+}
+function zoomToggle(e){
+  const r = vp.getBoundingClientRect(), sc = scale();
+  const px = (e.clientX - r.left) / sc, py = (e.clientY - r.top) / sc;
+  const ns = S.s > 1.05 ? 1 : 1.45;
+  // keep the tapped point under the finger
+  S.x = px - (px - S.x) * ns / S.s; S.y = py - (py - S.y) * ns / S.s; S.s = ns;
+  pagesEl.style.transition = 'transform .32s cubic-bezier(.3,1,.4,1)'; paint();
+  setTimeout(() => pagesEl.style.transition = '', 340);
+  hud(ns > 1 ? '145%' : '适合宽度', false);
+}
+
+/* ---------- Annotation tools ---------- */
+const HL = ['#FFD60A','#34C759','#5AC8FA','#FF6482','#FF9F0A','#BF5AF2'];
+const state = { tool:'select', color:{highlight:'#FFD60A', underline:'#FF6482', pen:'#FF3B30'}, sync:true, side:'right', look:'white', lockChrome:false };
+const TOOL_ICON = {select:'#i-tools', highlight:'#i-hl', underline:'#i-ul', pen:'#i-pen', area:'#i-area'};
+const TOOL_NAME = {select:'选择', highlight:'高亮', underline:'下划线', pen:'画笔', area:'框选'};
+let collapseTimer = 0;
+function setTool(t){
+  state.tool = t;
+  $$('#tbar [data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  $$('#tbar .cd').forEach(c => { const t2 = c.parentElement.dataset.t; c.style.background = state.color[t2] || ''; });
+  vp.classList.toggle('drawing', t === 'pen');
+  $('#pages').className = 'tool-' + t;
+  const has = t === 'highlight' || t === 'underline' || t === 'pen';
+  reader.classList.toggle('swatch', has);
+  renderSwatches();
+  const orb = $('#orb');
+  orb.classList.toggle('active', t !== 'select');
+  $('#orbIcon').innerHTML = `<use href="${TOOL_ICON[t]}"/>`;
+  orb.querySelector('.dot').style.background = state.color[t] || 'var(--accent)';
+  if (t === 'select') { clearTimeout(collapseTimer); collapseTimer = setTimeout(collapseTools, 500); }
+}
+function renderSwatches(){
+  const t = state.tool, sw = $('#sw');
+  if (!(t in state.color)) return;
+  const colors = t === 'pen' ? ['#FF3B30','#FF9500','#FFCC00','#34C759','#007AFF','#1D1D1F'] : HL;
+  sw.innerHTML = colors.map(c => `<button class="${c===state.color[t]?'on':''}" data-c="${c}"><i style="background:${c}"></i></button>`).join('');
+  const r = state.side === 'right';
+  sw.style.left = r ? '' : '14px'; sw.style.right = r ? '14px' : '';
+}
+$('#sw').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (!b) return; state.color[state.tool] = b.dataset.c; setTool(state.tool); });
+$$('#tbar [data-t]').forEach(b => b.onclick = () => setTool(state.tool === b.dataset.t && b.dataset.t !== 'select' ? 'select' : b.dataset.t));
+$('#syncBtn').onclick = () => { state.sync = !state.sync; $('#syncBtn').classList.toggle('on', state.sync); hud(state.sync ? '摘录同步到脑图：开' : '摘录同步到脑图：关', false); };
+$('#tbClose').onclick = () => collapseTools();
+function expandTools(){ closeScrub(); clearTimeout(collapseTimer); reader.classList.add('tools'); setImmersive(false); }
+function collapseTools(){ clearTimeout(collapseTimer); reader.classList.remove('tools'); }
+let undoStack = [];
+function annotate(el){
+  const t = state.tool, cls = t === 'highlight' ? 'hl' : 'ul';
+  el.style.setProperty('--hc', t === 'highlight' ? hexA(state.color[t], .42) : state.color[t]);
+  el.classList.add(cls); undoStack.push([el, cls]);
+  hud(state.sync ? '已摘录' : `已${TOOL_NAME[t]}`, true);
+  // the operation is done → tools fold back into the orb; the tool stays armed
+  clearTimeout(collapseTimer); collapseTimer = setTimeout(collapseTools, 650);
+}
+function hexA(h, a){ const n = parseInt(h.slice(1), 16); return `rgba(${n>>16},${n>>8&255},${n&255},${a})`; }
+// pen strokes
+function startStroke(e){
+  const page = e.target.closest('.page'); if (!page) return;
+  const svg = page.querySelector('svg.ink'), r = page.getBoundingClientRect(), sc = r.width / 393;
+  const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  pl.setAttribute('fill', 'none'); pl.setAttribute('stroke', state.color.pen); pl.setAttribute('stroke-width', 2.5); pl.setAttribute('stroke-linecap', 'round'); pl.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(pl);
+  ptr.stroke = { pl, r, sc, pts:[] }; moveStroke(e);
+}
+function moveStroke(e){ const st = ptr.stroke; st.pts.push(`${(e.clientX - st.r.left)/st.sc},${(e.clientY - st.r.top)/st.sc}`); st.pl.setAttribute('points', st.pts.join(' ')); }
+function endStroke(){ hud('已添加', true); clearTimeout(collapseTimer); collapseTimer = setTimeout(collapseTools, 650); }
+
+/* ---------- Orb: tap to expand, drag to switch side ---------- */
+const orb = $('#orb');
+function placeOrb(){
+  orb.style.left = state.side === 'right' ? (393 - 16 - 50) + 'px' : '16px';
+  $('#tbar').classList.toggle('left', state.side === 'left');
+  renderSwatches();
+}
+let od = null;
+orb.addEventListener('pointerdown', e => { orb.setPointerCapture(e.pointerId); od = { x:e.clientX, moved:false }; orb.style.transition = 'opacity .2s,transform .3s'; });
+orb.addEventListener('pointermove', e => {
+  if (!od) return; const dx = (e.clientX - od.x) / scale();
+  if (Math.abs(dx) > 6) od.moved = true;
+  if (od.moved) orb.style.left = Math.max(8, Math.min(393 - 58, (state.side === 'right' ? 327 : 16) + dx)) + 'px';
+});
+orb.addEventListener('pointerup', e => {
+  if (!od) return; const moved = od.moved; od = null; orb.style.transition = '';
+  if (moved) { state.side = parseFloat(orb.style.left) + 25 > 196 ? 'right' : 'left'; placeOrb(); return; }
+  expandTools();
+});
+
+/* ---------- Page pill & scrubber ---------- */
+function openScrub(){ collapseTools(); reader.classList.add('scrub'); }
+function closeScrub(){ reader.classList.remove('scrub'); }
+$('#srange').addEventListener('input', e => { S.y = -(e.target.value - 1) * 556 * S.s + 108; cancelAnimationFrame(S.raf); paint(); });
+
+function setImmersive(on){ reader.classList.toggle('immersive', on); }
+
+/* ---------- Top bar: Reading | Map ---------- */
+function segLens(seg){
+  const on = seg.querySelector('button.on'), lens = seg.querySelector('.lens');
+  if (!on) return; lens.style.left = on.offsetLeft + 'px'; lens.style.width = on.offsetWidth + 'px';
+}
+function bindPaneSeg(seg){
+  seg.querySelectorAll('button').forEach(b => b.onclick = () => go(b.dataset.v));
+}
+// the map view reuses the same top bar (cloned so both views own one)
+$('#rtop2').innerHTML = $('#rtop').innerHTML;
+$('#rtop2 .pseg').id = 'paneSeg2';
+bindPaneSeg($('#paneSeg')); bindPaneSeg($('#paneSeg2'));
+
+/* ---------- Map content ---------- */
+$('#mapCanvas').innerHTML = `
+  <svg style="position:absolute;inset:0;width:100%;height:100%" fill="none" stroke="var(--label3)" stroke-width="1.2">
+    <path d="M196 426 C 240 426, 236 300, 270 300"/><path d="M196 426 C 240 426, 236 380, 270 380"/><path d="M196 426 C 240 426, 236 470, 270 470"/>
+    <path d="M196 426 C 150 426, 150 330, 118 330"/><path d="M196 426 C 150 426, 150 520, 118 520"/><path d="M196 426 C 240 426, 236 556, 270 556"/>
+  </svg>
+  <div class="node root" style="left:132px;top:409px">遗忘曲线与间隔重复</div>
+  <div class="node" style="left:270px;top:286px">记忆流失规律</div>
+  <div class="node ex" style="left:270px;top:366px;max-width:116px;white-space:normal">记忆并不是匀速流失的</div>
+  <div class="node" style="left:270px;top:456px">间隔重复</div>
+  <div class="node" style="left:270px;top:542px">主动提取</div>
+  <div class="node" style="left:28px;top:316px">熟悉感 ≠ 记住</div>
+  <div class="node" style="left:28px;top:506px">复习时机</div>`;
+
+/* ---------- Tab bar ---------- */
+function syncTabs(v){
+  const tb = $('#tabbar');
+  $$('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  const on = tb.querySelector('button.on'), lens = tb.querySelector('.lens');
+  if (on) { lens.style.left = on.offsetLeft + 'px'; lens.style.width = on.offsetWidth + 'px'; lens.style.opacity = 1; }
+  // Library and Review keep the tab bar; the workspace (reading / map) is immersive, as today.
+  tb.classList.toggle('hide', v === 'reader' || v === 'map');
+}
+$$('#tabbar button').forEach(b => b.onclick = () => go(b.dataset.v));
+
+/* ---------- Navigation ---------- */
+let view = 'library';
+function go(v){
+  view = v;
+  $$('.view').forEach(s => s.classList.toggle('on', s.id === v));
+  syncTabs(v);
+  [$('#paneSeg'), $('#paneSeg2')].forEach(seg => { seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); segLens(seg); });
+}
+
+/* ---------- Drawer (swipe from the left edge / swipe back to close) ---------- */
+function openDrawer(){ collapseTools(); $('#drawer').classList.add('on'); $('#scrim').className = 'on'; }
+function closeDrawer(){ $('#drawer').classList.remove('on'); if (!$('#sheet').classList.contains('on')) $('#scrim').className = ''; }
+let dd = null;
+$('#drawer').addEventListener('pointerdown', e => { if (e.target.closest('button')) return; dd = { x:e.clientX }; $('#drawer').style.transition = 'none'; });
+window.addEventListener('pointermove', e => { if (!dd) return; const dx = Math.min(0, (e.clientX - dd.x) / scale()); $('#drawer').style.transform = `translateX(${dx}px)`; dd.dx = dx; });
+window.addEventListener('pointerup', () => { if (!dd) return; const d = $('#drawer'); d.style.transition = ''; d.style.transform = ''; if ((dd.dx||0) < -80) closeDrawer(); dd = null; });
+
+/* ---------- Sheet ---------- */
+function openSheet(page){ collapseTools(); closeScrub(); setSheetPage(page); $('#sheet').classList.add('on'); $('#scrim').className = 'on light'; }
+function closeSheet(){ $('#sheet').classList.remove('on'); if (!$('#drawer').classList.contains('on')) $('#scrim').className = ''; }
+// the sheet hugs whichever page is showing, so the appearance page leaves the document visible
+function setSheetPage(p){
+  const sh = $('#sheet'); sh.classList.toggle('look', p === 'look');
+  sh.style.height = (12 + (p === 'look' ? $('#spLook') : $('#spMore')).offsetHeight) + 'px';
+}
+$('#scrim').onclick = () => { closeSheet(); closeDrawer(); };
+const LOOKS = [['white','白色','#FFFFFF','#1D1D1F'],['paper','纸质','#F4ECD8','#3B2F20'],['green','浅绿','#E1EDD9','#22301D'],['dark','深色','#1C1C1E','#D1D1D6']];
+function renderLooks(){
+  $('#looks').innerHTML = LOOKS.map(([k,n,bg,fg]) => `<button class="lk press ${state.look===k?'on':''}" data-k="${k}"><span class="pv" style="background:${bg};color:${fg}"><b>Aa</b><i></i><i></i></span><span>${n}</span><span class="ck"><svg class="i xs" style="stroke-width:3"><use href="#i-check"/></svg></span></button>`).join('');
+  const cur = LOOKS.find(l => l[0] === state.look);
+  $('#lookSw').style.background = cur[2]; $('#lookSw').style.color = cur[3];
+}
+$('#looks').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; setLook(b.dataset.k); });
+function setLook(k){ state.look = k; reader.className = reader.className.replace(/look-\w+/g, '').trim() + ' look-' + k; renderLooks(); }
+function toggleTile(cls){
+  const on = !$('#pages').parentElement.classList.contains(cls);
+  $('#pages').parentElement.classList.toggle(cls, on);
+  const tile = cls === 'margins' ? $('#tileMargin') : $('#tileVocab');
+  tile.classList.toggle('on', on);
+}
+
+/* ---------- HUD ---------- */
+let hudTimer = 0;
+function hud(text, undo){
+  $('#hudText').textContent = text; const h = $('#hud');
+  h.classList.toggle('noact', !undo); h.classList.add('on');
+  clearTimeout(hudTimer); hudTimer = setTimeout(() => h.classList.remove('on'), 2400);
+}
+$('#hudAct').onclick = () => {
+  const u = undoStack.pop(); if (u) u[0].classList.remove(u[1]);
+  else { const lines = $$('svg.ink polyline'); if (lines.length) lines[lines.length-1].remove(); }
+  $('#hud').classList.remove('on');
+};
+
+/* ---------- Scenes & annotations ---------- */
+const SCENES = [
+  {id:'library', g:'资料库', t:'资料库 · Liquid Glass 标签栏', run(){ go('library'); },
+   info:{lead:'标签栏改为悬浮的 Liquid Glass 胶囊：内容从下方透过，选中项是一块会滑动的“透镜”。', what:[
+     '标签栏离开屏幕边缘、悬浮在 Home 指示条之上，四周留 22pt；圆角 32，与机身圆角同心。',
+     '材质 = 背景模糊 10 + 饱和度 190% + 上亮下暗的折射描边 + 顶部高光；滚动时彩色封面从底下透出来，层次清楚而不抢内容。',
+     '选中项不再只是变色：一块浅灰“透镜”带回弹地滑到目标位置，图标与文字同时换成强调色，色盲用户也能靠位置与透镜辨认。',
+     '“降低透明度”打开时自动退回不透明卡片底（右上角可切换体验）。'],
+     why:'旧版是不透明白条，贴底，视觉上把屏幕切成两块；悬浮玻璃让内容延伸到底，也和 iOS 系统应用一致。',
+     try:'滚动资料库，看封面从标签栏下透过；点“复习”，看透镜移动。'}},
+  {id:'reader', g:'阅读', t:'阅读 · 默认状态', run(){ go('reader'); resetReader(); },
+   info:{lead:'阅读时只保留三样东西：顶部操作、底部页码、右下角的工具球。', what:[
+     '顶部去掉了整条白底和分隔线，改为三组悬浮玻璃控件：左“学习集”、中“阅读 | 脑图”、右“助手 · 更多”。下面有一层渐隐（scroll edge），文字滑到顶部时自然淡出，不会和按钮叠在一起。',
+     '页码是底部居中的小胶囊：“3 / 12” + 一个进度环，读到哪里一眼可见。',
+     '标注工具收成右下角 50pt 的玻璃小球，平时不占阅读空间；正好在右手拇指够得到的位置。',
+     '纸张在手机上占满整个宽度，页间只有一条细线。'],
+     why:'旧版同时出现顶栏、页码导航和一整条工具栏，上下各被吃掉一大块，读的地方反而最小。阅读是这个页面 90% 的时间在做的事，其它都应该让位。',
+     try:'在页面上拖动/滚轮滚动；向下读时顶部控件自动隐藏，往回滚时出现。单击页面也可以切换。'}},
+  {id:'reader-tools', g:'阅读', t:'阅读 · 展开工具栏（页码让位）', run(){ go('reader'); resetReader(); setTimeout(() => { expandTools(); setTool('highlight'); }, 60); },
+   info:{lead:'点工具球，它沿底部展开成完整工具栏，页码同时淡出——两者共用同一个位置。', what:[
+     '工具栏从小球的位置“长”出来（遮罩展开动画），用户能理解它和小球是同一个东西。',
+     '顺序：选择、高亮、下划线、画笔、框选 │ 摘录同步到脑图 │ 收起。每个按钮 44pt 触控区。',
+     '选中高亮/下划线/画笔时，上方弹出一排颜色；工具按钮右下角的小点显示当前颜色。',
+     '<b>完成操作自动收起</b>：划完一句、写完一笔后 0.65 秒收回小球；工具仍保持选中，小球变成该工具的图标 + 颜色点 + 蓝色描边，提示“现在点文字会高亮”。再点小球即可换工具。',
+     '开始滚动页面、点空白处、点“收起”都会收回。',
+     '小球可以左右拖动停靠，左手用户把它拖到左边，工具栏改为从左侧展开。'],
+     why:'旧版工具栏常驻底部，和页码同时出现，拥挤且一直占着位置；大部分时间用户只是在读，标注是间歇性的动作。',
+     try:'选“高亮”后点任意一句话 → 被高亮、提示“已摘录到脑图 · 撤销”，工具栏自动收起。换“画笔”后在页面上拖动可以书写。把小球拖到左边试试。'}},
+  {id:'reader-scrub', g:'阅读', t:'阅读 · 点页码快速跳页', run(){ go('reader'); resetReader(); setTimeout(openScrub, 60); },
+   info:{lead:'页码胶囊可以点：展开成跳页滑块，并显示当前章节。', what:[
+     '展开后显示章节标题（真正有用的上下文）+ “页 / 总页”+ 滑块，拖动即时跳页。',
+     '同一时间底部只出现一个东西：滑块展开时页码与小球都让位；开始滚动或点页面就收起。'],
+     why:'长文档里“我在哪儿、怎么快速回到某处”是高频需求，但不值得常驻占位。'}},
+  {id:'reader-immersive', g:'阅读', t:'阅读 · 沉浸模式', run(){ go('reader'); resetReader(); setTimeout(() => { S.y = -556*1.2; paint(); setImmersive(true); }, 60); },
+   info:{lead:'向下阅读时，顶部控件自动滑走，只剩页码和工具球。', what:[
+     '往回滚、单击页面或点页码时，顶部控件回来。',
+     '渐隐收窄到只垫在状态栏下，正文几乎读到屏幕顶端，时间和电量仍然清楚。'],
+     why:'手机屏幕小，连续阅读时任何常驻的控件都是噪声。'}},
+  {id:'more', g:'阅读', t:'更多操作（底部面板）', run(){ go('reader'); resetReader(); setTimeout(() => openSheet('more'), 60); },
+   info:{lead:'“更多”从下拉菜单改为从底部升起的玻璃面板，按使用频率分三层。', what:[
+     '顶部只有当前文档名。',
+     '第一层：三个开关磁贴——阅读外观（色块即当前纸色）、页边批注、生词提示。开关状态只靠磁贴底色表达（开启为蓝底），不再写“已开启 / 已关闭”。',
+     '第二层：文档相关——目录与书签、切换文档（显示 1 / 2）、裁掉白边。',
+     '第三层：学习相关——整理笔记、复习（显示待复习数）、生词本。',
+     '<b>去掉了</b>“页面显示”的缩放滑块和“实际大小 / 适合宽度 / 适合页面”：手机上用双指捏合，双击在适合宽度与放大之间切换。不加说明文字：双击时的缩放比例提示已足够。',
+     '“资料库”入口移到学习集抽屉顶部的返回按钮，不再在这里重复。'],
+     why:'旧菜单把桌面版的全部条目原样搬过来：小字、长列表、滑块在手指下很难拖准。手机上应该只放手指能轻松完成、且真的会用的操作。',
+     try:'点“页边批注”“生词提示”磁贴切换；点“阅读外观”进入二级面板。'}},
+  {id:'look', g:'阅读', t:'阅读外观（二级面板）', run(){ go('reader'); resetReader(); setTimeout(() => openSheet('look'), 60); },
+   info:{lead:'阅读外观独立成二级面板：四张纸样卡片，点一下立即生效，背后的页面同步变色。', what:[
+     '从“更多”横向推入，左上角返回；和 iOS 设置的层级一致。',
+     '每张卡片就是那种纸的真实底色和文字色（“Aa”+ 两行示意文字），比一排文字选项更直观。',
+     '面板只占屏幕下方，背后的遮罩很淡，用户能直接看到页面效果再决定。',
+     '不加说明文字，纸样本身就是说明。'],
+     why:'旧版四个外观选项夹在长菜单中间，和缩放、裁边等不相关的项目混在一起。',
+     try:'依次点四种纸色，看背后页面变化。'}},
+  {id:'drawer', g:'阅读', t:'学习集抽屉', run(){ go('reader'); resetReader(); setTimeout(openDrawer, 60); },
+   info:{lead:'学习集侧栏改为手机抽屉：从左侧滑出，上下贴满屏幕，没有任何缝隙。', what:[
+     '宽 328pt（约 83%），右侧留出一条能看到正文的区域，点它或向左滑即可关闭。',
+     '顶部：返回资料库 → 学习集名称 → 搜索。',
+     '内容按 iOS 分组列表组织：文档、脑图、学习（笔记、卡片、待复习数用橙色数字突出）、标签；分组标题右侧“+”就地新建。行内不加副标题。',
+     '底部固定“设置”和“完成”。',
+     '行高 46pt，图标统一用强调色，当前文档整行浅蓝。'],
+     why:'旧版是桌面的浮动玻璃侧栏原样缩小：四周有空隙、行太矮、28pt 行高不适合手指。',
+     try:'在抽屉空白处向左拖动关闭；点“主脑图”或“复习”直接跳转。'}},
+  {id:'map', g:'阅读', t:'脑图', run(){ go('map'); },
+   info:{lead:'脑图页沿用同一套顶部控件，“阅读 | 脑图”的透镜滑到右侧。', what:[
+     '底部脑图工具条统一为玻璃胶囊，功能保持现状（本期不改脑图交互）。',
+     '两个页面切换时顶部控件位置完全不变，只有透镜移动——用户不会觉得“换了一个页面”。'],
+     why:'保持一致，减少认知切换。'}},
+  {id:'review', g:'复习', t:'复习 · 标签栏', run(){ go('review'); },
+   info:{lead:'复习页使用同一个玻璃标签栏；评分按钮加大到 58pt，适合单手操作。', what:[
+     '进度改为分段条，剩余张数一眼可见。',
+     '“定位原文”直接回到阅读页对应位置。'],
+     why:'与资料库保持一致；复习是高频单手场景。'}},
+];
+const OVERVIEW = `
+  <h4>需求 → 方案</h4>
+  <table>
+    <tr><td>底部导航栏</td><td>悬浮 Liquid Glass 胶囊 + 滑动透镜（场景 1）</td></tr>
+    <tr><td>滑动速度慢</td><td>惯性速度 ×1.6、iOS 标准减速；右上角“滑动手感”可对比（场景 2）</td></tr>
+    <tr><td>工具栏与页码同时出现</td><td>页码居底；工具收成侧边小球，展开时页码让位，完成后自动收起（场景 2、3）</td></tr>
+    <tr><td>Display 缩放滑块</td><td>手机端移除，改为捏合/双击（场景 6）</td></tr>
+    <tr><td>阅读外观</td><td>二级底部面板，纸样卡片实时预览（场景 7）</td></tr>
+    <tr><td>侧边栏</td><td>全高抽屉，上下无缝隙（场景 8）</td></tr>
+    <tr><td>预览页顶部</td><td>三组悬浮玻璃控件 + 渐隐，沉浸时自动隐藏（场景 2、5）</td></tr>
+  </table>
+  <h4>文案原则</h4><ul><li>避免不必要的次级标签和描述，让布局本身说明问题。</li><li>避免不必要的辅助文字、描述性文案和冗余的界面微文案。</li></ul>
+  <h4>自我审视</h4>
+  <div class="crit">
+  <ul>
+    <li><b>没有把功能藏丢</b>：缩放、页码跳转、外观、目录、切换文档、整理笔记、复习、生词本全部仍在两步以内；只有桌面式的缩放滑块被手势取代。</li>
+    <li><b>工具球的发现性</b>：第一次进入阅读时小球带强调色描边，并弹一次“点这里标注”的提示（实现时加，只出现一次）。</li>
+    <li><b>工具保持选中的风险</b>：收起后若仍在高亮模式，用户可能误触高亮。所以小球会变成工具图标 + 颜色点 + 蓝描边，且每次标注都有“撤销”。</li>
+    <li><b>左边缘手势</b>：iOS 左边缘本来是返回；阅读页没有上一级可返回（资料库在抽屉里），所以左边缘用于打开抽屉，不冲突。</li>
+    <li><b>可读性</b>：玻璃上的文字都在 13pt 以上，深色/降低透明度均已验证可读。</li>
+  </ul></div>
+  <h4>滑动速度说明</h4>
+  <ul><li>原型里“现状”按 1:1 抛动、较快衰减模拟；“优化后”抛动速度 ×1.6，减速率 0.998/ms（iOS 标准）。实现阶段会在真机上测量现有 fling 速度，再对齐到系统“文件 / 图书”的手感，具体倍率以实测为准。</li></ul>`;
+function renderInfo(sc){
+  const i = sc.info;
+  $('#info').innerHTML = `<h2>${sc.t}</h2><p class="lead">${i.lead}</p><h4>改了什么</h4><ul>${i.what.map(w=>`<li>${w}</li>`).join('')}</ul><h4>为什么</h4><p style="font-size:12.5px;margin:0">${i.why}</p>${i.try?`<div class="try">试一试：${i.try}</div>`:''}${OVERVIEW}`;
+}
+function renderScenes(cur){
+  let html = '', g = '';
+  SCENES.forEach((s, k) => { if (s.g !== g) { g = s.g; html += `<h3>${g}</h3>`; } html += `<button data-id="${s.id}" class="${s.id===cur?'on':''}"><span class="n">${k+1}</span>${s.t}</button>`; });
+  $('#scenes').innerHTML = html;
+  $$('#scenes button').forEach(b => b.onclick = () => scene(b.dataset.id));
+}
+function resetReader(){
+  closeSheet(); closeDrawer(); collapseTools(); closeScrub(); setImmersive(false);
+  S.s = 1; S.x = 0; S.y = 108; lastY = 108; paint(); setTool('select'); collapseTools();
+}
+function scene(id){
+  const sc = SCENES.find(s => s.id === id) || SCENES[0];
+  closeSheet(); closeDrawer();
+  sc.run(); renderScenes(sc.id); renderInfo(sc);
+  history.replaceState(null, '', '#' + sc.id);
+}
+
+/* ---------- Prototype controls ---------- */
+function seg(id, fn){ $$(`#${id} button`).forEach(b => b.onclick = () => { $$(`#${id} button`).forEach(x => x.classList.toggle('on', x === b)); fn(b.dataset.v); }); }
+seg('themeSeg', v => { screen.classList.toggle('dark', v === 'dark'); if (v === 'dark' && state.look === 'white') setLook('dark'); if (v === 'light' && state.look === 'dark') setLook('white'); });
+seg('physSeg', v => { phys = PHYS[v]; });
+seg('transSeg', v => screen.classList.toggle('notrans', v === 'solid'));
+function fit(){ const st = $('#stage'); const k = Math.min(1, (st.clientHeight - 40) / 876, (st.clientWidth - 40) / 417); $('#scaler').style.transform = `scale(${k})`; }
+window.addEventListener('resize', fit);
+
+placeOrb(); renderLooks(); setLook('white'); setTool('select'); fit();
+const q = new URLSearchParams(location.search);
+// ?still renders end states without animation (used for screenshots)
+if (q.has('still')) document.head.insertAdjacentHTML('beforeend', '<style>*,*::before,*::after{transition:none!important;animation:none!important}</style>');
+if (q.get('theme') === 'dark') $('#themeSeg [data-v=dark]').click();
+scene(location.hash.slice(1) || 'library');
+</script>
+</body>
+</html>

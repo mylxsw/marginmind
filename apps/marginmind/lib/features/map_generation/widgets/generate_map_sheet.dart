@@ -179,6 +179,8 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
 
     final wsState = ref.read(workspaceProvider(widget.studySetId));
     final isNewMap = _destination == 'new';
+    // Merging into the current map is reviewed as an update diff, not a detached branch.
+    final merge = widget.mergeCurrentMap && !isNewMap;
     final targetMapId = isNewMap ? 'map-${DateTime.now().microsecondsSinceEpoch}' : wsState.activeMapId;
     final title = _titleController.text.trim().isNotEmpty
         ? _titleController.text.trim()
@@ -199,8 +201,10 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
             depth: _depth,
             instructions: text.isEmpty ? null : text,
             includeAnnotations: _includeAnnotations,
-            destination: isNewMap ? MapGenerationDestination.newMap : MapGenerationDestination.branch,
-            parentId: isNewMap ? null : targetMapId,
+            destination: isNewMap
+                ? MapGenerationDestination.newMap
+                : (merge ? MapGenerationDestination.update : MapGenerationDestination.branch),
+            parentId: isNewMap || merge ? null : targetMapId,
           ),
         );
 
