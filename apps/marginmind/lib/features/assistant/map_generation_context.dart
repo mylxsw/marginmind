@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_assistant/mm_assistant.dart' show mapChapterPayload, mapChapterSystemPrompt;
 
 import '../workspace/reflow_document.dart';
 
@@ -203,49 +204,43 @@ class DocumentDigestBuilder {
     );
     final result = <MapDigestChapter>[];
     for (final range in ranges) {
-      // Reserve space for worst-case JSON escaping, prompts and annotations.
-      final limit = inputCharacters ~/ 16;
+      // Count encoded characters rather than assuming a multiplier for CJK.
+      final bodyLimit = inputCharacters ~/ 2, annotationLimit = inputCharacters ~/ 5;
       var part = 0;
       for (var start = range.start; start < range.end;) {
-        var end = math.min(start + limit, range.end);
-        // Never split a UTF-16 surrogate pair.
-        final lastUnit = units.where((u) => end > u.start && end < u.start + u.text.length).firstOrNull;
-        if (lastUnit != null && _highSurrogate(lastUnit.text.codeUnitAt(end - lastUnit.start - 1))) end--;
-        final pages = <int, String>{};
-        final unitIds = <String>{};
-        for (final u in units) {
-          final a = math.max(start, u.start), b = math.min(end, u.start + u.text.length);
-          if (b <= a) continue;
-          pages[u.page] = u.text.substring(a - u.start, b - u.start);
-          unitIds.add(u.chapter);
-        }
+        final slice = _slicePages(units, start, range.end, bodyLimit);
+        final end = slice.end, pages = slice.pages, unitIds = slice.unitIds;
         final aliases = <String, String>{}, texts = <String, String>{};
-        var remaining = limit;
+        bool addText(String alias, String text) {
+          final available =
+              annotationLimit - jsonEncode(texts).length - (texts.isEmpty ? 0 : 1) - jsonEncode(alias).length - 1 - 2;
+          if (available <= 0) return false;
+          final end = _encodedEnd(text, 0, text.length, available);
+          if (end == 0) return false;
+          texts[alias] = text.substring(0, end);
+          return true;
+        }
+
         if (includeAnnotations) {
           for (final a in annotations) {
             final matches = a.isText
                 ? a.textAnchors.any((t) => unitIds.contains(t.chapterId))
                 : a.pages.any((p) => pages.containsKey(p.page));
-            if (!matches || remaining <= 0) continue;
+            if (!matches) continue;
             final text = jsonEncode({
               'quote': a.quote,
               'kind': a.kind.name,
               if (!a.isText) 'pages': a.pages.map((p) => p.page).toList(),
             });
-            final clipped = String.fromCharCodes(text.runes.take(remaining));
-            remaining -= clipped.length;
             final alias = 'A${aliases.length + 1}';
+            if (!addText(alias, text)) break;
             aliases[alias] = a.id;
-            texts[alias] = clipped;
           }
           // Independent document notes also belong to the reading context, but
           // never receive annotation aliases (they cannot be attached as excerpts).
           for (final (index, note)
               in comments.where((n) => n.pages.any(pages.containsKey) || n.chapters.any(unitIds.contains)).indexed) {
-            if (remaining <= 0) break;
-            final clipped = String.fromCharCodes(note.text.runes.take(remaining));
-            texts['comment${index + 1}'] = clipped;
-            remaining -= clipped.length;
+            if (!addText('comment${index + 1}', note.text)) break;
           }
         }
         final chapterId = '$documentId:${range.id}:${part++}';
@@ -267,6 +262,9 @@ class DocumentDigestBuilder {
           organization: organization,
           instructions: instructions,
         );
+        if (mapChapterSystemPrompt.length + jsonEncode(mapChapterPayload(input)).length > inputCharacters) {
+          throw const ResearchFailure(ResearchFailureKind.budget, 'chapterMetadataExceedsBudget');
+        }
         result.add(
           MapDigestChapter(
             input: input,
@@ -294,7 +292,57 @@ class DocumentDigestBuilder {
   }
 }
 
-bool _highSurrogate(int c) => c >= 0xd800 && c <= 0xdbff;
+// Largest rune-aligned prefix whose JSON string contents fit the allowance.
+// JSON encodes CJK verbatim; only controls, quotes and backslashes expand.
+int _encodedEnd(String text, int start, int end, int allowance) {
+  var i = start, used = 0;
+  while (i < end) {
+    final c = text.codeUnitAt(i);
+    final width =
+        c >= 0xd800 &&
+            c <= 0xdbff &&
+            i + 1 < end &&
+            text.codeUnitAt(i + 1) >= 0xdc00 &&
+            text.codeUnitAt(i + 1) <= 0xdfff
+        ? 2
+        : 1;
+    final cost = switch (c) {
+      34 || 92 || 8 || 9 || 10 || 12 || 13 => 2,
+      < 32 => 6,
+      >= 0xd800 && <= 0xdfff when width == 1 => 6,
+      _ => width,
+    };
+    if (used + cost > allowance) break;
+    used += cost;
+    i += width;
+  }
+  return i;
+}
+
+({int end, Map<int, String> pages, Set<String> unitIds}) _slicePages(
+  List<_DigestUnit> units,
+  int start,
+  int end,
+  int allowance,
+) {
+  final pages = <int, String>{}, unitIds = <String>{};
+  var used = 2, through = start; // JSON object braces.
+  for (final u in units) {
+    final a = math.max(start, u.start), b = math.min(end, u.start + u.text.length);
+    if (b <= a) continue;
+    final overhead = jsonEncode('${u.page}').length + 1 + 2 + (pages.isEmpty ? 0 : 1);
+    final stop = _encodedEnd(u.text, a - u.start, b - u.start, allowance - used - overhead);
+    if (stop == a - u.start) break;
+    final text = u.text.substring(a - u.start, stop);
+    pages[u.page] = text;
+    unitIds.add(u.chapter);
+    used += overhead + jsonEncode(text).length - 2;
+    through = u.start + stop;
+    if (through < b) break;
+  }
+  if (through == start) throw const ResearchFailure(ResearchFailureKind.budget, 'chapterTextExceedsBudget');
+  return (end: through, pages: pages, unitIds: unitIds);
+}
 
 PdfOutlineEntry _bookOutline(ReflowDocument book, String id) {
   final e = book.outline.firstWhere((e) => e.id == id);

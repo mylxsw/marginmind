@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/assistant/map_generation_context.dart';
 import 'package:mm_book/mm_book.dart';
+import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 
@@ -102,11 +103,11 @@ void main() {
     expect(selected.source.chapters, ['c2']);
   });
   test('page fallback, long segmentation and emoji boundary preserve text', () async {
-    final text = '${'a' * 63}😀${'b' * 400}';
+    final text = '${'a' * 2039}😀${'b' * 4000}';
     final result = await digest(
       DocumentDigestBuilder(DigestReader({1: text})),
       StudySetContent(documents: [pdf()]),
-      budget: 1024,
+      budget: 4096,
     );
     expect(result.chapters.length, greaterThan(1));
     expect(result.chapters.expand((c) => c.input.textByPage.values).join(), text);
@@ -114,6 +115,91 @@ void main() {
     for (final c in result.chapters) {
       expect(utf8.decode(utf8.encode(c.input.textByPage.values.join())), c.input.textByPage.values.join());
     }
+  });
+  test('48-page chapter stays single-digit and every complete request fits the chapter budget', () async {
+    const budget = ResearchBudget(inputCharacters: 24000);
+    final text = '章' * 1500;
+    final doc = Document(
+      id: 'private-doc',
+      title: 'Long chapter',
+      fileName: 'documents/long.pdf',
+      pageCount: 48,
+      importedAt: DateTime.utc(2026),
+    );
+    final snapshot = StudySetContent(
+      documents: [doc],
+      documentOutlines: [
+        DocumentOutline(
+          documentId: doc.id,
+          items: [const PdfOutlineEntry(id: 'long', title: 'Long', page: 1)],
+        ),
+      ],
+      annotations: [for (var p = 1; p <= 48; p++) annotation('mark-$p', p)],
+    );
+    final plan = await digest(
+      DocumentDigestBuilder(DigestReader({for (var p = 1; p <= 48; p++) p: text})),
+      snapshot,
+      budget: budget.inputCharacters,
+    );
+    expect(plan.chapters, hasLength(7));
+    expect(plan.chapters.expand((c) => c.input.textByPage.values).join(), text * 48);
+    for (final chapter in plan.chapters) {
+      expect(
+        mapChapterSystemPrompt.length + jsonEncode(mapChapterPayload(chapter.input)).length,
+        lessThanOrEqualTo(budget.inputCharacters),
+      );
+      expect(
+        jsonEncode({for (final e in chapter.input.textByPage.entries) '${e.key}': e.value}).length,
+        lessThanOrEqualTo(budget.inputCharacters ~/ 2),
+      );
+      expect(jsonEncode(chapter.input.annotations).length, lessThanOrEqualTo(budget.inputCharacters ~/ 5));
+    }
+  });
+  test('escaped text, huge marks and comments are budgeted by encoded size', () async {
+    final text = ('中文"\\\n\u0000😀' * 1500);
+    final doc = pdf();
+    final snapshot = StudySetContent(
+      documents: [doc],
+      annotations: [
+        Annotation(
+          id: 'a',
+          documentId: doc.id,
+          page: 1,
+          rects: [],
+          quote: text,
+          colorIndex: 0,
+          createdAt: DateTime.utc(2026),
+        ),
+      ],
+      marginNotes: [
+        MarginNote(
+          id: 'n',
+          documentId: doc.id,
+          page: 1,
+          lineY: 0.2,
+          text: text,
+          colorIndex: 0,
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
+        ),
+      ],
+    );
+    final plan = await digest(DocumentDigestBuilder(DigestReader({1: text})), snapshot);
+    expect(plan.chapters.expand((c) => c.input.textByPage.values).join(), text);
+    for (final chapter in plan.chapters) {
+      expect(
+        mapChapterSystemPrompt.length + jsonEncode(mapChapterPayload(chapter.input)).length,
+        lessThanOrEqualTo(24000),
+      );
+      expect(jsonEncode(chapter.input.annotations).length, lessThanOrEqualTo(4800));
+      for (final value in [...chapter.input.textByPage.values, ...chapter.input.annotations.values]) {
+        expect(utf8.decode(utf8.encode(value)), value);
+      }
+    }
+    await expectLater(
+      digest(DocumentDigestBuilder(DigestReader({1: 'text'})), snapshot, budget: 1024),
+      throwsA(isA<ResearchFailure>().having((e) => e.code, 'code', 'chapterMetadataExceedsBudget')),
+    );
   });
   test('outline loader, nested selection, invalid requests and OCR result', () async {
     final reader = DigestReader({1: 'one', 2: 'two', 3: 'three', 4: 'four'});

@@ -56,6 +56,106 @@ const point = '{"k":"point","id":"p1","title":"First","doc":"D1","page":1,"marks
 const topic = '{"ref":"a","parent":"ROOT","title":"Topic","doc":"D1","page":1}';
 final cancelled = isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled);
 void main() {
+  MapLine p(String id, [String? parent]) =>
+      MapLine(id: id, kind: MapLineKind.point, title: id, parentId: parent == null ? 'private-map' : 'new:$parent');
+  test('budget fitting removes deepest then latest, preserving ancestor closure and input order', () {
+    final points = [p('r1'), p('c1', 'r1'), p('l1', 'c1'), p('r2'), p('c2', 'r2'), p('l2', 'c2')];
+    final expected = {
+      6: ['r1', 'c1', 'l1', 'r2', 'c2', 'l2'],
+      5: ['r1', 'c1', 'l1', 'r2', 'c2'],
+      4: ['r1', 'c1', 'r2', 'c2'],
+      3: ['r1', 'c1', 'r2'],
+      2: ['r1', 'r2'],
+      1: ['r1'],
+      0: <String>[],
+    };
+    for (final e in expected.entries) {
+      final kept = fitPointsToBudget(points, inputCharacters: e.key + 1, measure: (ps) => ps.length + 1);
+      expect(kept.map((p) => p.id), e.value);
+      final refs = kept.map((p) => 'new:${p.id}').toSet();
+      expect(kept.every((p) => !p.parentId!.startsWith('new:') || refs.contains(p.parentId)), isTrue);
+    }
+    expect(points, hasLength(6));
+    expect(
+      () => fitPointsToBudget(points, inputCharacters: 1, measure: (_) => 2),
+      throwsA(isA<ResearchFailure>().having((e) => e.code, 'code', 'mapStructureExceedsBudget')),
+    );
+    for (final invalid in [
+      [p('a'), p('a')],
+      [p('a', 'b'), p('b', 'a')],
+      [p('a', 'missing')],
+      [MapLine(id: 'a', kind: MapLineKind.add)],
+    ]) {
+      expect(
+        () => fitPointsToBudget(invalid, inputCharacters: 100, measure: (ps) => ps.length),
+        throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.invalidRequest)),
+      );
+    }
+    expect(() => fitPointsToBudget([], inputCharacters: 0, measure: (_) => 0), throwsA(isA<ResearchFailure>()));
+    expect(fitPointsToBudget([], inputCharacters: 10, measure: (_) => 1), isEmpty);
+  });
+  test('large point lists use logarithmically many size measurements', () {
+    final points = [for (var i = 0; i < 10000; i++) p('root$i')];
+    var measures = 0;
+    final kept = fitPointsToBudget(
+      points,
+      inputCharacters: 2000,
+      measure: (ps) {
+        measures++;
+        return ps.length;
+      },
+    );
+    expect(kept, hasLength(2000));
+    expect(kept.last.id, 'root1999');
+    expect(measures, lessThanOrEqualTo(17));
+  });
+  test('generate and update fit actual prompts, aliases and structure into configured budget', () async {
+    final points = [for (var i = 0; i < 1000; i++) p('point$i', i % 3 == 0 ? null : 'point${i - i % 3}')];
+    for (final phase in [MapLinePhase.generation, MapLinePhase.diff]) {
+      final client = ScriptClient([
+        answer(phase == MapLinePhase.generation ? topic : '{"op":"add","ref":"a","parent":"ROOT","title":"Topic"}'),
+      ]);
+      const budget = ResearchBudget(inputCharacters: 2400);
+      final model = generator(client, budget: budget);
+      final input = build(phase, points);
+      final result =
+          await (phase == MapLinePhase.generation
+                  ? model.generate(input, CancellationToken())
+                  : model.update(input, CancellationToken()))
+              .toList();
+      expect(result, hasLength(1));
+      final request = client.requests.single;
+      final text = (request.last as UserMessage).contents.whereType<TextPart>().single.text;
+      expect((request.first as SystemMessage).content.length + text.length, lessThanOrEqualTo(budget.inputCharacters));
+      final payload = jsonDecode(text) as Map;
+      final kept = payload['points'] as List;
+      expect(kept.length, inInclusiveRange(1, 999));
+      expect(kept.first['title'], 'point0');
+      final refs = kept.map((p) => p['id']).toSet();
+      expect(kept.every((p) => p['parent'] == 'ROOT' || refs.contains(p['parent'])), isTrue);
+      expect(input.points, hasLength(1000));
+      expect(text, isNot(contains('private-')));
+      await model.close();
+    }
+  });
+  test('metadata-only overflows and a single oversized point fail without a model call', () async {
+    for (final allowance in [5, 1300]) {
+      final client = ScriptClient([]);
+      final limited = generator(client, budget: ResearchBudget(inputCharacters: allowance));
+      final stream = limited.generate(
+        build(MapLinePhase.generation, [
+          MapLine(id: 'huge', kind: MapLineKind.point, parentId: 'private-map', title: 'x' * 10000),
+        ]),
+        CancellationToken(),
+      );
+      await expectLater(
+        stream.toList(),
+        throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.budget)),
+      );
+      expect(client.calls, 0);
+      await limited.close();
+    }
+  });
   test('three prompt snapshots', () {
     for (final e in {
       'map-chapter': mapChapterSystemPrompt,
