@@ -66,20 +66,15 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(MapStylePopover), findsOneWidget);
         // The longer node menu scrolls inside even a narrow pane.
+        await tester.ensureVisible(style);
         await tester.tap(style);
         await tester.pumpAndSettle();
         controller.selectCard('c6');
         await tester.pumpAndSettle();
-        expect(find.byTooltip('Remove from Map'), findsNothing);
-        final nodeDelete = touch
-            ? find.byKey(const ValueKey('node-bar-more'))
-            : find.byKey(const ValueKey('node-bar-delete'));
+        expect(find.byTooltip('Remove from Map'), touch ? findsOneWidget : findsNothing);
+        final nodeDelete = find.byKey(const ValueKey('node-bar-delete'));
         await tester.ensureVisible(nodeDelete);
         await tester.tap(nodeDelete);
-        if (touch) {
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Remove from Map'));
-        }
         await tester.pumpAndSettle();
         expect(controller.content.node('c6'), isNull);
         await controller.undo();

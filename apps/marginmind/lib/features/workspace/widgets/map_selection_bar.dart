@@ -112,7 +112,7 @@ class MapSelectionBar extends ConsumerWidget {
   }
 }
 
-/// Icon-only actions; hover and accessibility labels describe the command.
+/// Icon-only actions; long press, hover and accessibility labels describe them.
 class MapNodeBar extends StatelessWidget {
   const MapNodeBar({
     super.key,
@@ -141,51 +141,23 @@ class MapNodeBar extends StatelessWidget {
       return TextFieldTapRegion(
         child: MMToolbarGroup(
           children: [
-            MMToolbarButton(
-              key: const ValueKey('node-bar-child'),
-              icon: MMIcons.add,
-              label: l.addChildTopic,
-              tooltip: l.addChildTopic,
-              onPressed: onChild,
-            ),
-            if (onEdit != null)
-              MMToolbarButton(
-                key: const ValueKey('node-bar-edit'),
-                icon: MMIcons.pen,
-                label: l.renameTitle,
-                tooltip: l.renameTitle,
-                onPressed: onEdit,
+            _MapAction(id: 'child', label: l.addChildTopic, nodeIcon: MMNodeAction.child, onPressed: onChild),
+            if (!root)
+              _MapAction(id: 'sibling', label: l.addSiblingAfter, nodeIcon: MMNodeAction.sibling, onPressed: onSibling),
+            if (onEdit != null) _MapAction(id: 'edit', icon: MMIcons.pen, label: l.renameTitle, onPressed: onEdit),
+            if (!root) ...[
+              _MapAction(id: 'relation', label: l.addRelation, nodeIcon: MMNodeAction.relation, onPressed: onRelation),
+              _MapAction(id: 'note', label: l.addNote, icon: MMIcons.addNote, onPressed: onNote),
+            ],
+            _MapAction(id: 'image', label: l.insertImage, icon: MMIcons.image, onPressed: onImage),
+            if (!root)
+              _MapAction(
+                id: 'delete',
+                label: l.removeFromMap,
+                icon: MMIcons.trash,
+                tint: context.mmColors.critical,
+                onPressed: onDelete,
               ),
-            MMDropdownButton<String>(
-              key: const ValueKey('node-bar-more'),
-              tooltip: l.moreTools,
-              icon: const Icon(MMIcons.more),
-              onSelected: (value) {
-                switch (value) {
-                  case 'sibling':
-                    onSibling();
-                  case 'relation':
-                    onRelation();
-                  case 'note':
-                    onNote();
-                  case 'image':
-                    onImage();
-                  case 'delete':
-                    onDelete();
-                }
-              },
-              itemBuilder: (_) => [
-                if (!root) MMDropdownItem(value: 'sibling', child: Text(l.addSiblingAfter)),
-                if (!root) MMDropdownItem(value: 'relation', child: Text(l.addRelation)),
-                if (!root) MMDropdownItem(value: 'note', child: Text(l.addNote)),
-                MMDropdownItem(value: 'image', child: Text(l.insertImage)),
-                if (!root)
-                  MMDropdownItem(
-                    value: 'delete',
-                    child: Text(l.removeFromMap, style: context.mmText.body.copyWith(color: context.mmColors.critical)),
-                  ),
-              ],
-            ),
             if (onAssistant != null) _AssistantAction(onAssistant: onAssistant!),
           ],
         ),
@@ -359,7 +331,8 @@ class _MapAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hint = '$label${shortcut == null ? '' : '  $shortcut'}${reason == null ? '' : '\n$reason'}';
+    final showShortcut = shortcut != null && !MMInput.of(context).touchPlatform;
+    final hint = '$label${showShortcut ? '  $shortcut' : ''}${reason == null ? '' : '\n$reason'}';
     void invoke() => reason == null ? onPressed?.call() : MMHud.show(context, reason!, icon: MMIcons.info);
     final key = ValueKey('$keyPrefix-$id');
     final button = nodeIcon == null
