@@ -52,6 +52,50 @@ class RunnerTests: XCTestCase {
     XCTAssertTrue((reply as? NSObject) === FlutterMethodNotImplemented)
   }
 
+  func testSystemNotificationChannelValidatesInputAndDispatches() {
+    var notified = [String]()
+    var reply: Any?
+    let notify: (String, String) -> Bool = { title, body in
+      notified.append("\(title)|\(body)")
+      return true
+    }
+    SystemNotificationChannel.handle(
+      FlutterMethodCall(methodName: "notify", arguments: ["title": "全文翻译完成", "body": "Learning and memory"]),
+      result: { reply = $0 },
+      notify: notify
+    )
+    XCTAssertNil(reply)
+    XCTAssertEqual(notified, ["全文翻译完成|Learning and memory"])
+    let invalid: [Any?] = [
+      nil,
+      [:],
+      ["title": "", "body": "doc"],
+      ["title": "done", "body": ""],
+      ["title": String(repeating: "x", count: 257), "body": "doc"],
+      ["title": "done", "body": String(repeating: "y", count: 513)],
+    ]
+    for arguments in invalid {
+      SystemNotificationChannel.handle(
+        FlutterMethodCall(methodName: "notify", arguments: arguments),
+        result: { reply = $0 },
+        notify: notify
+      )
+      XCTAssertEqual((reply as? FlutterError)?.code, "invalid")
+    }
+    SystemNotificationChannel.handle(
+      FlutterMethodCall(methodName: "notify", arguments: ["title": "done", "body": "doc"]),
+      result: { reply = $0 },
+      notify: { _, _ in false }
+    )
+    XCTAssertEqual((reply as? FlutterError)?.code, "notification")
+    SystemNotificationChannel.handle(
+      FlutterMethodCall(methodName: "unknown", arguments: nil),
+      result: { reply = $0 },
+      notify: notify
+    )
+    XCTAssertTrue((reply as? NSObject) === FlutterMethodNotImplemented)
+  }
+
   func testBrowserPdfPrintIsAsyncPaginatedAndCleansUpAfterStaleOrCancelledJobs() async throws {
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 480),
       styleMask: [.titled], backing: .buffered, defer: false)

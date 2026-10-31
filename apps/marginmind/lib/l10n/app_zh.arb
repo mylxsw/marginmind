@@ -2116,6 +2116,27 @@
       "total": { "type": "int" }
     }
   },
+  "fullTranslationStripBadKey": "API Key 无效，已暂停",
+  "fullTranslationStripSavedNote": "已译内容已保存",
+  "fullTranslationStripNoModel": "没有可用的模型，已暂停",
+  "fullTranslationStripStorage": "无法保存译文，已暂停",
+  "fullTranslationStripOffline": "网络不可用，联网后自动继续",
+  "fullTranslationStripBudget": "已用 {tokens} token，超出预估 50%",
+  "@fullTranslationStripBudget": {
+    "placeholders": {
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationStripOpenSettings": "打开设置",
+  "fullTranslationStripRetry": "重试",
+  "fullTranslationHudNetworkRestored": "网络已恢复，继续翻译",
+  "fullTranslationNotificationBodyFailed": "{doc} · {count} 段未译",
+  "@fullTranslationNotificationBodyFailed": {
+    "placeholders": {
+      "doc": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
   "phoneGlassTitle": "手机 Liquid Glass",
   "phoneGlassRegular": "标准",
   "phoneGlassThick": "厚材质",
@@ -2128,5 +2149,14 @@
   "phoneReaderExitTools": "结束标注",
   "phoneReaderPercent": "{percent}%",
   "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
-  "mapCacheClearFailed": "清除缓存失败"
+  "mapCacheClearFailed": "清除缓存失败",
+  "translationRetranslate": "重新翻译",
+  "translationEdit": "修改译文",
+  "translationRetranslated": "已重新翻译",
+  "translationEdited": "已手动修改",
+  "translationParagraphFailed": "未译 · {reason}",
+  "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "translationEditSaved": "已保存修改",
+  "translationCopied": "已拷贝译文",
+  "translationRemoved": "已移除译文"
 }

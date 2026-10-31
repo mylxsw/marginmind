@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
@@ -385,5 +386,188 @@ void main() {
     expect(find.text('全文翻译完成 · 1 段未译'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await events.close();
+  });
+
+  testWidgets('workspace emits network restored HUD and background system notification', (tester) async {
+    const channel = MethodChannel('marginmind/system_notification');
+    final notificationCalls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      notificationCalls.add(call);
+      return null;
+    });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    });
+
+    var foreground = true;
+    final events = StreamController<TranslationTaskSummary?>.broadcast();
+    await tester.pumpWidget(
+      testHost(
+        Consumer(
+          builder: (context, ref, _) {
+            listenFullTranslationNotifications(
+              context,
+              ref,
+              'demo-1',
+              ['c1'],
+              documentTitleOf: (_) => 'Learning and memory',
+              isWindowForeground: () => foreground,
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+        overrides: [translationTaskSummaryProvider(('demo-1', 'c1')).overrideWith((ref) => events.stream)],
+      ),
+    );
+
+    // 1. Offline -> Running emits network restored HUD
+    events.add(TranslationTaskSummary(job(state: TranslationJobState.offline), 40));
+    await tester.pump();
+    await tester.pump();
+    events.add(TranslationTaskSummary(job(state: TranslationJobState.running), 40));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('网络已恢复，继续翻译'), findsOneWidget);
+    expect(notificationCalls, isEmpty);
+
+    // 2. Foreground completion does NOT send system notification
+    events.add(TranslationTaskSummary(job(state: TranslationJobState.done), 100));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('全文翻译完成'), findsOneWidget);
+    expect(notificationCalls, isEmpty);
+
+    // 3. Background completion sends system notification (no failures)
+    foreground = false;
+    events.add(TranslationTaskSummary(job(state: TranslationJobState.running), 50));
+    await tester.pump();
+    await tester.pump();
+    events.add(TranslationTaskSummary(job(state: TranslationJobState.done), 100));
+    await tester.pump();
+    await tester.pump();
+    expect(notificationCalls.length, 1);
+    expect(notificationCalls.last.method, 'notify');
+    expect(notificationCalls.last.arguments, {'title': '全文翻译完成', 'body': 'Learning and memory'});
+
+    // 4. Background completion with failures includes untranslated count in body
+    events.add(TranslationTaskSummary(job(state: TranslationJobState.running), 50));
+    await tester.pump();
+    await tester.pump();
+    events.add(
+      TranslationTaskSummary(
+        job(state: TranslationJobState.done).copyWith(
+          failures: {
+            'fp-1': TranslationFailure(kind: 'network', attempts: 1, at: testNow),
+            'fp-2': TranslationFailure(kind: 'network', attempts: 1, at: testNow),
+          },
+        ),
+        80,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(notificationCalls.length, 2);
+    expect(notificationCalls.last.arguments, {'title': '全文翻译完成', 'body': 'Learning and memory · 2 段未译'});
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await events.close();
+  });
+
+  test('offline auto-resumes when network recovers, while manual pause stays paused', () async {
+    final translator = TestTranslator()..delayMs = 80;
+    final container = await containerFor(translator: translator);
+    addTearDown(container.dispose);
+
+    final sub = container.listen(fullTranslationProvider(('demo-1', 'c1', 'zh')), (_, _) {});
+    addTearDown(sub.close);
+    while (container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).loading) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+
+    final controller = container.read(fullTranslationProvider(('demo-1', 'c1', 'zh')).notifier);
+    await controller.startJob(
+      from: 1,
+      to: 4,
+      mode: TranslationMode.all,
+      batchSize: 5,
+      note: '',
+      modelName: 'fixture',
+      estimatedTokens: 10000,
+    );
+    await pumpEventQueue();
+    expect(container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job!.state, TranslationJobState.running);
+
+    // Network drops -> job enters offline state
+    container.read(translationOnlineProvider('demo-1').notifier).setOnline(false);
+    await pumpEventQueue();
+    expect(container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job!.state, TranslationJobState.offline);
+
+    // Network recovers -> job automatically resumes to running
+    container.read(translationOnlineProvider('demo-1').notifier).setOnline(true);
+    await pumpEventQueue();
+    expect(container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job!.state, TranslationJobState.running);
+
+    // User manually pauses -> pauseReason is user
+    await controller.pause();
+    await pumpEventQueue();
+    final pausedJob = container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job!;
+    expect(pausedJob.state, TranslationJobState.paused);
+    expect(pausedJob.pauseReason, TranslationPauseReason.user);
+
+    // Network drops and recovers while manually paused -> must NOT auto-resume
+    container.read(translationOnlineProvider('demo-1').notifier).setOnline(false);
+    await pumpEventQueue();
+    container.read(translationOnlineProvider('demo-1').notifier).setOnline(true);
+    await pumpEventQueue();
+    expect(container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job!.state, TranslationJobState.paused);
+
+    await controller.stop();
+  });
+
+  test('budget exceeded pauses once and does not pause again after resume', () async {
+    final translator = TestTranslator();
+    final container = await containerFor(translator: translator);
+    addTearDown(container.dispose);
+
+    final sub = container.listen(fullTranslationProvider(('demo-1', 'c1', 'zh')), (_, _) {});
+    addTearDown(sub.close);
+    while (container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).loading) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+
+    final controller = container.read(fullTranslationProvider(('demo-1', 'c1', 'zh')).notifier);
+    // Each paragraph uses 5 tokens; estimateTokens = 4 means > 6 tokens (after 2 paragraphs = 10 tokens) triggers budget pause.
+    await controller.startJob(
+      from: 1,
+      to: 4,
+      mode: TranslationMode.all,
+      batchSize: 5,
+      note: '',
+      modelName: 'fixture',
+      estimatedTokens: 4,
+    );
+    for (var i = 0; i < 20; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      if (container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job?.state == TranslationJobState.budget) {
+        break;
+      }
+    }
+
+    final budgetJob = container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job!;
+    expect(budgetJob.state, TranslationJobState.budget);
+    expect(budgetJob.budgetAcknowledged, isFalse);
+
+    // Resuming acknowledges budget and completes remaining paragraphs without pausing for budget again
+    await controller.resume();
+    for (var i = 0; i < 30; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      if (container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job?.state == TranslationJobState.done) {
+        break;
+      }
+    }
+
+    final doneJob = container.read(fullTranslationProvider(('demo-1', 'c1', 'zh'))).job!;
+    expect(doneJob.state, TranslationJobState.done);
+    expect(doneJob.budgetAcknowledged, isTrue);
   });
 }

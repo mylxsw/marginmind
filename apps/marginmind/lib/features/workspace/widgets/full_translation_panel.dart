@@ -102,6 +102,13 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     final job = state.job;
     if (job == null) return const SizedBox.shrink();
 
+    final reduceMotion = MMAppearance.reduceMotionOf(context);
+    if (reduceMotion && _breathe.isAnimating) {
+      _breathe.stop();
+    } else if (!reduceMotion && !_breathe.isAnimating) {
+      _breathe.repeat(reverse: true);
+    }
+
     final counts = state.counts();
     final documentPages =
         ref.watch(workspaceContentProvider(widget.studySetId))?.document(widget.documentId)?.pageCount ?? 0;
@@ -232,8 +239,10 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
       cells.add(
         Semantics(
           button: true,
+          excludeSemantics: true,
           label: l.fullTranslationGridCell(pageNum, pageStateLabel),
           child: Tooltip(
+            excludeFromSemantics: true,
             message: l.fullTranslationGridCell(pageNum, pageStateLabel),
             child: GestureDetector(
               onTap: () {
@@ -299,6 +308,11 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
           ),
         );
       case TranslationPageState.running:
+        if (MMAppearance.reduceMotionOf(context)) {
+          return Container(
+            decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2.5)),
+          );
+        }
         return AnimatedBuilder(
           animation: _breathe,
           builder: (context, _) => Container(
@@ -581,7 +595,10 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
             if (ok && context.mounted) {
               final nav = Navigator.of(context);
               await controller.removeTranslations();
-              if (nav.mounted) nav.pop();
+              if (nav.mounted) {
+                nav.pop();
+                MMHud.show(nav.context, l.translationRemoved);
+              }
             }
           },
         ),
