@@ -113,7 +113,19 @@ void main() {
       throwsArgumentError,
     );
   });
-  test('fingerprints canonicalize objects; all source changes and cache inputs matter', () {
+  test('revisiting pages does not introduce new source material', () {
+    final generation = MapGeneration(
+      sources: [source(read: 2)],
+      organization: MapOrganization.chapter,
+      depth: 3,
+      generatedAt: time,
+    );
+    expect(mapSourcesChanged(generation, [source(read: 1)]), isFalse);
+    expect(mapSourcesChanged(generation, [source(read: 2)]), isFalse);
+    expect(mapSourcesChanged(generation, [source(read: 3)]), isTrue);
+    expect(mapSourcesChanged(generation, [source(read: 1, fingerprint: 'text-v2')]), isTrue);
+  });
+  test('fingerprints canonicalize objects; new source material and cache inputs matter', () {
     String fingerprint({int pages = 10, String text = 'text', Map<String, Object?> notes = const {}}) =>
         mapSourceFingerprint(pageCount: pages, textHash: text, annotations: {'b': 2, 'a': 1}, notes: notes);
     expect(fingerprint(), mapSourceFingerprint(pageCount: 10, textHash: 'text', annotations: {'a': 1, 'b': 2}));

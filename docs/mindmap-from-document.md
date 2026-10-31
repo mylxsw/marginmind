@@ -185,7 +185,7 @@ class Card { ... final CardSource? source; }
 ```
 
 - “依据的文档”= `generation.sources`；“随文档切换脑图”按它查找。
-- “有更新”= 任一 `MapSource.fingerprint` 或 `readThrough` 与当前不同（应用层计算，不落盘）。
+- “有更新”= 任一 `MapSource.fingerprint` 与当前不同，或当前 `readThrough` 大于生成时的记录；往回翻页不算新内容（应用层计算，不落盘）。
 - “用户改过”不需要在每次编辑时打标记：比较 `generated` 里的哈希即可；用户手动添加的节点不在 `generated` 里，天然受保护。
 - 文件格式：`MindMap.generation`、`Card.source` 都是可选字段，旧版本读取时忽略，不需要迁移。
 

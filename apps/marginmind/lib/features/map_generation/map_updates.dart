@@ -61,7 +61,8 @@ final mapHasUpdatesProvider = Provider.autoDispose.family<bool, (String, String)
     final current = ref.watch(currentMapSourceProvider((studySetId, old.documentId)));
     if (!current.hasValue) continue;
     final source = current.value;
-    if (source == null || source.fingerprint != old.fingerprint || source.readThrough != old.readThrough) return true;
+    // Revisiting an earlier page does not introduce new material.
+    if (source == null || source.fingerprint != old.fingerprint || source.readThrough > old.readThrough) return true;
   }
   return false;
 });

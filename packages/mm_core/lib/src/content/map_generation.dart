@@ -135,7 +135,7 @@ bool mapSourcesChanged(MapGeneration generation, List<MapSource> current) {
     final next = byId[old.documentId];
     return next == null ||
         next.fingerprint != old.fingerprint ||
-        next.readThrough != old.readThrough ||
+        next.readThrough > old.readThrough ||
         mapContentHash(next.chapters.toList()..sort()) != mapContentHash(old.chapters.toList()..sort());
   });
 }
