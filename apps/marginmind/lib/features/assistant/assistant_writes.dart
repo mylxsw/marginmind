@@ -33,7 +33,7 @@ class WorkspaceMapEditExecutor implements MapEditExecutor {
     final selection = Set<String>.of(selectedIds);
     final next = await workspace.applyAssistantChange(
       (c) => writes.apply(c, proposal, selection),
-      expansion: proposal.isExpansion,
+      expansion: proposal.isExpansion || proposal.isDocumentGeneration,
     );
     final result = next.assistantReceipts.firstWhere((r) => r.proposalId == proposal.id);
     workspace.flashAssistantNodes(result.nodeIds);

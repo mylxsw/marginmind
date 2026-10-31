@@ -116,7 +116,8 @@ class MMToolbarGroup extends StatelessWidget {
 class MMToolbarButton extends StatelessWidget {
   const MMToolbarButton({
     super.key,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.tooltip,
     required this.onPressed,
     this.selected = false,
@@ -124,11 +125,14 @@ class MMToolbarButton extends StatelessWidget {
     this.count = 0,
     this.tint,
     this.compact = false,
-  }) : assert(icon != null || label != null);
+  }) : assert(icon != null || iconWidget != null || label != null);
 
   /// A feature color for icon and label (research), in place of the label
   /// color, also while selected (the open assistant).
   final Color? tint;
+
+  /// Custom icon widget in place of an [icon] glyph (e.g. progress spinner).
+  final Widget? iconWidget;
 
   /// Null for a text-only button (e.g. "Done"); [label] is then required.
   final IconData? icon;
@@ -188,7 +192,9 @@ class MMToolbarButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (icon != null)
+                if (iconWidget != null)
+                  iconWidget!
+                else if (icon != null)
                   Icon(
                     icon,
                     size: dock
@@ -198,7 +204,7 @@ class MMToolbarButton extends StatelessWidget {
                         : 16,
                     color: fg,
                   ),
-                if (icon != null && label != null) const SizedBox(width: 6),
+                if ((icon != null || iconWidget != null) && label != null) const SizedBox(width: 6),
                 if (label != null) Text(label!, style: t.callout.copyWith(color: fg)),
                 if (count > 0) ...[
                   const SizedBox(width: MMSpacing.xxs),

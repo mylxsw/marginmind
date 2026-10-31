@@ -212,6 +212,7 @@ abstract final class AppShortcuts {
 
 /// Shared by the native menu and the focused canvas.
 enum MindMapCommand {
+  generateFromDocument,
   expandIdeas,
   siblingAfter,
   siblingBefore,
@@ -898,13 +899,15 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                   : null)
             : workspace != null &&
                   selected != null &&
-                  workspace.content.annotation(workspace.content.card(selected)?.annotationId ?? '') != null
+                  (workspace.content.annotation(workspace.content.card(selected)?.annotationId ?? '') != null ||
+                      workspace.content.card(selected)?.source != null)
             ? () => workspace.revealCard(selected)
             : null,
         shortcut: AppShortcuts.revealSource,
       ),
     ];
     final mapLabels = {
+      MindMapCommand.generateFromDocument: l.mapGenerateMenu,
       MindMapCommand.expandIdeas: l.mapIdeaMenu,
       MindMapCommand.siblingAfter: l.addSiblingAfter,
       MindMapCommand.siblingBefore: l.addSiblingBefore,
@@ -947,7 +950,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                   !(inOutline && mapOnly.contains(entry.key)) &&
                   (entry.key != MindMapCommand.expandIdeas ||
                       (MMPlatformCapabilities.current.assistant &&
-                          (workspaceState?.selectedCardId != null || workspaceState?.rootSelected == true)))
+                          (workspaceState?.selectedCardId != null || workspaceState?.rootSelected == true))) &&
+                  (entry.key != MindMapCommand.generateFromDocument ||
+                      (MMPlatformCapabilities.current.assistant && workspace.content.documents.isNotEmpty))
               ? () {
                   final focus = FocusManager.instance.primaryFocus?.context;
                   if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));

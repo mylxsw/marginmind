@@ -202,6 +202,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('New Mind Map…'));
     await tester.pumpAndSettle();
+    // The + menu offers a blank map or one generated from a document.
+    expect(find.text('Generate from Document…'), findsOneWidget);
+    await tester.tap(find.text('New Mind Map…').last);
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, 'Second');
     await tester.tap(find.text('Save').last);
     await tester.pumpAndSettle();

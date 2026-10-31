@@ -12,6 +12,7 @@ import '../../workspace/workspace_controller.dart';
 import '../../research/research_origin.dart' show researchCardTitle;
 import '../assistant_services.dart';
 import '../expansion_controller.dart';
+import '../../workspace/widgets/map_source_chip.dart';
 import 'dashed_border.dart';
 
 String expansionDirectionLabel(AppLocalizations l, ExpansionDirection direction) => switch (direction) {
@@ -474,7 +475,9 @@ class MapGhostNodeState extends State<MapGhostNode> {
       toggled: d.kept,
       focusable: true,
       focused: widget.focused,
-      label: l.mapIdeaDraftSemantics(d.title, d.kept ? l.mapIdeaDraftKept : l.mapIdeaDraftSkipped),
+      label: d.page != null
+          ? l.mapGenerateDraftSemantics(d.title, d.page!, d.kept ? l.mapIdeaDraftKept : l.mapIdeaDraftSkipped)
+          : l.mapIdeaDraftSemantics(d.title, d.kept ? l.mapIdeaDraftKept : l.mapIdeaDraftSkipped),
       hint: [
         if (d.tag != ExpansionDirection.auto) expansionDirectionLabel(l, d.tag),
         if (d.page != null) l.pageNumber(d.page!),
@@ -549,22 +552,7 @@ class MapGhostNodeState extends State<MapGhostNode> {
                         ),
                       if (d.page != null) ...[
                         if (d.tag != ExpansionDirection.auto) const SizedBox(width: 6),
-                        Container(
-                          height: MMSizes.mapDraftTag,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            color: c.fill,
-                            borderRadius: BorderRadius.circular(MMRadii.mapDraftTag),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(MMIcons.document, size: 10, color: c.secondaryLabel),
-                              const SizedBox(width: 3),
-                              Text('p.${d.page}', style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-                            ],
-                          ),
-                        ),
+                        MapSourceChip(page: d.page!),
                       ],
                     ],
                   ),
