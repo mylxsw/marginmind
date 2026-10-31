@@ -151,6 +151,7 @@ class _MapDiffPanelState extends ConsumerState<MapDiffPanel> {
                                         semanticLabel: line.title ?? title(line.nodeId),
                                         onChanged: preview.isApplying ? null : (value) => ctl.toggle(line.id, value),
                                       ),
+                                      const SizedBox(width: MMSpacing.s),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,

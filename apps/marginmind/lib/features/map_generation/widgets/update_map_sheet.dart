@@ -129,6 +129,7 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
                                 }
                               }),
                       ),
+                      const SizedBox(width: MMSpacing.s),
                       Expanded(child: Text(doc.title, style: context.mmText.body)),
                     ],
                   ),
@@ -158,10 +159,13 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
                 Text(l.mapUpdateProtected(protected), style: context.mmText.footnote),
                 if (_needsSetup) const ModelSetupCard(inline: true),
                 const SizedBox(height: MMSpacing.m),
-                MMButton(
-                  label: l.mapUpdatePreview,
-                  variant: MMButtonVariant.primary,
-                  onPressed: _starting || _documents.isEmpty ? null : _start,
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: MMButton(
+                    label: l.mapUpdatePreview,
+                    variant: MMButtonVariant.primary,
+                    onPressed: _starting || _documents.isEmpty ? null : _start,
+                  ),
                 ),
               ],
             ),

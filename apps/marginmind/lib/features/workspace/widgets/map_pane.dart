@@ -1,5 +1,3 @@
-import '../../map_generation/widgets/map_diff_panel.dart';
-
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Card;
@@ -34,6 +32,7 @@ import '../../study_notes/note_setup_sheet.dart';
 import '../../map_generation/map_generation_controller.dart';
 import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../../map_generation/widgets/map_empty_state.dart';
+import '../../map_generation/widgets/map_diff_panel.dart';
 import '../../map_generation/widgets/map_generation_bar.dart';
 import 'map_style_popover.dart';
 import 'outline_view.dart';
@@ -747,7 +746,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
           previous?.request.destination != MapGenerationDestination.update) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted &&
-              ref.read(mapGenerationControllerProvider(widget.studySetId))?.request.destination == MapGenerationDestination.update) {
+              ref.read(mapGenerationControllerProvider(widget.studySetId))?.request.destination ==
+                  MapGenerationDestination.update) {
             ref.read(workspaceProvider(widget.studySetId).notifier).setLayout(MMSplitMode.secondary);
           }
         });

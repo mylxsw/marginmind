@@ -431,6 +431,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     for (final r in _cache._relations) _relationDraft?.id == r.id ? _relationDraft! : r,
   ];
 
+  /// Current parent title of a node under diff review, shown as the move origin.
+  String _diffParentTitle(String nodeId) {
+    final parentId = widget.content.nodes
+        .where((n) => n.mapId == widget.mapId && n.cardId == nodeId)
+        .firstOrNull
+        ?.parentId;
+    return (parentId == null ? null : widget.content.card(parentId)?.title) ??
+        widget.content.map(widget.mapId)?.title ??
+        '';
+  }
+
   String _storedLabel(String id) =>
       widget.content.relations.where((r) => r.id == id).firstOrNull?.label ??
       widget.content.summaries.where((s) => s.id == id).firstOrNull?.label ??
@@ -2179,7 +2190,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     (line) => switch (line.kind) {
                       MapLineKind.add || MapLineKind.excerpt => l.mapDiffTagNew,
                       MapLineKind.rename => line.title ?? '',
-                      MapLineKind.move => l.mapDiffMoved,
+                      MapLineKind.move => l.mapDiffTagMovedFrom(_diffParentTitle(entry.key)),
                       MapLineKind.remove => l.mapDiffTagRemove,
                       MapLineKind.point => '',
                     },
@@ -2214,11 +2225,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 left: 0,
                 child: Semantics(
                   label: label,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
-                    decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(MMRadii.row)),
-                    child: Text(label, style: context.mmText.footnote.copyWith(color: c.onResearch)),
-                  ),
+                  child: changes.isEmpty
+                      ? ExcludeSemantics(
+                          child: Icon(MMIcons.lock, size: MMTypography.body.fontSize, color: c.secondaryLabel),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
+                          decoration: BoxDecoration(
+                            color: c.research,
+                            borderRadius: BorderRadius.circular(MMRadii.row),
+                          ),
+                          child: Text(label, style: context.mmText.footnote.copyWith(color: c.onResearch)),
+                        ),
                 ),
               ),
             ],
