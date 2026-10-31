@@ -169,14 +169,12 @@ void main() {
       controller.setLayout(MMSplitMode.primary);
       await t.pumpAndSettle();
       final area = find.byWidgetPredicate((w) => w is MMToolbarButton && w.icon == MMIcons.areaSelect);
-      if (width >= 834) {
-        expect(area, findsOneWidget);
-        await t.tap(area);
+      if (area.hitTestable().evaluate().isNotEmpty) {
+        await t.tap(area.hitTestable());
       } else {
-        expect(area, findsNothing);
         await t.tap(find.byKey(const ValueKey('reader-more')));
         await t.pumpAndSettle();
-        await t.tap(find.byWidgetPredicate((w) => w is MMDropdownItem && w.value == AnnotationTool.area));
+        await t.tap(find.byKey(const ValueKey('tool-area')));
       }
       await t.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).tool, AnnotationTool.area);

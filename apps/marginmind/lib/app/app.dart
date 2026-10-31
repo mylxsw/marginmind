@@ -154,7 +154,7 @@ class AppShell extends ConsumerWidget {
       GalleryRoute() => const GalleryScreen(),
       VocabularyRoute() => VocabularyScreen(key: ValueKey(route), route: route),
     };
-    final tabs = showsPhoneTabs(context);
+    final tabs = showsPhoneTabs(context) && (route is LibraryRoute || route is ReviewRoute || route is StatsRoute);
     final switcher = AnimatedSwitcher(
       duration: MMAppearance.duration(context, MMMotion.standard),
       child: KeyedSubtree(key: ValueKey(route.runtimeType), child: screen),

@@ -1,6 +1,9 @@
 import 'package:flutter/animation.dart';
 
 abstract final class MMMotion {
+  static const double chromeHideDistance = 24;
+  static const double chromeRevealDistance = 8;
+
   /// Menus and anchored popovers appear fully visible in their first frame.
   static const popup = Duration.zero;
 

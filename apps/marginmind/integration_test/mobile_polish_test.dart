@@ -45,7 +45,7 @@ void main() {
     final controller = container.read(workspaceProvider(route.studySetId).notifier);
     controller.openDocument(controller.content.documents.first.id);
     await idle(tester, 4);
-    await tester.tap(find.byKey(const ValueKey('mm-tab-1')));
+    await tester.tap(find.text('Source').first);
     await idle(tester, 2);
     await capture(tester, 'portrait-reader');
     await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);

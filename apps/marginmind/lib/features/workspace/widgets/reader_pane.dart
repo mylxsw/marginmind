@@ -37,6 +37,7 @@ import 'reader_crop_controls.dart';
 import 'reader_sidebar.dart';
 import 'reader_annotation_tools.dart';
 import 'reader_toolbar.dart';
+import '../workspace_chrome_controller.dart';
 import 'document_switcher.dart';
 import 'workspace_toolbar.dart';
 import '../workspace_pane_chrome_controller.dart';
@@ -61,9 +62,15 @@ class ReaderPane extends ConsumerStatefulWidget {
 
 class _ReaderPaneState extends ConsumerState<ReaderPane> {
   WorkspacePaneChromeController? _paneChrome;
+  WorkspaceChromeController? _chrome;
+  final _selectionHolds = <Object>{};
+  final _pdfPointers = <int>{};
+  Offset? _pointerStart;
+  bool _pointerMoved = false;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _chrome = WorkspaceChromeScope.maybeOf(context);
     final next = WorkspacePaneChromeScope.maybeOf(context);
     if (!identical(next, _paneChrome)) {
       _paneChrome?.unbindReader(this);
@@ -89,6 +96,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   @override
   void dispose() {
     _paneChrome?.unbindReader(this);
+    for (final reason in _selectionHolds) {
+      _chrome?.release(reason);
+    }
     _focus.dispose();
     super.dispose();
   }
@@ -193,6 +203,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   Widget _buildReader(BuildContext context) {
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
+    ref.listen(provider.select((s) => s.activeDocumentId), (_, _) {
+      for (final reason in _selectionHolds) {
+        _chrome?.release(reason);
+      }
+      _selectionHolds.clear();
+    });
     ref.listen(focusRequestsProvider, (_, next) {
       if (next?.$1 == FocusTarget.pageField) setState(() => _pageFieldRequests++);
     });
@@ -912,9 +928,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (WorkspaceToolbarScope.maybeOf(context) != null)
-          _toolbar(context, state, controller, style, ocr?.running == true ? source : null)
-        else if (content.documents.isNotEmpty)
+        if (WorkspaceToolbarScope.maybeOf(context) == null && content.documents.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xxs),
             child: Row(
@@ -1004,8 +1018,37 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       builder: (context, constraints) => ReaderCompareWidth(
         width: constraints.maxWidth,
         child: Padding(
-          padding: EdgeInsets.only(top: chrome.top),
-          child: column,
+          padding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                top: !MMInput.of(context).touchPlatform && WorkspaceToolbarScope.maybeOf(context) != null
+                    ? MMSizes.paneHeaderHeight
+                    : 0,
+                child: MMChromeInsets(
+                  insets: EdgeInsets.only(
+                    top: MMInput.of(context).touchPlatform
+                        ? MMInput.of(context).phone
+                              ? MMSizes.phoneWorkspaceToolbarHeight
+                              : WorkspaceToolbarScope.maybeOf(context) != null
+                              ? MMSizes.paneHeaderHeight
+                              : chrome.top
+                        : chrome.top,
+                    bottom: chrome.bottom,
+                  ),
+                  child: column,
+                ),
+              ),
+              if (WorkspaceToolbarScope.maybeOf(context) != null)
+                Positioned(
+                  top: MMInput.of(context).phone ? null : 0,
+                  bottom: MMInput.of(context).phone ? 30 : null,
+                  left: MMInput.of(context).phone ? 12 : 0,
+                  right: MMInput.of(context).phone ? 12 : 0,
+                  child: _toolbar(context, state, controller, style, ocr?.running == true ? source : null),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1071,10 +1114,23 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
     return MouseRegion(
       child: Listener(
-        onPointerDown: (_) {
+        onPointerDown: (event) {
+          _pdfPointers.add(event.pointer);
+          _pointerStart = event.position;
+          _pointerMoved = _pdfPointers.length > 1;
           if (comparing) compareSession.userInput(side);
           if (translating) ref.read(translationSourceInputProvider(widget.studySetId).notifier).take();
         },
+        onPointerMove: (event) {
+          if (_pointerStart != null && (event.position - _pointerStart!).distance > 8) _pointerMoved = true;
+        },
+        onPointerUp: (event) {
+          _pdfPointers.remove(event.pointer);
+          if (!_pointerMoved && state.pending == null && state.tool == AnnotationTool.select) {
+            WorkspaceChromeScope.maybeOf(context)?.reveal();
+          }
+        },
+        onPointerCancel: (event) => _pdfPointers.remove(event.pointer),
         onPointerSignal: (_) {
           dismissSelection();
           if (comparing) compareSession.userInput(side);
@@ -1098,7 +1154,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       pdf: pdf,
                       builder: (vocabularyHints, onVocabularyTap, vocabularyViewportChanged) => MMPdfView(
                         key: ocr == null || ocr.revision == 0 ? ValueKey(doc.id) : ValueKey((doc.id, ocr.revision)),
-                        pageBorderColor: context.mmColors.border,
+                        pageBorderColor: MMInput.of(context).phone ? Colors.transparent : context.mmColors.border,
+                        pageSpacing: MMInput.of(context).phone ? 0 : 16,
                         filePath: ocr?.document?.path ?? controller.filePath(doc),
                         controller: pdf,
                         useTouchSelectionHandles: context.mmTablet,
@@ -1154,6 +1211,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         backgroundColor: c.readerBackground,
                         emphasisColor: c.accent,
                         bottomInset: dockNavigation ? 0 : chrome.bottom,
+                        topInset: chrome.top,
                         pageColorFilter: style.pageFilter,
                         highlights: [..._highlights(content, doc.id, state), ...vocabularyHints],
                         areaSelecting: !crop.editing && state.tool == AnnotationTool.area,
@@ -1194,6 +1252,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                   ],
                                 );
                               },
+                        onUserScroll: (delta, atStart) => WorkspaceChromeScope.maybeOf(context)
+                            ?.onUserScroll(delta, atStart: atStart, geometryKey: (doc.id, MediaQuery.sizeOf(context))),
                         onViewportChanged: () {
                           vocabularyViewportChanged();
                           dismissSelection();
@@ -1209,6 +1269,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                           controller.recordPage(doc.id, page);
                         },
                         onSelectionChanged: (selected) {
+                          final chrome = WorkspaceChromeScope.maybeOf(context);
+                          final reason = (pdf, 'selection');
+                          if (selected) {
+                            _selectionHolds.add(reason);
+                            chrome?.hold(reason);
+                          } else {
+                            _selectionHolds.remove(reason);
+                            chrome?.release(reason);
+                          }
                           if (!selected && ref.read(provider).pending is PendingSelection) {
                             dismissSelection();
                           }
@@ -1232,7 +1301,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     ),
             ),
             Positioned(
-              top: crop.editing ? 10 : 8,
+              top: chrome.top + (crop.editing ? 10 : 8),
               left: 8,
               right: 8,
               child: Align(
@@ -1242,7 +1311,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             ),
             if (state.tool == AnnotationTool.ink && !crop.editing)
               Positioned(
-                top: MMSpacing.s,
+                top: chrome.top + MMSpacing.s,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -1258,7 +1327,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               ),
             if (state.findVisible && side == 0)
               Positioned(
-                top: 12,
+                top: chrome.top + 12,
                 left: 12,
                 right: 16,
                 child: Align(
@@ -1269,6 +1338,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             if (state.pending case final PendingAction pending when _pendingDocument(content, pending) == doc.id)
               Positioned.fill(
                 child: MMFloatingToolbarLayout(
+                  padding: EdgeInsets.only(top: chrome.top, bottom: chrome.bottom),
                   avoid: (viewport) =>
                       _pagePillArea(viewport, chrome.bottom, tablet: context.mmTablet, source: doc.origin != null),
                   anchor: switch (pending) {
@@ -1296,87 +1366,91 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                 left: 0,
                 right: 0,
                 bottom: _pagePillBottom + chrome.bottom,
-                child: MouseRegion(
-                  key: const ValueKey('reader-page-navigation'),
-                  // The floating tablet control must leave the document on
-                  // either side of the capsule available for input.
-                  hitTestBehavior: context.mmTablet ? HitTestBehavior.deferToChild : HitTestBehavior.opaque,
-                  onEnter: (_) => setState(() => _hoveringNavigation = true),
-                  onExit: (_) => setState(() => _hoveringNavigation = false),
-                  child: Focus(
-                    onFocusChange: (focused) => setState(() => _navigationFocused = focused),
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        final page =
-                            ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ?? doc.lastPage;
-                        return _PagePill(
-                          visible: _navigationVisible,
-                          source: doc.origin == null ? null : WebSourceAttribution(document: doc),
-                          page: _scrubPage?.round() ?? page,
-                          editRequests: _pageFieldRequests,
-                          pageCount: doc.pageCount,
-                          onJump: (page) {
-                            dismissSelection();
-                            pdf.jumpToPage(page);
-                          },
-                          onPrevious: () {
-                            dismissSelection();
-                            pdf.goToPage((page) - 1);
-                          },
-                          onNext: () {
-                            dismissSelection();
-                            pdf.goToPage((page) + 1);
-                          },
-                          progress: doc.pageCount > 1
-                              ? SizedBox(
-                                  height: context.mmTablet ? MMSizes.touchTarget : MMSizes.field - MMSpacing.xxs,
-                                  child: SliderTheme(
-                                    data: SliderTheme.of(context).copyWith(
-                                      activeTrackColor: context.mmTablet
-                                          ? c.accent
-                                          : c.secondaryLabel.withValues(alpha: _navigationVisible ? .65 : .3),
-                                      inactiveTrackColor: c.secondaryLabel.withValues(
-                                        alpha: _navigationVisible ? .2 : .12,
+                child: WorkspaceChromeBar(
+                  bottom: true,
+                  child: MouseRegion(
+                    key: const ValueKey('reader-page-navigation'),
+                    // The floating tablet control must leave the document on
+                    // either side of the capsule available for input.
+                    hitTestBehavior: context.mmTablet ? HitTestBehavior.deferToChild : HitTestBehavior.opaque,
+                    onEnter: (_) => setState(() => _hoveringNavigation = true),
+                    onExit: (_) => setState(() => _hoveringNavigation = false),
+                    child: Focus(
+                      onFocusChange: (focused) => setState(() => _navigationFocused = focused),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final page =
+                              ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ??
+                              doc.lastPage;
+                          return _PagePill(
+                            visible: _navigationVisible,
+                            source: doc.origin == null ? null : WebSourceAttribution(document: doc),
+                            page: _scrubPage?.round() ?? page,
+                            editRequests: _pageFieldRequests,
+                            pageCount: doc.pageCount,
+                            onJump: (page) {
+                              dismissSelection();
+                              pdf.jumpToPage(page);
+                            },
+                            onPrevious: () {
+                              dismissSelection();
+                              pdf.goToPage((page) - 1);
+                            },
+                            onNext: () {
+                              dismissSelection();
+                              pdf.goToPage((page) + 1);
+                            },
+                            progress: doc.pageCount > 1
+                                ? SizedBox(
+                                    height: context.mmTablet ? MMSizes.touchTarget : MMSizes.field - MMSpacing.xxs,
+                                    child: SliderTheme(
+                                      data: SliderTheme.of(context).copyWith(
+                                        activeTrackColor: context.mmTablet
+                                            ? c.accent
+                                            : c.secondaryLabel.withValues(alpha: _navigationVisible ? .65 : .3),
+                                        inactiveTrackColor: c.secondaryLabel.withValues(
+                                          alpha: _navigationVisible ? .2 : .12,
+                                        ),
+                                        thumbColor: context.mmTablet ? c.label : c.secondaryLabel,
+                                        overlayColor: c.secondaryLabel.withValues(alpha: .1),
+                                        trackHeight: MMSizes.readerProgressTrack,
+                                        trackShape: context.mmTablet
+                                            ? const RoundedRectSliderTrackShape()
+                                            : const RectangularSliderTrackShape(),
+                                        thumbShape: RoundSliderThumbShape(
+                                          enabledThumbRadius: _navigationVisible ? MMSpacing.xs : 0,
+                                          elevation: 0,
+                                          pressedElevation: 0,
+                                        ),
+                                        showValueIndicator: ShowValueIndicator.never,
                                       ),
-                                      thumbColor: context.mmTablet ? c.label : c.secondaryLabel,
-                                      overlayColor: c.secondaryLabel.withValues(alpha: .1),
-                                      trackHeight: MMSizes.readerProgressTrack,
-                                      trackShape: context.mmTablet
-                                          ? const RoundedRectSliderTrackShape()
-                                          : const RectangularSliderTrackShape(),
-                                      thumbShape: RoundSliderThumbShape(
-                                        enabledThumbRadius: _navigationVisible ? MMSpacing.xs : 0,
-                                        elevation: 0,
-                                        pressedElevation: 0,
+                                      child: Slider(
+                                        key: const ValueKey('reader-page-progress'),
+                                        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+                                        min: 1,
+                                        max: doc.pageCount.toDouble(),
+                                        value: (_scrubPage ?? page.toDouble()).clamp(1, doc.pageCount.toDouble()),
+                                        label: '${_scrubPage?.round() ?? page} / ${doc.pageCount}',
+                                        semanticFormatterCallback: (v) => '${v.round()} / ${doc.pageCount}',
+                                        onChangeStart: (v) {
+                                          dismissSelection();
+                                          setState(() => _scrubPage = v);
+                                        },
+                                        onChanged: (v) {
+                                          setState(() => _scrubPage = v);
+                                          pdf.scrubToPage(v.round());
+                                        },
+                                        onChangeEnd: (v) {
+                                          pdf.scrubToPage(v.round());
+                                          setState(() => _scrubPage = null);
+                                        },
                                       ),
-                                      showValueIndicator: ShowValueIndicator.never,
                                     ),
-                                    child: Slider(
-                                      key: const ValueKey('reader-page-progress'),
-                                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
-                                      min: 1,
-                                      max: doc.pageCount.toDouble(),
-                                      value: (_scrubPage ?? page.toDouble()).clamp(1, doc.pageCount.toDouble()),
-                                      label: '${_scrubPage?.round() ?? page} / ${doc.pageCount}',
-                                      semanticFormatterCallback: (v) => '${v.round()} / ${doc.pageCount}',
-                                      onChangeStart: (v) {
-                                        dismissSelection();
-                                        setState(() => _scrubPage = v);
-                                      },
-                                      onChanged: (v) {
-                                        setState(() => _scrubPage = v);
-                                        pdf.scrubToPage(v.round());
-                                      },
-                                      onChangeEnd: (v) {
-                                        pdf.scrubToPage(v.round());
-                                        setState(() => _scrubPage = null);
-                                      },
-                                    ),
-                                  ),
-                                )
-                              : null,
-                        );
-                      },
+                                  )
+                                : null,
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),

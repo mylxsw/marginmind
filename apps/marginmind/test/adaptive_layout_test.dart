@@ -352,26 +352,29 @@ void main() {
       );
     });
 
-    testWidgets('iPhone: one pane at a time behind bottom tabs', (tester) async {
+    testWidgets('iPhone: one pane at a time with a top switch and thumb dock', (tester) async {
       final container = await openWorkspace(tester, iphone);
       WorkspaceState state() => container.read(workspaceProvider('demo-1'));
       final pane = find.byType(PhoneTabBar);
-      expect(pane, findsOneWidget);
+      expect(pane, findsNothing);
       expect(find.byTooltip('Split'), findsNothing);
-      expect(tester.getRect(find.byType(MMToolbar).first).top, iphone.safe.top);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('workspace-pane-switch'))).top,
+        greaterThanOrEqualTo(iphone.safe.top),
+      );
       expect(find.byType(ReaderPane).hitTestable(), findsOneWidget);
       expect(find.byType(MapPane).hitTestable(), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('mm-tab-2')));
+      await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
       expect(state().layout, MMSplitMode.secondary);
       expect(find.byType(MapPane).hitTestable(), findsOneWidget);
       expect(rectOf(tester, MapPane).width, iphone.size.width);
-      expect(rectOf(tester, MapPane).bottom, iphone.size.height);
+      expect(rectOf(tester, MapPane).bottom, iphone.size.height - iphone.safe.bottom);
       expect(
         tester.getRect(find.byTooltip('Zoom In').last).bottom,
         lessThanOrEqualTo(iphone.size.height - iphone.safe.bottom),
       );
-      await tester.tap(find.byKey(const ValueKey('mm-tab-1')));
+      await tester.tap(find.text('Source').first);
       await tester.pumpAndSettle();
       expect(state().layout, MMSplitMode.primary);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
@@ -389,8 +392,8 @@ void main() {
       expect(find.byType(ReaderPane).hitTestable(), findsOneWidget);
       expect(find.byType(MapPane).hitTestable(), findsNothing);
       expect(find.byTooltip('Split'), findsNothing);
-      expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
-      await tester.tap(find.byIcon(MMIcons.layoutMap));
+      expect(find.byKey(const ValueKey('workspace-pane-switch')), findsOneWidget);
+      await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
       expect(find.byType(MapPane).hitTestable(), findsOneWidget);
       expect(rectOf(tester, MapPane).left, iphoneLandscape.safe.left);

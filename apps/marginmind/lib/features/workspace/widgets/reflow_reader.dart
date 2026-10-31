@@ -12,6 +12,7 @@ import 'package:mm_platform/mm_platform.dart';
 import 'package:mm_reflow/mm_reflow.dart';
 
 import '../../../app/app_commands.dart';
+import '../workspace_chrome_controller.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
@@ -533,6 +534,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       _dismiss();
       return;
     }
+    if (page == null) WorkspaceChromeScope.maybeOf(context)?.reveal();
     if (page != null) {
       if (point.dx < layout.spec.width * MMReaderLayout.turnZone) {
         await _turn(-1, true);
@@ -787,7 +789,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                               ),
                             if (state.findVisible)
                               Positioned(
-                                top: MMSpacing.m,
+                                top: MMChromeInsets.of(context).top + MMSpacing.m,
                                 right: MMSpacing.m,
                                 left: MMSpacing.m,
                                 child: Align(
@@ -812,13 +814,17 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                   child: MouseRegion(
                                     onEnter: (_) => setState(() => _hoverNavigation = true),
                                     onExit: (_) => setState(() => _hoverNavigation = false),
-                                    child: _navigation(s, paged),
+                                    child: WorkspaceChromeBar(bottom: true, child: _navigation(s, paged)),
                                   ),
                                 ),
                               ),
                             if (state.pending case final PendingAction pending when _pendingForDocument(pending))
                               Positioned.fill(
                                 child: MMFloatingToolbarLayout(
+                                  padding: EdgeInsets.only(
+                                    top: MMChromeInsets.of(context).top,
+                                    bottom: MMChromeInsets.of(context).bottom,
+                                  ),
                                   anchor: switch (pending) {
                                     PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
                                     PendingHighlight(:final viewportRect) => viewportRect,

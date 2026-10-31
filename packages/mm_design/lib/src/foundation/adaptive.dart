@@ -162,7 +162,11 @@ extension MMAdaptiveSizes on BuildContext {
 
   bool get mmTablet => MMInput.of(this).tablet;
 
-  Size get mmToolbarButton => mmTouch || mmTablet ? const Size.square(MMSizes.touchTarget) : MMSizes.toolbarButton;
+  Size get mmToolbarButton => MMThumbDockScope.of(this)
+      ? MMSizes.thumbDockButton
+      : mmTouch || mmTablet
+      ? const Size.square(MMSizes.touchTarget)
+      : MMSizes.toolbarButton;
 
   double get mmSidebarRow => mmTouch || mmTablet ? MMSizes.touchTarget : MMSizes.sidebarRow;
 
@@ -170,4 +174,12 @@ extension MMAdaptiveSizes on BuildContext {
   double get mmToolbarIcon => mmTouch || mmTablet ? MMSizes.touchTarget : 28;
 
   double get mmDividerHit => mmTouch || mmTablet ? MMSizes.touchTarget : MMSizes.dividerHitWidth;
+}
+
+/// Gives the phone's workspace dock its own touch metrics.
+class MMThumbDockScope extends InheritedWidget {
+  const MMThumbDockScope({super.key, required super.child});
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MMThumbDockScope>() != null;
+  @override
+  bool updateShouldNotify(MMThumbDockScope oldWidget) => false;
 }

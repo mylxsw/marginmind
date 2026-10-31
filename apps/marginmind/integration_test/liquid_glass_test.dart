@@ -11,6 +11,7 @@ import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/main.dart' as app;
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 Future<void> idle(WidgetTester tester, int seconds) async {
@@ -27,12 +28,11 @@ Future<void> capture(WidgetTester tester, String name) async {
   await idle(tester, 3);
 }
 
-/// Library, reader and map of a phone in light and dark, with the floating
-/// glass tab bar and toolbar over content, and frame timings of scrolling
-/// and map dragging beneath them.
+/// Library tabs and the workspace thumb dock in light and dark, including
+/// frame timings while scrolling the reader and dragging the map.
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('phone Liquid Glass chrome over library, reader and map', (tester) async {
+  testWidgets('phone library tabs and flat workspace chrome', (tester) async {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     await app.main();
     await idle(tester, 6);
@@ -55,7 +55,7 @@ void main() {
     for (final appearance in [AppearancePreference.light, AppearancePreference.dark]) {
       final name = appearance.name;
       await container.read(settingsProvider.notifier).setAppearance(appearance);
-      await tester.tap(find.byKey(const ValueKey('mm-tab-0')));
+      navigation.showLibrary();
       await idle(tester, 2);
       final library = find.byType(CustomScrollView).first;
       // Partway down: cards pass beneath the toolbar and the tab bar.
@@ -94,7 +94,9 @@ void main() {
         }, reportKey: 'reader_scroll');
       }
 
-      await tester.tap(find.byKey(const ValueKey('mm-tab-2')));
+      await tester.tapAt(tester.getCenter(pdf));
+      await idle(tester, 1);
+      await tester.tap(find.text('Map').first);
       await idle(tester, 3);
       await capture(tester, '$name-map');
       if (appearance == AppearancePreference.light) {
@@ -108,8 +110,9 @@ void main() {
           }
         }, reportKey: 'map_drag');
       }
-      expect(find.byKey(const ValueKey('mm-tab-bar-glass')), findsOneWidget);
-      expect(find.byKey(const ValueKey('mm-glass-bar')), findsOneWidget);
+      expect(find.byKey(const ValueKey('mm-tab-bar-glass')), findsNothing);
+      expect(find.byType(MMThumbDockScope), findsOneWidget);
+      expect(find.byType(BackdropFilter), findsNothing);
     }
     // ignore: avoid_print
     print('SHOT:done');

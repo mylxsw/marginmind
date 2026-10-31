@@ -172,7 +172,10 @@ Future<void> tapWorkspaceCommand(WidgetTester tester, String id) async {
   if (direct.evaluate().isNotEmpty) {
     await tester.tap(direct.first);
   } else {
-    final menu = find.byKey(const ValueKey('note-workspace-more')).hitTestable();
+    final phoneMenu = find.byKey(const ValueKey('phone-workspace-more')).hitTestable();
+    final menu = phoneMenu.evaluate().isNotEmpty
+        ? phoneMenu
+        : find.byKey(const ValueKey('note-workspace-more')).hitTestable();
     await tester.tap(menu);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey('workspace-command-$id')).hitTestable());

@@ -12,6 +12,7 @@ import 'package:marginmind/features/workspace/widgets/map_export_sheet.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/notices.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/widgets/workspace_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -95,26 +96,28 @@ void main() {
       await tester.pumpAndSettle();
       container.read(workspaceProvider('demo-1').notifier).openDocument('c1');
       await tester.pumpAndSettle();
-      expect(selectedTab(tester), PhoneTab.source);
+      expect(find.byType(PhoneTabBar), findsNothing);
       expect(find.byType(ReaderPane), findsOneWidget);
       // The tabs replace the Source | Map switch.
-      expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
+      expect(find.byKey(const ValueKey('workspace-pane-switch')), findsOneWidget);
       // The pages run on beneath the bar; the page navigation stays above it.
-      expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height);
+      expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height - phone.safe.bottom);
       expect(tester.getRect(find.byKey(const ValueKey('reader-page-navigation'))).bottom, lessThanOrEqualTo(bar.top));
 
-      await tester.tap(tab(PhoneTab.map));
+      await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
-      expect(selectedTab(tester), PhoneTab.map);
+      expect(find.byType(PhoneTabBar), findsNothing);
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
       expect(find.byType(MapPane), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'map');
 
-      await tester.tap(tab(PhoneTab.source));
+      await tester.tap(find.text('Source').first);
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
 
-      await tester.tap(tab(PhoneTab.review));
+      await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Review').last);
       await tester.pumpAndSettle();
       expect(find.byType(ReviewScreen), findsOneWidget);
       expect(selectedTab(tester), PhoneTab.review);
@@ -129,7 +132,7 @@ void main() {
       await tester.tap(tab(PhoneTab.map));
       await tester.pumpAndSettle();
       expect(container.read(navigationProvider), isA<WorkspaceRoute>());
-      expect(selectedTab(tester), PhoneTab.map);
+      expect(find.byType(PhoneTabBar), findsNothing);
 
       nav.showStats('demo-1');
       await tester.pumpAndSettle();
@@ -173,7 +176,7 @@ void main() {
       expect(find.byType(MMTabBar), findsNothing);
       tester.view.resetViewInsets();
       await tester.pumpAndSettle();
-      expect(find.byType(MMTabBar), findsOneWidget);
+      expect(find.byType(MMTabBar), findsNothing);
 
       // Dragging it down closes the panel.
       await tester.drag(handle, Offset(0, room * 0.5));
@@ -315,13 +318,13 @@ void main() {
       expect(tester.getRect(find.text('View')).right, lessThan(phone.size.width));
       expect(container.read(workspaceProvider('demo-1')).layout, isNot(MMSplitMode.secondary));
       // Above the tabs.
-      expect(tester.getRect(find.text('View')).bottom, lessThan(tester.getRect(find.byType(MMTabBar)).top));
+      expect(tester.getRect(find.text('View')).bottom, lessThan(phone.size.height - phone.safe.bottom));
       await tester.tap(find.text('View'));
       await tester.pumpAndSettle();
       final state = container.read(workspaceProvider('demo-1'));
       expect(state.layout, MMSplitMode.secondary);
       expect(state.selectedCardId, 'c4');
-      expect(selectedTab(tester), PhoneTab.map);
+      expect(find.byType(PhoneTabBar), findsNothing);
       await settleHud(tester);
 
       // With the map in view the HUD has nothing to offer.
@@ -333,7 +336,7 @@ void main() {
 
     testWidgets('${phone.name}: map export opens as a bottom sheet that fits the width', (tester) async {
       final container = await openStudySet(tester, phone);
-      await tester.tap(tab(PhoneTab.map));
+      await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
       final context = tester.element(find.byType(MapPane));
       showMapExportSheet(context, context as WidgetRef, 'demo-1');
@@ -395,7 +398,7 @@ void main() {
     }, variant: variant);
   }
 
-  testWidgets('an iPad in Split View keeps the Source | Map switch and no tabs', (tester) async {
+  testWidgets('a compact iPad keeps tablet headers without phone controls', (tester) async {
     final container = await pumpPhone(tester, (
       name: 'iPad ⅓',
       size: const Size(375, 1032),
@@ -407,7 +410,9 @@ void main() {
     await tester.pumpAndSettle();
     container.read(workspaceProvider('demo-1').notifier).openDocument('c1');
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('workspace-pane-switch')), findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
+    expect(find.byType(WorkspaceToolbar), findsWidgets);
+    expect(find.byType(MMThumbDockScope), findsNothing);
     expect(find.byType(MMTabBar), findsNothing);
     // Compact tablet companion remains separate from its source.
     container.read(workspaceProvider('demo-1').notifier).showDetails('c3');
