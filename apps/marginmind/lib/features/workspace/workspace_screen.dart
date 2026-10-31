@@ -56,6 +56,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final prefs = ref.read(sharedPreferencesProvider);
     _phoneControls = PhoneReaderControlsController(
       initiallyDockedRight: prefs.getBool('phoneReader.dockRight') ?? true,
+      initiallyArmed: ref.read(workspaceProvider(widget.studySetId)).tool != AnnotationTool.select,
       onDockChanged: (right) => prefs.setBool('phoneReader.dockRight', right),
     );
     _phoneControls.addListener(_phoneControlsChanged);
@@ -66,7 +67,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
 
   void _phoneControlsChanged() {
     if (_phoneCompact && _phoneControls.interacting) {
-      _chrome.hold(_phoneControls);
+      _chrome.hold(
+        _phoneControls,
+        reveal: _phoneControls.slot == PhoneReaderSlot.tools || _phoneControls.slot == PhoneReaderSlot.scrub,
+      );
     } else {
       _chrome.release(_phoneControls);
     }
@@ -95,7 +99,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final provider = workspaceProvider(widget.studySetId);
     final touchPlatform = MMInput.of(context).touchPlatform;
     _phoneCompact = usePhoneReaderControls(context);
-    Widget surface(Widget child) => _phoneCompact ? child : MMFlatSurface(child: child);
+    Widget surface(Widget child) => MMFlatSurface(child: child);
     ref.listen(focusRequestsProvider, (_, next) {
       if (next?.$1 != FocusTarget.search) return;
       touchPlatform ? _setDrawer(true) : ref.read(provider.notifier).showSidebar();
@@ -167,7 +171,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       for (final reason in ['accessibility', 'keyboard', 'drawer', 'panel', 'editing']) {
         holds.contains(reason) ? _chrome.hold(reason) : _chrome.release(reason);
       }
-      _phoneControls.reset(state.activeDocumentId);
+      _phoneControls.reset(state.activeDocumentId, armed: state.tool != AnnotationTool.select);
       _phoneControlsChanged();
       _chrome.reset(geometry);
     });
@@ -177,7 +181,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       child: MMPopupActivity(
         onChanged: (owner, open) => open ? _chrome.hold(owner) : _chrome.release(owner),
         child: Theme(
-          data: Theme.of(context).copyWith(extensions: [context.mmColors.copyWith(flat: !_phoneCompact)]),
+          data: Theme.of(context).copyWith(extensions: [context.mmColors.copyWith(flat: true)]),
           child: WorkspacePaneChromeScope(
             controller: _paneChrome,
             child: surface(

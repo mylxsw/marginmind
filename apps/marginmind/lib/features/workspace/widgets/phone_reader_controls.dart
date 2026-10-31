@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../shared/l10n.dart';
 import '../phone_reader_controls_controller.dart';
@@ -155,8 +156,15 @@ class PhoneReaderTopControls extends StatelessWidget {
   }
 }
 
-Widget _glass(Widget child, {double radius = MMSizes.phoneTopControl / 2}) =>
-    MMLiquidGlass(phoneStyle: MMPhoneGlass.regular, borderRadius: BorderRadius.circular(radius), child: child);
+Widget _glass(Widget child, {double radius = MMSizes.phoneTopControl / 2}) => MMFlatSurface(
+  enabled: false,
+  child: MMLiquidGlass(
+    phoneStyle: MMPhoneGlass.regular,
+    borderRadius: BorderRadius.circular(radius),
+    // Menus opened by these controls must capture the workspace's flat surface.
+    child: MMFlatSurface(child: child),
+  ),
+);
 
 IconData phoneReaderToolIcon(AnnotationTool tool) => switch (tool) {
   AnnotationTool.select => MMReaderIcons.select,
@@ -306,7 +314,10 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
                 constraints: const BoxConstraints(minHeight: MMPhoneReaderLayout.scrubHeight),
                 child: Padding(
                   key: const ValueKey('phone-reader-scrub'),
-                  padding: const EdgeInsets.symmetric(horizontal: MMRadii.capsule, vertical: MMSpacing.xs),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: MMPhoneReaderLayout.scrubInset,
+                    vertical: MMSpacing.xs,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -331,8 +342,9 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
                           min: widget.onProgress == null ? 1 : 0,
                           max: widget.onProgress == null ? math.max(2, count).toDouble() : 1,
                           value: widget.onProgress == null ? page.toDouble() : (widget.progress ?? 0).clamp(0, 1),
-                          semanticFormatterCallback: (v) =>
-                              widget.onProgress == null ? l.pageOf(v.round(), count) : '${(v * 100).round()}%',
+                          semanticFormatterCallback: (v) => widget.onProgress == null
+                              ? l.pageOf(v.round(), count)
+                              : l.phoneReaderPercent((v * 100).round()),
                           padding: EdgeInsets.zero,
                           onChangeStart: count > 1 || widget.onProgress != null
                               ? (_) => slots.setScrubbing(true)
@@ -347,7 +359,7 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
               ),
             ),
           ),
-          radius: MMSpacing.xxl,
+          radius: MMRadii.phoneReaderToolbar,
         );
       case PhoneReaderSlot.orb:
         content = LayoutBuilder(
@@ -418,41 +430,78 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
           children: [
             if ([AnnotationTool.highlight, AnnotationTool.underline, AnnotationTool.ink].contains(tool)) ...[
               _glass(
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    key: const ValueKey('phone-reader-colors'),
-                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (tool == AnnotationTool.ink)
-                          for (final value in MMInkColor.values)
-                            MMFloatingToolbarSwatch(
-                              color: value.color,
-                              tooltip: l.inkColorName(value),
-                              selected: value == state.inkColor,
-                              onPressed: () {
-                                slots.colorChanged();
-                                controller.setInkColor(value);
-                              },
-                            )
-                        else
-                          for (final value in MMAnnotationColor.values)
-                            MMFloatingToolbarSwatch(
-                              color: value.color,
-                              tooltip: l.colorName(value),
-                              selected:
-                                  value == (tool == AnnotationTool.underline ? state.underlineColor : state.color),
-                              onPressed: () {
-                                slots.colorChanged();
-                                tool == AnnotationTool.underline
-                                    ? controller.styleUnderline(color: value)
-                                    : controller.setColor(value);
-                              },
-                            ),
-                      ],
-                    ),
+                Padding(
+                  key: const ValueKey('phone-reader-colors'),
+                  padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: slots.dockRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                    children: [
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (tool == AnnotationTool.ink)
+                              for (final value in MMInkColor.values)
+                                MMFloatingToolbarSwatch(
+                                  color: value.color,
+                                  tooltip: l.inkColorName(value),
+                                  selected: state.inkTool != MMPdfInkTool.eraser && value == state.inkColor,
+                                  onPressed: () {
+                                    slots.colorChanged();
+                                    controller.setInkColor(value);
+                                  },
+                                )
+                            else
+                              for (final value in MMAnnotationColor.values)
+                                MMFloatingToolbarSwatch(
+                                  color: value.color,
+                                  tooltip: l.colorName(value),
+                                  selected:
+                                      value == (tool == AnnotationTool.underline ? state.underlineColor : state.color),
+                                  onPressed: () {
+                                    slots.colorChanged();
+                                    tool == AnnotationTool.underline
+                                        ? controller.styleUnderline(color: value)
+                                        : controller.setColor(value);
+                                  },
+                                ),
+                          ],
+                        ),
+                      ),
+                      if (tool == AnnotationTool.ink)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (final width in MMInkWidth.values)
+                                MMFloatingToolbarStrokeWidth(
+                                  key: ValueKey('phone-reader-width-${width.name}'),
+                                  width: width.points,
+                                  tooltip: l.inkWidthName(width),
+                                  selected: state.inkTool != MMPdfInkTool.eraser && state.inkWidth == width,
+                                  onPressed: () {
+                                    slots.colorChanged();
+                                    controller.setInkWidth(width);
+                                  },
+                                ),
+                              const MMToolbarDivider(),
+                              for (final (value, icon, label) in [
+                                (MMPdfInkTool.freehand, MMIcons.inkFreehand, l.inkFreehand),
+                                (MMPdfInkTool.ellipse, MMIcons.inkEllipse, l.inkEllipse),
+                                (MMPdfInkTool.arrow, MMIcons.inkArrow, l.inkArrow),
+                                (MMPdfInkTool.eraser, MMIcons.inkEraser, l.inkEraser),
+                              ])
+                                button('ink-${value.name}', icon, label, () {
+                                  slots.colorChanged();
+                                  controller.setInkTool(value);
+                                }, selected: state.inkTool == value),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -518,7 +567,7 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
                   ),
                 ),
               ),
-              radius: MMSpacing.xxl,
+              radius: MMRadii.phoneReaderToolbar,
             ),
           ],
         );
@@ -572,7 +621,7 @@ class _ToolReveal extends CustomClipper<Path> {
     return Path()..addRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(right ? size.width - width : 0, 0, width, size.height),
-        const Radius.circular(MMSpacing.xxl),
+        const Radius.circular(MMRadii.phoneReaderToolbar),
       ),
     );
   }

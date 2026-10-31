@@ -1768,5 +1768,7 @@
   "phoneReaderReading": "阅读",
   "phoneReaderTools": "标注工具",
   "phoneReaderCollapse": "收起",
-  "phoneReaderExitTools": "结束标注"
+  "phoneReaderExitTools": "结束标注",
+  "phoneReaderPercent": "{percent}%",
+  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}}
 }

@@ -8743,6 +8743,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finish annotating'**
   String get phoneReaderExitTools;
+
+  /// No description provided for @phoneReaderPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String phoneReaderPercent(int percent);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

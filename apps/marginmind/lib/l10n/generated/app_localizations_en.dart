@@ -4940,4 +4940,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneReaderExitTools => 'Finish annotating';
+
+  @override
+  String phoneReaderPercent(int percent) {
+    return '$percent%';
+  }
 }

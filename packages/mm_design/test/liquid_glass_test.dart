@@ -36,6 +36,54 @@ List<BackdropFilter> _backdrops(WidgetTester tester) =>
 
 void main() {
   group('glass material', () {
+    testWidgets('local flat opt-out affects only its subtree and survives route capture', (tester) async {
+      var enabled = false;
+      late StateSetter rebuild;
+      await _window(
+        tester,
+        MMFlatSurface(
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              rebuild = setState;
+              return Column(
+                children: [
+                  const MMLiquidGlass(child: Text('flat sibling')),
+                  MMFlatSurface(
+                    enabled: enabled,
+                    child: Builder(
+                      builder: (context) => MMLiquidGlass(
+                        child: TextButton(
+                          child: const Text('local control'),
+                          onPressed: () {
+                            showDialog<void>(
+                              context: context,
+                              builder: (context) => const MMLiquidGlass(child: Text('captured')),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+      expect(_backdrops(tester), hasLength(1));
+      expect(MMFlatSurface.of(tester.element(find.text('flat sibling'))), isTrue);
+      expect(MMFlatSurface.of(tester.element(find.text('local control'))), isFalse);
+      await tester.tap(find.text('local control'));
+      await tester.pumpAndSettle();
+      expect(MMFlatSurface.of(tester.element(find.text('captured'))), isFalse);
+      Navigator.of(tester.element(find.text('captured'))).pop();
+      await tester.pumpAndSettle();
+      rebuild(() => enabled = true);
+      await tester.pumpAndSettle();
+      expect(_backdrops(tester), isEmpty);
+      expect(MMFlatSurface.of(tester.element(find.text('local control'))), isTrue);
+    });
+
     testWidgets('a pointer platform keeps the plain blur', (tester) async {
       await _window(tester, const Center(child: MMGlass(child: Text('glass'))), touch: false);
       expect(find.byType(MMLiquidGlass), findsNothing);

@@ -197,10 +197,10 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 
 ### 手机阅读控件（GUL-631）
 
-仅 `MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact` 启用三组悬浮玻璃顶部控件和底部共用位。顶部“阅读 / 脑图”使用滑动透镜；下读隐藏、回滚或正文单击显示，工具保持选中不阻止沉浸，实际选区、画笔/框选、滑块、菜单、键盘和无障碍状态仍保持顶部可达。
+仅 `MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact` 启用三组悬浮玻璃顶部控件和底部共用位。顶部“阅读 / 脑图”使用滑动透镜；下读隐藏、回滚或正文单击显示，工具保持选中不阻止沉浸，实际选区、滑块、菜单、键盘和无障碍状态保持顶部可达；画笔/框选仅保持当前显隐，不因落笔唤回顶部。
 
-`PhoneReaderSlot` 的 page / orb / tools / scrub 四态互斥：默认页码，更多菜单提供工具和跳页入口；选中工具收起后保留图标和颜色点。650ms 完成收回与 500ms 选择工具收回使用既有 `MMMotion` 令牌。手机笔形、线型、自定义颜色和撤销入口保留在更多菜单，后续由 GUL-633 替换面板。
+`PhoneReaderSlot` 的 page / orb / tools / scrub 四态互斥：选择工具时默认页码；恢复已选标注工具或切换文档后显示工具球，保留工具图标、颜色点与强调色描边。更多菜单提供工具和跳页入口。650ms 完成收回与 500ms 选择工具收回使用既有 `MMMotion` 令牌。画笔颜色条同时提供颜色、笔宽、笔形与橡皮擦，采用两行以保留 44pt 热区；线型、自定义颜色、撤销和完成仍在更多菜单，菜单内状态实时更新，阅读纸色保留选中勾。后续由 GUL-633 替换面板。
 
-`MMPhoneReaderLayout` 对应原型 CSS：水平 inset 14、模式切换宽 170（窄屏可收缩）、底边 24、顶部 inset 4、组间距 10、scroll-edge 64 / 沉浸 6（均从状态栏安全区下方测量）、scrubHeight 74、colorHeight 46、progress 14、工具色点 8 / 球色点 10、toolInset 6。底部距离与原始安全区取最大值，36pt 页码包在至少 44pt 热区中。50pt 球左右拖动停靠，本机偏好保存停靠侧；切换文档重置瞬态控件并取消旧计时器。
+`MMPhoneReaderLayout` 对应原型 CSS：水平 inset 14、模式切换宽 170（窄屏可收缩）、底边 24、顶部 inset 4、组间距 10、scroll-edge 64 / 沉浸 6（均从状态栏安全区下方测量）、scrubHeight 74、colorHeight 46、progress 14、工具色点 8 / 球色点 10、toolInset 6、scrubInset 18；工具栏圆角使用 `MMRadii.phoneReaderToolbar` 28。工作区继续使用 flat 材质，仅新控件的外壳通过局部 `MMFlatSurface(enabled: false)` 渲染玻璃，内部按钮恢复 flat 继承以保证其弹出菜单仍为 flat。底部距离与原始安全区取最大值，36pt 页码包在至少 44pt 热区中。50pt 球左右拖动停靠，本机偏好保存停靠侧；切换文档重置瞬态控件并取消旧计时器。
 
 四态互斥优先于原型默认同时显示页码与工具球的示意。流式文档胶囊显示当前章节内页码，进度环和滑块仍覆盖全书；固定 EPUB 按源页面导航。原型已有上述几何值，无需改变视觉源。Linux 的 393×852 浅深色 golden 证据及复现命令见 `docs/evidence/gul-631/`。

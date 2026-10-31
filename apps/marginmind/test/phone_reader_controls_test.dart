@@ -10,6 +10,9 @@ import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/phone_reader_controls.dart';
 import 'package:marginmind/features/workspace/reflow_session.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/settings/app_settings.dart';
+import 'package:marginmind/features/workspace/widgets/reader_ink_toolbar.dart';
+import 'package:marginmind/features/workspace/workspace_pane_chrome_controller.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_core/mm_core.dart';
@@ -23,6 +26,110 @@ import 'reflow_fixtures.dart';
 Finder key(String value) => find.byKey(ValueKey('phone-reader-$value'));
 
 void main() {
+  testWidgets('event-only scope lookup does not rebuild with the bottom slot', (tester) async {
+    final slots = PhoneReaderControlsController();
+    var reads = 0, watches = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMInput(
+          touchPlatform: true,
+          phone: true,
+          child: SizedBox(
+            width: 393,
+            child: MediaQuery(
+              data: const MediaQueryData(size: Size(393, 852)),
+              child: PhoneReaderControlsScope(
+                controller: slots,
+                child: Column(
+                  children: [
+                    Builder(
+                      builder: (context) {
+                        reads++;
+                        PhoneReaderControlsScope.read(context);
+                        return const SizedBox();
+                      },
+                    ),
+                    Builder(
+                      builder: (context) {
+                        watches++;
+                        PhoneReaderControlsScope.maybeOf(context);
+                        return const SizedBox();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    slots.openTools();
+    await tester.pump();
+    expect(reads, 1);
+    expect(watches, 2);
+    await tester.pumpWidget(const SizedBox());
+    slots.dispose();
+  });
+
+  test('armed initial state and document resets stay visible and cancel old timers', () {
+    final slots = PhoneReaderControlsController(initiallyArmed: true);
+    expect(slots.slot, PhoneReaderSlot.orb);
+    slots.reset('a', armed: true);
+    slots.openTools();
+    slots.annotationCompleted('a');
+    slots.reset('b', armed: true);
+    expect(slots.slot, PhoneReaderSlot.orb);
+    slots.reset('c');
+    expect(slots.slot, PhoneReaderSlot.page);
+    slots.dispose();
+  });
+
+  for (final tool in [AnnotationTool.highlight, AnnotationTool.underline, AnnotationTool.area]) {
+    testWidgets('restored ${tool.name} shows its orb on open and document switch', (tester) async {
+      installTestPdfBackend(pageCount: 12);
+      final container = await pumpApp(
+        tester,
+        renderPdf: true,
+        size: const Size(393, 852),
+        prefs: {'settings.annotationTool': tool.name},
+        overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await drain(tester);
+      final workspace = container.read(workspaceProvider('demo-1').notifier);
+      void expectArmedOrb() {
+        expect(container.read(workspaceProvider('demo-1')).tool, tool);
+        expect(key('page'), findsNothing);
+        expect(key('orb').hitTestable(), findsOneWidget);
+        expect(find.descendant(of: key('orb'), matching: find.byIcon(phoneReaderToolIcon(tool))), findsOneWidget);
+        final paint = tester.widget<Container>(find.descendant(of: key('orb'), matching: find.byType(Container)).first);
+        expect((paint.decoration as BoxDecoration).border, isNotNull);
+        expect(find.descendant(of: key('orb'), matching: find.byType(Positioned)), findsOneWidget);
+      }
+
+      expectArmedOrb();
+      workspace.openDocument('c2');
+      await drain(tester);
+      expectArmedOrb();
+      if (tool == AnnotationTool.area) {
+        final chrome = WorkspaceChromeScope.maybeOf(tester.element(find.byType(ReaderPane)))!;
+        chrome.onUserScroll(30, atStart: false, geometryKey: 'area');
+        await tester.pumpAndSettle();
+        expect(chrome.visible, isFalse);
+        final gesture = await tester.startGesture(tester.getCenter(find.byType(MMPdfView)));
+        await tester.pump();
+        expect(chrome.visible, isFalse, reason: 'Area pointer-down must preserve immersion');
+        await gesture.cancel();
+        await tester.pumpAndSettle();
+        expect(chrome.visible, isFalse);
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await drain(tester);
+    });
+  }
+
   testWidgets('slot transitions, timer restart, gesture competition and document/dispose cancellation', (tester) async {
     final slots = PhoneReaderControlsController();
     slots.reset('a');
@@ -173,9 +280,73 @@ void main() {
       await tester.tap(find.byTooltip('Blue').last);
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).inkColor, MMInkColor.blue);
+      for (final width in MMInkWidth.values) {
+        expect(key('width-${width.name}').hitTestable(), findsOneWidget);
+        await tester.tap(key('width-${width.name}'));
+        await tester.pumpAndSettle();
+        expect(container.read(workspaceProvider('demo-1')).inkWidth, width);
+        expect(tester.widget<MMFloatingToolbarStrokeWidth>(key('width-${width.name}')).selected, isTrue);
+      }
+      await tester.tap(key('ink-ellipse'));
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).inkTool, MMPdfInkTool.ellipse);
+      await tester.tap(key('ink-eraser'));
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).inkTool, MMPdfInkTool.eraser);
+      expect(tester.widget<MMFloatingToolbarStrokeWidth>(key('width-bold')).selected, isFalse);
+      await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
+      await tester.pumpAndSettle();
+      // Keep the route open while external and embedded commands change state.
+      workspace.setInkTool(MMPdfInkTool.arrow);
+      await tester.pumpAndSettle();
+      expect(tester.widget<ReaderInkToolbar>(find.byType(ReaderInkToolbar)).state.inkTool, MMPdfInkTool.arrow);
+      expect(MMFlatSurface.of(tester.element(find.byType(ReaderInkToolbar))), isTrue);
+      expect(tester.element(find.byType(ReaderInkToolbar)).mmColors.flat, isTrue);
+      final menuWidths = find.descendant(
+        of: find.byType(ReaderInkToolbar),
+        matching: find.byType(MMFloatingToolbarStrokeWidth),
+      );
+      tester.widgetList<MMFloatingToolbarStrokeWidth>(menuWidths).first.onPressed!();
+      await tester.pumpAndSettle();
+      expect(tester.widget<ReaderInkToolbar>(find.byType(ReaderInkToolbar)).state.inkWidth, MMInkWidth.thin);
+      expect(tester.widgetList<MMFloatingToolbarStrokeWidth>(menuWidths).first.selected, isTrue);
+      container.read(settingsProvider.notifier).setReaderStyle(MMReaderStyle.paper);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: key('style-paper'), matching: find.byIcon(MMIcons.check)), findsOneWidget);
+      expect(find.descendant(of: key('style-white'), matching: find.byIcon(MMIcons.check)), findsNothing);
+      final commands = WorkspacePaneChromeScope.maybeOf(element)!.reader!.commands;
+      expect(
+        commands.keys,
+        containsAll([
+          'reader-switch-document',
+          'reader-zoom-actualSize',
+          'reader-zoom-fitWidth',
+          'reader-zoom-fitPage',
+        ]),
+      );
+      expect(commands['reader-switch-document']!.enabled, isTrue);
+      expect(commands['reader-zoom-fitWidth']!.enabled, isTrue);
+      await tester.ensureVisible(key('style-dark'));
+      await tester.tap(key('style-dark'));
+      await tester.pumpAndSettle();
+      expect(container.read(settingsProvider).readerStyle, MMReaderStyle.dark);
+      expect(tester.takeException(), isNull, reason: 'A selected command must not read a disposed menu ref');
+      await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
       await tester.tap(key('collapse'));
       await tester.pumpAndSettle();
       expect(slots.dockRight, isFalse);
+      chrome.onUserScroll(30, atStart: false, geometryKey: 'pen');
+      await tester.pumpAndSettle();
+      expect(chrome.visible, isFalse);
+      final pen = await tester.startGesture(tester.getCenter(find.byType(MMPdfView)));
+      await tester.pump();
+      expect(chrome.visible, isFalse, reason: 'Pen pointer-down must preserve immersion');
+      await pen.up();
+      await tester.pumpAndSettle();
+      expect(chrome.visible, isFalse, reason: 'A pen tap must not reveal the top bar either');
       await tester.tap(key('orb'));
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -257,9 +428,20 @@ void main() {
     final slider = tester.widget<Slider>(key('slider'));
     expect(slider.min, 0);
     expect(slider.max, 1);
+    expect(slider.semanticFormatterCallback!(.5), '50%');
     slider.onChanged!(.7);
     await drain(tester);
     expect(session.book!.progress(session.position!), closeTo(.7, .02));
+    final slots = PhoneReaderControlsScope.read(tester.element(find.byType(ReaderPane)))!;
+    slots.openTools();
+    await tester.pumpAndSettle();
+    await tester.tap(key('tool-highlight'));
+    await tester.pumpAndSettle();
+    final controls = tester.getRect(find.byType(PhoneReaderControls));
+    expect(tester.getRect(key('colors')).right, closeTo(controls.right - MMSpacing.m, .01));
+    slots.dock(right: false);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(key('colors')).left, closeTo(controls.left + MMSpacing.m, .01));
     expect(find.byType(PhoneReaderControls), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());

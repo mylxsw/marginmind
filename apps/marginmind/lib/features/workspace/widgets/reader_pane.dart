@@ -74,7 +74,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _chrome = WorkspaceChromeScope.maybeOf(context);
-    _phone = PhoneReaderControlsScope.maybeOf(context);
+    _phone = PhoneReaderControlsScope.read(context);
     final next = WorkspacePaneChromeScope.maybeOf(context);
     if (!identical(next, _paneChrome)) {
       _paneChrome?.unbindReader(this);
@@ -597,6 +597,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           l.switchDocument,
           () => showMMMenu(context, position: Offset.zero, entries: documents.menuEntries(context, ref)),
           icon: MMIcons.collections,
+          id: 'reader-switch-document',
         ),
       ),
     ];
@@ -655,7 +656,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMReaderIcons.fitWidth),
         (ReaderZoomCommand.fitPage, l.pdfFitPage, MMReaderIcons.fitPage),
       ])
-        entry(command.$2, capabilities.zoom && !crop.editing ? () => pageCommand(command.$1) : null, icon: command.$3),
+        entry(
+          command.$2,
+          capabilities.zoom && !crop.editing ? () => pageCommand(command.$1) : null,
+          icon: command.$3,
+          id: 'reader-zoom-${command.$1.name}',
+        ),
       entry(l.cropMargins, canAdjustCrop ? cropSession.adjust : null, icon: MMReaderIcons.crop, id: 'reader-crop'),
       const PopupMenuDivider(),
       MMDropdownHeader<VoidCallback>(l.readerAppearance),
@@ -1218,7 +1224,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         if (_pdfPointers.isEmpty) _phone?.setDrawing(false);
         if (!_pointerMoved && state.pending == null) {
           if (_phone != null) {
-            _chrome?.reveal();
+            if (state.tool != AnnotationTool.ink && state.tool != AnnotationTool.area) _chrome?.reveal();
             // Allow selection/annotation callbacks in this frame to claim the tap.
             final documentId = doc.id;
             final before = controller.content;
