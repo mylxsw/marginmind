@@ -971,6 +971,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       onReveal: controller.revealCard,
                                       onRename: rename,
                                       onDelete: remove,
+                                      onDeleteNote: (id) => _runToolbarAction(() => controller.removeAttachedNote(id)),
                                       onSelectMany: controller.selectCards,
                                       onMove: (id, parent, index) => controller.moveCards(
                                         state.selectedCardIds.contains(id) ? state.selectedCardIds : [id],

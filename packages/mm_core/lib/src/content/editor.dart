@@ -10,6 +10,7 @@ import 'reading.dart';
 import 'reading_editor.dart';
 import 'research.dart';
 import 'map_clipboard.dart';
+import 'map_notes.dart';
 import 'review.dart';
 import 'study_set_content.dart';
 
@@ -923,6 +924,31 @@ class StudySetEditor {
         ],
       ),
       parent,
+    );
+  }
+
+  /// Removes one attached note. Legacy children become its parent's children,
+  /// preserving their reading order rather than deleting visible topics.
+  StudySetContent removeAttachedNote(StudySetContent c, String cardId) {
+    if (!MapNoteAttachments(c, mapId: mapId).owners.containsKey(cardId)) return c;
+    final node = c.node(cardId, mapId: mapId)!;
+    final children = c.childrenOf(cardId, mapId: mapId);
+    final siblings = [
+      for (final sibling in c.childrenOf(node.parentId, mapId: mapId))
+        if (sibling.cardId == cardId) ...children else sibling,
+    ];
+    final orders = {for (final (i, n) in siblings.indexed) n.cardId: i.toDouble()};
+    return _removeNodes(
+      c.copyWith(
+        nodes: [
+          for (final n in c.nodes)
+            if (n.mapId == mapId && orders.containsKey(n.cardId))
+              n.copyWith(parentId: node.parentId, order: orders[n.cardId])
+            else
+              n,
+        ],
+      ),
+      {cardId},
     );
   }
 

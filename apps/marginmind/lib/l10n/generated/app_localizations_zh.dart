@@ -528,6 +528,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get deleteMapNote => '删除笔记';
+
+  @override
   String get editNote => '编辑笔记';
 
   @override

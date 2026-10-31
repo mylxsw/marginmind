@@ -62,6 +62,19 @@ void attachedNoteTests({bool native = false}) {
       await tester.pumpAndSettle();
       expect(controller.content.card(noteId)!.title, noteText);
       expect(toggle, findsOneWidget);
+      final edit = tester.widget<MMIconButton>(find.byKey(ValueKey('map-note-edit-$noteId')));
+      expect(edit.icon, MMIcons.editNote);
+      expect(edit.iconSize, MMTypography.body.fontSize);
+      final delete = find.byKey(ValueKey('map-note-delete-$noteId'));
+      expect(tester.widget<MMIconButton>(delete).icon, MMIcons.trash);
+      await tester.tap(delete);
+      await tester.pumpAndSettle();
+      expect(controller.content.card(noteId), isNull);
+      expect(controller.content.card(parent), isNotNull);
+      expect(container.read(provider).selectedCardId, parent);
+      await controller.undo();
+      await tester.pumpAndSettle();
+      expect(controller.content.card(noteId)!.title, noteText);
       await tester.tap(
         find.byKey(ValueKey('map-attached-note-$noteId')),
         buttons: kSecondaryMouseButton,
@@ -164,6 +177,7 @@ void attachedNoteTests({bool native = false}) {
                       onReveal: (_) {},
                       onRename: (_) {},
                       onDelete: () {},
+                      onDeleteNote: (_) {},
                       onMove: (_, _, _) {},
                       onToggleCollapsed: (_) {},
                       onNavigate: (_) {},

@@ -1046,6 +1046,12 @@ abstract class AppLocalizations {
   /// **'Notes · {count}'**
   String mapNodeNoteCount(int count);
 
+  /// No description provided for @deleteMapNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Note'**
+  String get deleteMapNote;
+
   /// No description provided for @editNote.
   ///
   /// In en, this message translates to:

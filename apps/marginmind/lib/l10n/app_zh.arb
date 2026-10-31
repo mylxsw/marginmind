@@ -160,6 +160,7 @@
   "renameTitle": "重命名",
   "mapNodeNoteCount": "笔记 · {count}",
   "@mapNodeNoteCount": {"placeholders": {"count": {"type": "int"}}},
+  "deleteMapNote": "删除笔记",
   "editNote": "编辑笔记",
   "save": "保存",
   "newTopicName": "新主题",

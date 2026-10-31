@@ -277,6 +277,7 @@
   "renameTitle": "Rename",
   "mapNodeNoteCount": "Notes · {count}",
   "@mapNodeNoteCount": {"placeholders": {"count": {"type": "int"}}},
+  "deleteMapNote": "Delete Note",
   "editNote": "Edit Note",
   "save": "Save",
   "newTopicName": "New Topic",

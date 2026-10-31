@@ -5,6 +5,45 @@ final now = DateTime.utc(2026);
 Card card(String id, [CardKind kind = CardKind.topic]) => Card(id: id, kind: kind, title: id, createdAt: now);
 
 void main() {
+  test('deleting an attached note keeps its children and sibling reading order', () {
+    final content = StudySetContent(
+      cards: [card('parent'), card('note', CardKind.note), card('nested', CardKind.note), card('topic'), card('last')],
+      nodes: const [
+        MapNode(cardId: 'parent', order: 0),
+        MapNode(cardId: 'note', parentId: 'parent', order: 0),
+        MapNode(cardId: 'nested', parentId: 'note', order: 0),
+        MapNode(cardId: 'topic', parentId: 'note', order: 1),
+        MapNode(cardId: 'last', parentId: 'parent', order: 1),
+      ],
+    );
+    final editor = StudySetEditor(newId: () => 'unused', now: () => now);
+    final next = editor.removeAttachedNote(content, 'note');
+    expect(next.card('note'), isNull);
+    expect(next.card('parent'), isNotNull);
+    expect(next.childrenOf('parent').map((n) => n.cardId), ['nested', 'topic', 'last']);
+    expect(editor.removeAttachedNote(content, 'parent'), same(content));
+  });
+
+  test('deleting a shared note placement preserves the other map and note text', () {
+    final content = StudySetContent(
+      cards: [card('parent'), card('note', CardKind.note)],
+      maps: const [
+        MindMap.main,
+        MindMap(id: 'other', title: 'Other'),
+      ],
+      nodes: const [
+        MapNode(cardId: 'parent', order: 0),
+        MapNode(cardId: 'note', parentId: 'parent', order: 0),
+        MapNode(cardId: 'parent', mapId: 'other', order: 0),
+        MapNode(cardId: 'note', mapId: 'other', parentId: 'parent', order: 0),
+      ],
+    );
+    final next = StudySetEditor(newId: () => 'unused', now: () => now).removeAttachedNote(content, 'note');
+    expect(next.node('note'), isNull);
+    expect(next.node('note', mapId: 'other'), isNotNull);
+    expect(next.card('note')!.title, 'note');
+  });
+
   test('notes attach to their node and topics under notes retain reading order', () {
     final content = StudySetContent(
       cards: [card('parent'), card('note', CardKind.note), card('nested', CardKind.note), card('topic'), card('last')],

@@ -546,6 +546,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get deleteMapNote => 'Delete Note';
+
+  @override
   String get editNote => 'Edit Note';
 
   @override

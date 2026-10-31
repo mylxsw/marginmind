@@ -40,6 +40,7 @@ abstract final class MMIcons {
   static const IconData folder = CupertinoIcons.folder; // folder
   static const IconData newFolder = CupertinoIcons.folder_badge_plus; // folder.badge.plus
   static const IconData trash = LucideIcons.trash;
+  static const IconData editNote = LucideIcons.squarePen;
   static const IconData vocabulary = LucideIcons.bookA;
   static const IconData ebook = CupertinoIcons.book;
   static const IconData markdown = LucideIcons.hash;
