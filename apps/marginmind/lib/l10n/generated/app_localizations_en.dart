@@ -4040,6 +4040,366 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapIdeaBusy => 'The model is busy. Try again later.';
 
   @override
+  String get mapGenerate => 'Generate Map';
+
+  @override
+  String get mapGenerateMenu => 'Generate from Document…';
+
+  @override
+  String get mapGenerateDocumentMenu => 'Generate Map…';
+
+  @override
+  String get mapGenerateUpdate => 'Update';
+
+  @override
+  String get mapGenerateRunning => 'Generating';
+
+  @override
+  String get mapGenerateReviewing => 'Reviewing';
+
+  @override
+  String get mapHasUpdates => 'New material';
+
+  @override
+  String get mapHasMap => 'Has a map';
+
+  @override
+  String mapGenerateFrom(String document) {
+    return 'Generate a Map from “$document”';
+  }
+
+  @override
+  String get mapGenerateSettings => 'Settings';
+
+  @override
+  String get mapGenerateStart => 'Generate';
+
+  @override
+  String get mapGenerateBlank => 'Start Blank';
+
+  @override
+  String get mapGenerateSuggestExam => 'Focus on Exam Points';
+
+  @override
+  String get mapGenerateSuggestExplain => 'Explain Each Topic';
+
+  @override
+  String get mapGenerateSuggestQuotes => 'Keep Key Quotes';
+
+  @override
+  String get mapGenerateSuggestExamples => 'Add Examples';
+
+  @override
+  String get mapGenerateDocuments => 'Documents';
+
+  @override
+  String mapGeneratePages(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count pages', one: '1 page');
+    return '$_temp0';
+  }
+
+  @override
+  String mapGenerateSegments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count parts', one: '1 part');
+    return '$_temp0';
+  }
+
+  @override
+  String get mapGenerateNeedsOcr => 'Needs text recognition';
+
+  @override
+  String get mapGenerateWholeDocument => 'Entire Document';
+
+  @override
+  String mapGenerateChapterCount(int selected, int total) {
+    return '$selected of $total chapters';
+  }
+
+  @override
+  String get mapGenerateOrganization => 'Organization';
+
+  @override
+  String get mapGenerateByChapter => 'By Chapter';
+
+  @override
+  String get mapGenerateByTopic => 'By Concept';
+
+  @override
+  String get mapGenerateMergeByTopic => 'Merge by Concept';
+
+  @override
+  String get mapGenerateByQuestion => 'By Question';
+
+  @override
+  String get mapGenerateDetail => 'Detail';
+
+  @override
+  String get mapGenerateDetailBrief => 'Brief';
+
+  @override
+  String get mapGenerateDetailMedium => 'Medium';
+
+  @override
+  String get mapGenerateDetailFull => 'Detailed';
+
+  @override
+  String mapGenerateEstimate(int levels, int count) {
+    return '$levels levels · about $count topics';
+  }
+
+  @override
+  String get mapGenerateContent => 'Content';
+
+  @override
+  String get mapGenerateMyMarks => 'My Highlights and Notes';
+
+  @override
+  String mapGenerateMarkCount(int count) {
+    return '$count';
+  }
+
+  @override
+  String get mapGenerateQuotes => 'Key Quotes';
+
+  @override
+  String get mapGenerateTarget => 'Generate To';
+
+  @override
+  String get mapGenerateTargetNew => 'New Map';
+
+  @override
+  String get mapGenerateTargetBranch => 'New Branch of This Map';
+
+  @override
+  String mapGenerateTargetReplace(String title) {
+    return 'Replace “$title”';
+  }
+
+  @override
+  String get mapGenerateInstructions => 'Instructions';
+
+  @override
+  String mapGenerateReading(String document) {
+    return 'Reading “$document”';
+  }
+
+  @override
+  String get mapGenerateBuilding => 'Building Map';
+
+  @override
+  String mapGenerateTopicCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count topics', one: '1 topic');
+    return '$_temp0';
+  }
+
+  @override
+  String get mapGenerateQueued => 'Waiting';
+
+  @override
+  String mapGenerateChapterFailed(String chapter) {
+    return '“$chapter” failed';
+  }
+
+  @override
+  String get mapGenerateBlocked => 'Keep (↩) or discard (Esc) the generated map first';
+
+  @override
+  String mapGenerateCreated(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Created “$title” · $count topics',
+      one: 'Created “$title” · 1 topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapGenerateNothing => 'No usable structure. Try another organization.';
+
+  @override
+  String get mapGenerateStoppedEmpty => 'Stopped before any topics';
+
+  @override
+  String mapGenerateDraftSemantics(String title, int page, String state) {
+    return 'AI draft, $title, page $page, $state';
+  }
+
+  @override
+  String mapGenerateReadProgress(int done, int total) {
+    return 'Read $done of $total chapters';
+  }
+
+  @override
+  String mapGenerateReady(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ready to review, $count topics',
+      one: 'Ready to review, 1 topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mapSourceSemantics(String document, int page) {
+    return '$document, page $page';
+  }
+
+  @override
+  String mapBannerNoMap(String document) {
+    return '“$document” has no map';
+  }
+
+  @override
+  String get mapBannerGenerate => 'New Map';
+
+  @override
+  String get mapBannerMerge => 'Add to This Map';
+
+  @override
+  String get mapBannerNeedsOcr => 'Recognize text to generate a map';
+
+  @override
+  String mapFollowSwitched(String title) {
+    return 'Switched to “$title”';
+  }
+
+  @override
+  String get mapUpdateTitle => 'Update Map';
+
+  @override
+  String get mapUpdateSources => 'Sources';
+
+  @override
+  String get mapUpdateAddDocument => 'Add Document';
+
+  @override
+  String get mapUpdateSince => 'Since Last Generated';
+
+  @override
+  String get mapUpdateNewHighlights => 'New highlights';
+
+  @override
+  String get mapUpdateNewNotes => 'New notes';
+
+  @override
+  String get mapUpdateReadTo => 'Read to';
+
+  @override
+  String mapUpdateReadRange(int from, int to) {
+    return 'p.$from → p.$to';
+  }
+
+  @override
+  String get mapUpdateScope => 'Scope';
+
+  @override
+  String get mapUpdateScopeNew => 'New Material Only';
+
+  @override
+  String get mapUpdateScopeAll => 'Rework Everything';
+
+  @override
+  String mapUpdateProtected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count edited topics stay as they are',
+      one: '1 edited topic stays as is',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapUpdatePreview => 'Preview Changes';
+
+  @override
+  String get mapUpdateNothing => 'Nothing to update';
+
+  @override
+  String get mapDiffAdded => 'Added';
+
+  @override
+  String get mapDiffRenamed => 'Renamed';
+
+  @override
+  String get mapDiffMoved => 'Moved';
+
+  @override
+  String get mapDiffRemoved => 'Suggested Removals';
+
+  @override
+  String get mapDiffTagNew => 'New';
+
+  @override
+  String mapDiffTagMovedFrom(String from) {
+    return 'From $from';
+  }
+
+  @override
+  String get mapDiffTagRemove => 'Remove';
+
+  @override
+  String mapDiffMoveRoute(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String mapDiffExcerpt(String text) {
+    return 'Excerpt: $text';
+  }
+
+  @override
+  String get mapDiffProtected => 'Protected';
+
+  @override
+  String mapUpdateApply(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: 'Apply $count', one: 'Apply 1');
+    return '$_temp0';
+  }
+
+  @override
+  String mapUpdateApplied(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Updated $count items',
+      one: 'Updated 1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapUpdateBlocked => 'Apply (↩) or discard (Esc) the update first';
+
+  @override
+  String mapDiffAddSemantics(String title) {
+    return 'Suggested addition, $title';
+  }
+
+  @override
+  String mapDiffRenameSemantics(String old, String title) {
+    return 'Suggested rename, $old to $title';
+  }
+
+  @override
+  String mapDiffMoveSemantics(String title, String from, String to) {
+    return 'Suggested move, $title, from $from to $to';
+  }
+
+  @override
+  String mapDiffRemoveSemantics(String title, String reason) {
+    return 'Suggested removal, $title, $reason';
+  }
+
+  @override
+  String get settingsMapFollowDocument => 'Switch Maps with Documents';
+
+  @override
+  String get settingsMapClearCache => 'Clear Generation Cache';
+
+  @override
   String get notesTitle => 'Notes';
 
   @override
