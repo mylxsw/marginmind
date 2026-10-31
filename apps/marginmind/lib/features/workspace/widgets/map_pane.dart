@@ -763,9 +763,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           if (mounted) MMHud.show(context, context.l10n.mapIdeaStoppedEmpty);
         });
       }
-      if (next != null &&
-          next.lines.isEmpty &&
-          (next.phase == MapGenerationPhase.review || next.failure?.message == 'noValidMapContent')) {
+      if (next != null && next.lines.isEmpty && next.phase == MapGenerationPhase.review && next.failure == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || !identical(ref.read(mapGenerationControllerProvider(widget.studySetId)), next)) return;
           ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).discard();

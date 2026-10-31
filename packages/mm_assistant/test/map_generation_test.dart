@@ -63,6 +63,91 @@ const point = '{"k":"point","id":"p1","title":"First","doc":"D1","page":1,"marks
 const topic = '{"ref":"a","parent":"ROOT","title":"Topic","doc":"D1","page":1}';
 final cancelled = isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled);
 void main() {
+  test('truncation preserves stage, reasoning and limits without exposing response text', () async {
+    final client = ScriptClient([
+      ModelMessage(model: 'fake', thought: 'thinking', textOutput: 'private response', stopReason: 'length'),
+    ]);
+    final model = generator(client);
+    await expectLater(
+      model.readChapter(chapter(), CancellationToken()).toList(),
+      throwsA(
+        isA<MapGenerationFailure>()
+            .having((e) => e.code, 'code', 'outputTruncated')
+            .having((e) => e.phase, 'phase', MapLinePhase.chapter)
+            .having((e) => e.reasoningCharacters, 'reasoning', 8)
+            .having((e) => e.stopReason, 'stop', 'length')
+            .having((e) => e.receivedLines, 'received', 1)
+            .having((e) => e.acceptedLines, 'accepted', 0),
+      ),
+    );
+    await model.close();
+  });
+  test('validation reports fixed rejection reasons and never response content', () async {
+    final client = ScriptClient([
+      answer(
+        'private response\n{"ref":"a","parent":"missing","title":"private title"}\n'
+        '{"ref":"b","parent":"ROOT","title":"Topic","extra":"private value"}',
+      ),
+    ]);
+    final model = generator(client);
+    try {
+      await model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList();
+      fail('Expected failure');
+    } on MapGenerationFailure catch (error) {
+      expect(error.code, 'noValidMapContent');
+      expect(error.phase, MapLinePhase.generation);
+      expect(error.receivedLines, 3);
+      expect(error.rejections, {'invalidJson': 1, 'unknownParent': 1, 'unexpectedKeys': 1});
+      expect(error.message, isNull);
+      expect(error.toString(), isNot(contains('private')));
+    }
+    await model.close();
+  });
+  test('retrying a partially failed chapter gets fresh reference and title state', () async {
+    final client = ScriptClient([answer(point, stop: 'length'), answer(point)]);
+    final model = generator(client), input = chapter();
+    await expectLater(model.readChapter(input, CancellationToken()).toList(), throwsA(isA<MapGenerationFailure>()));
+    final retried = await model.readChapter(input, CancellationToken()).toList();
+    expect(retried.single.title, 'First');
+    await model.close();
+  });
+  test('default output budgets leave room for reasoning in both phases', () async {
+    final client = ScriptClient([answer(point), answer(topic)]);
+    final model = ModelMapGenerator(AssistantConnection(client, Dio()), 'reasoning-model');
+    final points = await model.readChapter(chapter(), CancellationToken()).toList();
+    await model.generate(build(MapLinePhase.generation, points), CancellationToken()).toList();
+    expect(client.modelConfigs.map((c) => c.maxTokens), [8192, 16384]);
+    await model.close();
+  });
+  test('HTTP request failures preserve status and correct classification', () async {
+    for (final (status, kind) in [
+      (400, ResearchFailureKind.invalidRequest),
+      (401, ResearchFailureKind.authentication),
+      (429, ResearchFailureKind.rateLimited),
+      (503, ResearchFailureKind.unavailable),
+    ]) {
+      final model = generator(
+        StreamClient(
+          (_) => Stream.error(
+            DioException(
+              requestOptions: RequestOptions(),
+              response: Response(requestOptions: RequestOptions(), statusCode: status, data: 'private error body'),
+            ),
+          ),
+        ),
+      );
+      await expectLater(
+        model.readChapter(chapter(), CancellationToken()).toList(),
+        throwsA(
+          isA<MapGenerationFailure>()
+              .having((e) => e.kind, 'kind', kind)
+              .having((e) => e.statusCode, 'HTTP', status)
+              .having((e) => e.message, 'redacted', isNull),
+        ),
+      );
+      await model.close();
+    }
+  });
   test('update scope and edited titles reach the model without host ids', () async {
     for (final onlyNew in [true, false]) {
       final client = ScriptClient([answer('{"op":"rename","node":"N1","title":"Revised"}')]);

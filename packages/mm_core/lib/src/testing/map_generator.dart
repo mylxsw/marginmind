@@ -32,10 +32,11 @@ class FakeMapGenerator implements MapGenerator {
   ) async* {
     if (closed) throw StateError('Generator closed');
     calls.add(call);
+    final parser = context.fresh();
     cancel.check();
     for (final raw in lines) {
       await cancel.bind(Future<void>.delayed(delay));
-      final line = parseMapLine(raw, context);
+      final line = parseMapLine(raw, parser);
       if (line != null) yield line;
     }
     cancel.check();

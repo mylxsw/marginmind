@@ -5480,4 +5480,100 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneMoreBack => 'Back';
+
+  @override
+  String get mapFailureDetails => 'Failure details';
+
+  @override
+  String get mapFailureCopy => 'Copy details';
+
+  @override
+  String get mapFailureTruncated => 'The model output was cut off. Please retry.';
+
+  @override
+  String get mapFailureInvalid => 'The model response did not pass mind map validation.';
+
+  @override
+  String get mapFailureEmpty => 'The model returned no mind map content.';
+
+  @override
+  String get mapFailureTimeout => 'The model request timed out. Please retry.';
+
+  @override
+  String get mapFailureLimit => 'The content exceeded the per-request limit.';
+
+  @override
+  String get mapFailureRate => 'The service is rate limited. Please retry later.';
+
+  @override
+  String get mapFailureRequest => 'The service rejected the request. Check the model configuration.';
+
+  @override
+  String get mapFailureDocumentText => 'No readable text was found in the document.';
+
+  @override
+  String get mapFailureStage => 'Stage';
+
+  @override
+  String get mapFailurePrepare => 'Preparing document';
+
+  @override
+  String get mapFailureChapter => 'Reading chapter';
+
+  @override
+  String get mapFailureBuild => 'Building mind map';
+
+  @override
+  String get mapFailureUpdate => 'Updating mind map';
+
+  @override
+  String get mapFailureModel => 'Model';
+
+  @override
+  String get mapFailureCode => 'Error code';
+
+  @override
+  String get mapFailureLines => 'Received / accepted lines';
+
+  @override
+  String get mapFailureStop => 'Completion reason';
+
+  @override
+  String get mapFailureOutputLimit => 'Output token limit (includes reasoning)';
+
+  @override
+  String get mapFailureReasoning => 'Reasoning characters';
+
+  @override
+  String get mapFailureRejected => 'Rejected lines';
+
+  @override
+  String get mapFailureInvalidJson => 'Not a complete JSON object';
+
+  @override
+  String get mapFailureFields => 'Unsupported fields or operation';
+
+  @override
+  String get mapFailureReference => 'Invalid or repeated reference';
+
+  @override
+  String get mapFailureTitle => 'Empty or repeated title';
+
+  @override
+  String get mapFailureParent => 'Parent node is missing or invalid';
+
+  @override
+  String get mapFailureDepth => 'Too many node levels';
+
+  @override
+  String get mapFailureAnnotation => 'Annotation reference is invalid';
+
+  @override
+  String get mapFailureSource => 'Source fields are invalid';
+
+  @override
+  String get mapFailureProtected => 'Attempted to modify protected content';
+
+  @override
+  String get mapFailureLineSize => 'Response line is too long';
 }

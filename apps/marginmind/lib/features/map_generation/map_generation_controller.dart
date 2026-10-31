@@ -230,7 +230,8 @@ class MapGenerationPreview {
     currentChapterIndex: currentChapterIndex ?? this.currentChapterIndex,
     round: round ?? this.round,
     isApplying: isApplying ?? this.isApplying,
-    failure: failure ?? this.failure,
+    failure:
+        failure ?? (phase == MapGenerationPhase.streaming || phase == MapGenerationPhase.reading ? null : this.failure),
     editedTitles: editedTitles ?? this.editedTitles,
     needsTextDocumentId: needsTextDocumentId,
   );
@@ -303,12 +304,17 @@ final mapQuotePageProvider = Provider<Future<TranslationPage?> Function(String, 
 final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>(
   (ref) => () async {
     final model = ref.read(assistantDefaultModelProvider);
-    if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable);
+    if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable, 'missingModel');
     final key = await assistantModelKey(ref.read(assistantSecretsProvider), model);
     if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
-      throw const ResearchFailure(ResearchFailureKind.authentication);
+      throw const ResearchFailure(ResearchFailureKind.authentication, 'missingKey');
     }
-    return ModelMapGenerator(connectAssistant(model, key ?? ''), model.model);
+    // Each chapter/build owns its timeout and response budget. A shared
+    // connection deadline would expire midway through a multi-chapter document.
+    return ModelMapGenerator(
+      connectAssistant(model, key ?? '', budget: null, requestTimeout: const Duration(minutes: 2)),
+      model.model,
+    );
   },
 );
 
@@ -841,10 +847,12 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     _ownsBusy = true;
     ref.read(expansionBusyProvider.notifier).set(true);
 
+    _collectedPoints.removeWhere((point) => point.id.startsWith(task.input.context.draftPrefix));
     final cache = ref.read(mapDigestCacheProvider(state!.request.studySetId));
     final modelConfig = ref.read(assistantDefaultModelProvider);
     final modelKey = '${modelConfig?.serviceId ?? 'default'}:${modelConfig?.model ?? 'default'}';
 
+    var chapterRead = false;
     try {
       _updateChapter(chapterId, MapChapterStatus.reading);
       final cacheKey = mapDigestCacheKey(
@@ -880,13 +888,17 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         _updateChapter(chapterId, MapChapterStatus.done);
       }
 
+      chapterRead = true;
       state = state!.copyWith(phase: MapGenerationPhase.streaming, failure: null);
       await _streamBuild(state!.request, cancel, epoch);
     } catch (e) {
       final failure = e is ResearchFailure ? e : const ResearchFailure(ResearchFailureKind.unavailable);
-      _updateChapter(chapterId, MapChapterStatus.failed, failure: failure);
       if (!_disposed && epoch == _generation) {
-        state = state!.copyWith(failure: failure);
+        if (!chapterRead) _updateChapter(chapterId, MapChapterStatus.failed, failure: failure);
+        state = state!.copyWith(
+          phase: state!.lines.isEmpty ? MapGenerationPhase.failed : MapGenerationPhase.stopped,
+          failure: failure,
+        );
       }
     } finally {
       if (!_disposed && epoch == _generation) {
@@ -914,7 +926,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       } catch (e) {
         if (!_disposed && epoch == _generation) {
           state = state!.copyWith(
-            phase: MapGenerationPhase.failed,
+            phase: state!.lines.isEmpty ? MapGenerationPhase.failed : MapGenerationPhase.stopped,
             failure: e is ResearchFailure ? e : const ResearchFailure(ResearchFailureKind.unavailable),
           );
         }
@@ -1001,7 +1013,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     } catch (e) {
       if (!_disposed && epoch == _generation) {
         state = state!.copyWith(
-          phase: MapGenerationPhase.failed,
+          phase: state!.lines.isEmpty ? MapGenerationPhase.failed : MapGenerationPhase.stopped,
           failure: e is ResearchFailure ? e : const ResearchFailure(ResearchFailureKind.unavailable),
         );
       }

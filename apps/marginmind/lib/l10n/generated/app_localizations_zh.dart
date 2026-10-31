@@ -5257,4 +5257,100 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneMoreBack => '返回';
+
+  @override
+  String get mapFailureDetails => '失败详情';
+
+  @override
+  String get mapFailureCopy => '复制详情';
+
+  @override
+  String get mapFailureTruncated => '模型输出被截断，请重试';
+
+  @override
+  String get mapFailureInvalid => '模型返回内容未通过脑图格式校验';
+
+  @override
+  String get mapFailureEmpty => '模型没有返回脑图内容';
+
+  @override
+  String get mapFailureTimeout => '模型请求超时，请重试';
+
+  @override
+  String get mapFailureLimit => '内容超出单次处理上限';
+
+  @override
+  String get mapFailureRate => '模型服务请求过于频繁，请稍后重试';
+
+  @override
+  String get mapFailureRequest => '模型服务不接受此请求，请检查模型配置';
+
+  @override
+  String get mapFailureDocumentText => '文档中没有可读取的文字';
+
+  @override
+  String get mapFailureStage => '失败阶段';
+
+  @override
+  String get mapFailurePrepare => '准备文档';
+
+  @override
+  String get mapFailureChapter => '读取章节要点';
+
+  @override
+  String get mapFailureBuild => '组织脑图';
+
+  @override
+  String get mapFailureUpdate => '更新脑图';
+
+  @override
+  String get mapFailureModel => '使用模型';
+
+  @override
+  String get mapFailureCode => '错误码';
+
+  @override
+  String get mapFailureLines => '返回行数 / 通过校验行数';
+
+  @override
+  String get mapFailureStop => '模型结束原因';
+
+  @override
+  String get mapFailureOutputLimit => '输出额度（含模型思考，tokens）';
+
+  @override
+  String get mapFailureReasoning => '模型思考字符数';
+
+  @override
+  String get mapFailureRejected => '未通过校验';
+
+  @override
+  String get mapFailureInvalidJson => '不是完整的 JSON 对象';
+
+  @override
+  String get mapFailureFields => '字段或操作不符合要求';
+
+  @override
+  String get mapFailureReference => '节点编号无效或重复';
+
+  @override
+  String get mapFailureTitle => '标题为空或重复';
+
+  @override
+  String get mapFailureParent => '父节点不存在或无效';
+
+  @override
+  String get mapFailureDepth => '节点层级超过要求';
+
+  @override
+  String get mapFailureAnnotation => '引用的批注无效';
+
+  @override
+  String get mapFailureSource => '来源字段格式错误';
+
+  @override
+  String get mapFailureProtected => '尝试修改受保护的内容';
+
+  @override
+  String get mapFailureLineSize => '单行内容过长';
 }

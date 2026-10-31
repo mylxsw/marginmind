@@ -7,6 +7,7 @@ import 'package:mm_core/mm_core.dart';
 
 import 'expansion.dart' show expansionFailure;
 import 'providers.dart';
+import 'runtime.dart' show assistantFailureKind, assistantFailureStatus;
 
 const mapChapterSystemPrompt = '''Read the supplied document section and extract concise, grounded key points.
 Output NDJSON only, one object per line, no markdown or tools.
@@ -120,12 +121,12 @@ class ModelMapGenerator implements MapGenerator {
     this.model, {
     this.chapterBudget = const ResearchBudget(
       duration: Duration(seconds: 90),
-      outputTokens: 2048,
+      outputTokens: 8192,
       inputCharacters: 30000,
     ),
     this.buildBudget = const ResearchBudget(
       duration: Duration(seconds: 120),
-      outputTokens: 4096,
+      outputTokens: 16384,
       inputCharacters: 30000,
     ),
     this.onInvalidLine,
@@ -157,17 +158,22 @@ class ModelMapGenerator implements MapGenerator {
 
   Stream<MapLine> _build(MapBuildInput input, CancellationToken cancel, String system, MapLinePhase phase) async* {
     if (_closed) throw StateError('Map generator closed');
-    buildBudget.validate();
-    cancel.check();
-    final points = fitPointsToBudget(
-      input.points,
-      inputCharacters: buildBudget.inputCharacters,
-      measure: (points) => system.length + jsonEncode(_buildPayload(input, points)).length,
-    );
-    if (input.points.isNotEmpty && points.isEmpty) {
-      throw const ResearchFailure(ResearchFailureKind.budget, 'noPointsFitBudget');
+    try {
+      buildBudget.validate();
+      cancel.check();
+      final points = fitPointsToBudget(
+        input.points,
+        inputCharacters: buildBudget.inputCharacters,
+        measure: (points) => system.length + jsonEncode(_buildPayload(input, points)).length,
+      );
+      if (input.points.isNotEmpty && points.isEmpty) {
+        throw const ResearchFailure(ResearchFailureKind.budget, 'noPointsFitBudget');
+      }
+      yield* _parse(system, _buildPayload(input, points), input.context, phase, cancel, buildBudget);
+    } on ResearchFailure catch (failure) {
+      if (failure is MapGenerationFailure) rethrow;
+      throw MapGenerationFailure(failure, phase: phase, model: model, outputLimit: buildBudget.outputTokens);
     }
-    yield* _parse(system, _buildPayload(input, points), input.context, phase, cancel, buildBudget);
   }
 
   Map<String, Object?> _buildPayload(MapBuildInput input, List<MapLine> points) {
@@ -220,20 +226,40 @@ class ModelMapGenerator implements MapGenerator {
     CancellationToken cancel,
     ResearchBudget budget,
   ) async* {
+    if (_closed) throw StateError('Map generator closed');
     if (context.phase != phase) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
-    var valid = false;
-    await for (final raw in _lines(system, payload, cancel, budget: budget)) {
-      cancel.check();
-      final line = parseMapLine(raw, context);
-      if (line == null) {
-        onInvalidLine?.call('invalidMapLine');
-        continue;
+    final parser = context.fresh();
+    var received = 0, accepted = 0;
+    final rejections = <String, int>{};
+    final stats = _MapResponseStats();
+    void rejected(String reason) => rejections.update(reason, (n) => n + 1, ifAbsent: () => 1);
+    try {
+      await for (final raw in _lines(system, payload, cancel, budget: budget, stats: stats, rejected: rejected)) {
+        cancel.check();
+        received++;
+        final line = parseMapLine(raw, parser, onInvalid: rejected);
+        if (line == null) {
+          onInvalidLine?.call('invalidMapLine');
+          continue;
+        }
+        accepted++;
+        yield line;
       }
-      valid = true;
-      yield line;
+      cancel.check();
+      if (accepted == 0) throw const ResearchFailure(ResearchFailureKind.protocol, 'noValidMapContent');
+    } catch (error) {
+      throw MapGenerationFailure(
+        _mapFailure(error),
+        phase: phase,
+        model: model,
+        receivedLines: received + (rejections['lineSize'] ?? 0),
+        acceptedLines: accepted,
+        rejections: rejections,
+        stopReason: stats.stopReason,
+        outputLimit: budget.outputTokens,
+        reasoningCharacters: stats.reasoningCharacters,
+      );
     }
-    cancel.check();
-    if (!valid) throw const ResearchFailure(ResearchFailureKind.protocol, 'noValidMapContent');
   }
 
   Stream<String> _lines(
@@ -241,6 +267,8 @@ class ModelMapGenerator implements MapGenerator {
     Map<String, Object?> payload,
     CancellationToken cancel, {
     required ResearchBudget budget,
+    required _MapResponseStats stats,
+    required void Function(String) rejected,
   }) async* {
     if (_closed) throw StateError('Map generator closed');
     budget.validate();
@@ -285,6 +313,8 @@ class ModelMapGenerator implements MapGenerator {
         if (message == null) continue;
         if (message.functionCalls.isNotEmpty) throw const ResearchFailure(ResearchFailureKind.toolProtocol);
         stop = message.stopReason ?? stop;
+        stats.stopReason = stop;
+        stats.reasoningCharacters += message.thought?.length ?? 0;
         final text = message.textOutput ?? '';
         limits.bytes += utf8.encode(text).length;
         if (limits.bytes > budget.responseBytes || (message.usage?.completionTokens ?? 0) > budget.outputTokens) {
@@ -300,6 +330,7 @@ class ModelMapGenerator implements MapGenerator {
           if (i < pieces.length - 1) {
             if (oversized) {
               onInvalidLine?.call('lineSize');
+              rejected('lineSize');
             } else if (buffer.trim().isNotEmpty) {
               cancel.check();
               yield buffer;
@@ -309,15 +340,22 @@ class ModelMapGenerator implements MapGenerator {
           }
         }
       }
-      if (oversized) onInvalidLine?.call('lineSize');
+      if (oversized) {
+        onInvalidLine?.call('lineSize');
+        rejected('lineSize');
+      }
       cancel.check();
       if (!oversized && buffer.trim().isNotEmpty) yield buffer;
       cancel.check();
-      if ({'length', 'max_tokens'}.contains(stop)) throw const ResearchFailure(ResearchFailureKind.budget);
+      if ({'length', 'max_tokens'}.contains(stop)) {
+        throw const ResearchFailure(ResearchFailureKind.budget, 'outputTruncated');
+      }
       if ({'refusal', 'content_filter'}.contains(stop)) throw const ResearchFailure(ResearchFailureKind.refusal);
-      if (!{'stop', 'end_turn', 'completed'}.contains(stop)) throw const ResearchFailure(ResearchFailureKind.protocol);
+      if (!{'stop', 'end_turn', 'completed'}.contains(stop)) {
+        throw const ResearchFailure(ResearchFailureKind.protocol, 'incompleteStream');
+      }
     } catch (error) {
-      throw expansionFailure(error);
+      throw _mapFailure(error);
     } finally {
       finished = true;
       token.cancel();
@@ -340,4 +378,17 @@ class _MapResources {
   _MapResources(ResearchBudget budget) : deadline = DateTime.now().add(budget.duration);
   final DateTime deadline;
   int bytes = 0;
+}
+
+class _MapResponseStats {
+  String? stopReason;
+  int reasoningCharacters = 0;
+}
+
+ResearchFailure _mapFailure(Object error) {
+  if (error is DioException) {
+    if (error.error is ResearchFailure) return error.error as ResearchFailure;
+    return ResearchFailure(assistantFailureKind(error), 'httpError', null, assistantFailureStatus(error));
+  }
+  return expansionFailure(error);
 }

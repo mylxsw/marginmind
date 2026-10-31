@@ -9625,6 +9625,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back'**
   String get phoneMoreBack;
+
+  /// No description provided for @mapFailureDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failure details'**
+  String get mapFailureDetails;
+
+  /// No description provided for @mapFailureCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy details'**
+  String get mapFailureCopy;
+
+  /// No description provided for @mapFailureTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'The model output was cut off. Please retry.'**
+  String get mapFailureTruncated;
+
+  /// No description provided for @mapFailureInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The model response did not pass mind map validation.'**
+  String get mapFailureInvalid;
+
+  /// No description provided for @mapFailureEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The model returned no mind map content.'**
+  String get mapFailureEmpty;
+
+  /// No description provided for @mapFailureTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The model request timed out. Please retry.'**
+  String get mapFailureTimeout;
+
+  /// No description provided for @mapFailureLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The content exceeded the per-request limit.'**
+  String get mapFailureLimit;
+
+  /// No description provided for @mapFailureRate.
+  ///
+  /// In en, this message translates to:
+  /// **'The service is rate limited. Please retry later.'**
+  String get mapFailureRate;
+
+  /// No description provided for @mapFailureRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'The service rejected the request. Check the model configuration.'**
+  String get mapFailureRequest;
+
+  /// No description provided for @mapFailureDocumentText.
+  ///
+  /// In en, this message translates to:
+  /// **'No readable text was found in the document.'**
+  String get mapFailureDocumentText;
+
+  /// No description provided for @mapFailureStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get mapFailureStage;
+
+  /// No description provided for @mapFailurePrepare.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing document'**
+  String get mapFailurePrepare;
+
+  /// No description provided for @mapFailureChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading chapter'**
+  String get mapFailureChapter;
+
+  /// No description provided for @mapFailureBuild.
+  ///
+  /// In en, this message translates to:
+  /// **'Building mind map'**
+  String get mapFailureBuild;
+
+  /// No description provided for @mapFailureUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating mind map'**
+  String get mapFailureUpdate;
+
+  /// No description provided for @mapFailureModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get mapFailureModel;
+
+  /// No description provided for @mapFailureCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Error code'**
+  String get mapFailureCode;
+
+  /// No description provided for @mapFailureLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Received / accepted lines'**
+  String get mapFailureLines;
+
+  /// No description provided for @mapFailureStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion reason'**
+  String get mapFailureStop;
+
+  /// No description provided for @mapFailureOutputLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Output token limit (includes reasoning)'**
+  String get mapFailureOutputLimit;
+
+  /// No description provided for @mapFailureReasoning.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning characters'**
+  String get mapFailureReasoning;
+
+  /// No description provided for @mapFailureRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected lines'**
+  String get mapFailureRejected;
+
+  /// No description provided for @mapFailureInvalidJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a complete JSON object'**
+  String get mapFailureInvalidJson;
+
+  /// No description provided for @mapFailureFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported fields or operation'**
+  String get mapFailureFields;
+
+  /// No description provided for @mapFailureReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid or repeated reference'**
+  String get mapFailureReference;
+
+  /// No description provided for @mapFailureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty or repeated title'**
+  String get mapFailureTitle;
+
+  /// No description provided for @mapFailureParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent node is missing or invalid'**
+  String get mapFailureParent;
+
+  /// No description provided for @mapFailureDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many node levels'**
+  String get mapFailureDepth;
+
+  /// No description provided for @mapFailureAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotation reference is invalid'**
+  String get mapFailureAnnotation;
+
+  /// No description provided for @mapFailureSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source fields are invalid'**
+  String get mapFailureSource;
+
+  /// No description provided for @mapFailureProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempted to modify protected content'**
+  String get mapFailureProtected;
+
+  /// No description provided for @mapFailureLineSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Response line is too long'**
+  String get mapFailureLineSize;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

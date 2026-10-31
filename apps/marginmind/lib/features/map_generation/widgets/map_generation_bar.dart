@@ -8,6 +8,7 @@ import 'package:mm_platform/mm_platform.dart';
 import '../../../shared/l10n.dart';
 import '../../workspace/workspace_controller.dart';
 import '../map_generation_controller.dart';
+import 'map_generation_failure.dart';
 
 class MapGenerationBar extends ConsumerStatefulWidget {
   const MapGenerationBar({super.key, required this.studySetId, this.onKeep});
@@ -52,13 +53,24 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
 
     if (isFailed) {
       final isNetwork = preview.failure?.kind == ResearchFailureKind.network;
-      final msg = isNetwork ? l.assistantErrorNetwork : (preview.failure?.message ?? l.mapGenerateNothing);
+      final msg = mapGenerationFailureSummary(l, preview.failure);
       titleArea = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(isNetwork ? MMIcons.offline : MMIcons.warning, size: 14, color: c.critical),
           const SizedBox(width: 8),
-          Text(msg, style: t.callout.copyWith(color: c.critical)),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: Tooltip(
+              message: msg,
+              child: Text(
+                msg,
+                style: t.callout.copyWith(color: c.critical),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
         ],
       );
     } else if (isReading) {
@@ -156,6 +168,15 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
     }
 
     final actions = <Widget>[
+      if (preview.failure != null || preview.chapterFailures.isNotEmpty) ...[
+        MMButton(
+          key: const ValueKey('map-generation-error-details-button'),
+          label: l.mapFailureDetails,
+          variant: MMButtonVariant.plain,
+          onPressed: () => showMapGenerationFailure(context, preview),
+        ),
+        const SizedBox(width: 8),
+      ],
       if (isFailed) ...[
         MMButton(
           key: const ValueKey('map-generation-failed-retry-button'),

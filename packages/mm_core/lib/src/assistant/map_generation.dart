@@ -10,6 +10,27 @@ enum MapLinePhase { chapter, generation, diff }
 
 enum MapLineKind { point, add, excerpt, rename, move, remove }
 
+/// Safe diagnostics: counts and fixed validation codes, never model/document text.
+class MapGenerationFailure extends ResearchFailure {
+  MapGenerationFailure(
+    ResearchFailure failure, {
+    required this.phase,
+    required this.model,
+    this.receivedLines = 0,
+    this.acceptedLines = 0,
+    Map<String, int> rejections = const {},
+    this.stopReason,
+    this.outputLimit = 0,
+    this.reasoningCharacters = 0,
+  }) : rejections = Map.unmodifiable(rejections),
+       super(failure.kind, failure.code, failure.message, failure.statusCode);
+  final MapLinePhase phase;
+  final String model;
+  final int receivedLines, acceptedLines, outputLimit, reasoningCharacters;
+  final Map<String, int> rejections;
+  final String? stopReason;
+}
+
 /// IDs/references here are already resolved locally. Never send this to a model.
 class MapLine {
   MapLine({
@@ -76,6 +97,7 @@ class MapLineContext {
        nodes = Map.unmodifiable(nodes),
        annotations = Map.unmodifiable(annotations),
        protectedNodeIds = Set.unmodifiable(protectedNodeIds),
+       _initialTitles = List.unmodifiable(existingTitles),
        _titles = existingTitles.map(normalizeExpansionTitle).toSet() {
     if (mapId.isEmpty ||
         draftPrefix.isEmpty ||
@@ -99,20 +121,42 @@ class MapLineContext {
   final int maxDepth;
   final _refs = <String, String>{}, _depths = <String, int>{};
   final _marks = <String>{};
+  final List<String> _initialTitles;
   final Set<String> _titles;
+
+  /// Validation state belongs to one attempt, including after partial failures.
+  MapLineContext fresh() => MapLineContext(
+    phase: phase,
+    mapId: mapId,
+    draftPrefix: draftPrefix,
+    rootParentId: rootParentId,
+    documents: documents,
+    pages: pages,
+    nodes: nodes,
+    annotations: annotations,
+    protectedNodeIds: protectedNodeIds,
+    existingTitles: _initialTitles,
+    maxDepth: maxDepth,
+    quoteTextByPage: quoteTextByPage,
+  );
   int _sequence = 0;
 }
 
 /// Complete NDJSON lines only. Invalid lines never reserve references or titles.
-MapLine? parseMapLine(String line, MapLineContext ctx) {
-  if (line.length > 65536) return null;
+MapLine? parseMapLine(String line, MapLineContext ctx, {void Function(String reason)? onInvalid}) {
+  MapLine? reject(String reason) {
+    onInvalid?.call(reason);
+    return null;
+  }
+
+  if (line.length > 65536) return reject('lineSize');
   Object? decoded;
   try {
     decoded = jsonDecode(line);
   } on FormatException {
-    return null;
+    return reject('invalidJson');
   }
-  if (decoded is! Map<String, dynamic>) return null;
+  if (decoded is! Map<String, dynamic>) return reject('invalidObject');
   final j = decoded;
   final chapter = ctx.phase == MapLinePhase.chapter;
   final diff = ctx.phase == MapLinePhase.diff;
@@ -126,7 +170,7 @@ MapLine? parseMapLine(String line, MapLineContext ctx) {
     'remove' when diff => MapLineKind.remove,
     _ => null,
   };
-  if (kind == null) return null;
+  if (kind == null) return reject('invalidOperation');
   final allowed = switch (kind) {
     MapLineKind.point => {'k', 'id', 'parent', 'title', 'doc', 'page', 'marks', 'quote'},
     MapLineKind.add => {'ref', 'parent', 'title', 'doc', 'page', if (diff) 'op'},
@@ -135,7 +179,7 @@ MapLine? parseMapLine(String line, MapLineContext ctx) {
     MapLineKind.move => {'op', 'node', 'parent'},
     MapLineKind.remove => {'op', 'node', 'why'},
   };
-  if (j.keys.any((k) => !allowed.contains(k))) return null;
+  if (j.keys.any((k) => !allowed.contains(k))) return reject('unexpectedKeys');
   bool nonempty(Object? s) => s is String && s.trim().isNotEmpty && s.length <= 12000;
   final adding = kind == MapLineKind.add || kind == MapLineKind.point;
   final ref = j[chapter ? 'id' : 'ref'];
@@ -145,44 +189,48 @@ MapLine? parseMapLine(String line, MapLineContext ctx) {
           ref == 'ROOT' ||
           RegExp(r'^[DNA][0-9]+$').hasMatch(ref) ||
           ctx._refs.containsKey(ref))) {
-    return null;
+    return reject('invalidReference');
   }
   final rawTitle = j['title'];
   String? title;
   if (adding || kind == MapLineKind.rename) {
-    if (!nonempty(rawTitle)) return null;
+    if (!nonempty(rawTitle)) return reject('invalidTitle');
     title = expansionTitle(rawTitle as String);
-    if (normalizeExpansionTitle(title).isEmpty || (adding && ctx._titles.contains(normalizeExpansionTitle(title)))) {
-      return null;
-    }
+    if (normalizeExpansionTitle(title).isEmpty) return reject('invalidTitle');
+    if (adding && ctx._titles.contains(normalizeExpansionTitle(title))) return reject('duplicateTitle');
   }
   String? parent;
   var depth = 1;
   if (adding || kind == MapLineKind.excerpt || kind == MapLineKind.move) {
     final alias = j['parent'] ?? (chapter ? 'ROOT' : null);
-    if (alias is! String) return null;
+    if (alias is! String) return reject('invalidParent');
     parent = alias == 'ROOT' ? (ctx.rootParentId ?? ctx.mapId) : ctx._refs[alias] ?? (diff ? ctx.nodes[alias] : null);
-    if (parent == null) return null;
+    if (parent == null) return reject('unknownParent');
     depth = (ctx._depths[alias] ?? 0) + 1;
-    if (adding && depth > ctx.maxDepth) return null;
+    if (adding && depth > ctx.maxDepth) return reject('depthExceeded');
   }
   String? node;
   if ({MapLineKind.rename, MapLineKind.move, MapLineKind.remove}.contains(kind)) {
     final alias = j['node'];
-    if (alias is! String || (node = ctx.nodes[alias]) == null || ctx.protectedNodeIds.contains(node)) return null;
-    if (kind == MapLineKind.move && parent == node) return null;
+    if (alias is! String || (node = ctx.nodes[alias]) == null) return reject('unknownNode');
+    if (ctx.protectedNodeIds.contains(node)) return reject('protectedNode');
+    if (kind == MapLineKind.move && parent == node) return reject('invalidParent');
   }
   final reason = j['why'];
-  if (kind == MapLineKind.remove && !nonempty(reason)) return null;
+  if (kind == MapLineKind.remove && !nonempty(reason)) return reject('missingReason');
   String? annotation;
   if (kind == MapLineKind.excerpt) {
     final mark = j['mark'];
-    if (mark is! String || (annotation = ctx.annotations[mark]) == null || ctx._marks.contains(annotation)) return null;
+    if (mark is! String || (annotation = ctx.annotations[mark]) == null || ctx._marks.contains(annotation)) {
+      return reject('invalidAnnotation');
+    }
   }
   final marks = j['marks'] ?? const [];
-  if (marks is! List || marks.any((m) => m is! String || !ctx.annotations.containsKey(m))) return null;
+  if (marks is! List || marks.any((m) => m is! String || !ctx.annotations.containsKey(m))) {
+    return reject('invalidAnnotation');
+  }
   final page = j['page'], doc = j['doc'];
-  if ((page != null && page is! int) || (doc != null && doc is! String)) return null;
+  if ((page != null && page is! int) || (doc != null && doc is! String)) return reject('invalidSource');
   final docAlias = doc ?? (ctx.documents.length == 1 ? ctx.documents.keys.single : null);
   final documentId = ctx.documents[docAlias];
   final source = documentId != null && page is int && page > 0 && (ctx.pages[docAlias]?.contains(page) ?? false)
