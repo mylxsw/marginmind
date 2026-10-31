@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MarginMind · 基于文档生成与更新脑图（GUL-600）· 高保真交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors, flat set from docs/layout-density.md / GUL-610):
+   no blur, no shadows, no gradients. Floating controls use --surface + 0.5pt --border.
+   --ai is MMColors.research: every AI surface uses it, so AI output never looks like a selection (same as GUL-581). */
+.light{
+  --window:#FFFFFF; --sidebar:#F2F2F6; --reader:#FFFFFF; --canvas:#FFFFFF; --card:#FFFFFF; --paper:#FFFFFF; --ink:#1D1D1F;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --selRow:rgba(0,0,0,.075); --hover:rgba(0,0,0,.043); --pressed:rgba(0,0,0,.09);
+  --accent:#007AFF; --accentFill:#0A66D0; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
+  --ai:#5E5CE6; --aiTint:rgba(94,92,230,.12); --aiWash:rgba(94,92,230,.06); --onAi:#fff;
+  --surface:#FFFFFF; --border:rgba(0,0,0,.12); --selSeg:#FFFFFF; --line:rgba(60,60,67,.30);
+  --excerpt:#3A3A3C; --root:#1D1D1F; --onRoot:#FFFFFF; --topic:#EFEFF0; --scrim:rgba(0,0,0,.18);
+  --ok:#248A3D; --okTint:rgba(36,138,61,.12); --warn:#C93400; --warnTint:rgba(255,149,0,.14); --err:#D70015;
+  --d1:#007AFF; --d2:#FF9500; --d3:#34C759; --d4:#8E8E93;
+}
+.dark{
+  --window:#1E1E1F; --sidebar:#2C2C2F; --reader:#1E1E1F; --canvas:#1E1E1F; --card:#2C2C2E; --paper:#262628; --ink:#E5E5EA;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --selRow:rgba(255,255,255,.10); --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentFill:#0A66D0; --accentTint:rgba(10,132,255,.20); --onAccent:#fff;
+  --ai:#7D7AFF; --aiTint:rgba(125,122,255,.20); --aiWash:rgba(125,122,255,.10); --onAi:#1E1E1F;
+  --surface:#323235; --border:rgba(255,255,255,.12); --selSeg:#636366; --line:rgba(235,235,245,.26);
+  --excerpt:#D1D1D6; --root:#F5F5F7; --onRoot:#1D1D1F; --topic:#333336; --scrim:rgba(0,0,0,.35);
+  --ok:#30D158; --okTint:rgba(48,209,88,.16); --warn:#FF9F0A; --warnTint:rgba(255,159,10,.16); --err:#FF6961;
+  --d1:#0A84FF; --d2:#FF9F0A; --d3:#30D158; --d4:#8E8E93;
+}
+:root{
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --serif:"Songti SC","Noto Serif CJK SC","Noto Serif SC","STSong","SimSun",serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{background:#E4E5EA;overflow:hidden}
+body.dk{background:#121214}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:default}
+input,textarea{font:inherit;color:inherit}
+svg{display:block}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:14px;height:14px}.i.xs{width:12px;height:12px}.i.l{width:20px;height:20px}
+
+/* ---------- Stage ---------- */
+#stage{position:absolute;left:0;top:0;bottom:0;right:332px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#scaler{transform-origin:center center}
+#win{position:relative;width:1440px;height:900px;border-radius:12px;overflow:hidden;outline:.5px solid rgba(0,0,0,.4);background:var(--window);color:var(--label);font-size:13px;line-height:16px}
+
+/* ---------- Sidebar ---------- */
+.side{position:absolute;left:8px;top:8px;bottom:8px;width:236px;border-radius:16px;background:var(--sidebar);border:.5px solid var(--border);display:flex;flex-direction:column;padding:0 10px 10px;z-index:30}
+.side .shd{height:44px;flex:none;display:flex;align-items:center;gap:8px;padding:0 0 0 8px}
+.lights{display:flex;gap:8px;flex:none}.lights span{width:12px;height:12px;border-radius:6px;outline:.5px solid rgba(0,0,0,.2);outline-offset:-.5px}
+.setrow{display:flex;align-items:center;gap:8px;height:32px;padding:0 6px}
+.setrow .badge{width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center}
+.setrow b{flex:1;font-size:13px;font-weight:600}
+.search{display:flex;align-items:center;gap:6px;height:28px;margin:8px 0 6px;padding:0 8px;border-radius:8px;background:var(--fill4);color:var(--label2)}
+.side h6{margin:14px 10px 4px;font-size:11px;line-height:14px;color:var(--label2);font-weight:600;display:flex;align-items:center}
+.side h6 .i{margin-left:auto;color:var(--icon)}
+.srow{display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:8px;width:100%;text-align:left;cursor:pointer;position:relative}
+.srow:hover{background:var(--hover)}
+.srow>.i{color:var(--accent)}
+.srow.on{background:var(--selRow)}
+.srow .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .trail{color:var(--label3);display:flex;align-items:center;gap:4px}
+.srow .dot{width:6px;height:6px;border-radius:3px;background:var(--ai)}
+.srow .lnk{color:var(--label3)}
+
+/* ---------- Panes ---------- */
+.main{position:absolute;left:252px;top:0;right:0;bottom:0;display:flex}
+.pane{position:relative;min-width:0;overflow:hidden}
+.pane.reader{background:var(--reader);flex:0 0 470px}
+.pane.map{background:var(--canvas);flex:1 1 0}
+.divider{flex:none;width:1px;background:var(--sep)}
+.phead{position:absolute;left:0;right:0;top:0;height:52px;z-index:10;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--window)}
+.phead .sp{flex:1;min-width:0}
+.tb{height:30px;min-width:34px;padding:0;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--label);flex:none;cursor:pointer;position:relative}
+.tb:hover{background:var(--hover)}.tb.on{background:var(--accentTint);color:var(--accent)}
+.tb.lbl{padding:0 10px;font-size:12px;font-weight:500}
+.tb.ai{color:var(--ai)}.tb.ai.on,.tb.ai:hover{background:var(--aiTint)}
+.tb .badge{position:absolute;top:3px;right:5px;width:7px;height:7px;border-radius:4px;background:var(--ai);outline:1.5px solid var(--window)}
+.grp{display:inline-flex;align-items:center;padding:3px;border-radius:18px;background:var(--fill4);flex:none}
+.tdiv{width:1px;height:18px;background:var(--sep);margin:0 4px;flex:none}
+.segc{display:inline-flex;height:28px;padding:2px;border-radius:14px;background:var(--fill4);flex:none}
+.segc button{height:24px;padding:0 12px;border-radius:12px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
+.segc button.on{background:var(--selSeg);outline:.5px solid var(--border);outline-offset:-.5px}
+
+/* ---------- Reader ---------- */
+.rscroll{position:absolute;inset:52px 0 0 0;overflow:hidden;padding:4px 12px}
+.pdfpage{background:var(--paper);color:var(--ink);margin:0 auto 12px;border-radius:3px;padding:40px 40px 44px;font-family:var(--serif);outline:.5px solid var(--border)}
+.pdfpage .run{font-family:var(--sans);font-size:10px;color:var(--label3);display:flex;justify-content:space-between;margin-bottom:22px}
+.pdfpage h2{font-size:17px;line-height:26px;font-weight:600;margin:0 0 12px}
+.pdfpage p{font-size:14px;line-height:27px;margin:0 0 10px;text-indent:2em}
+.pdfpage mark{color:inherit;border-radius:2px;padding:2px 0}
+.pdfpage mark.y{background:rgba(255,204,0,.38)}.pdfpage mark.g{background:rgba(52,199,89,.30)}.pdfpage mark.b{background:rgba(0,122,255,.22)}
+.pdfpage .flash{animation:flash 1.4s 2}
+@keyframes flash{0%,100%{background:transparent}40%{background:var(--aiTint)}}
+.pdfpage .pno{text-align:center;font-family:var(--sans);font-size:10px;color:var(--label3);margin-top:18px}
+.scan{height:600px;display:flex;flex-direction:column;gap:14px;padding:46px 40px;background:var(--paper);outline:.5px solid var(--border);border-radius:3px}
+.scan i{display:block;height:10px;border-radius:2px;background:var(--fill)}
+
+/* ---------- Map ---------- */
+.mapvp{position:absolute;inset:52px 0 0 0;overflow:hidden}
+.scene{position:absolute;left:0;top:0;transform-origin:0 0}
+.scene svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.scene svg path{fill:none;stroke:var(--line);stroke-width:1.5}
+.scene svg path.ai{stroke:var(--ai);stroke-dasharray:4 3}
+.scene svg path.off{stroke:var(--fill);stroke-dasharray:4 3}
+.scene svg path.mv{stroke:var(--ai)}
+.node{position:absolute;border-radius:8px;user-select:none;display:flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer}
+.node.root{background:var(--root);color:var(--onRoot);font-size:16px;line-height:20px;font-weight:600;padding:11px 18px;border-radius:12px}
+.node.topic{background:var(--topic);font-size:14px;line-height:18px;font-weight:600;padding:8px 12px}
+.node.sub{background:var(--fill4);font-size:13px;line-height:17px;font-weight:500;padding:6px 10px}
+.node.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:7px;width:216px;white-space:normal;display:block}
+.node.card .q{position:relative;border-radius:6px;padding:6px 9px 6px 12px;font-family:var(--serif);font-size:12.5px;line-height:19px;color:var(--excerpt);background:color-mix(in srgb,var(--hc) 14%,transparent);overflow:hidden}
+.node.card .q::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--hc)}
+.node.card .ft{display:flex;align-items:center;justify-content:space-between;margin-top:5px;padding:0 2px;font-size:11px;color:var(--label3)}
+.src{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:9px;font:500 11px/1 var(--sans);color:var(--label2);background:var(--fill4)}
+.src i{width:6px;height:6px;border-radius:3px;display:inline-block}
+.node:hover .src{color:var(--accent)}
+.scene.kept .node:not(:hover):not(.sel):not(.card) .src{display:none}
+/* AI draft — same as GUL-581 MapGhostNode: research 1pt dashed + half researchTint */
+.node.draft{background:color-mix(in srgb,var(--ai) 6%,var(--canvas));outline:1px dashed var(--ai);outline-offset:-1px;color:var(--label)}
+.node.draft.card{border-color:transparent}
+.node.draft .src{color:var(--ai);background:var(--aiTint)}
+.node.off{opacity:.42;outline-color:var(--label3)}
+.node.off .tt{text-decoration:line-through}
+.node.sel{box-shadow:0 0 0 2px var(--canvas),0 0 0 4px var(--accent)}
+.node.focus{box-shadow:0 0 0 2px var(--canvas),0 0 0 4px var(--ai)}
+.node .tag{font:600 10px/1 var(--sans);padding:3px 5px;border-radius:4px;background:var(--aiTint);color:var(--ai)}
+.node .tag.rm{background:var(--fill);color:var(--label2)}
+.node .old{position:absolute;left:10px;top:-15px;font:400 11px/1 var(--sans);color:var(--label3);text-decoration:line-through;white-space:nowrap}
+.node.rm .tt{text-decoration:line-through;color:var(--label3)}
+.node.rm{outline:1px dashed var(--label3);outline-offset:-1px;background:transparent}
+.node.rm.on{opacity:1}
+.node .lock{position:absolute;left:-8px;top:-8px;width:18px;height:18px;border-radius:9px;background:var(--surface);border:.5px solid var(--border);color:var(--label2);display:flex;align-items:center;justify-content:center}
+.node.skel{background:var(--fill4);color:var(--label3);font-weight:500}
+.node.skel.n{animation:bl 1.2s infinite}
+.node.pulse{animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 2px var(--canvas),0 0 0 4px var(--aiTint)}}
+.node.fresh{animation:pop .42s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.node.blink{animation:blink 1.1s 2}
+@keyframes blink{50%{box-shadow:0 0 0 2px var(--canvas),0 0 0 4px var(--accent)}}
+.zoom{position:absolute;right:12px;bottom:var(--zb,12px);z-index:8;display:flex;align-items:center;height:36px;padding:0 3px;border-radius:18px;background:var(--surface);border:.5px solid var(--border);font-size:12px;color:var(--label2)}
+.zoom .tb{height:30px;min-width:30px}
+.zoom span{min-width:46px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* ---------- Empty state & banner ---------- */
+.empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:440px;text-align:center}
+.empty .glyph{width:56px;height:56px;margin:0 auto 14px;border-radius:16px;background:var(--aiTint);color:var(--ai);display:flex;align-items:center;justify-content:center}
+.empty h3{margin:0 0 4px;font-size:17px;line-height:22px;font-weight:600}
+.empty .sub{color:var(--label2);font-size:13px;margin-bottom:18px}
+.ask{display:flex;flex-direction:column;border:1px solid var(--sep);border-radius:14px;background:var(--surface);text-align:left;padding:10px 10px 8px 12px}
+.ask.focus{border-color:var(--ai);box-shadow:0 0 0 3px var(--aiTint)}
+.ask textarea{border:0;outline:0;background:none;resize:none;height:42px;font-size:13px;line-height:20px;padding:0}
+.ask textarea::placeholder{color:var(--label3)}
+.ask .row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.chip{height:24px;padding:0 9px;border-radius:12px;background:var(--fill4);font-size:12px;color:var(--label);display:inline-flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
+.chip:hover{background:var(--fill)}
+.chip.on{background:var(--aiTint);color:var(--ai)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+.btn{height:28px;padding:0 12px;border-radius:14px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.pri{background:var(--ai);color:var(--onAi)}
+.btn.pri:hover{filter:brightness(1.08);background:var(--ai)}
+.btn.acc{background:var(--accent);color:#fff}
+.btn.sec{background:var(--fill4)}
+.btn .k{font-size:11px;opacity:.7;font-weight:400}
+.btn[disabled]{opacity:.35}
+.banner{position:absolute;left:12px;right:12px;top:60px;z-index:9;display:flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 12px;border-radius:12px;background:var(--surface);border:.5px solid var(--border)}
+.banner .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banner .t b{font-weight:600}
+.banner>.i{color:var(--ai)}
+
+/* ---------- Bottom bar (generation / review) ---------- */
+.gbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:8px;height:44px;padding:0 6px 0 14px;border-radius:22px;background:var(--surface);border:.5px solid var(--border);white-space:nowrap}
+.gbar .t{font-weight:600}
+.gbar .m{color:var(--label2);font-variant-numeric:tabular-nums}
+.gbar .vd{width:1px;height:18px;background:var(--sep);margin:0 2px}
+.gbar .err{color:var(--err)}
+.steps{display:flex;gap:3px;margin:0 4px}
+.steps i{width:16px;height:4px;border-radius:2px;background:var(--fill)}
+.steps i.d{background:var(--ai)}.steps i.n{background:var(--ai);opacity:.45;animation:bl 1s infinite}.steps i.x{background:var(--err)}
+@keyframes bl{50%{opacity:.15}}
+.spin{width:14px;height:14px;border-radius:7px;border:2px solid var(--aiTint);border-top-color:var(--ai);animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.legend{display:flex;gap:10px;font-size:12px;color:var(--label2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:8px;height:8px;border-radius:4px;display:inline-block}
+
+/* ---------- Popovers / sheet / panel ---------- */
+.pop{position:absolute;z-index:40;width:360px;background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:14px}
+.pop h4{margin:0 0 10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.pop h4 .i{color:var(--ai)}
+.lbl{font-size:11px;font-weight:600;color:var(--label2);margin:12px 0 6px}
+.lbl:first-of-type{margin-top:0}
+.kv{display:flex;align-items:center;gap:8px;height:28px;font-size:13px}
+.kv .i{color:var(--icon)}
+.kv .r{margin-left:auto;color:var(--label2);font-variant-numeric:tabular-nums}
+.foot{display:flex;align-items:center;gap:8px;margin-top:14px}
+.foot .sp{flex:1}
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:50}
+.sheet{position:absolute;left:50%;top:40px;transform:translateX(-50%);z-index:51;width:640px;background:var(--window);border:.5px solid var(--border);border-radius:22px;padding:20px 22px 18px}
+.sheet h3{margin:0 0 16px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sheet h3 .i{color:var(--ai)}
+.form{display:grid;grid-template-columns:96px 1fr;column-gap:14px;row-gap:14px;align-items:start}
+.form>.k{font-size:13px;color:var(--label2);text-align:right;padding-top:6px}
+.doclist{border:1px solid var(--sep);border-radius:10px;overflow:hidden}
+.drow{display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-bottom:1px solid var(--sep);font-size:13px}
+.drow:last-child{border-bottom:0}
+.drow .t{flex:1;min-width:0}
+.drow .t small{display:block;font-size:11px;color:var(--label3);margin-top:1px}
+.drow .r{color:var(--label2);font-size:12px;display:flex;align-items:center;gap:6px}
+.drow.sub{height:30px;padding-left:38px;background:var(--fill4);border-bottom-color:transparent}
+.drow.warn .r{color:var(--warn)}
+.cb{width:16px;height:16px;border-radius:4px;border:1px solid var(--label3);display:inline-flex;align-items:center;justify-content:center;flex:none;cursor:pointer}
+.cb.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.cb.on.ai{background:var(--ai);border-color:var(--ai)}
+.cb.mix{background:var(--accent);border-color:var(--accent);color:#fff}
+.cb .i{width:12px;height:12px;stroke-width:2.4}
+.radios{display:flex;gap:8px}
+.rcard{flex:1;border:1px solid var(--sep);border-radius:10px;padding:9px 10px;cursor:pointer;background:var(--fill4)}
+.rcard b{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.rcard small{display:block;color:var(--label2);font-size:11.5px;line-height:15px;margin-top:3px}
+.rcard.on{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
+.rcard.on b{color:var(--accent)}
+.sw{width:28px;height:16px;border-radius:8px;background:var(--fill);position:relative;flex:none;cursor:pointer}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:6px;background:#fff;transition:left .15s}
+.sw.on{background:var(--accent)}.sw.on::after{left:14px}
+.swrow{display:flex;align-items:center;gap:10px;min-height:26px;font-size:13px}
+.swrow .t{flex:1}
+.swrow small{color:var(--label3);font-size:11.5px}
+.mmsel{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 10px;border-radius:8px;border:1px solid var(--sep);font-size:13px;background:var(--surface)}
+.mmsel .i{color:var(--label3)}
+.sheet .ask textarea{height:60px}
+.estimate{font-size:12px;color:var(--label2);display:flex;align-items:center;gap:6px}
+.panel{position:absolute;top:52px;right:0;bottom:0;border-top:.5px solid var(--sep);width:340px;z-index:25;background:var(--window);border-left:1px solid var(--sep);display:flex;flex-direction:column}
+.panel .ph{height:44px;display:flex;align-items:center;gap:8px;padding:0 10px 0 16px;font-weight:600;flex:none}
+.panel .ph .i{color:var(--ai)}
+.panel .pb{flex:1;overflow:auto;padding:4px 10px 10px}
+.panel .pf{flex:none;border-top:1px solid var(--sep);padding:10px 12px;display:flex;align-items:center;gap:8px}
+.panel .pf .sp{flex:1}
+.cgrp{margin:10px 6px 4px;font-size:11px;font-weight:600;color:var(--label2);display:flex;align-items:center;gap:6px}
+.cgrp .n{margin-left:auto;font-weight:500;color:var(--label3)}
+.crow{display:flex;align-items:flex-start;gap:9px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px;line-height:18px}
+.crow:hover{background:var(--hover)}
+.crow.on{background:var(--selRow)}
+.crow .cb{margin-top:1px}
+.crow .t{flex:1;min-width:0}
+.crow .t small{display:block;color:var(--label3);font-size:11.5px;line-height:15px;margin-top:2px}
+.crow .t s{color:var(--label3)}
+.crow .src{flex:none}
+.prot{margin:12px 6px 0;padding:10px;border-radius:10px;background:var(--fill4);font-size:12px;color:var(--label2);display:flex;gap:8px;line-height:17px}
+.prot .i{color:var(--label3);margin-top:1px}
+
+.hud{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;height:36px;padding:0 6px 0 16px;border-radius:18px;background:var(--surface);border:.5px solid var(--border);white-space:nowrap}
+.hud .btn{height:26px}
+.toast{position:absolute;right:16px;top:64px;z-index:30;display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:17px;background:var(--surface);border:.5px solid var(--border);font-size:12.5px;white-space:nowrap}
+.toast .i{color:var(--ai)}
+.conn{width:360px;margin:0 auto;border:1px solid var(--sep);border-radius:14px;padding:14px;text-align:left;background:var(--surface)}
+.conn b{display:block;margin-bottom:4px}
+.conn .sub{margin:0 0 12px;text-align:left}
+
+/* ---------- Demo console ---------- */
+#demo{position:fixed;right:0;top:0;bottom:0;width:332px;background:#fff;border-left:1px solid rgba(0,0,0,.1);display:flex;flex-direction:column;color:#1D1D1F;font-size:12.5px;z-index:100}
+body.dk #demo{background:#1E1E1F;color:#F5F5F7;border-left-color:rgba(255,255,255,.1)}
+#demo .dh{padding:14px 16px 10px;border-bottom:1px solid rgba(120,120,128,.18)}
+#demo .dh b{font-size:13px}
+#demo .dh .s{font-size:11.5px;opacity:.65;margin-top:3px;line-height:1.45}
+#demo .dl{flex:1;overflow:auto;padding:8px}
+#demo .g{font-size:11px;font-weight:600;opacity:.55;margin:10px 8px 4px}
+.scb{display:block;width:100%;text-align:left;padding:6px 9px;border-radius:8px;line-height:1.35;cursor:pointer}
+.scb:hover{background:rgba(120,120,128,.12)}
+.scb.on{background:#5E5CE6;color:#fff}
+.scb .n{display:inline-block;width:22px;opacity:.6;font-variant-numeric:tabular-nums}
+#notes{border-top:1px solid rgba(120,120,128,.18);padding:12px 16px;font-size:12px;line-height:1.55;max-height:40%;overflow:auto}
+#notes h4{margin:0 0 6px;font-size:12.5px}
+#notes ul{margin:4px 0 0;padding-left:16px}
+#notes li{margin-bottom:3px}
+#demo .df{display:flex;gap:6px;padding:10px 12px;border-top:1px solid rgba(120,120,128,.18)}
+#demo .df button{flex:1;height:28px;border-radius:8px;background:rgba(120,120,128,.14);font-size:12px;cursor:pointer}
+#demo .df button.on{background:#5E5CE6;color:#fff}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+  <!-- LucideIcons.wandSparkles: proposed MMIcons.generateMap, distinct from the assistant's sparkles and organize-notes' notebook-pen -->
+  <symbol id="i-wand" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2.5zM6 19h14"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><rect x="2" y="9" width="7" height="6" rx="2"/><path d="M9 12h3M12 5v14M12 5h2M12 12h2M12 19h2"/><rect x="14" y="3" width="7" height="4" rx="1.5"/><rect x="14" y="10" width="7" height="4" rx="1.5"/><rect x="14" y="17" width="7" height="4" rx="1.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M20 5v5h-5"/><path d="M20 10a8 8 0 1 0-1.8 7"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-go" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></symbol>
+  <symbol id="i-style" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-1 .8-1.7 1.7-1.7h2c3 0 5.4-2.5 5.4-5.5C22 6 17.5 2 12 2z"/></symbol>
+  <symbol id="i-lr" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/></symbol>
+  <symbol id="i-ls" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></symbol>
+  <symbol id="i-lm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M15 12h4M5 12h4M12 9V5M12 19v-4"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4M2 6h4M2 10h4M2 14h4M2 18h4"/><path d="M21.4 5.6a2.1 2.1 0 1 0-3-3L13 8l-1 4 4-1z"/></symbol>
+  <symbol id="i-hl" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 3l14 7-6 2-2 6z"/></symbol>
+  <symbol id="i-aa" viewBox="0 0 24 24"><path d="M3 18 8 6l5 12M5 14h6M15 18v-5a3 3 0 0 1 6 0v5M15 15h6"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-cloudoff" viewBox="0 0 24 24"><path d="M3 3l18 18M8 8a5 5 0 0 0-1 9.9h10M17.6 17.6A4 4 0 0 0 17 10h-.7a6 6 0 0 0-5.6-4"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><path d="M6 4v4c0 2.5 2 4 6 4s6 1.5 6 4v4M18 4v4c0 2.5-2 4-6 4"/></symbol>
+  <symbol id="i-hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
+</svg>
+
+<div id="stage"><div id="scaler"><div id="win" class="light"></div></div></div>
+
+<aside id="demo">
+  <div class="dh"><b>演示控制台 · 基于文档生成脑图</b><div class="s">AI 内容与文档均为演示数据。草稿、出处 p.N、改动列表都可以点。</div></div>
+  <div class="dl" id="scenes"></div>
+  <div id="notes"></div>
+  <div class="df"><button id="tPlay">▶ 播放</button><button id="tDark">深色</button><button id="tNoAi">未配置 AI</button><button id="tOff">断网</button></div>
+</aside>
+
+<script>
+const $ = s => document.querySelector(s);
+const ic = (n, c = '') => `<svg class="i ${c}"><use href="#i-${n}"/></svg>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- Demo data ---------- */
+const DOCS = {
+  d1: { title: '第6章 记忆', kind: 'doc', pages: 48, color: 'var(--d1)', short: '第6章',
+    chapters: ['6.1 多重存储模型', '6.2 工作记忆', '6.3 编码', '6.4 长时记忆的类型', '6.5 巩固与睡眠', '6.6 提取'] },
+  d2: { title: '第7章 遗忘', kind: 'doc', pages: 36, color: 'var(--d2)', short: '第7章',
+    chapters: ['7.1 遗忘曲线', '7.2 干扰', '7.3 提取失败', '7.4 对抗遗忘'] },
+  d3: { title: 'Make It Stick', kind: 'book', pages: 312, color: 'var(--d3)', short: 'Make It Stick', chapters: [] },
+  d4: { title: '课堂讲义（扫描）', kind: 'scan', pages: 18, color: 'var(--d4)', short: '讲义', chapters: [] },
+};
+// Tree rows: [id, parent, title, opts]. opts: p (page), doc, card {q, c}, diff, old, from, lock, on
+const T_D1 = [
+  ['r', null, '记忆', {}],
+  ['a', 'r', '多重存储模型', { p: 3 }],
+  ['a1', 'a', '感觉记忆：保持不到 1 秒', { p: 4 }],
+  ['a2', 'a', '短时记忆：约 7±2 个组块', { p: 6 }],
+  ['a3', 'a', '长时记忆：容量近乎无限', { p: 9 }],
+  ['b', 'r', '工作记忆', { p: 12 }],
+  ['b1', 'b', '语音环路', { p: 13 }],
+  ['b2', 'b', '视觉空间画板', { p: 14 }],
+  ['b3', 'b', '中央执行系统', { p: 15 }],
+  ['b4', 'b', '情景缓冲器', { p: 16 }],
+  ['c', 'r', '编码', { p: 19 }],
+  ['c1', 'c', '加工水平：加工越深越牢', { p: 20 }],
+  ['c1x', 'c1', '', { p: 20, card: { q: '对材料意义的加工越深，它就越可能在之后被回忆起来。', c: '#FFCC00' }, mine: true }],
+  ['c2', 'c', '生成效应', { p: 22 }],
+  ['c3', 'c', '自我参照效应', { p: 23 }],
+  ['d', 'r', '长时记忆的类型', { p: 26 }],
+  ['dd1', 'd', '外显记忆：情景与语义', { p: 27 }],
+  ['dd2', 'd', '内隐记忆：程序性与启动', { p: 29 }],
+  ['e', 'r', '巩固与睡眠', { p: 33 }],
+  ['e1', 'e', '突触巩固与系统巩固', { p: 34 }],
+  ['e2', 'e', '睡眠促进巩固', { p: 36 }],
+  ['e2x', 'e2', '', { p: 36, card: { q: '睡眠中海马体会重放白天的经历，把它们逐步转移到皮层。', c: '#34C759' }, mine: true }],
+];
+// Update diff on top of the kept D1 map (user renamed 工作记忆 and edited 短时记忆 → both protected).
+const T_DIFF = [
+  ['r', null, '记忆', {}],
+  ['a', 'r', '多重存储模型', { p: 3 }],
+  ['a1', 'a', '感觉记忆：保持不到 1 秒', { p: 4 }],
+  ['a2', 'a', '短时记忆：4±1 个组块（新研究）', { p: 6, lock: true }],
+  ['a3', 'a', '长时记忆：容量近乎无限', { p: 9 }],
+  ['b', 'r', '工作记忆（Baddeley 模型）', { p: 12, lock: true }],
+  ['b1', 'b', '语音环路', { p: 13 }],
+  ['b2', 'b', '视觉空间画板', { p: 14 }],
+  ['b3', 'b', '中央执行系统', { p: 15 }],
+  ['b4', 'b', '情景缓冲器', { p: 16, diff: 'rm', why: '原文只在脚注提到，与「中央执行系统」重复' }],
+  ['c', 'r', '编码：信息怎样进入长时记忆', { p: 19, diff: 'ren', old: '编码' }],
+  ['c1', 'c', '加工水平：加工越深越牢', { p: 20 }],
+  ['c1x', 'c1', '', { p: 20, card: { q: '对材料意义的加工越深，它就越可能在之后被回忆起来。', c: '#FFCC00' }, mine: true }],
+  ['c3', 'c', '自我参照效应', { p: 23 }],
+  ['d', 'r', '长时记忆的类型', { p: 26 }],
+  ['dd1', 'd', '外显记忆：情景与语义', { p: 27 }],
+  ['dd2', 'd', '内隐记忆：程序性与启动', { p: 29 }],
+  ['e', 'r', '巩固与睡眠', { p: 33 }],
+  ['e1', 'e', '突触巩固与系统巩固', { p: 34 }],
+  ['e2', 'e', '睡眠促进巩固', { p: 36 }],
+  ['e2x', 'e2', '', { p: 36, card: { q: '睡眠中海马体会重放白天的经历，把它们逐步转移到皮层。', c: '#34C759' }, mine: true }],
+  ['e3', 'e2', '例：考前熬夜得不偿失', { p: 37, diff: 'new' }],
+  ['f', 'r', '提取与提取练习', { p: 40, diff: 'new' }],
+  ['f1', 'f', '测验效应：考一次胜过再读一遍', { p: 41, diff: 'new' }],
+  ['f1x', 'f1', '', { p: 41, diff: 'new', card: { q: '与再学习相比，参加测验的学生一周后多记住了约 50%。', c: '#007AFF' }, mine: true }],
+  ['f2', 'f', '提取越费力，保持越久', { p: 43, diff: 'new' }],
+  ['c2', 'f', '生成效应', { p: 22, diff: 'mv', from: '编码' }],
+];
+const T_D2 = [
+  ['r', null, '遗忘', {}],
+  ['g1', 'r', '遗忘曲线：先快后慢', { p: 4, doc: 'd2' }],
+  ['g11', 'g1', '艾宾浩斯的无意义音节', { p: 5, doc: 'd2' }],
+  ['g2', 'r', '干扰', { p: 11, doc: 'd2' }],
+  ['g21', 'g2', '前摄干扰：旧的挡住新的', { p: 12, doc: 'd2' }],
+  ['g22', 'g2', '倒摄干扰：新的覆盖旧的', { p: 14, doc: 'd2' }],
+  ['g3', 'r', '提取失败', { p: 17, doc: 'd2' }],
+  ['g31', 'g3', '舌尖现象', { p: 18, doc: 'd2' }],
+  ['g4', 'r', '对抗遗忘', { p: 25, doc: 'd2' }],
+  ['g41', 'g4', '间隔重复', { p: 26, doc: 'd2' }],
+  ['g42', 'g4', '交错练习', { p: 29, doc: 'd2' }],
+];
+const T_MERGE = [
+  ['r', null, '记忆与遗忘', {}],
+  ['m1', 'r', '记忆怎样形成', { p: 3, doc: 'd1' }],
+  ['m11', 'm1', '编码：加工越深越牢', { p: 20, doc: 'd1' }],
+  ['m12', 'm1', '巩固：睡眠中重放', { p: 36, doc: 'd1' }],
+  ['m2', 'r', '为什么会遗忘', { p: 2, doc: 'd2' }],
+  ['m21', 'm2', '遗忘曲线：先快后慢', { p: 4, doc: 'd2' }],
+  ['m22', 'm2', '干扰：前摄与倒摄', { p: 11, doc: 'd2' }],
+  ['m23', 'm2', '提取失败：舌尖现象', { p: 17, doc: 'd2' }],
+  ['m3', 'r', '对抗遗忘', { p: 25, doc: 'd2' }],
+  ['m31', 'm3', '提取练习', { p: 41, doc: 'd1' }],
+  ['m32', 'm3', '间隔重复', { p: 26, doc: 'd2' }],
+  ['m33', 'm3', '交错练习', { p: 29, doc: 'd2' }],
+  ['m34', 'm3', '对照：遗忘曲线 ↔ 提取越费力越牢', { p: 43, doc: 'd1' }],
+];
+
+const PAGES = {
+  20: ['6.3.1 加工水平', ['克雷克和洛克哈特提出，记忆的好坏并不取决于信息停留在哪一个“仓库”，而取决于加工的深度。只看字形属于浅加工，念出读音稍深一些，<mark class="y">对材料意义的加工越深，它就越可能在之后被回忆起来。</mark>', '在经典实验中，被试判断单词是否押韵、是否大写，或是否能填入一个句子。之后的意外再认测验显示，做过语义判断的单词被记住的比例最高。']],
+  41: ['6.6.2 测验效应', ['把测验仅仅看作评价工具，会低估它的作用。提取本身就是一种学习：每一次从记忆中把信息找出来，都会让这条提取路径更加稳固。', '<mark class="b">与再学习相比，参加测验的学生一周后多记住了约 50%。</mark>即使测验没有反馈，这一优势依然存在；有反馈时效果更明显。']],
+  12: ['6.2 工作记忆', ['巴德利和希奇认为，短时记忆不是一个被动的仓库，而是一个用于完成复杂认知任务的工作台。他们把它称为工作记忆，并区分出几个相互协作的成分。', '语音环路负责保持言语信息，视觉空间画板负责保持图像和空间位置，中央执行系统负责分配注意，在各成分之间调度资源。']],
+  36: ['6.5.2 睡眠与巩固', ['睡眠并不是记忆的空白期。越来越多的证据表明，记忆的巩固在很大程度上发生在睡眠中。', '<mark class="g">睡眠中海马体会重放白天的经历，把它们逐步转移到皮层。</mark>剥夺睡眠的被试，第二天对前一天学习材料的回忆明显变差。']],
+};
+
+/* ---------- State ---------- */
+const S = {
+  scene: 0, dark: false, noAi: false, offline: false,
+  doc: 'd1', layout: 'split',   // split | map
+  maps: [],                     // [{id, title, docs:[...], stale, busy}]
+  map: null,                    // current map id
+  tree: null, mode: null,       // mode: empty | reading | stream | review | kept | diff | merge
+  progress: 0, reveal: 0, page: 20, flashPage: false, blink: null, focus: null,
+  off: new Set(), pop: null, sheet: null, banner: null, toast: null, hud: null, failed: false,
+  sheetDocs: ['d1'], org: 'chapter', detail: 2, mine: true, quotes: false, target: 'new', ask: '', chipsOn: new Set(),
+  sel: null, diffOff: new Set(['b4']), diffFocus: null,
+};
+
+/* ---------- Render: window ---------- */
+function render() {
+  const w = $('#win');
+  w.className = S.dark ? 'dark' : 'light';
+  document.body.classList.toggle('dk', S.dark);
+  w.innerHTML = sidebar() + `<div class="main">${S.layout === 'split' ? reader() + '<div class="divider"></div>' : ''}${mapPane()}</div>${overlay()}`;
+  layoutMap();
+  syncToggles();
+}
+
+function sidebar() {
+  const doc = (id) => {
+    const d = DOCS[id];
+    const m = !['reading', 'stream', 'review'].includes(S.mode) && S.maps.find(x => x.docs.includes(id));
+    return `<button class="srow ${S.doc === id ? 'on' : ''}" data-act="doc" data-arg="${id}">${ic(d.kind === 'book' ? 'book' : d.kind === 'scan' ? 'scan' : 'doc')}<span class="t">${d.title}</span>${m ? `<span class="trail lnk" title="已有脑图：${m.title}">${ic('map', 'xs')}</span>` : ''}</button>`;
+  };
+  const maps = S.maps.map(m => `<button class="srow ${S.map === m.id ? 'on' : ''}" data-act="map" data-arg="${m.id}">${ic('map')}<span class="t">${m.title}</span>${m.busy ? '<span class="spin"></span>' : m.stale ? '<span class="trail"><span class="dot" title="文档有新内容"></span></span>' : ''}</button>`).join('');
+  return `<aside class="side">
+    <div class="shd"><div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div><span style="flex:1"></span><button class="tb">${ic('sidebar')}</button></div>
+    <div class="setrow"><span class="badge">${ic('book', 's')}</span><b>学习科学</b></div>
+    <div class="search">${ic('search', 's')}搜索</div>
+    <h6>文档${ic('plus', 's')}</h6>${['d1', 'd2', 'd3', 'd4'].map(doc).join('')}
+    <h6>脑图${ic('plus', 's')}</h6>${maps || `<button class="srow on">${ic('map')}<span class="t">主脑图</span></button>`}
+    <h6>笔记${ic('plus', 's')}</h6>
+    <h6>学习</h6>
+    <button class="srow">${ic('hist')}<span class="t">复习</span></button>
+  </aside>`;
+}
+
+function reader() {
+  const d = DOCS[S.doc];
+  let body;
+  if (d.kind === 'scan') body = `<div class="scan">${'<i style="width:62%"></i>' + Array.from({ length: 14 }, (_, k) => `<i style="width:${70 + (k * 37) % 30}%"></i>`).join('')}</div>`;
+  else {
+    const pg = PAGES[S.page] || [`${d.chapters[1] || '第 2 节'}`, ['这一节讨论记忆系统的各个组成部分如何协同工作，以及它们在日常学习中的表现。', '研究者通过双任务范式发现，当两个任务占用同一成分时，成绩会明显下降；占用不同成分时，几乎互不干扰。']];
+    body = `<div class="pdfpage"><div class="run"><span>${d.title}</span><span>认知心理学</span></div><h2>${pg[0]}</h2>${pg[1].map(p => `<p class="${S.flashPage ? 'flash' : ''}">${p}</p>`).join('')}<div class="pno">${S.page}</div></div>`;
+  }
+  const tools = `<span class="grp"><button class="tb on">${ic('cursor')}</button><button class="tb">${ic('hl')}</button><button class="tb">${ic('pen')}</button></span><button class="tb">${ic('aa')}</button>`;
+  return `<section class="pane reader"><div class="phead">${tools}<span class="sp"></span></div><div class="rscroll">${body}</div></section>`;
+}
+
+function mapTitle() { const m = S.maps.find(x => x.id === S.map); return m; }
+function mapPane() {
+  const m = mapTitle();
+  const gen = genButton(m);
+  const head = `<div class="phead"><span class="segc"><button class="on">脑图</button><button>大纲</button></span><button class="tb">${ic('style')}</button><span class="sp"></span>${gen}
+    <span class="grp"><button class="tb ${S.layout === 'split' ? '' : ''}" data-act="layout" data-arg="reader">${ic('lr')}</button><button class="tb ${S.layout === 'split' ? 'on' : ''}" data-act="layout" data-arg="split">${ic('ls')}</button><button class="tb ${S.layout === 'map' ? 'on' : ''}" data-act="layout" data-arg="map">${ic('lm')}</button></span>
+    <button class="tb lbl">${ic('pen')}整理笔记</button><button class="tb ai">${ic('spark')}</button></div>`;
+  let inner = '';
+  if (S.mode === 'empty') inner = emptyState();
+  else inner = `<div class="mapvp" id="vp"><div class="scene" id="scene"><svg id="links"></svg></div></div>`;
+  const zoom = S.mode && S.mode !== 'empty' ? `<div class="zoom" style="${S.mode === 'diff' ? 'right:352px' : ''}${['reading', 'stream', 'review'].includes(S.mode) || S.hud ? ';--zb:72px' : ''}"><button class="tb">${ic('fit', 's')}</button><button class="tb">${ic('minus', 's')}</button><span id="zpct">100%</span><button class="tb">${ic('plus', 's')}</button></div>` : '';
+  return `<section class="pane map" id="mappane">${head}${inner}${banner()}${bar()}${zoom}${S.mode === 'diff' ? diffPanel() : ''}${S.toast ? `<div class="toast">${ic('map', 's')}${S.toast}</div>` : ''}${S.hud ? `<div class="hud">${S.hud}<button class="btn sec" data-act="undo">撤销</button></div>` : ''}${S.pop === 'update' ? updatePop() : ''}${S.pop === 'adjust' ? adjustPop() : ''}</section>`;
+}
+
+function genButton(m) {
+  // One entry, its label follows the map's state: 生成脑图 (no source) / 更新 (has source; dot when the document has new material).
+  if (S.mode === 'reading' || S.mode === 'stream') return `<button class="tb lbl ai on">${ic('wand')}生成中</button>`;
+  if (S.mode === 'review') return `<button class="tb lbl ai on">${ic('wand')}审阅中</button>`;
+  if (m && m.docs.length) return `<button class="tb lbl ai ${S.pop === 'update' || S.mode === 'diff' ? 'on' : ''}" data-act="openUpdate">${ic('wand')}更新${m.stale ? '<span class="badge"></span>' : ''}</button>`;
+  return `<button class="tb lbl ai" data-act="openSheet">${ic('wand')}生成脑图</button>`;
+}
+
+function emptyState() {
+  const d = DOCS[S.doc];
+  if (S.noAi) return `<div class="empty"><div class="glyph">${ic('wand', 'l')}</div><h3>从「${d.title}」生成脑图</h3><div class="sub">需要先连接一个模型</div>
+    <div class="conn"><b>连接 AI 服务</b><div class="sub" style="color:var(--label2);font-size:12px">Claude、OpenAI、兼容接口，或本机 Ollama</div><div style="display:flex;gap:8px"><button class="btn acc">连接服务…</button><button class="btn sec">使用本机模型</button></div></div>
+    <div style="margin-top:14px"><button class="btn">新建空白主题</button></div></div>`;
+  const chips = ['侧重考试要点', '每个主题附一句解释', '保留原文关键句', '用英文'];
+  return `<div class="empty"><div class="glyph">${ic('wand', 'l')}</div><h3>从「${d.title}」生成脑图</h3><div class="sub">${d.kind === 'scan' ? `扫描版 ${d.pages} 页 · 识别文字后可以生成` : `全文 ${d.pages} 页 · 你的 12 条高亮会放进对应主题`}</div>
+    <div class="ask ${S.askFocus ? 'focus' : ''}"><textarea placeholder="补充要求（可选），例如：按考试大纲组织，只要两层">${esc(S.ask)}</textarea>
+      <div class="row"><button class="btn" data-act="openSheet">${ic('tune', 's')}设置</button><span style="flex:1"></span><button class="btn pri" data-act="start" ${d.kind === 'scan' ? 'disabled' : ''}>生成 <span class="k">⌘↩</span></button></div></div>
+    <div class="chips">${chips.map(c => `<span class="chip ${S.chipsOn.has(c) ? 'on' : ''}" data-act="chip" data-arg="${c}">${c}</span>`).join('')}</div>
+    <div style="margin-top:22px;color:var(--label3);font-size:12px">或 <button class="btn" style="height:22px;padding:0 6px;color:var(--accent);font-size:12px">新建空白主题</button></div></div>`;
+}
+
+function banner() {
+  if (S.banner === 'unlinked') {
+    const d = DOCS[S.doc];
+    return `<div class="banner">${ic('wand')}<span class="t"><b>${d.title}</b> 还没有脑图</span><button class="btn pri" data-act="bannerNew">生成新脑图</button><button class="btn sec" data-act="bannerMerge">${ic('merge', 's')}并入当前脑图</button><button class="tb" data-act="closeBanner">${ic('x', 's')}</button></div>`;
+  }
+  if (S.banner === 'scan') return `<div class="banner">${ic('scan')}<span class="t"><b>课堂讲义（扫描）</b> 是扫描版，先识别文字才能生成</span><button class="btn pri">识别文字</button><button class="tb" data-act="closeBanner">${ic('x', 's')}</button></div>`;
+  return '';
+}
+
+function bar() {
+  const d = DOCS[S.doc];
+  if (S.mode === 'reading') {
+    const n = d.chapters.length, k = Math.min(S.progress, n);
+    if (S.offline) return `<div class="gbar"><span class="err">${ic('cloudoff', 's')}</span><span class="t">网络不可用，没有生成内容</span><span class="vd"></span><button class="btn">重试</button><button class="btn">改用本机模型</button><button class="btn sec" data-act="discard">关闭</button></div>`;
+    return `<div class="gbar"><span class="spin"></span><span class="t">阅读「${d.title}」</span><span class="steps">${d.chapters.map((_, i) => `<i class="${i < k ? 'd' : i === k ? 'n' : ''}"></i>`).join('')}</span><span class="m">${d.chapters[Math.min(k, n - 1)]}</span><span class="vd"></span><button class="btn" data-act="discard">${ic('stop', 's')}停止 <span class="k">Esc</span></button></div>`;
+  }
+  if (S.mode === 'stream') return `<div class="gbar"><span class="spin"></span><span class="t">生成脑图</span><span class="m">${countTopics(S.tree, true)} 个主题</span><span class="vd"></span><button class="btn" data-act="finish">${ic('stop', 's')}停止 <span class="k">Esc</span></button></div>`;
+  if (S.mode === 'review') {
+    const kept = countTopics(S.tree, false);
+    const fail = S.failed ? `<span class="err" style="display:flex;align-items:center;gap:4px">${ic('warn', 's')}6.6 提取 没有生成</span><button class="btn" data-act="retry">重试</button><span class="vd"></span>` : '';
+    return `<div class="gbar">${fail}<span class="t">${S.merge ? '记忆与遗忘' : '新脑图'}</span><span class="m">保留 ${kept} 个主题</span>${S.merge ? `<span class="vd"></span><span class="legend"><span><i style="background:var(--d1)"></i>第6章</span><span><i style="background:var(--d2)"></i>第7章</span></span>` : ''}<span class="vd"></span>
+      <button class="btn" data-act="regen">${ic('redo', 's')}换一批</button><button class="btn ${S.pop === 'adjust' ? 'sec' : ''}" data-act="openAdjust">${ic('tune', 's')}调整</button><button class="btn" data-act="discard">放弃 <span class="k">Esc</span></button><button class="btn pri" data-act="keep">保留 <span class="k">↩</span></button></div>`;
+  }
+  return '';
+}
+
+function countTopics(tree, all) {
+  if (!tree) return 0;
+  const visible = all ? tree.slice(0, S.reveal || tree.length) : tree;
+  return visible.filter(r => r[1] && !r[3].card && (all || isKept(r[0], tree))).length;
+}
+function parentOf(id, tree) { const r = tree.find(x => x[0] === id); return r ? r[1] : null; }
+function isKept(id, tree) { let x = id; while (x && x !== 'r') { if (S.off.has(x)) return false; x = parentOf(x, tree); } return true; }
+
+/* ---------- Overlays ---------- */
+function overlay() {
+  if (S.sheet) return `<div class="scrim" data-act="closeSheet"></div>${sheet()}`;
+  return '';
+}
+function sheet() {
+  const d = DOCS;
+  const docRow = (id) => {
+    const on = S.sheetDocs.includes(id), x = d[id];
+    const info = x.kind === 'scan' ? `<span class="r">${ic('warn', 's')}扫描版 · 需先识别文字</span>` : x.kind === 'book' ? `<span class="r">约 ${x.pages} 页 · 分 9 段阅读</span>` : `<span class="r">${x.pages} 页${S.maps.find(m => m.docs.includes(id)) ? ' · 已有脑图' : ''}</span>`;
+    const scope = on && id === 'd1' && S.sheetScope ? x.chapters.map((c, i) => `<div class="drow sub"><span class="cb ${i < 5 ? 'on' : ''}">${i < 5 ? ic('check') : ''}</span><span class="t">${c}</span><span class="r">p.${[3, 12, 19, 26, 33, 40][i]}</span></div>`).join('') : '';
+    return `<div class="drow ${x.kind === 'scan' ? 'warn' : ''}"><span class="cb ${on ? (id === 'd1' && S.sheetScope ? 'mix' : 'on') : ''}" data-act="sheetDoc" data-arg="${id}">${on ? ic(id === 'd1' && S.sheetScope ? 'minus' : 'check') : ''}</span>${ic(x.kind === 'book' ? 'book' : x.kind === 'scan' ? 'scan' : 'doc', 's')}<span class="t">${x.title}${on && id === 'd1' ? `<small>${S.sheetScope ? '5 / 6 章' : '全文'} · <a style="color:var(--accent)" data-act="scope">${S.sheetScope ? '收起' : '选择章节'}</a></small>` : ''}</span>${info}</div>${scope}`;
+  };
+  const multi = S.sheetDocs.length > 1;
+  const orgs = [['chapter', '按原文章节', '一级主题对应章节，适合教材'], ['topic', multi ? '按主题合并' : '按主题重组', multi ? '跨文档归并相同的概念' : '打破章节，按概念归类'], ['question', '按问题组织', '每个分支回答一个问题，适合复习']];
+  const detail = ['概要', '适中', '详细'];
+  const pages = S.sheetDocs.reduce((s, id) => s + (d[id].kind === 'scan' ? 0 : d[id].pages), 0);
+  return `<div class="sheet"><h3>${ic('wand')}生成脑图</h3><div class="form">
+    <div class="k">文档</div><div class="doclist">${['d1', 'd2', 'd3', 'd4'].map(docRow).join('')}</div>
+    <div class="k">组织方式</div><div class="radios">${orgs.map(([k, t, s]) => `<div class="rcard ${S.org === k ? 'on' : ''}" data-act="org" data-arg="${k}"><b>${t}</b><small>${s}</small></div>`).join('')}</div>
+    <div class="k">详细程度</div><div style="display:flex;align-items:center;gap:12px"><span class="segc">${detail.map((t, i) => `<button class="${S.detail === i + 1 ? 'on' : ''}" data-act="detail" data-arg="${i + 1}">${t}</button>`).join('')}</span><span class="estimate">${['2 层 · 约 20 个主题', '3 层 · 约 40 个主题', '4 层 · 约 80 个主题'][S.detail - 1]}</span></div>
+    <div class="k">内容</div><div><div class="swrow"><span class="t">放入我的高亮和批注</span><small>12 条</small><span class="sw ${S.mine ? 'on' : ''}" data-act="sw" data-arg="mine"></span></div>
+      <div class="swrow"><span class="t">摘录原文关键句</span><small>在原文上用虚线标出</small><span class="sw ${S.quotes ? 'on' : ''}" data-act="sw" data-arg="quotes"></span></div></div>
+    <div class="k">生成到</div><div style="display:flex;gap:8px;align-items:center"><span class="mmsel">${S.target === 'new' ? `新脑图「${multi ? '记忆与遗忘' : '第6章 记忆'}」` : '当前脑图的新分支'}${ic('down', 's')}</span></div>
+    <div class="k">要求</div><div class="ask"><textarea placeholder="例如：按考试大纲组织；概念下面放例子；用英文">${esc(S.ask)}</textarea></div>
+  </div>
+  <div class="foot" style="margin-top:18px"><span class="estimate">${ic('doc', 's')}${pages} 页${S.sheetDocs.includes('d4') ? ' · 讲义需先识别文字' : ''}</span><span class="sp"></span><button class="btn sec" data-act="closeSheet">取消</button><button class="btn pri" data-act="start" ${S.sheetDocs.includes('d4') ? 'disabled' : ''}>生成 <span class="k">⌘↩</span></button></div></div>`;
+}
+
+function updatePop() {
+  return `<div class="pop" style="right:150px;top:50px"><h4>${ic('wand')}更新脑图</h4>
+    <div class="lbl">依据</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip on">${ic('doc', 's')}第6章 记忆</span><span class="chip">${ic('plus', 's')}添加文档</span></div>
+    <div class="lbl">上次生成之后</div>
+    <div class="kv">${ic('hl', 's')}新增高亮<span class="r">5</span></div>
+    <div class="kv">${ic('pen', 's')}新增批注<span class="r">2</span></div>
+    <div class="kv">${ic('doc', 's')}读到<span class="r">p.38 → p.46</span></div>
+    <div class="lbl">范围</div>
+    <span class="segc"><button class="on">只处理新内容</button><button>全文重新梳理</button></span>
+    <div class="lbl">要求</div>
+    <div class="ask focus"><textarea>补充提取练习一节，例子放到对应概念下面</textarea></div>
+    <div class="prot" style="margin:12px 0 0">${ic('lock', 's')}<span>你改过、添加的 7 个节点保持不变</span></div>
+    <div class="foot"><span class="sp"></span><button class="btn sec" data-act="closePop">取消</button><button class="btn pri" data-act="diff">预览更改 <span class="k">⌘↩</span></button></div></div>`;
+}
+
+function adjustPop() {
+  return `<div class="pop" style="left:50%;bottom:72px;transform:translateX(-50%)"><h4>${ic('tune')}调整</h4>
+    <div class="lbl">组织方式</div><span class="segc"><button class="on">按原文章节</button><button>按主题重组</button><button>按问题</button></span>
+    <div class="lbl">详细程度</div><span class="segc"><button>概要</button><button class="on">适中</button><button>详细</button></span>
+    <div class="lbl">要求</div><div class="ask focus"><textarea>每个概念下面加一个生活中的例子</textarea></div>
+    <div class="foot"><span class="sp"></span><button class="btn sec" data-act="closePop">取消</button><button class="btn pri" data-act="regen">重新生成</button></div></div>`;
+}
+
+function diffPanel() {
+  const rows = (kind) => T_DIFF.filter(r => r[3].diff === kind && !(r[3].card && kind === 'new' && false));
+  const item = (r) => {
+    const o = r[3], on = !S.diffOff.has(r[0]);
+    const title = o.card ? `摘录：${o.card.q.slice(0, 16)}…` : r[2];
+    const sub = o.diff === 'ren' ? `<small><s>${o.old}</s></small>` : o.diff === 'mv' ? `<small>从「${o.from}」移到「提取与提取练习」</small>` : o.diff === 'rm' ? `<small>${o.why}</small>` : o.card ? '<small>你的新高亮</small>' : `<small>在「${(T_DIFF.find(x => x[0] === r[1]) || [, , ''])[2]}」下</small>`;
+    return `<div class="crow ${S.diffFocus === r[0] ? 'on' : ''}" data-act="diffRow" data-arg="${r[0]}"><span class="cb ${on ? 'on ai' : ''}" data-act="diffCb" data-arg="${r[0]}">${on ? ic('check') : ''}</span><span class="t">${esc(title)}${sub}</span><span class="src" data-act="src" data-arg="${o.p}">p.${o.p}</span></div>`;
+  };
+  const g = (k, t) => { const rs = rows(k); return `<div class="cgrp">${t}<span class="n">${rs.length}</span></div>${rs.map(item).join('')}`; };
+  const n = T_DIFF.filter(r => r[3].diff && !S.diffOff.has(r[0])).length;
+  return `<aside class="panel"><div class="ph">${ic('wand')}更新脑图<span style="flex:1"></span><button class="tb" data-act="discard">${ic('x', 's')}</button></div>
+    <div class="pb">${g('new', '新增')}${g('ren', '改名')}${g('mv', '移动')}${g('rm', '建议删除')}
+    <div class="prot">${ic('lock', 's')}<span>「工作记忆（Baddeley 模型）」等 7 个你改过或添加的节点不会被改写，也不会被建议删除。</span></div></div>
+    <div class="pf"><button class="btn" data-act="regen">${ic('redo', 's')}换一批</button><span class="sp"></span><button class="btn sec" data-act="discard">放弃</button><button class="btn pri" data-act="applyDiff">应用 ${n} 项 <span class="k">↩</span></button></div></aside>`;
+}
+
+/* ---------- Map layout (right-growing tree, measured) ---------- */
+function layoutMap() {
+  const sc = $('#scene'); if (!sc || (!S.tree && S.mode !== 'reading')) return;
+  const tree = S.mode === 'reading' ? [] : S.mode === 'stream' ? S.tree.slice(0, S.reveal) : S.tree;
+  const ids = new Set(tree.map(r => r[0]));
+  const kids = {}; tree.forEach(r => { if (r[1] && ids.has(r[1])) (kids[r[1]] = kids[r[1]] || []).push(r[0]); });
+  const byId = Object.fromEntries(tree.map(r => [r[0], r]));
+  const depth = {}; (function w(id, d) { depth[id] = d; (kids[id] || []).forEach(k => w(k, d + 1)); })('r', 0);
+  const draft = ['stream', 'review'].includes(S.mode);
+  let html = '';
+  for (const r of tree) {
+    const [id, , title, o] = r;
+    const dp = depth[id];
+    let cls = dp === 0 ? 'root' : o.card ? 'card' : dp === 1 ? 'topic' : 'sub';
+    if (draft && dp > 0) cls += ' draft';
+    if (draft && dp > 0 && !isKept(id, tree)) cls += ' off';
+    if (S.mode === 'diff' && o.diff) { cls += o.diff === 'rm' ? ' rm' : ' draft'; if (S.diffOff.has(id)) cls += o.diff === 'rm' ? '' : ' off'; }
+    if (S.mode === 'diff' && o.diff === 'rm' && !S.diffOff.has(id)) cls += ' on';
+    if (S.blink === id) cls += ' blink';
+    if (S.focus === id || S.diffFocus === id) cls += S.mode === 'diff' || draft ? ' focus' : ' sel';
+    if (S.mode === 'stream' && tree.indexOf(r) === tree.length - 1) cls += ' fresh';
+    const docc = o.doc ? `<i style="background:${DOCS[o.doc].color}"></i>` : '';
+    const src = o.p && !(o.card) ? `<span class="src" data-act="src" data-arg="${o.p}" data-doc="${o.doc || 'd1'}">${docc}p.${o.p}</span>` : '';
+    const tag = S.mode === 'diff' ? (o.diff === 'new' && !o.card ? '<span class="tag">新</span>' : o.diff === 'mv' ? `<span class="tag">移自 ${o.from}</span>` : o.diff === 'rm' ? `<span class="tag rm">建议删除</span>` : o.diff === 'ren' ? '<span class="tag">改名</span>' : '') : '';
+    const lock = S.mode === 'diff' && o.lock ? `<span class="lock" title="你改过，不会被改写">${ic('lock', 'xs')}</span>` : '';
+    const old = o.diff === 'ren' && S.mode === 'diff' ? `<span class="old">${o.old}</span>` : '';
+    if (o.card) html += `<div class="node ${cls}" data-id="${id}" style="--hc:${o.card.c}"><div class="q">${o.card.q}</div><div class="ft"><span>${o.mine ? '我的高亮' : '原文'}</span><span class="src" data-act="src" data-arg="${o.p}">p.${o.p}</span></div></div>`;
+    else html += `<div class="node ${cls}" data-id="${id}">${old}${lock}<span class="tt">${esc(title)}</span>${tag}${src}</div>`;
+  }
+  // skeleton of chapters while reading
+  if (S.mode === 'reading') {
+    html = `<div class="node root pulse" data-id="r">${DOCS[S.doc].title.replace(/^第\d+章 /, '')}</div>` + DOCS[S.doc].chapters.map((c, i) => `<div class="node topic ${i < S.progress ? 'draft' : i === S.progress ? 'skel n' : 'skel'}" data-id="k${i}">${i < S.progress ? `<span class="tt">${c.replace(/^[\d.]+ /, '')}</span>` : c}</div>`).join('');
+    kids.r = DOCS[S.doc].chapters.map((_, i) => 'k' + i);
+  }
+  sc.innerHTML = '<svg id="links"></svg>' + html;
+  sc.classList.toggle('kept', S.mode === 'kept');
+  const size = {}; sc.querySelectorAll('.node').forEach(n => size[n.dataset.id] = { w: n.offsetWidth, h: n.offsetHeight, el: n });
+  const GX = 44, GY = 12, H = {};
+  (function sub(id) { const k = kids[id] || []; let s = 0; k.forEach((c, i) => s += sub(c) + (i ? GY : 0)); return H[id] = Math.max(size[id].h, s); })('r');
+  const pos = {};
+  (function place(id, x, top) {
+    const s = size[id]; pos[id] = { x, y: top + H[id] / 2 - s.h / 2 };
+    let t = top + H[id] / 2 - ((kids[id] || []).reduce((a, c, i) => a + H[c] + (i ? GY : 0), 0)) / 2;
+    for (const c of kids[id] || []) { place(c, x + s.w + GX, t); t += H[c] + GY; }
+  })('r', 0, 0);
+  let W = 0;
+  for (const id in pos) { size[id].el.style.left = pos[id].x + 'px'; size[id].el.style.top = pos[id].y + 'px'; W = Math.max(W, pos[id].x + size[id].w); }
+  let paths = '';
+  for (const p in kids) for (const c of kids[p]) {
+    const a = pos[p], b = pos[c], sa = size[p], sb = size[c];
+    const x1 = a.x + sa.w, y1 = a.y + sa.h / 2, x2 = b.x, y2 = b.y + sb.h / 2, mx = (x1 + x2) / 2;
+    const o = (byId[c] || [, , , {}])[3];
+    let cls = '';
+    if (draft) cls = isKept(c, tree) ? 'ai' : 'off';
+    if (S.mode === 'reading' && c.startsWith('k')) cls = 'ai';
+    if (S.mode === 'diff' && o.diff) cls = o.diff === 'mv' ? 'mv' : o.diff === 'rm' ? 'off' : S.diffOff.has(c) ? 'off' : 'ai';
+    paths += `<path class="${cls}" d="M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"/>`;
+  }
+  $('#links').innerHTML = paths;
+  // fit to viewport
+  const vp = $('#vp'), vw = vp.clientWidth - (S.mode === 'diff' ? 340 : 0), vh = vp.clientHeight;
+  const th = H.r, k = Math.min(1, (vw - 64) / W, (vh - 120) / th);
+  const ox = Math.max(32, (vw - W * k) / 2), oy = Math.max(20, (vh - 60 - th * k) / 2);
+  sc.style.transform = `translate(${ox}px,${oy}px) scale(${k})`;
+  const z = $('#zpct'); if (z) z.textContent = Math.round(k * 100) + '%';
+}
+
+/* ---------- Scenes ---------- */
+function base() {
+  clearInterval(S.timer);
+  Object.assign(S, { doc: 'd1', layout: 'split', maps: [], map: null, tree: null, mode: 'empty', progress: 0, reveal: 0, page: 20, flashPage: false, blink: null, focus: null,
+    off: new Set(), pop: null, sheet: null, banner: null, toast: null, hud: null, failed: false, merge: false, sheetDocs: ['d1'], sheetScope: false, org: 'chapter', detail: 2,
+    mine: true, quotes: false, target: 'new', ask: '', chipsOn: new Set(), askFocus: false, diffOff: new Set(['b4']), diffFocus: null });
+}
+const KEPT = () => [{ id: 'm1', title: '第6章 记忆', docs: ['d1'] }];
+const SCENES = [
+  { g: '生成', t: '空脑图：一句话生成', set() { S.askFocus = true; },
+    n: ['学习集里还没有脑图内容时，脑图栏直接给出入口：标题写明依据的文档（当前打开的那份），一行补充要求，回车生成。', '常用要求做成可点的建议，点了追加到输入框；“设置”打开完整设置。', '“你的 12 条高亮会放进对应主题”：已有标注直接参与生成，不会被丢掉。'] },
+  { g: '生成', t: '生成设置', set() { S.sheet = true; S.sheetScope = true; S.ask = '侧重考试要点，每个概念附一句解释'; },
+    n: ['可多选文档；单个文档可以只选部分章节（来自 PDF 目录，没有目录时按页码范围）。', '组织方式：按原文章节（默认，适合教材）/ 按主题重组 / 按问题组织；多选文档时第二项变成“按主题合并”。', '详细程度决定层数，右侧给出预计规模，不设硬上限。', '扫描版、超长电子书在列表里直接标出处理方式；扫描版需先识别文字，所以选中时“生成”不可用。', '设置按学习集记住，下次一句话生成时沿用。'] },
+  { g: '生成', t: '生成中 · 通读全文', set() { S.mode = 'reading'; S.progress = 3; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], busy: true }]; S.map = 'm1'; },
+    n: ['先按章节分段通读（并发上限 3），每读完一章，对应的一级主题从骨架变成草稿。骨架来自文档目录，所以一开始就能看到整张图的轮廓。', '底部条显示进度和当前章节，Esc 停止：已经读完的章节保留下来进入审阅。', '生成在后台进行：可以继续阅读、切换文档；侧栏脑图行显示进度。原文栏和其他脑图都可以正常编辑。'] },
+  { g: '生成', t: '生成中 · 结构流式成图', set() { S.mode = 'stream'; S.tree = T_D1; S.reveal = 14; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], busy: true }]; S.map = 'm1'; },
+    n: ['通读完成后合成整体结构，节点按到达顺序逐个长出来（虚线草稿，与 AI 扩展想法同一套样式）。', '每个节点带出处 p.N，只允许引用本次实际读过的页。你的高亮作为摘录卡片挂在对应主题下（宋体 = 原文）。'] },
+  { g: '审阅', t: '审阅新脑图', set() { S.mode = 'review'; S.tree = T_D1; S.off = new Set(['b4']); S.focus = 'c1'; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'] }]; S.map = 'm1'; },
+    n: ['点草稿切换保留 / 不要（空格同理），取消父节点时子节点一起取消。双击改字。', '点 p.N：原文栏跳到那一页并闪烁对应段落，方便核对。', '“换一批”同样设置重新生成；“调整”改组织方式、详细程度或补充要求后重新生成。', '↩ 保留：一次写入，一步撤销；Esc 放弃，脑图不变。'] },
+  { g: '审阅', t: '调整要求后重新生成', set() { S.mode = 'review'; S.tree = T_D1; S.pop = 'adjust'; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'] }]; S.map = 'm1'; },
+    n: ['审阅中随时补充要求，重新生成会替换当前草稿（改过字的草稿会保留下来作为约束）。'] },
+  { g: '审阅', t: '保留完成', set() { S.mode = 'kept'; S.tree = T_D1; S.focus = 'c1'; S.maps = KEPT(); S.map = 'm1'; S.hud = `已生成脑图「第6章 记忆」 · ${countTopics(T_D1, false)} 个主题`; },
+    n: ['新脑图以文档命名，出现在侧栏“脑图”下；文档行出现脑图标记，表示二者已关联。', '生成的主题保存出处：悬停显示 p.N，⌘L 回到原文（和摘录卡片一致）。', '工具栏的入口从“生成脑图”变成“更新”。'] },
+  { g: '多文档', t: '切换到没有脑图的文档', set() { S.mode = 'kept'; S.tree = T_D1; S.maps = KEPT(); S.map = 'm1'; S.doc = 'd2'; S.page = 2; S.banner = 'unlinked'; },
+    n: ['切到另一份文档时，当前脑图保持不动（可能正在对照），只在顶部给出非模态提示：', '“生成新脑图”为这份文档单独生成；“并入当前脑图”把它作为新的分支并入（也可以在设置里选“按主题合并”重新梳理）。', '提示每份文档只出现一次，✕ 关闭后不再打扰；之后从工具栏入口也能做同样的事。'] },
+  { g: '多文档', t: '切换到已有脑图的文档', set() { S.mode = 'kept'; S.tree = T_D1; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'] }, { id: 'm2', title: '第7章 遗忘', docs: ['d2'] }]; S.map = 'm1'; S.doc = 'd1'; S.toast = '已切换到「第6章 记忆」'; },
+    n: ['文档关联了脑图时，脑图栏跟着切换，并用提示说明发生了什么。', '设置 › 脑图 › “随文档切换脑图”可以关闭。一张脑图可以关联多份文档；一份文档关联多张脑图时，切到最近使用的那张。'] },
+  { g: '多文档', t: '多份文档合成一张脑图', set() { S.mode = 'review'; S.merge = true; S.tree = T_MERGE; S.maps = [{ id: 'm3', title: '记忆与遗忘', docs: ['d1', 'd2'] }]; S.map = 'm3'; S.doc = 'd2'; S.page = 4; },
+    n: ['设置里同时勾选多份文档，组织方式选“按主题合并”：相同的概念跨文档归在一起，例如“对抗遗忘”同时引用两章。', '出处前的色点区分文档，底部条给出图例；点出处会切换到对应文档并跳页。'] },
+  { g: '更新', t: '文档有新内容', set() { S.mode = 'kept'; S.tree = T_D1; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], stale: true }]; S.map = 'm1'; S.page = 41; S.pop = 'update'; },
+    n: ['生成后又读了一段、加了 5 条高亮和 2 条批注：工具栏“更新”出现紫点，侧栏脑图行同样标出。不弹窗打扰。', '点“更新”：列出上次生成之后的变化。默认只处理新内容（便宜、快、不扰动已有结构），也可以全文重新梳理。', '可以添加另一份文档作为新的依据，也可以只写一句要求（如“把例子放到概念下面”）。', '你改过和自己添加的节点受保护，这里直接说明数量。'] },
+  { g: '更新', t: '审阅更新（差异）', set() { S.mode = 'diff'; S.layout = 'map'; S.tree = T_DIFF; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], stale: true }]; S.map = 'm1'; S.diffFocus = 'f1'; },
+    n: ['更新以差异的方式出现在现有脑图上：新增 = 虚线草稿，改名 = 上方删除线显示旧名，移动 = 紫色实线并标出原位置，建议删除 = 灰色删除线。', '右侧列表与画布联动，可以逐项取舍；“建议删除”默认不勾选，只有 AI 生成且你没动过的节点才可能被建议删除。', '带锁的节点是你改过的，AI 不会改写它们。', '应用 = 一个撤销事务；放弃 = 脑图完全不变。审阅期间禁止其他脑图编辑（同 AI 扩展想法）。'] },
+  { g: '退路', t: '部分章节失败', set() { S.mode = 'review'; S.tree = T_D1.filter(r => true); S.failed = true; S.maps = KEPT(); S.map = 'm1'; },
+    n: ['某一章超时或输出无效时，其他章节照常进入审阅；底部条标出没生成的章节，可以单独重试。', '断网：底部条显示“网络不可用，没有生成内容 · 重试 · 改用本机模型”，脑图不变（右下“断网”开关可预览）。'] },
+  { g: '退路', t: '扫描版文档', set() { S.mode = 'empty'; S.doc = 'd4'; S.banner = 'scan'; },
+    n: ['扫描版 PDF 没有文字层：先用本机识别（已有功能）再生成，识别完成后自动继续。', '未配置 AI：空状态换成连接卡（右下“未配置 AI”开关可预览）。'] },
+];
+
+function go(i) {
+  base(); S.scene = i; SCENES[i].set(); render();
+  document.querySelectorAll('.scb').forEach((b, k) => b.classList.toggle('on', k === i));
+  const sc = SCENES[i];
+  $('#notes').innerHTML = `<h4>${i + 1}. ${sc.t}</h4><ul>${sc.n.map(x => `<li>${x}</li>`).join('')}</ul>`;
+  history.replaceState(null, '', `?scene=${i + 1}${S.dark ? '&theme=dark' : ''}`);
+}
+function buildScenes() {
+  let g = '', h = '';
+  SCENES.forEach((s, i) => { if (s.g !== g) { g = s.g; h += `<div class="g">${g}</div>`; } h += `<button class="scb" data-scene="${i}"><span class="n">${i + 1}</span>${s.t}</button>`; });
+  $('#scenes').innerHTML = h;
+}
+
+/* ---------- Flow animation ---------- */
+function play() {
+  base(); S.scene = 2; S.mode = 'reading'; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], busy: true }]; S.map = 'm1'; render();
+  S.timer = setInterval(() => {
+    if (S.mode === 'reading') {
+      if (S.offline) { clearInterval(S.timer); render(); return; }
+      S.progress++;
+      if (S.progress > DOCS.d1.chapters.length) { S.mode = 'stream'; S.tree = T_D1; S.reveal = 1; }
+    } else if (S.mode === 'stream') {
+      S.reveal++;
+      if (S.reveal > T_D1.length) { clearInterval(S.timer); S.mode = 'review'; S.maps[0].busy = false; }
+    }
+    render();
+  }, 420);
+}
+
+/* ---------- Actions ---------- */
+const ACT = {
+  doc(id) {
+    S.doc = id; S.page = id === 'd2' ? 2 : 20; S.toast = null;
+    const m = S.maps.find(x => x.docs.includes(id));
+    if (m && S.map !== m.id) { S.map = m.id; S.tree = m.id === 'm2' ? T_D2 : T_D1; S.toast = `已切换到「${m.title}」`; S.banner = null; }
+    else if (!m && S.maps.length) S.banner = DOCS[id].kind === 'scan' ? 'scan' : 'unlinked';
+    else if (!S.maps.length) { S.mode = 'empty'; S.banner = DOCS[id].kind === 'scan' ? 'scan' : null; }
+  },
+  map(id) { S.map = id; },
+  layout(v) { if (v !== 'reader') S.layout = v; },
+  chip(c) { S.chipsOn.has(c) ? S.chipsOn.delete(c) : S.chipsOn.add(c); S.ask = [...S.chipsOn].join('；'); },
+  openSheet() { S.sheet = true; },
+  closeSheet() { S.sheet = null; },
+  sheetDoc(id) { const i = S.sheetDocs.indexOf(id); if (i >= 0) { if (S.sheetDocs.length > 1) S.sheetDocs.splice(i, 1); } else S.sheetDocs.push(id); if (S.sheetDocs.length > 1 && S.org === 'chapter') S.org = 'topic'; },
+  scope() { S.sheetScope = !S.sheetScope; },
+  org(k) { S.org = k; },
+  detail(v) { S.detail = +v; },
+  sw(k) { S[k] = !S[k]; },
+  start() { if (S.noAi || DOCS[S.doc].kind === 'scan' && !S.sheet) return; S.sheet = null; const merge = S.sheetDocs.length > 1; if (merge) { base(); S.mode = 'review'; S.merge = true; S.tree = T_MERGE; S.maps = [{ id: 'm3', title: '记忆与遗忘', docs: ['d1', 'd2'] }]; S.map = 'm3'; return; } play(); return 'skip'; },
+  discard() { clearInterval(S.timer); S.pop = null; if (S.mode === 'diff') { S.mode = 'kept'; S.tree = T_D1; S.layout = 'split'; return; } S.mode = 'empty'; S.tree = null; S.maps = []; S.map = null; S.failed = false; },
+  finish() { clearInterval(S.timer); S.mode = 'review'; S.maps.forEach(m => m.busy = false); },
+  keep() { S.mode = 'kept'; S.pop = null; S.focus = null; if (!S.maps.length) S.maps = KEPT(); S.map = S.maps[0].id; S.hud = `已生成脑图「${S.maps[0].title}」 · ${countTopics(S.tree, false)} 个主题`; S.failed = false; },
+  undo() { S.hud = null; S.mode = 'empty'; S.tree = null; S.maps = []; S.map = null; },
+  regen() { S.pop = null; S.off = new Set(); if (S.mode === 'diff') return; play(); return 'skip'; },
+  retry() { S.failed = false; },
+  openAdjust() { S.pop = S.pop === 'adjust' ? null : 'adjust'; },
+  openUpdate() { S.pop = S.pop === 'update' ? null : 'update'; },
+  closePop() { S.pop = null; },
+  diff() { S.pop = null; S.mode = 'diff'; S.layout = 'map'; S.tree = T_DIFF; },
+  diffCb(id) { S.diffOff.has(id) ? S.diffOff.delete(id) : S.diffOff.add(id); return 'stop'; },
+  diffRow(id) { S.diffFocus = id; },
+  applyDiff() { const n = T_DIFF.filter(r => r[3].diff && !S.diffOff.has(r[0])).length; S.mode = 'kept'; S.tree = T_DIFF.filter(r => !(r[3].diff === 'rm' && !S.diffOff.has(r[0])) && !(r[3].diff && r[3].diff !== 'rm' && S.diffOff.has(r[0]))).map(r => [r[0], r[1], r[2], { p: r[3].p, card: r[3].card, mine: r[3].mine }]); S.maps.forEach(m => m.stale = false); S.layout = 'split'; S.hud = `已更新 ${n} 处`; },
+  src(p, el) {
+    const d = el && el.dataset.doc; if (d && d !== S.doc) S.doc = d;
+    if (S.layout !== 'split') S.layout = 'split';
+    S.page = +p; S.flashPage = true; setTimeout(() => { S.flashPage = false; }, 3000); return 'stop';
+  },
+  bannerNew() { S.banner = null; S.doc = 'd2'; S.mode = 'reading'; S.progress = 1; S.maps.push({ id: 'm2', title: '第7章 遗忘', docs: ['d2'], busy: true }); S.map = 'm2'; S.tree = null; },
+  bannerMerge() { S.banner = null; S.sheet = true; S.sheetDocs = ['d1', 'd2']; S.org = 'topic'; S.target = 'branch'; },
+  closeBanner() { S.banner = null; },
+};
+document.addEventListener('click', e => {
+  const sc = e.target.closest('[data-scene]'); if (sc) { go(+sc.dataset.scene); return; }
+  const a = e.target.closest('[data-act]');
+  if (a && ACT[a.dataset.act]) { const r = ACT[a.dataset.act](a.dataset.arg, a); if (r !== 'skip') render(); return; }
+  const n = e.target.closest('.node');
+  if (n && ['review', 'stream'].includes(S.mode) && n.dataset.id !== 'r') { const id = n.dataset.id; S.focus = id; if (isKept(id, S.tree)) S.off.add(id); else { let x = id; while (x) { S.off.delete(x); x = parentOf(x, S.tree); } } render(); return; }
+  if (n && S.mode === 'diff') { const id = n.dataset.id; if (T_DIFF.find(r => r[0] === id)[3].diff) { S.diffFocus = id; render(); } return; }
+  if (n && S.mode === 'kept') { S.focus = n.dataset.id; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { ACT.start(); } return; }
+  if (e.key === 'Escape' && S.mode && ['review', 'stream', 'reading', 'diff'].includes(S.mode)) { ACT.discard(); render(); }
+  if (e.key === 'Enter') { if (S.mode === 'review') { ACT.keep(); render(); } else if (S.mode === 'diff') { ACT.applyDiff(); render(); } }
+});
+document.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') S.ask = e.target.value; });
+function syncToggles() { $('#tDark').classList.toggle('on', S.dark); $('#tNoAi').classList.toggle('on', S.noAi); $('#tOff').classList.toggle('on', S.offline); }
+$('#tDark').onclick = () => { S.dark = !S.dark; render(); };
+$('#tNoAi').onclick = () => { S.noAi = !S.noAi; if (S.noAi) { base(); } render(); };
+$('#tOff').onclick = () => { S.offline = !S.offline; if (S.offline) { base(); S.mode = 'reading'; S.progress = 0; S.maps = []; } render(); };
+$('#tPlay').onclick = () => { document.querySelectorAll('.scb').forEach(b => b.classList.remove('on')); play(); };
+
+function fit() { const st = $('#stage'); const k = Math.min(1, (st.clientWidth - 32) / 1440, (st.clientHeight - 32) / 900); $('#scaler').style.transform = `scale(${k})`; }
+window.addEventListener('resize', fit);
+buildScenes();
+const q = new URLSearchParams(location.search);
+S.dark = q.get('theme') === 'dark';
+fit(); go(Math.max(0, Math.min(SCENES.length - 1, (+q.get('scene') || 1) - 1)));
+</script>
+</body>
+</html>
