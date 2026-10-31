@@ -174,9 +174,14 @@ class ModelMapGenerator implements MapGenerator {
     final ids = {for (final (i, p) in points.indexed) 'new:${p.id}': 'p${i + 1}'};
     return {
       'title': input.title,
+      if (ctx.phase == MapLinePhase.diff)
+        'scope': input.onlyNewContent
+            ? 'Integrate new material only; preserve existing organization.'
+            : 'Reorganize the entire map using all material.',
       'organization': input.generation.organization.name,
       'depth': input.generation.depth,
       'instructions': input.generation.instructions,
+      if (input.titleConstraints.isNotEmpty) 'preserveTitles': input.titleConstraints,
       'points': [
         for (final (i, p) in points.indexed)
           {
