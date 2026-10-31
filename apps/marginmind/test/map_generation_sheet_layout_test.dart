@@ -87,6 +87,28 @@ void main() {
     expect(find.byType(GenerateMapSheet), findsNothing);
   });
 
+  testWidgets('leaving an invalid range restores the last usable selection', (tester) async {
+    await harness.openWorkspace(tester);
+    await _open(tester);
+    await tester.tap(find.byKey(const ValueKey('map-range-toggle-c1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(MapSourceRange), matching: find.byType(MMCheckbox)).first);
+    await tester.pumpAndSettle();
+    final generate = find.byKey(const ValueKey('map-generate-sheet-start-button'));
+    expect(tester.widget<MMButton>(generate).onPressed, isNull);
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-range-done'))).onPressed, isNull);
+    await harness.key(tester, LogicalKeyboardKey.escape);
+    expect(tester.widget<MMButton>(generate).onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('map-range-toggle-c1')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<MMCheckbox>(find.descendant(of: find.byType(MapSourceRange), matching: find.byType(MMCheckbox)).first)
+          .value,
+      isTrue,
+    );
+  });
+
   for (final dark in [false, true]) {
     testWidgets('native ${dark ? 'dark' : 'light'} typography and progressively disclosed controls', (tester) async {
       await harness.openWorkspace(tester, prefs: {if (dark) 'settings.appearance': 'dark'});

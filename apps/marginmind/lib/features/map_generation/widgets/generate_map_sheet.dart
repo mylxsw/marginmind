@@ -78,6 +78,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
   Set<String> _documentDraft = {};
   final _searchController = TextEditingController();
   int _rangeRevision = 0;
+  List<String> _rangeBeforeEdit = [];
   String _destination = 'new'; // 'new' or 'branch'
   late final TextEditingController _titleController;
   late final TextEditingController _instructionsController;
@@ -175,6 +176,10 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
   }
 
   void _back() => setState(() {
+    final id = _expandedDocument;
+    if (_panel == _GeneratePanel.range && id != null && _ranges.containsKey(id) && _ranges[id] == null) {
+      _ranges[id] = _rangeBeforeEdit;
+    }
     _panel = _GeneratePanel.main;
     _expandedDocument = null;
   });
@@ -607,6 +612,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
       color: context.mmColors.secondaryLabel,
       onPressed: () => setState(() {
         _expandedDocument = doc.id;
+        _rangeBeforeEdit = [...?range];
         _panel = _GeneratePanel.range;
       }),
     );
@@ -782,7 +788,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
             label: l.done,
             variant: MMButtonVariant.plain,
             key: const ValueKey('map-generate-range-done'),
-            onPressed: _back,
+            onPressed: _range(doc.id, content, mapId) == null ? null : _back,
           ),
         ),
         const SizedBox(height: MMSpacing.m),
