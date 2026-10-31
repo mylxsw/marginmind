@@ -4,15 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/map_generation/map_generation_controller.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
 import 'package:marginmind/l10n/generated/app_localizations_en.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_layout/mm_layout.dart';
 
 import 'helpers.dart';
+import 'map_generation_ui_test.dart' as generation_harness;
 
 final _now = DateTime(2026);
 final _english = AppLocalizationsEn();
@@ -21,7 +24,12 @@ const _longQuote = 'Memory fades unless it is used again soon.';
 
 /// A topic with an excerpt (long quote), an image, a research note and a
 /// note under it.
-StudySetContent _content({double? width, MapDensity density = MapDensity.full}) => StudySetContent(
+StudySetContent _content({
+  double? width,
+  double? topicWidth,
+  bool sourceTopic = false,
+  MapDensity density = MapDensity.full,
+}) => StudySetContent(
   maps: [MindMap(id: MindMap.defaultId, title: '', density: density)],
   documents: [Document(id: 'd', title: 'Book', fileName: 'a.pdf', pageCount: 9, importedAt: _now)],
   annotations: [
@@ -37,7 +45,13 @@ StudySetContent _content({double? width, MapDensity density = MapDensity.full}) 
     ),
   ],
   cards: [
-    Card(id: 't', kind: CardKind.topic, title: 'Topic', createdAt: _now),
+    Card(
+      id: 't',
+      kind: CardKind.topic,
+      title: sourceTopic ? 'Spacing practice strengthens memory and improves long term recall' : 'Topic',
+      source: sourceTopic ? CardSource(documentId: 'd', page: 2) : null,
+      createdAt: _now,
+    ),
     Card(id: 'e', kind: CardKind.excerpt, annotationId: 'a1', createdAt: _now),
     Card(id: 'i', kind: CardKind.image, annotationId: 'a2', imageFileName: 'images/x.png', createdAt: _now),
     Card(
@@ -49,7 +63,7 @@ StudySetContent _content({double? width, MapDensity density = MapDensity.full}) 
     Card(id: 'n', kind: CardKind.note, title: 'Note', createdAt: _now),
   ],
   nodes: [
-    const MapNode(cardId: 't', order: 0),
+    MapNode(cardId: 't', order: 0, width: topicWidth),
     MapNode(cardId: 'e', parentId: 't', order: 0, width: width),
     const MapNode(cardId: 'i', parentId: 't', order: 1),
     const MapNode(cardId: 'r', parentId: 't', order: 2),
@@ -67,6 +81,23 @@ Size _size(TreeLayoutResult layout, String id) {
 
 void main() {
   group('measurement', () {
+    test('generated topic widths wrap the title and respect widths with attached notes', () {
+      final cache = MindMapRenderCache();
+      final content = _content(sourceTopic: true);
+      final original = _size(_update(cache, content), 't');
+      final narrow = _size(_update(cache, _content(sourceTopic: true, topicWidth: 200)), 't');
+      final wide = _size(_update(cache, _content(sourceTopic: true, topicWidth: 400)), 't');
+      expect(narrow.width, 200);
+      expect(wide.width, 400);
+      expect(wide.height, lessThan(narrow.height));
+      expect(_size(_update(cache, content, widthDraft: ('t', 360)), 't').width, 360);
+      expect(_size(_update(cache, content), 't'), original);
+
+      final withoutNote = content.copyWith(nodes: content.nodes.where((node) => node.cardId != 'n').toList());
+      final resized = _update(cache, withoutNote, widthDraft: ('t', 200));
+      expect(narrow.height, greaterThan(_size(resized, 't').height));
+    });
+
     test('the stored width sizes the card and wraps its quote', () {
       final cache = MindMapRenderCache();
       final normal = _update(cache, _content());
@@ -230,15 +261,34 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
     });
 
-    testWidgets('topics, notes and unselected cards have no handle', (tester) async {
+    testWidgets('topics have a handle; notes and unselected cards have no handle', (tester) async {
       await pumpCanvas(tester, content: _content(), selected: 't');
-      expect(handle, findsNothing);
+      expect(handle, findsOneWidget);
       await pumpCanvas(tester, content: _content(), selected: 'n');
       expect(handle, findsNothing);
       await pumpCanvas(tester, content: _content());
       expect(handle, findsNothing);
       await pumpCanvas(tester, content: _content(), selected: 'i');
       expect(handle, findsOneWidget);
+    });
+
+    testWidgets('a generated topic follows a horizontal drag and resets on double click', (tester) async {
+      final calls = await pumpCanvas(tester, content: _content(sourceTopic: true, topicWidth: 280), selected: 't');
+      expect(handle, findsOneWidget);
+      final before = tester.getRect(find.byKey(const ValueKey('t')));
+      final gesture = await tester.startGesture(tester.getCenter(handle), kind: PointerDeviceKind.mouse);
+      await gesture.moveBy(const Offset(30, 0));
+      await gesture.moveBy(const Offset(60, 0));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byKey(const ValueKey('t'))).width, closeTo(before.width + 90, 1));
+      expect(calls, isEmpty);
+      await gesture.up();
+      await tester.pump();
+      expect(calls.single, ('t', 370));
+      await tester.pump(const Duration(milliseconds: 500));
+      calls.clear();
+      await doubleTap(tester, handle);
+      expect(calls.single, ('t', null));
     });
 
     testWidgets('a compact image card shows its label instead of the picture', (tester) async {
@@ -248,6 +298,59 @@ void main() {
   });
 
   group('workspace', () {
+    testWidgets('a kept generated topic can be resized, persisted, undone and redone', (tester) async {
+      final repository = InMemoryStudySetContentRepository({'demo-1': demoContent()});
+      final fake = FakeMapGenerator(
+        chapters: {
+          '*': ['{"k":"point","id":"p1","title":"Spacing"}'],
+        },
+        generation: ['{"ref":"t1","parent":"ROOT","title":"间隔重复利用遗忘规律","page":2}'],
+      );
+      final container = await generation_harness.openWorkspace(
+        tester,
+        content: repository,
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
+      );
+      final generator = container.read(mapGenerationControllerProvider('demo-1').notifier);
+      await generation_harness.runGeneration(
+        tester,
+        () => generator.start(
+          const MapGenerationRequest(
+            studySetId: 'demo-1',
+            mapId: 'generated-map',
+            title: 'Generated map',
+            sources: [MapDocumentSelection(documentId: 'c1')],
+          ),
+        ),
+      );
+      expect(await generator.keep(), 1);
+      await tester.pumpAndSettle();
+      final workspace = container.read(workspaceProvider('demo-1').notifier);
+      final card = workspace.content.cards.singleWhere((card) => card.title == '间隔重复利用遗忘规律');
+      expect(card.source?.page, 2);
+      workspace.selectCard(card.id);
+      await tester.pumpAndSettle();
+      final handle = find.byKey(const ValueKey('card-width-handle'));
+      expect(handle, findsOneWidget);
+      final gesture = await tester.startGesture(tester.getCenter(handle), kind: PointerDeviceKind.mouse);
+      await gesture.moveBy(const Offset(30, 0));
+      await gesture.moveBy(const Offset(60, 0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      final width = workspace.content.node(card.id, mapId: 'generated-map')!.width;
+      expect(width, isNotNull);
+      expect((await repository.load('demo-1')).node(card.id, mapId: 'generated-map')!.width, width);
+      await workspace.undo();
+      await tester.pumpAndSettle();
+      expect(workspace.content.node(card.id, mapId: 'generated-map')!.width, isNull);
+      expect(workspace.content.card(card.id), isNotNull);
+      await workspace.redo();
+      await tester.pumpAndSettle();
+      expect(workspace.content.node(card.id, mapId: 'generated-map')!.width, width);
+      expect(tester.takeException(), isNull);
+      await settleHud(tester);
+    });
+
     Future<(ProviderContainer, WorkspaceController)> open(WidgetTester tester) async {
       final container = await pumpApp(tester);
       container.read(navigationProvider.notifier).openStudySet('demo-1');

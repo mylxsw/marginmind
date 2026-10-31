@@ -207,7 +207,7 @@ class MindMapRenderCache {
       );
     }
 
-    LayoutNode build(String id, String? parentId, _NodeSpec spec, {bool collapsed = false}) {
+    LayoutNode build(String id, String? parentId, _NodeSpec spec, {bool collapsed = false, bool fixedWidth = false}) {
       final attached = attachments.notes[id];
       if (attached != null && attached.isNotEmpty) {
         spec.attachedNotes = [
@@ -218,9 +218,9 @@ class MindMapRenderCache {
             expandedNotes.contains(id) ||
             attachments.owners[draft?.$1] == id ||
             attachments.owners[focusedNoteId] == id;
-        // Topics and standalone notes need room for the footer; resizable
+        // Unsized topics and standalone notes need room for the footer; resizable
         // excerpt/image/research cards keep the user's chosen width.
-        final width = spec.kind == _Kind.topic || spec.kind == _Kind.note
+        final width = (spec.kind == _Kind.topic && !fixedWidth) || spec.kind == _Kind.note
             ? math.max(_NodeSpec.excerptWidth, spec.size.width)
             : spec.size.width;
         var height = noteHeaderHeight;
@@ -289,6 +289,7 @@ class MindMapRenderCache {
           sourceCount: notes[card.researchNoteId] == null ? 0 : sourceCount(notes[card.researchNoteId]!),
         ),
         collapsed: node.collapsed,
+        fixedWidth: widthDraft?.$1 == card.id || node.width != null,
       );
     };
     final tree = build(rootNodeId, null, _NodeSpec.root(rootTitle.isEmpty ? localizations.appName : rootTitle, this));
@@ -540,7 +541,7 @@ class _NodeSpec {
   /// Lines of the quote in the preview: fewer in a compact map.
   final int maxLines;
 
-  /// Excerpts, images and research notes can be made wider or narrower.
+  /// Topics, excerpts, images and research notes can be made wider or narrower.
   final bool resizable;
   final List<({String text, String? annotationId, MMAnnotationColor color})> segments;
 
@@ -596,7 +597,7 @@ class _NodeSpec {
     bool editing = false,
     bool expanded = false,
 
-    /// The card's width in this map (excerpts, images and research notes);
+    /// The card's width in this map (topics, excerpts, images and research notes);
     /// null for the default.
     double? width,
     bool compact = false,
@@ -619,20 +620,37 @@ class _NodeSpec {
     final titleWidth = cardWidth - _cardInset - 16;
     switch (card.kind) {
       case CardKind.topic:
-        final s = cache._measure(card.title, MMTypography.headline, 220 - 28).size;
         final source = card.source;
+        // Reserve the chip's padding, document icon and gap as well as its text.
+        // The color dot used for multiple documents takes slightly less room.
         final extraWidth = source != null
-            ? cache._measure(l.notePage(source.page), MMTypography.footnote, 120).size.width + 12 + 6
+            ? cache
+                      ._measure(
+                        l.notePage(source.page),
+                        MMTypography.footnote.copyWith(fontWeight: FontWeight.w500, height: 1),
+                        120,
+                      )
+                      .size
+                      .width +
+                  12 +
+                  13 +
+                  6
             : 0.0;
+        final textWidth = width == null ? 220.0 - 28 : cardWidth - 32 - extraWidth;
+        final s = cache._measure(card.title, MMTypography.headline, textWidth).size;
         return _NodeSpec._(
           _Kind.topic,
           card.title,
           null,
           null,
           null,
-          Size(s.width + 32 + extraWidth, s.height + 18),
+          Size(
+            width == null ? s.width + 32 + extraWidth : cardWidth,
+            math.max(s.height, source == null ? 0 : MMSizes.mapSourceChip) + 18,
+          ),
           suspended: card.suspended,
           source: source,
+          resizable: true,
         );
       case CardKind.research when note != null:
         // The card's width is the user's; a compact map shows the title

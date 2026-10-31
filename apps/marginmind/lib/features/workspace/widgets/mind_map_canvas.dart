@@ -183,7 +183,7 @@ class MindMapCanvas extends StatefulWidget {
   /// measured header, instead of a separate floating button.
   final bool? touchSelectionMode;
 
-  /// The selected excerpt, image or research note was resized (P2-C06) by
+  /// The selected topic, excerpt, image or research note was resized (P2-C06) by
   /// its handle; null width when the handle is double-clicked (default).
   final void Function(String cardId, double? width)? onResize;
   final Widget? selectionToolbar;
@@ -1678,7 +1678,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     );
   }
 
-  /// The handle on the outer edge of the selected excerpt, image or research
+  /// The handle on the outer edge of the selected topic, excerpt, image or research
   /// note: dragging it sets the card's width, a double click restores the
   /// default.
   Widget? _resizeHandle(TreeLayoutResult result, AppLocalizations l) {
