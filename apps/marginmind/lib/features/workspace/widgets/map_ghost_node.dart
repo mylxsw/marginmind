@@ -5,11 +5,7 @@ export '../../assistant/widgets/expansion_widgets.dart' show MapGhostNode, MapGh
 
 /// Skeleton node displayed during the chapter reading phase.
 class MapSkeletonNode extends StatefulWidget {
-  const MapSkeletonNode({
-    super.key,
-    required this.title,
-    this.isCurrent = false,
-  });
+  const MapSkeletonNode({super.key, required this.title, this.isCurrent = false});
 
   final String title;
   final bool isCurrent;
@@ -25,13 +21,11 @@ class _MapSkeletonNodeState extends State<MapSkeletonNode> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: MMMotion.breathe,
-    );
-    _opacity = Tween<double>(begin: 1.0, end: 0.4).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(vsync: this, duration: MMMotion.breathe);
+    _opacity = Tween<double>(
+      begin: 1.0,
+      end: 0.4,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -73,27 +67,17 @@ class _MapSkeletonNodeState extends State<MapSkeletonNode> with SingleTickerProv
 
     Widget box = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: c.quaternaryFill,
-        borderRadius: BorderRadius.circular(MMRadii.row),
-      ),
+      decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.row)),
       child: Text(
         widget.title,
-        style: t.headline.copyWith(
-          color: c.secondaryLabel,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        style: t.headline.copyWith(color: c.secondaryLabel, fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
 
     if (widget.isCurrent && !reduceMotion) {
       box = AnimatedBuilder(
         animation: _opacity,
-        builder: (context, child) => Opacity(
-          opacity: _opacity.value,
-          child: child,
-        ),
+        builder: (context, child) => Opacity(opacity: _opacity.value, child: child),
         child: box,
       );
     }

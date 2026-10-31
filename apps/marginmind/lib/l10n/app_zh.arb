@@ -1761,6 +1761,361 @@
   "appIconHomeHint": "更换主屏幕图标，系统可能显示确认提示。",
   "appIconChanging": "正在更换图标…",
   "appIconChangeFailed": "图标更换失败，请重试。",
+  "fullTranslationMenu": "翻译全文…",
+  "fullTranslationTokensUsed": "已用 ",
+  "fullTranslationTask": "全文翻译任务…",
+  "fullTranslationTaskMenu": "全文翻译任务… {percent}%",
+  "@fullTranslationTaskMenu": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsule": "翻译全文",
+  "fullTranslationCapsuleRunning": "{percent}% 第 {batch} 批 · {done}/{total} 页",
+  "@fullTranslationCapsuleRunning": {
+    "placeholders": {
+      "percent": { "type": "int" },
+      "batch": { "type": "int" },
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleRunningAll": "{percent}% {done}/{total} 页",
+  "@fullTranslationCapsuleRunningAll": {
+    "placeholders": {
+      "percent": { "type": "int" },
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleReview": "第 {batch} 批待确认",
+  "@fullTranslationCapsuleReview": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsulePaused": "已暂停 {done}/{total} 页",
+  "@fullTranslationCapsulePaused": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleOffline": "等待网络",
+  "fullTranslationCapsuleBudget": "已暂停 · 超出预估",
+  "fullTranslationCapsuleError": "已暂停",
+  "fullTranslationCapsuleDone": "全文已译",
+  "fullTranslationCapsuleDoneFailed": "已完成 · {count} 段未译",
+  "@fullTranslationCapsuleDoneFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleStopped": "已停止 {done}/{total} 页",
+  "@fullTranslationCapsuleStopped": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationPlaceholderBatch": "将在第 {batch} 批翻译",
+  "@fullTranslationPlaceholderBatch": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationPlaceholderPageSub": "第 {page} 页",
+  "@fullTranslationPlaceholderPageSub": {
+    "placeholders": {
+      "page": { "type": "int" }
+    }
+  },
+  "fullTranslationPlaceholderOutOfRange": "不在本次翻译范围",
+  "fullTranslationPlaceholderUntranslated": "未翻译",
+  "fullTranslationTranslatePage": "翻译此页",
+  "fullTranslationTitle": "翻译全文",
+  "fullTranslationDocSubtitle": "{doc} · {pages} 页",
+  "@fullTranslationDocSubtitle": {
+    "placeholders": {
+      "doc": { "type": "String" },
+      "pages": { "type": "int" }
+    }
+  },
+  "fullTranslationSourceLangDetect": "检测",
+  "fullTranslationRange": "范围",
+  "fullTranslationRangeAll": "全部",
+  "fullTranslationRangePages": "页码",
+  "fullTranslationMode": "方式",
+  "fullTranslationModeBatch": "分批确认",
+  "fullTranslationModeBatchDesc": "每批完成后停下，检查后再继续",
+  "fullTranslationModeAll": "一次完成",
+  "fullTranslationModeAllDesc": "连续翻译到最后，可随时暂停",
+  "fullTranslationBatchSize": "每批",
+  "fullTranslationBatchPages": "{count} 页",
+  "@fullTranslationBatchPages": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationBatchCount": "共 {count} 批",
+  "@fullTranslationBatchCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationNote": "术语与要求",
+  "fullTranslationNotePlaceholder": "可选。例如：attention 统一译为“注意”；人名保留原文",
+  "fullTranslationNoteHint": "只用于之后的批次；已译段落不会自动重译。",
+  "fullTranslationNoteConfigured": " · 已设置",
+  "fullTranslationFooterNote": "译文保存在学习集内，不修改 PDF",
+  "fullTranslationStartBatch": "开始 · 第 {from}–{to} 页",
+  "@fullTranslationStartBatch": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationStartAll": "开始翻译",
+  "fullTranslationNothingToTranslate": "没有需要翻译的段落",
+  "fullTranslationBlockedScannedTitle": "这份文档没有可选文字",
+  "fullTranslationBlockedScannedDesc": "先在本机识别文字，再翻译全文。",
+  "fullTranslationActionOcr": "识别文字",
+  "fullTranslationBlockedNoModelTitle": "还没有可用的模型",
+  "fullTranslationBlockedBadKeyTitle": "API Key 无效",
+  "fullTranslationBlockedModelDesc": "全文翻译使用助手的默认模型。",
+  "fullTranslationActionSettings": "打开助手设置",
+  "fullTranslationBlockedOfflineTitle": "网络不可用",
+  "fullTranslationBlockedOfflineDesc": "可以先开始，联网后自动翻译。",
+  "fullTranslationEstChanged": "原文已重新识别 · 已有译文 {reused} / {total} 段仍可复用",
+  "@fullTranslationEstChanged": {
+    "placeholders": {
+      "reused": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationEstNeeds": "需翻译 {paras} 段 · 约 {chars} 字符",
+  "@fullTranslationEstNeeds": {
+    "placeholders": {
+      "paras": { "type": "String" },
+      "chars": { "type": "String" }
+    }
+  },
+  "fullTranslationEstMinutes": "约 {minutes} 分钟",
+  "@fullTranslationEstMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "fullTranslationEstReused": "已有 {paras} 段译文（{pages} 页），直接复用",
+  "@fullTranslationEstReused": {
+    "placeholders": {
+      "paras": { "type": "int" },
+      "pages": { "type": "int" }
+    }
+  },
+  "fullTranslationEstReusedNoPages": "已有 {paras} 段译文，直接复用",
+  "@fullTranslationEstReusedNoPages": {
+    "placeholders": {
+      "paras": { "type": "int" }
+    }
+  },
+  "fullTranslationEstSkip": "不发送：{details}",
+  "@fullTranslationEstSkip": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "fullTranslationEstSkipMargin": "页眉页码 {count} 处",
+  "@fullTranslationEstSkipMargin": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationEstSkipSame": "已是中文 {count} 段",
+  "@fullTranslationEstSkipSame": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationEstSkipDupe": "重复段落 {count} 段",
+  "@fullTranslationEstSkipDupe": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationEstModel": "{model} · 预计 {tokens} token",
+  "@fullTranslationEstModel": {
+    "placeholders": {
+      "model": { "type": "String" },
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationEstBudgetWarning": "；超出 50% 时暂停询问",
+  "fullTranslationPanelTitle": "全文翻译",
+  "fullTranslationStateRunningBatch": "翻译中 · 第 {batch} 批（{from}–{to} 页）",
+  "@fullTranslationStateRunningBatch": {
+    "placeholders": {
+      "batch": { "type": "int" },
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationStateRunningAll": "翻译中 · 一次完成",
+  "fullTranslationStateReview": "第 {batch} 批待确认",
+  "@fullTranslationStateReview": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationStatePaused": "已暂停",
+  "fullTranslationStateOffline": "等待网络",
+  "fullTranslationStateBudget": "已暂停 · 超出预估",
+  "fullTranslationStateError": "已暂停 · 需要处理",
+  "fullTranslationStateDone": "已完成",
+  "fullTranslationStateStopped": "已停止",
+  "fullTranslationLegendDone": "已译",
+  "fullTranslationLegendReused": "复用",
+  "fullTranslationLegendRunning": "翻译中",
+  "fullTranslationLegendQueued": "本批排队",
+  "fullTranslationLegendFailed": "有未译段落",
+  "fullTranslationLegendSkipped": "无需翻译",
+  "fullTranslationStatParas": "段落",
+  "fullTranslationStatEstToken": "预估 {tokens}",
+  "@fullTranslationStatEstToken": {
+    "placeholders": {
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationStatFailed": "未译",
+  "fullTranslationDetailReused": "复用已有译文",
+  "fullTranslationDetailParas": "{count} 段",
+  "@fullTranslationDetailParas": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationDetailDedup": "重复段落只译一次",
+  "fullTranslationDetailSkipped": "不发送（页眉、页码、已是中文）",
+  "fullTranslationDetailItems": "{count} 处",
+  "@fullTranslationDetailItems": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationDetailModelCalls": "模型 · 请求",
+  "fullTranslationDetailCalls": "{model} · {calls} 次",
+  "@fullTranslationDetailCalls": {
+    "placeholders": {
+      "model": { "type": "String" },
+      "calls": { "type": "int" }
+    }
+  },
+  "fullTranslationDetailElapsed": "用时",
+  "fullTranslationDetailTime": "{minutes} 分 {seconds} 秒",
+  "@fullTranslationDetailTime": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "fullTranslationActionStop": "停止",
+  "fullTranslationActionEnd": "结束",
+  "fullTranslationActionPause": "暂停",
+  "fullTranslationActionResume": "继续",
+  "fullTranslationActionNextBatch": "继续下一批",
+  "fullTranslationActionRetryFailed": "重试 {count} 段",
+  "@fullTranslationActionRetryFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationActionContinueTranslation": "继续翻译…",
+  "fullTranslationActionClear": "移除译文…",
+  "fullTranslationClearTitle": "移除这份文档的全部 AI 译文？",
+  "fullTranslationClearMessage": "手动修改过的译文也会被移除。",
+  "fullTranslationCkptBatchDone": "第 {batch} 批已完成",
+  "@fullTranslationCkptBatchDone": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptPages": "第 {from}–{to} 页",
+  "@fullTranslationCkptPages": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptCollapseTip": "收起，先读一读",
+  "fullTranslationCkptExpandTip": "展开",
+  "fullTranslationCkptMin": "第 {batch} 批待确认",
+  "@fullTranslationCkptMin": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptNextBatch": "继续第 {from}–{to} 页",
+  "@fullTranslationCkptNextBatch": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptFromPage": "从第 {page} 页开始检查",
+  "@fullTranslationCkptFromPage": {
+    "placeholders": {
+      "page": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptRemain": "剩余 {pages} 页 · 约 {tokens} token",
+  "@fullTranslationCkptRemain": {
+    "placeholders": {
+      "pages": { "type": "int" },
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationCkptTranslateRest": "翻译剩余全部",
+  "fullTranslationHudStartBatch": "开始翻译第 {from}–{to} 页",
+  "@fullTranslationHudStartBatch": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationHudStartAll": "开始翻译全文",
+  "fullTranslationHudDone": "全文翻译完成",
+  "fullTranslationHudDoneFailed": "全文翻译完成 · {count} 段未译",
+  "@fullTranslationHudDoneFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationHudView": "查看",
+  "fullTranslationHudStopped": "已停止 · 已译内容已保存",
+  "fullTranslationHudPausedAt": "全文翻译已暂停在第 {page} 页",
+  "@fullTranslationHudPausedAt": {
+    "placeholders": {
+      "page": { "type": "int" }
+    }
+  },
+  "fullTranslationHudContinue": "继续",
+  "fullTranslationHudRestAll": "剩余页面将一次翻译完成",
+  "fullTranslationGridCell": "第 {page} 页 · {state}",
+  "@fullTranslationGridCell": {
+    "placeholders": {
+      "page": { "type": "int" },
+      "state": { "type": "String" }
+    }
+  },
+  "fullTranslationCapsuleA11y": "全文翻译，{percent}%，第 {batch} 批，{done} / {total} 页",
+  "@fullTranslationCapsuleA11y": {
+    "placeholders": {
+      "percent": { "type": "int" },
+      "batch": { "type": "int" },
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "phoneGlassTitle": "手机 Liquid Glass",
   "phoneGlassRegular": "标准",
   "phoneGlassThick": "厚材质",

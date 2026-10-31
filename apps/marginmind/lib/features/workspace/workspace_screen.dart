@@ -20,6 +20,7 @@ import '../../shared/pdf_drop.dart';
 import '../assistant/assistant_entry.dart';
 import '../assistant/widgets/assistant_panel.dart';
 import 'workspace_controller.dart';
+import 'widgets/full_translation_notifications.dart';
 import '../study_notes/note_view.dart';
 import '../study_notes/note_setup_sheet.dart';
 import 'widgets/map_pane.dart';
@@ -148,6 +149,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         : MMSizes.readerMinWidth;
     final controller = ref.read(provider.notifier);
     final content = ref.watch(workspaceContentProvider(widget.studySetId));
+    listenFullTranslationNotifications(
+      context,
+      ref,
+      widget.studySetId,
+      content?.documents.map((d) => d.id) ?? const [],
+    );
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
     final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 

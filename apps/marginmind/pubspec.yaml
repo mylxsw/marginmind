@@ -46,6 +46,7 @@ dependencies:
   desktop_drop:
     path: ../../third_party/desktop_drop
   markdown: ^7.3.1
+  connectivity_plus: 6.1.5
 
 dev_dependencies:
   integration_test:
