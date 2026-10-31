@@ -67,7 +67,7 @@ Future<ProviderContainer> openReadingSettings(
     },
     overrides: [assistantSecretsProvider.overrideWithValue(FakeSecrets())],
   );
-  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading, showsGallery: false);
+  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading);
   await tester.pumpAndSettle();
   return container;
 }
@@ -94,12 +94,12 @@ Future<void> verifyReadingSettingsFlow(WidgetTester tester, {String prefix = 're
   await tester.sendKeyEvent(LogicalKeyboardKey.escape);
   await tester.pumpAndSettle();
   expect(find.byType(SettingsWindow), findsNothing);
-  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading, showsGallery: false);
+  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading);
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const ValueKey('settings-close')));
   await tester.pumpAndSettle();
   expect(find.byType(SettingsWindow), findsNothing);
-  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading, showsGallery: false);
+  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading);
   await tester.pumpAndSettle();
 
   Focus.of(tester.element(find.text('仅下划线'))).requestFocus();
@@ -178,7 +178,7 @@ void main() {
             context: context,
             builder: (context) => MediaQuery(
               data: MediaQuery.of(context).copyWith(size: size),
-              child: const SettingsWindow(initialTab: SettingsTab.reading, showsGallery: false),
+              child: const SettingsWindow(initialTab: SettingsTab.reading),
             ),
           );
           await tester.pumpAndSettle();

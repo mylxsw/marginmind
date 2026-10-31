@@ -16,6 +16,10 @@
 
 复现原生 iPad 测试：先安装正常的 iOS 构建，再运行 `xcodebuild test -project tool/ipad_acceptance/iPadAcceptance.xcodeproj -scheme iPadAcceptance -destination "platform=iOS Simulator,id=<device>" -only-testing:iPadAcceptance/iPadAcceptance/testAppIcons CODE_SIGNING_ALLOWED=NO`。结果摘要见 `ipad-native-result.txt`。
 
+## 设置界面精简
+
+按用户截图去掉常驻的 Dock / 主屏幕说明、选中图标下方的对勾及对应留白，以及设置页中的组件库入口。选中状态由边框、背景和辅助功能状态表达；切换中和失败时仍显示必要反馈。四张布局截图已更新。使用 Flutter 3.47.2 运行图标与设置测试：24 项通过；静态分析无问题。
+
 ## 界面证据
 
 以下 PNG 使用内存中的示例资料在 Flutter widget 测试中生成，供版式检查；原生切换结果由上面的实际运行检查与原生测试验证。

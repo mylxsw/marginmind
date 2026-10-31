@@ -95,8 +95,6 @@ class _AppIconPickerState extends ConsumerState<AppIconPicker> {
                                     textAlign: TextAlign.center,
                                     style: context.mmText.footnote.copyWith(color: c.label),
                                   ),
-                                  const SizedBox(height: MMSpacing.xs),
-                                  Icon(selected == icon ? MMIcons.check : null, size: 14, color: c.accent),
                                 ],
                               ),
                             ),
@@ -105,18 +103,14 @@ class _AppIconPickerState extends ConsumerState<AppIconPicker> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: MMSpacing.s),
-                  Text(
-                    _saving
-                        ? l.appIconChanging
-                        : _failed
-                        ? l.appIconChangeFailed
-                        : service.dockOnly
-                        ? l.appIconDockHint
-                        : l.appIconHomeHint,
-                    key: const ValueKey('settings-icon-status'),
-                    style: context.mmText.footnote.copyWith(color: _failed ? c.critical : c.secondaryLabel),
-                  ),
+                  if (_saving || _failed) ...[
+                    const SizedBox(height: MMSpacing.s),
+                    Text(
+                      _saving ? l.appIconChanging : l.appIconChangeFailed,
+                      key: const ValueKey('settings-icon-status'),
+                      style: context.mmText.footnote.copyWith(color: _failed ? c.critical : c.secondaryLabel),
+                    ),
+                  ],
                 ],
               ),
             ),

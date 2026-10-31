@@ -172,7 +172,7 @@ void main() {
   testWidgets('settings previews switch icons, disable while busy and show a retryable error', (tester) async {
     final icons = FakeIcons();
     final container = await pumpApp(tester, overrides: [appIconServiceProvider.overrideWithValue(icons)]);
-    showSettings(tester.element(find.byType(MMWindowScaffold)), showsGallery: false);
+    showSettings(tester.element(find.byType(MMWindowScaffold)));
     await tester.pumpAndSettle();
     final a = find.byKey(const ValueKey('settings-icon-leafFolio'));
     final b = find.byKey(const ValueKey('settings-icon-paperArc'));
@@ -217,7 +217,7 @@ void main() {
           phoneProvider.overrideWithValue(phone),
         ],
       );
-      showSettings(tester.element(find.byType(MMWindowScaffold)), showsGallery: false);
+      showSettings(tester.element(find.byType(MMWindowScaffold)));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('settings-icon-paperArc')), findsOneWidget);
       final context = tester.element(find.byKey(const ValueKey('settings-icon-paperArc')));
