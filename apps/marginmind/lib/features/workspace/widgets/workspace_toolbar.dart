@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../workspace_layout.dart';
+import '../workspace_chrome_controller.dart';
 
 /// Global commands are scoped to their owning pane. Both the header and body
 /// receive the split's exact constraints, including sidebar animation frames.
@@ -52,12 +53,27 @@ class WorkspaceToolbar extends StatelessWidget {
         : geometry.split.axis == Axis.horizontal || geometry.split.effectiveMode == MMSplitMode.secondary;
     final leading = ownsLeading ? scope?.leading : null;
     final inset = ownsLeading ? MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0 : 0.0;
-    return ColoredBox(
-      color: context.mmColors.windowBackground,
+    final phone = MMInput.of(context).phone;
+    final toolbar = ColoredBox(
+      color: phone ? context.mmColors.surface : context.mmColors.windowBackground,
       child: MMToolbar.content(
         semanticLabel: label,
+        height: phone ? MMSizes.thumbDock : MMSizes.paneHeaderHeight,
         child: Padding(
-          padding: EdgeInsets.only(left: (context.mmTablet ? 16 : 12) + inset, right: context.mmTablet ? 16 : 12),
+          padding: EdgeInsets.only(
+            left:
+                (phone
+                    ? 6
+                    : context.mmTablet
+                    ? 16
+                    : 12) +
+                inset,
+            right: phone
+                ? 6
+                : context.mmTablet
+                ? 16
+                : 12,
+          ),
           child: Row(
             children: [
               if (leading != null) ...[leading, const SizedBox(width: MMSpacing.s)],
@@ -73,11 +89,13 @@ class WorkspaceToolbar extends StatelessWidget {
                     if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),
                     if (menuIcon == null) ':menu',
                   },
-                  groups: [
-                    if (menuIcon != null) {'select', 'highlight', 'underline', 'ink', 'area', 'sync'},
-                    {'layout-reader', 'layout-split', 'layout-map'},
-                    {'organize-note', 'assistant'},
-                  ],
+                  groups: phone
+                      ? const []
+                      : [
+                          if (menuIcon != null) {'select', 'highlight', 'underline', 'ink', 'area', 'sync'},
+                          {'layout-reader', 'layout-split', 'layout-map'},
+                          {'organize-note', 'assistant'},
+                        ],
                   menuEntries: menuEntries,
                 ),
               ),
@@ -85,6 +103,20 @@ class WorkspaceToolbar extends StatelessWidget {
           ),
         ),
       ),
+    );
+    return WorkspaceChromeBar(
+      bottom: phone,
+      child: phone
+          ? MMThumbDockScope(
+              child: Container(
+                foregroundDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: context.mmColors.border, width: MMSizes.hairline),
+                ),
+                child: ClipRRect(borderRadius: BorderRadius.circular(28), child: toolbar),
+              ),
+            )
+          : toolbar,
     );
   }
 }

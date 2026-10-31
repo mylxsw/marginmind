@@ -144,7 +144,10 @@ class MMToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    final size = compact && !context.mmTouch && !context.mmTablet ? const Size(30, 26) : context.mmToolbarButton;
+    final dock = MMThumbDockScope.of(context);
+    final size = compact && !dock && !context.mmTouch && !context.mmTablet
+        ? const Size(30, 26)
+        : context.mmToolbarButton;
     return MMInteractive(
       onTap: onPressed,
       selected: selected,
@@ -168,7 +171,11 @@ class MMToolbarButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(
-                context.mmTablet ? MMSizes.tabletControlVisual / 2 : MMRadii.capsuleButton,
+                dock
+                    ? 22
+                    : context.mmTablet
+                    ? MMSizes.tabletControlVisual / 2
+                    : MMRadii.capsuleButton,
               ),
               border: s.focused ? Border.all(color: c.accent, width: 2) : null,
             ),
@@ -176,7 +183,16 @@ class MMToolbarButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (icon != null) Icon(icon, size: context.mmTablet ? MMSizes.tabletToolbarIcon : 16, color: fg),
+                if (icon != null)
+                  Icon(
+                    icon,
+                    size: dock
+                        ? 20
+                        : context.mmTablet
+                        ? MMSizes.tabletToolbarIcon
+                        : 16,
+                    color: fg,
+                  ),
                 if (icon != null && label != null) const SizedBox(width: 6),
                 if (label != null) Text(label!, style: t.callout.copyWith(color: fg)),
                 if (count > 0) ...[

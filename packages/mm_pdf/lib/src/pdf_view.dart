@@ -817,6 +817,7 @@ class MMPdfView extends StatefulWidget {
     this.selectionHandleTapGroup,
     this.onHighlightTap,
     this.onViewportChanged,
+    this.onUserScroll,
     this.areaSelecting = false,
     this.onAreaSelected,
     this.inkStrokes = const [],
@@ -825,6 +826,8 @@ class MMPdfView extends StatefulWidget {
     this.onInkDrawn,
     this.onInkErased,
     this.bottomInset = 0,
+    this.topInset = 0,
+    this.pageSpacing = 16,
     this.crop,
     this.cropEditorBuilder,
     this.margin,
@@ -875,6 +878,9 @@ class MMPdfView extends StatefulWidget {
   final void Function(String id, Rect viewportRect)? onHighlightTap;
   final VoidCallback? onViewportChanged;
 
+  /// Actual one-finger scrolling; excludes programmatic moves and pinch zoom.
+  final void Function(double delta, bool atStart)? onUserScroll;
+
   /// Dragging draws a rectangle instead of selecting text; scrolling and
   /// zooming keep working.
   final bool areaSelecting;
@@ -901,6 +907,12 @@ class MMPdfView extends StatefulWidget {
   /// Height of chrome floating over the bottom of the view, such as a
   /// phone's glass tab bar: the last page scrolls up clear of it.
   final double bottomInset;
+
+  /// Stable clearance above the first page for overlay controls.
+  final double topInset;
+
+  /// Gap around pages; zero for edge-to-edge handheld reading.
+  final double pageSpacing;
 
   @override
   State<MMPdfView> createState() => _MMPdfViewState();
@@ -1495,6 +1507,21 @@ class _MMPdfViewState extends State<MMPdfView> {
   void _endPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) => canvas.restore();
 
   void _searchChanged() => widget.controller._syncSearch();
+
+  PdfScrollPosition? _userScrollPosition;
+  void _userScrollUpdate(ScaleUpdateDetails details) {
+    final previous = _userScrollPosition;
+    final next = widget.controller.scrollPosition;
+    _userScrollPosition = next;
+    if (details.pointerCount != 1 ||
+        details.scale != 1 ||
+        previous == null ||
+        next == null ||
+        !next.sameGeometry(previous)) {
+      return;
+    }
+    widget.onUserScroll?.call(next.offset - previous.offset, next.offset <= 0);
+  }
 
   void _viewportChanged() {
     _selectionEpoch++;
@@ -2350,7 +2377,8 @@ class _MMPdfViewState extends State<MMPdfView> {
     final extraWidth = _marginExpanded ? marginColumnWidth : 0.0;
     final documentWidth = widest + extraWidth + params.margin * 2;
     final zoom = _controller.isReady ? _controller.currentZoom : math.min(1.4, width / documentWidth);
-    var y = params.margin;
+    final initialZoom = math.min(1.4, width / documentWidth);
+    var y = params.margin + (initialZoom > 0 && initialZoom.isFinite ? widget.topInset / initialZoom : 0);
     final rects = <Rect>[];
     if (_marginMoves == 0 && (_marginExtentZoom == null || (_marginExtentZoom! - zoom).abs() > .000001)) {
       _marginExtents.clear();
@@ -2555,7 +2583,10 @@ class _MMPdfViewState extends State<MMPdfView> {
           initialPageNumber: widget.initialPage,
           params: PdfViewerParams(
             backgroundColor: widget.backgroundColor,
-            layoutPages: widget.margin == null
+            onInteractionStart: (_) => _userScrollPosition = widget.controller.scrollPosition,
+            onInteractionUpdate: _userScrollUpdate,
+            onInteractionEnd: (_) => _userScrollPosition = null,
+            layoutPages: widget.margin == null && widget.topInset == 0
                 ? null
                 : (pages, params) => _layoutWithMargin(pages, params, constraints.maxWidth),
             sizeDelegateProvider: const PdfViewerSizeDelegateProviderLegacy(
@@ -2579,7 +2610,7 @@ class _MMPdfViewState extends State<MMPdfView> {
                 }
               });
             },
-            margin: 16,
+            margin: widget.pageSpacing,
             boundaryMargin: _boundaryMargin(constraints.biggest),
             // Remove pdfrx's default 80% reduction in mouse-wheel movement.
             scrollByMouseWheel: 1,

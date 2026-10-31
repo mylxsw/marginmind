@@ -4,6 +4,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_reflow/mm_reflow.dart';
+import 'package:mm_design/mm_design.dart';
+
+import '../workspace_chrome_controller.dart';
 
 import '../reflow_document.dart';
 import '../reflow_session.dart';
@@ -104,6 +107,17 @@ class ReflowScrollReaderState extends State<ReflowScrollReader> {
     onNotification: (notification) {
       if (notification is UserScrollNotification && notification.direction != ScrollDirection.idle) _userScroll = true;
       if (notification is ScrollStartNotification && notification.dragDetails != null) _userScroll = true;
+      if (notification.depth == 0 &&
+          notification is ScrollUpdateNotification &&
+          _userScroll &&
+          notification.metrics.axis == Axis.vertical &&
+          notification.metrics.maxScrollExtent > notification.metrics.minScrollExtent) {
+        WorkspaceChromeScope.maybeOf(context)?.onUserScroll(
+          notification.scrollDelta ?? 0,
+          atStart: notification.metrics.pixels <= notification.metrics.minScrollExtent,
+          geometryKey: (notification.metrics.viewportDimension, widget.book),
+        );
+      }
       if (notification is ScrollUpdateNotification && _userScroll && !_observeQueued) {
         _observeQueued = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -125,11 +139,17 @@ class ReflowScrollReaderState extends State<ReflowScrollReader> {
       center: _center,
       slivers: [
         SliverList(delegate: SliverChildBuilderDelegate((_, i) => chapter(_index - i - 1), childCount: _index)),
-        SliverList(
+        SliverPadding(
           key: _center,
-          delegate: SliverChildBuilderDelegate(
-            (_, i) => chapter(_index + i),
-            childCount: widget.book.chapters.length - _index,
+          padding: EdgeInsets.only(
+            top: _index == 0 ? MMChromeInsets.of(context).top : 0,
+            bottom: MMChromeInsets.of(context).bottom,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (_, i) => chapter(_index + i),
+              childCount: widget.book.chapters.length - _index,
+            ),
           ),
         ),
       ],

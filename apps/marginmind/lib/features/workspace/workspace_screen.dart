@@ -7,7 +7,8 @@ import 'package:mm_platform/mm_platform.dart';
 import '../../app/app.dart';
 import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
-import '../../app/phone_tabs.dart';
+import 'workspace_chrome_controller.dart';
+import 'reader_crop.dart';
 import '../../app/providers.dart';
 import '../../shared/card_image.dart';
 import '../../shared/l10n.dart';
@@ -42,6 +43,7 @@ class WorkspaceScreen extends ConsumerStatefulWidget {
 class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   final _searchFocus = FocusNode();
   final _paneChrome = WorkspacePaneChromeController();
+  final _chrome = WorkspaceChromeController();
 
   /// Whether the sidebar drawer of a touch window is out. Touch windows
   /// start with it in, whatever the saved sidebar choice.
@@ -56,6 +58,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   void dispose() {
     _searchFocus.dispose();
     _paneChrome.dispose();
+    _chrome.dispose();
     super.dispose();
   }
 
@@ -93,6 +96,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           s.activeDocumentId,
           s.readerPanelVisible,
           s.panel,
+          s.pending,
+          s.findVisible,
+          s.editingCardId,
+          s.editingMarkId,
         ),
       ),
     );
@@ -107,76 +114,104 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
     final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
-    return Theme(
-      data: Theme.of(context).copyWith(extensions: [context.mmColors.copyWith(flat: true)]),
-      child: WorkspacePaneChromeScope(
-        controller: _paneChrome,
-        child: MMFlatSurface(
-          child: AssistantScope(
-            studySetId: widget.studySetId,
-            child: CardImageScope(
-              resolve: controller.imagePath,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final safe = MediaQuery.paddingOf(context);
-                  final width = constraints.maxWidth - safe.horizontal;
-                  final height = constraints.maxHeight - safe.vertical;
-                  final sizeClass = MMSizeClass.resolve(context, Size(width, height));
-                  controller.panelFloats = context.mmTablet || sizeClass != MMSizeClass.regular;
-                  // A landscape phone is too short to stack the panes.
-                  final canSplit =
-                      sizeClass != MMSizeClass.medium ||
-                      MMSplitView.effectiveMode(
-                            MMSplitMode.split,
-                            height - MMSizes.toolbarHeight,
-                            MMSizes.paneMinHeight,
-                            MMSizes.paneMinHeight,
-                          ) ==
-                          MMSplitMode.split;
-                  controller.onePane = sizeClass == MMSizeClass.compact || !canSplit;
-                  // The assistant keeps the user's sidebar and pane choices. Other
-                  // panels may temporarily hide them in narrow windows; the toolbar
-                  // reflects the visible layout. Touch windows use a sidebar drawer.
-                  final shown = resolveWorkspaceLayout(
-                    windowWidth: width,
-                    sidebarVisible: state.sidebarVisible && !touchPlatform,
-                    layout: state.layout,
-                    panelOpen: state.panel != null,
-                    preservePanes: state.panel == RightPanel.assistant,
-                    minReader: minReader,
-                    sizeClass: sizeClass,
-                    windowHeight: height - MMSizes.toolbarHeight,
-                  );
-                  controller.onePane =
-                      controller.onePane || (state.layout == MMSplitMode.split && shown.mode != MMSplitMode.split);
-                  final collapsed = !touchPlatform && state.sidebarVisible && !shown.sidebarVisible;
-                  if (collapsed != state.sidebarAutoCollapsed) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) controller.setSidebarAutoCollapsed(collapsed);
-                    });
-                  }
-                  return MMBackHandler(
-                    onBack: () => _back(controller, touchPlatform),
-                    child: _scaffold(
-                      context,
-                      state,
-                      controller,
-                      doc,
-                      setTitle,
-                      shown.sidebarVisible,
-                      state.content?.studyNote(state.activeNoteId ?? '') != null &&
-                              state.layout == MMSplitMode.split &&
-                              shown.mode == MMSplitMode.primary
-                          ? MMSplitMode.secondary
-                          : shown.mode,
-                      minReader,
-                      shown.panelWidth,
-                      sizeClass,
-                      touchPlatform,
-                      canSplit,
-                    ),
-                  );
-                },
+    final media = MediaQuery.of(context);
+    final geometry = (media.size, state.layout, state.activeDocumentId);
+    final holds = <String>{
+      if (!touchPlatform || media.accessibleNavigation) 'accessibility',
+      if (media.viewInsets.bottom > 0) 'keyboard',
+      if (_drawer) 'drawer',
+      if (state.panel != null) 'panel',
+      if (state.pending != null ||
+          state.tool != AnnotationTool.select ||
+          state.findVisible ||
+          state.editingCardId != null ||
+          state.editingMarkId != null ||
+          ref.watch(readerCropProvider(widget.studySetId)).editing)
+        'editing',
+    };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final reason in ['accessibility', 'keyboard', 'drawer', 'panel', 'editing']) {
+        holds.contains(reason) ? _chrome.hold(reason) : _chrome.release(reason);
+      }
+      _chrome.reset(geometry);
+    });
+    return WorkspaceChromeScope(
+      controller: _chrome,
+      child: MMPopupActivity(
+        onChanged: (owner, open) => open ? _chrome.hold(owner) : _chrome.release(owner),
+        child: Theme(
+          data: Theme.of(context).copyWith(extensions: [context.mmColors.copyWith(flat: true)]),
+          child: WorkspacePaneChromeScope(
+            controller: _paneChrome,
+            child: MMFlatSurface(
+              child: AssistantScope(
+                studySetId: widget.studySetId,
+                child: CardImageScope(
+                  resolve: controller.imagePath,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final safe = MediaQuery.paddingOf(context);
+                      final width = constraints.maxWidth - safe.horizontal;
+                      final height = constraints.maxHeight - safe.vertical;
+                      final sizeClass = MMSizeClass.resolve(context, Size(width, height));
+                      controller.panelFloats = context.mmTablet || sizeClass != MMSizeClass.regular;
+                      // A landscape phone is too short to stack the panes.
+                      final canSplit =
+                          sizeClass != MMSizeClass.medium ||
+                          MMSplitView.effectiveMode(
+                                MMSplitMode.split,
+                                height - MMSizes.toolbarHeight,
+                                MMSizes.paneMinHeight,
+                                MMSizes.paneMinHeight,
+                              ) ==
+                              MMSplitMode.split;
+                      controller.onePane = sizeClass == MMSizeClass.compact || !canSplit;
+                      // The assistant keeps the user's sidebar and pane choices. Other
+                      // panels may temporarily hide them in narrow windows; the toolbar
+                      // reflects the visible layout. Touch windows use a sidebar drawer.
+                      final shown = resolveWorkspaceLayout(
+                        windowWidth: width,
+                        sidebarVisible: state.sidebarVisible && !touchPlatform,
+                        layout: state.layout,
+                        panelOpen: state.panel != null,
+                        preservePanes: state.panel == RightPanel.assistant,
+                        minReader: minReader,
+                        sizeClass: sizeClass,
+                        windowHeight: height - MMSizes.toolbarHeight,
+                      );
+                      controller.onePane =
+                          controller.onePane || (state.layout == MMSplitMode.split && shown.mode != MMSplitMode.split);
+                      final collapsed = !touchPlatform && state.sidebarVisible && !shown.sidebarVisible;
+                      if (collapsed != state.sidebarAutoCollapsed) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) controller.setSidebarAutoCollapsed(collapsed);
+                        });
+                      }
+                      return MMBackHandler(
+                        onBack: () => _back(controller, touchPlatform),
+                        child: _scaffold(
+                          context,
+                          state,
+                          controller,
+                          doc,
+                          setTitle,
+                          shown.sidebarVisible,
+                          state.content?.studyNote(state.activeNoteId ?? '') != null &&
+                                  state.layout == MMSplitMode.split &&
+                                  shown.mode == MMSplitMode.primary
+                              ? MMSplitMode.secondary
+                              : shown.mode,
+                          minReader,
+                          shown.panelWidth,
+                          sizeClass,
+                          touchPlatform,
+                          canSplit,
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -234,9 +269,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       canSplit = true;
     }
     final stacked = tablet ? tabletLayout.splitAxis == Axis.vertical : sizeClass == MMSizeClass.medium;
-    // A phone switches panes with its bottom tabs.
-    final tabs = compact && showsPhoneTabs(context);
-    final mergedToolbar = !compact;
+    final phone = MMInput.of(context).phone;
+    final mergedToolbar = !compact || phone;
     final leading = sidebarVisible && !touchPlatform
         ? null
         : MMIconButton(
@@ -318,10 +352,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     Widget paneChrome(Widget child, {required bool primary}) => !mergedToolbar
         ? child
         : WorkspaceToolbarScope(
-            actions: globalActions,
+            actions: phone ? const [] : globalActions,
             primary: primary,
-            leading: leading,
-            ownsLeading: primary || layout == MMSplitMode.secondary,
+            leading: phone ? null : leading,
+            ownsLeading: !phone && (primary || layout == MMSplitMode.secondary),
             ownsActions: primary
                 ? stacked || layout == MMSplitMode.primary
                 : !stacked || layout == MMSplitMode.secondary,
@@ -365,7 +399,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     final floating = sizeClass != MMSizeClass.regular;
-    final paneSwitch = compact && !tabs;
+    final paneSwitch = compact && !phone;
     final panel = state.panel == null ? null : RightPanelView(studySetId: widget.studySetId);
     Widget compactSwitcher(double top) => Padding(
       padding: EdgeInsets.fromLTRB(MMSpacing.m, top, MMSpacing.m, MMSpacing.s),
@@ -556,7 +590,95 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             tablet: tablet,
             collapseWhenNarrow: stacked || state.panel != RightPanel.assistant,
           ),
-          child: body,
+          child: phone
+              ? Stack(
+                  children: [
+                    Positioned.fill(
+                      child: MMChromeInsets(
+                        insets: const EdgeInsets.only(
+                          top: MMSizes.phoneWorkspaceToolbarHeight,
+                          bottom: MMSizes.thumbDock + 30,
+                        ),
+                        child: body,
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: WorkspaceChromeBar(
+                        child: SizedBox(
+                          height: MMSizes.phoneWorkspaceToolbarHeight,
+                          child: Container(
+                            color: context.mmColors.windowBackground,
+                            foregroundDecoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: context.mmColors.separator, width: MMSizes.hairline),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                ?leading,
+                                Expanded(
+                                  child: MMSegmentedControl<MMSplitMode>(
+                                    key: const ValueKey('workspace-pane-switch'),
+                                    expand: true,
+                                    segments: [
+                                      MMSegment(value: MMSplitMode.primary, label: l.paneSource),
+                                      MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
+                                    ],
+                                    value: layout == MMSplitMode.secondary
+                                        ? MMSplitMode.secondary
+                                        : MMSplitMode.primary,
+                                    onChanged: controller.setLayout,
+                                  ),
+                                ),
+                                if (MMPlatformCapabilities.current.assistant)
+                                  MMToolbarButton(
+                                    key: const ValueKey('toolbar-assistant'),
+                                    icon: MMIcons.ai,
+                                    tooltip: l.assistant,
+                                    tint: context.mmColors.research,
+                                    onPressed: () => toggleAssistant(ref, widget.studySetId),
+                                  ),
+                                MMDropdownButton<VoidCallback>(
+                                  key: const ValueKey('phone-workspace-more'),
+                                  tooltip: l.moreTools,
+                                  onOpened: () => _chrome.hold('phone-menu'),
+                                  onClosed: () => _chrome.release('phone-menu'),
+                                  onSelected: (action) => action(),
+                                  itemBuilder: (_) => [
+                                    MMDropdownItem(
+                                      key: const ValueKey('workspace-command-organize-note'),
+                                      value: () => showNoteSetupSheet(context, ref, widget.studySetId),
+                                      child: Text(l.organizeNotes),
+                                    ),
+                                    MMDropdownItem(
+                                      enabled: ref.read(studySetProvider(widget.studySetId)) != null,
+                                      value: () => ref.read(navigationProvider.notifier).startReview(widget.studySetId),
+                                      child: Text(l.review),
+                                    ),
+                                    MMDropdownItem(
+                                      value: () => ref
+                                          .read(navigationProvider.notifier)
+                                          .showVocabulary(studySetId: widget.studySetId),
+                                      child: Text(l.vocabularyTitle),
+                                    ),
+                                    MMDropdownItem(
+                                      value: () => ref.read(navigationProvider.notifier).showLibrary(),
+                                      child: Text(l.librarySection),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : body,
         ),
       );
     }

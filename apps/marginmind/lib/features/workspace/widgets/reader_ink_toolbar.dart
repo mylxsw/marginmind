@@ -25,36 +25,39 @@ class ReaderInkToolbar extends StatelessWidget {
       onPressed: () => controller.setInkTool(value),
     );
     final erasing = state.inkTool == MMPdfInkTool.eraser;
-    return MMFloatingToolbar(
-      children: [
-        tool(MMIcons.inkFreehand, l.inkFreehand, MMPdfInkTool.freehand),
-        tool(MMIcons.inkEllipse, l.inkEllipse, MMPdfInkTool.ellipse),
-        tool(MMIcons.inkArrow, l.inkArrow, MMPdfInkTool.arrow),
-        tool(MMIcons.inkEraser, l.inkEraser, MMPdfInkTool.eraser),
-        const MMToolbarDivider(),
-        for (final color in MMInkColor.values)
-          MMFloatingToolbarSwatch(
-            color: color.color,
-            tooltip: l.inkColorName(color),
-            selected: !erasing && state.inkColor == color,
-            onPressed: () => controller.setInkColor(color),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: MMFloatingToolbar(
+        children: [
+          tool(MMIcons.inkFreehand, l.inkFreehand, MMPdfInkTool.freehand),
+          tool(MMIcons.inkEllipse, l.inkEllipse, MMPdfInkTool.ellipse),
+          tool(MMIcons.inkArrow, l.inkArrow, MMPdfInkTool.arrow),
+          tool(MMIcons.inkEraser, l.inkEraser, MMPdfInkTool.eraser),
+          const MMToolbarDivider(),
+          for (final color in MMInkColor.values)
+            MMFloatingToolbarSwatch(
+              color: color.color,
+              tooltip: l.inkColorName(color),
+              selected: !erasing && state.inkColor == color,
+              onPressed: () => controller.setInkColor(color),
+            ),
+          const MMToolbarDivider(),
+          for (final width in MMInkWidth.values)
+            MMFloatingToolbarStrokeWidth(
+              width: width.points,
+              tooltip: l.inkWidthName(width),
+              selected: !erasing && state.inkWidth == width,
+              onPressed: () => controller.setInkWidth(width),
+            ),
+          const MMToolbarDivider(),
+          MMToolbarButton(
+            icon: MMIcons.undo,
+            tooltip: AppShortcuts.tip(l.undo, AppShortcuts.undo),
+            onPressed: state.canUndo ? onUndo : null,
           ),
-        const MMToolbarDivider(),
-        for (final width in MMInkWidth.values)
-          MMFloatingToolbarStrokeWidth(
-            width: width.points,
-            tooltip: l.inkWidthName(width),
-            selected: !erasing && state.inkWidth == width,
-            onPressed: () => controller.setInkWidth(width),
-          ),
-        const MMToolbarDivider(),
-        MMToolbarButton(
-          icon: MMIcons.undo,
-          tooltip: AppShortcuts.tip(l.undo, AppShortcuts.undo),
-          onPressed: state.canUndo ? onUndo : null,
-        ),
-        MMToolbarButton(icon: null, label: l.done, tooltip: l.done, onPressed: controller.exitInk),
-      ],
+          MMToolbarButton(icon: null, label: l.done, tooltip: l.done, onPressed: controller.exitInk),
+        ],
+      ),
     );
   }
 }

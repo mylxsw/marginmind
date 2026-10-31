@@ -8,8 +8,17 @@ import '../tokens/metrics.dart';
 import 'flat_surface.dart';
 import 'control_frame.dart';
 
-/// Shared anchored dropdown, based on the reader's document comparison menu.
-/// Rich entries (such as a live slider) use the same surface as command lists.
+/// Reports menu lifetime to a host that must keep its anchors stationary.
+class MMPopupActivity extends InheritedWidget {
+  const MMPopupActivity({super.key, required this.onChanged, required super.child});
+  final void Function(Object owner, bool open) onChanged;
+  static MMPopupActivity? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<MMPopupActivity>();
+  @override
+  bool updateShouldNotify(MMPopupActivity oldWidget) => onChanged != oldWidget.onChanged;
+}
+
+/// Shared anchored dropdown for command lists and rich entries.
 class MMDropdownButton<T> extends StatefulWidget {
   const MMDropdownButton({
     super.key,
@@ -38,14 +47,23 @@ class MMDropdownButton<T> extends StatefulWidget {
 
 class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
   bool _open = false;
+  MMPopupActivity? _activity;
+
+  @override
+  void dispose() {
+    _activity?.onChanged(this, false);
+    super.dispose();
+  }
 
   void _closed() {
+    _activity?.onChanged(this, false);
     if (mounted) setState(() => _open = false);
     widget.onClosed?.call();
   }
 
   @override
   Widget build(BuildContext context) {
+    _activity = MMPopupActivity.maybeOf(context);
     final c = context.mmColors;
     final button = (context.mmTouch || context.mmTablet) ? context.mmToolbarButton : MMSizes.readerToolbarButton;
     return Theme(
@@ -93,6 +111,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
         menuPadding: const EdgeInsets.all(MMSpacing.xs),
         onOpened: () {
           setState(() => _open = true);
+          _activity?.onChanged(this, true);
           widget.onOpened?.call();
         },
         onCanceled: _closed,

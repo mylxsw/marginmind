@@ -8,6 +8,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import 'card_field.dart';
+import '../workspace_chrome_controller.dart';
 
 /// Finder-style outline of the map: indentation per level, accent-filled
 /// selection. Rows are edited in place with the map's shortcuts, so a tree
@@ -36,9 +37,11 @@ class OutlineView extends StatefulWidget {
     this.editingCardId,
     this.onEditDone,
     this.onEditCancel,
+    this.contentPadding,
   });
 
   final StudySetContent content;
+  final EdgeInsets? contentPadding;
   final String mapId;
   final String rootTitle;
   final String? selectedCardId;
@@ -77,7 +80,7 @@ class OutlineView extends StatefulWidget {
 class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineView> {
   final _rowKeys = <String?, GlobalKey>{};
   final _scroll = ScrollController();
-  static const _padding = EdgeInsets.fromLTRB(16, 76, 16, 72);
+  EdgeInsets get _padding => widget.contentPadding ?? const EdgeInsets.fromLTRB(16, 76, 16, 72);
 
   /// Rows top to bottom (null = the root), for ↑ / ↓.
   List<String?> _order = const [null];
@@ -286,6 +289,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.escape) {
       if (event is KeyDownEvent) widget.onSelect(null);
+      WorkspaceChromeScope.maybeOf(context)?.reveal();
       return KeyEventResult.handled;
     }
     final direction = switch (key) {
@@ -428,19 +432,21 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
             widget.onSelect(null);
           },
           // Every row is built, so any of them can be scrolled to.
-          child: SingleChildScrollView(
-            controller: _scroll,
-            padding: _padding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ...rows,
-                if (rows.length == 1)
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(l.outlineEmpty, textAlign: TextAlign.center, style: t.footnote),
-                  ),
-              ],
+          child: WorkspaceReadingScroll(
+            child: SingleChildScrollView(
+              controller: _scroll,
+              padding: _padding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ...rows,
+                  if (rows.length == 1)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(l.outlineEmpty, textAlign: TextAlign.center, style: t.footnote),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
