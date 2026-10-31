@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,6 +85,48 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pump();
+  });
+
+  testWidgets('phone ratings stay usable with a pointer and accessibility text', (tester) async {
+    final container = await pumpApp(
+      tester,
+      size: const Size(393, 852),
+      overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+    );
+    container.read(navigationProvider.notifier).startReview('demo-1');
+    await tester.pumpAndSettle();
+    container.read(reviewSessionProvider('demo-1').notifier).reveal();
+    await tester.pumpAndSettle();
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: const Offset(2, 2));
+    await mouse.moveTo(const Offset(3, 3));
+    await tester.pumpAndSettle();
+    final good = find.byKey(const ValueKey('rate-good'));
+    expect(tester.getSize(good).height, 58);
+    expect(tester.getRect(good).right, lessThan(393));
+    expect(tester.takeException(), isNull);
+    final rating = tester.widget<Widget>(good);
+    await mouse.removePointer();
+    // Exercise the actual rating widget in isolation from the unchanged toolbar.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MMTheme.light(),
+        builder: (context, child) => MMInput(
+          touchPlatform: true,
+          phone: true,
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(2)),
+            child: child!,
+          ),
+        ),
+        home: Material(
+          child: Center(child: SizedBox(width: 90, child: rating)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getSize(good).height, greaterThanOrEqualTo(84));
+    expect(tester.takeException(), isNull);
   });
 
   for (final dark in [false, true]) {

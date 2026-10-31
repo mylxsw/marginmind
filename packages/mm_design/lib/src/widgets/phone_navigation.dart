@@ -202,7 +202,7 @@ class MMPhoneNavigationGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: MMSpacing.m),
+    padding: const EdgeInsets.only(top: MMSpacing.s),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

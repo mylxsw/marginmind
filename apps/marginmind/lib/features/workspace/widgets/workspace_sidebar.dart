@@ -55,8 +55,9 @@ class WorkspaceSidebar extends ConsumerWidget {
 
     final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
     Widget phoneRow(Widget widget, {bool learning = false, bool? mapDestination, bool document = false}) {
-      if (widget is DecoratedBox)
+      if (widget is DecoratedBox) {
         return phoneRow(widget.child!, learning: learning, mapDestination: mapDestination, document: true);
+      }
       if (widget is! MMSidebarItem) return widget;
       return MMPhoneNavigationRow(
         key: widget.key,
@@ -402,7 +403,8 @@ class WorkspaceSidebar extends ConsumerWidget {
               },
             ),
           ),
-          for (final row in learn) phoneRow(row, learning: true),
+          for (final row in learn)
+            if (row.icon != MMIcons.vocabulary) phoneRow(row, learning: true),
         ],
         tags: [for (final row in tags) phoneRow(row)],
         results: query.isEmpty ? const [] : [for (final row in cards) phoneRow(row)],

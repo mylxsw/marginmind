@@ -284,6 +284,13 @@ class ReviewCardView extends StatelessWidget {
     final front = face.front;
     final back = face.back;
     final source = back.source;
+    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+    final sourceButton = MMButton(
+      label: context.l10n.revealSource,
+      icon: MMIcons.revealSource,
+      variant: MMButtonVariant.plain,
+      onPressed: onRevealSource,
+    );
     final color = MMAnnotationColor.fromIndex(back.colorIndex);
     final answer = <Widget>[
       if (back.imageFileName != null)
@@ -334,7 +341,7 @@ class ReviewCardView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (!(MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact))
+                  if (!phone)
                     Expanded(
                       child: Text(
                         source.textAnchor != null
@@ -345,12 +352,7 @@ class ReviewCardView extends StatelessWidget {
                         style: t.footnote,
                       ),
                     ),
-                  MMButton(
-                    label: context.l10n.revealSource,
-                    icon: MMIcons.revealSource,
-                    variant: MMButtonVariant.plain,
-                    onPressed: onRevealSource,
-                  ),
+                  if (phone) Flexible(child: sourceButton) else sourceButton,
                 ],
               ),
           ],
@@ -444,7 +446,7 @@ class _RatingBar extends StatelessWidget {
       Rating.easy => l.rateEasy,
     };
     // Under touch the buttons share the width and grow to thumb size.
-    final touch = context.mmTouch;
+    final touch = context.mmTouch || (MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact);
     final buttons = [
       for (final (i, r) in Rating.values.indexed) ...[
         if (i > 0) SizedBox(width: touch ? MMSpacing.s : 10),
@@ -484,13 +486,14 @@ class _RatingButton extends StatelessWidget {
   final bool primary;
   final VoidCallback onPressed;
 
-  /// Fills its share of the row and stands 64 tall.
+  /// Shares the row under touch; phones also keep this layout with a pointer.
   final bool touch;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
+    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
     return MMInteractive(
       onTap: onPressed,
       tooltip: shortcut,
@@ -500,11 +503,8 @@ class _RatingButton extends StatelessWidget {
         return AnimatedContainer(
           duration: MMMotion.quick,
           width: touch ? null : 104,
-          height: touch
-              ? MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact
-                    ? MMPhoneNavigation.ratingHeight
-                    : MMSizes.reviewRatingTouch
-              : null,
+          height: touch && !phone ? MMSizes.reviewRatingTouch : null,
+          constraints: phone ? const BoxConstraints(minHeight: MMPhoneNavigation.ratingHeight) : null,
           padding: EdgeInsets.symmetric(vertical: 8, horizontal: touch ? 4 : 0),
           decoration: BoxDecoration(
             color: primary ? c.accentFill : (s.hovered ? c.hover : c.fill),
@@ -512,6 +512,7 @@ class _RatingButton extends StatelessWidget {
             border: s.focused ? Border.all(color: c.accent, width: 2) : null,
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
