@@ -49,7 +49,7 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
     final isStreaming = phase == MapGenerationPhase.streaming;
     final isReading = phase == MapGenerationPhase.reading;
 
-    Widget titleArea;
+    Widget? titleArea;
 
     if (isFailed) {
       final isNetwork = preview.failure?.kind == ResearchFailureKind.network;
@@ -59,8 +59,7 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
         children: [
           Icon(isNetwork ? MMIcons.offline : MMIcons.warning, size: 14, color: c.critical),
           const SizedBox(width: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 280),
+          Flexible(
             child: Tooltip(
               message: msg,
               child: Text(
@@ -78,11 +77,12 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
       final currentSkeleton = preview.skeletons.where((s) => s.isCurrent).firstOrNull;
       final currentTitle = currentSkeleton?.title ?? (preview.skeletons.firstOrNull?.title ?? '');
 
-      titleArea = Row(
-        mainAxisSize: MainAxisSize.min,
+      titleArea = Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: c.research)),
-          const SizedBox(width: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 200),
             child: Text(
@@ -92,10 +92,8 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 8),
           _ReadingSteps(skeletons: preview.skeletons, progress: preview.chapterProgress),
           if (currentTitle.isNotEmpty) ...[
-            const SizedBox(width: 8),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 160),
               child: Text(
@@ -110,33 +108,28 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
       );
     } else if (isStreaming) {
       final count = preview.topicCount;
-      titleArea = Row(
-        mainAxisSize: MainAxisSize.min,
+      titleArea = Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: c.research)),
-          const SizedBox(width: 8),
           Text(l.mapGenerateBuilding, style: t.callout.copyWith(color: c.label)),
-          if (count > 0) ...[
-            const SizedBox(width: 6),
-            Text(l.mapGenerateTopicCount(count), style: t.callout.copyWith(color: c.secondaryLabel)),
-          ],
+          if (count > 0) Text(l.mapGenerateTopicCount(count), style: t.callout.copyWith(color: c.secondaryLabel)),
         ],
       );
     } else {
-      // Review phase
-      final keptCount = preview.selectedCount;
-      final totalCount = preview.lines.length;
       final hasChapterFailure = preview.chapterFailures.isNotEmpty;
       final failedChapter = preview.failedChapterTitle;
 
-      titleArea = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hasChapterFailure && failedChapter != null) ...[
+      if (hasChapterFailure && failedChapter != null) {
+        titleArea = Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
             Icon(MMIcons.warning, size: 14, color: c.critical),
-            const SizedBox(width: 4),
             Text(l.mapGenerateChapterFailed(failedChapter), style: t.callout.copyWith(color: c.critical)),
-            const SizedBox(width: 6),
             MMButton(
               key: const ValueKey('map-generation-retry-chapter-button'),
               label: l.assistantRetry,
@@ -146,25 +139,9 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
                 if (failedId != null) controller.retryChapter(failedId);
               },
             ),
-            const SizedBox(width: 8),
-            Container(width: 1, height: 14, color: c.separator),
-            const SizedBox(width: 8),
           ],
-          Icon(MMIcons.generateMap, size: 16, color: c.research),
-          const SizedBox(width: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 90),
-            child: Text(
-              phase == MapGenerationPhase.stopped ? l.mapIdeaStopped : preview.request.title,
-              style: t.callout.copyWith(color: c.label, fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(l.mapIdeaKeptCount(keptCount, totalCount), style: t.callout.copyWith(color: c.secondaryLabel)),
-        ],
-      );
+        );
+      }
     }
 
     final actions = <Widget>[
@@ -175,7 +152,6 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
           variant: MMButtonVariant.plain,
           onPressed: () => showMapGenerationFailure(context, preview),
         ),
-        const SizedBox(width: 8),
       ],
       if (isFailed) ...[
         MMButton(
@@ -185,7 +161,6 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
           variant: MMButtonVariant.secondary,
           onPressed: controller.retry,
         ),
-        const SizedBox(width: 8),
         MMButton(
           key: const ValueKey('map-generation-failed-close-button'),
           label: l.closePanel,
@@ -209,7 +184,6 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
           variant: MMButtonVariant.plain,
           onPressed: () => controller.regenerate(),
         ),
-        const SizedBox(width: 4),
         CompositedTransformTarget(
           link: _adjustLink,
           child: OverlayPortal(
@@ -242,14 +216,12 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
             ),
           ),
         ),
-        const SizedBox(width: 4),
         MMButton(
           key: const ValueKey('map-generation-discard-button'),
           label: l.mapIdeaDiscard,
           variant: MMButtonVariant.plain,
           onPressed: controller.discard,
         ),
-        const SizedBox(width: 8),
         MMButton(
           key: const ValueKey('map-generation-keep-button'),
           label: l.mapIdeaDraftKeep,
@@ -329,32 +301,26 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
         },
       },
       child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: c.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: c.border, width: 0.5),
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              titleArea,
-              if (isReview && preview.request.sources.length > 1) ...[
-                const SizedBox(width: 10),
-                Container(width: .5, height: 16, color: c.border),
-                const SizedBox(width: 10),
-                MapDocumentLegend(
-                  studySetId: widget.studySetId,
-                  documentIds: preview.request.sources.map((s) => s.documentId).toList(),
-                ),
-              ],
-              const SizedBox(width: 12),
-              ...actions,
-            ],
-          ),
+        child: Wrap(
+          spacing: 4,
+          runSpacing: 6,
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ?titleArea,
+            if (isReview && preview.request.sources.length > 1)
+              MapDocumentLegend(
+                studySetId: widget.studySetId,
+                documentIds: preview.request.sources.map((s) => s.documentId).toList(),
+              ),
+            ...actions,
+          ],
         ),
       ),
     );
@@ -560,34 +526,38 @@ class MapDocumentLegend extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final content = ref.read(workspaceProvider(studySetId).notifier).content;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 10,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        for (final (index, id) in documentIds.take(3).indexed) ...[
-          if (index > 0) const SizedBox(width: 10),
-          Container(
-            width: MMSizes.mapSourceDot,
-            height: MMSizes.mapSourceDot,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: MMSourceColors.of(Theme.of(context).brightness, index),
-            ),
+        for (final (index, id) in documentIds.take(3).indexed)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: MMSizes.mapSourceDot,
+                height: MMSizes.mapSourceDot,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: MMSourceColors.of(Theme.of(context).brightness, index),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: MMSizes.mapDocumentLegendLabelWidth),
+                  child: Text(
+                    content.document(id)?.title ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 4),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: MMSizes.mapDocumentLegendLabelWidth),
-            child: Text(
-              content.document(id)?.title ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
-            ),
-          ),
-        ],
-        if (documentIds.length > 3) ...[
-          const SizedBox(width: 10),
-          Text('+${documentIds.length - 3}', style: context.mmText.callout),
-        ],
+        if (documentIds.length > 3) Text('+${documentIds.length - 3}', style: context.mmText.callout),
       ],
     );
   }
