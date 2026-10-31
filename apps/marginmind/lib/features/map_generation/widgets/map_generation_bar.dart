@@ -339,13 +339,6 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
           color: c.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: c.border, width: 0.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -353,6 +346,15 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
             mainAxisSize: MainAxisSize.min,
             children: [
               titleArea,
+              if (isReview && preview.request.sources.length > 1) ...[
+                const SizedBox(width: 10),
+                Container(width: .5, height: 16, color: c.border),
+                const SizedBox(width: 10),
+                MapDocumentLegend(
+                  studySetId: widget.studySetId,
+                  documentIds: preview.request.sources.map((s) => s.documentId).toList(),
+                ),
+              ],
               const SizedBox(width: 12),
               ...actions,
             ],
@@ -485,13 +487,6 @@ class _MapAdjustMenuState extends State<MapAdjustMenu> {
         color: c.surface,
         borderRadius: BorderRadius.circular(MMRadii.dropdown),
         border: Border.all(color: c.border, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -569,6 +564,46 @@ class _MapAdjustMenuState extends State<MapAdjustMenu> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class MapDocumentLegend extends ConsumerWidget {
+  const MapDocumentLegend({super.key, required this.studySetId, required this.documentIds});
+  final String studySetId;
+  final List<String> documentIds;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final content = ref.read(workspaceProvider(studySetId).notifier).content;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final (index, id) in documentIds.take(3).indexed) ...[
+          if (index > 0) const SizedBox(width: 10),
+          Container(
+            width: MMSizes.mapSourceDot,
+            height: MMSizes.mapSourceDot,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: MMSourceColors.of(Theme.of(context).brightness, index),
+            ),
+          ),
+          const SizedBox(width: 4),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: MMSizes.mapDocumentLegendLabelWidth),
+            child: Text(
+              content.document(id)?.title ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
+            ),
+          ),
+        ],
+        if (documentIds.length > 3) ...[
+          const SizedBox(width: 10),
+          Text('+${documentIds.length - 3}', style: context.mmText.callout),
+        ],
+      ],
     );
   }
 }

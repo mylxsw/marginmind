@@ -16,6 +16,8 @@ import 'package:mm_core/mm_core.dart' hide Card;
 import 'package:mm_core/testing.dart';
 
 import 'helpers.dart';
+import 'document_map_navigation_test.dart' show multiDocumentContent;
+import 'map_generation_ui_test.dart' as harness;
 
 // Opt-in like map_style_screenshots_test: MM_SCREENSHOTS=docs/evidence/gul-625
 // MM_FONT=/Library/Fonts/Arial\ Unicode.ttf flutter test test/map_generation_screenshots_test.dart
@@ -212,6 +214,67 @@ void main() {
       await tester.pumpAndSettle();
 
       await _save(tester, 'scene_7_keep_$mode');
+    });
+  }
+  for (final dark in [false, true]) {
+    final mode = dark ? 'dark' : 'light';
+    testWidgets('Capture Scenes 8, 9, 10 ($mode)', skip: _skip, (tester) async {
+      final fake = FakeMapGenerator(
+        chapters: {
+          '*': ['{"k":"point","id":"p1","title":"检索与记忆","page":1}'],
+        },
+        generation: [
+          '{"ref":"a","parent":"ROOT","title":"主动提取","doc":"D1","page":1}',
+          '{"ref":"b","parent":"a","title":"间隔重复","doc":"D2","page":2}',
+          '{"ref":"c","parent":"ROOT","title":"检索练习","doc":"D2","page":3}',
+        ],
+      );
+      final sourceContent = multiDocumentContent();
+      final content = sourceContent.copyWith(nodes: [
+        ...sourceContent.nodes,
+        for (final node in sourceContent.nodes)
+          if (sourceContent.card(node.cardId)?.kind == CardKind.topic)
+            MapNode(cardId: node.cardId, mapId: 'memory', parentId: node.parentId, order: node.order),
+      ]);
+      final c = await openWorkspace(
+        tester,
+        content: InMemoryStudySetContentRepository({'demo-1': content}),
+        prefs: {if (dark) 'settings.appearance': 'dark'},
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
+      );
+      tester.view.physicalSize = const Size(1920, 1000);
+      await tester.pumpAndSettle();
+      final ws = c.read(workspaceProvider('demo-1').notifier);
+      ws.openDocument('new-doc');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('document-map-banner')), findsOneWidget);
+      await _save(tester, 'scene_8_banner_$mode');
+      ws.openDocument('c2');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const ValueKey('map-follow-notice')), findsOneWidget);
+      await _save(tester, 'scene_9_follow_$mode');
+      await tester.pump(const Duration(seconds: 3));
+      await ws.selectMap(MindMap.defaultId);
+      final gen = c.read(mapGenerationControllerProvider('demo-1').notifier);
+      await harness.runGeneration(
+        tester,
+        () => gen.start(
+          const MapGenerationRequest(
+            studySetId: 'demo-1',
+            mapId: 'combined',
+            title: '记忆与学习方法',
+            sources: [
+              MapDocumentSelection(documentId: 'c1'),
+              MapDocumentSelection(documentId: 'c2'),
+            ],
+            organization: MapOrganization.topic,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _save(tester, 'scene_10_multi_$mode');
+      gen.discard();
     });
   }
 }

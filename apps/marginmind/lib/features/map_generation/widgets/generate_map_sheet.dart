@@ -18,6 +18,8 @@ Future<void> showGenerateMapSheet(
   String studySetId, {
   String? preselectedDocId,
   String initialInstructions = '',
+  bool mergeCurrentMap = false,
+  bool initialNeedsSetup = false,
   ValueChanged<String>? onInstructionsChanged,
 }) async {
   await showMMSheet<void>(
@@ -26,6 +28,8 @@ Future<void> showGenerateMapSheet(
     builder: (_) => GenerateMapSheet(
       studySetId: studySetId,
       preselectedDocId: preselectedDocId,
+      mergeCurrentMap: mergeCurrentMap,
+      initialNeedsSetup: initialNeedsSetup,
       initialInstructions: initialInstructions,
       onInstructionsChanged: onInstructionsChanged,
     ),
@@ -37,12 +41,16 @@ class GenerateMapSheet extends ConsumerStatefulWidget {
     super.key,
     required this.studySetId,
     this.preselectedDocId,
+    this.mergeCurrentMap = false,
+    this.initialNeedsSetup = false,
     this.initialInstructions = '',
     this.onInstructionsChanged,
   });
 
   final String studySetId;
   final String? preselectedDocId;
+  final bool mergeCurrentMap;
+  final bool initialNeedsSetup;
   final String initialInstructions;
   final ValueChanged<String>? onInstructionsChanged;
 
@@ -53,6 +61,8 @@ class GenerateMapSheet extends ConsumerStatefulWidget {
 class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
   final _selectedDocs = <String>{};
   MapOrganization _organization = MapOrganization.chapter;
+  bool _needsSetup = false;
+  bool _starting = false;
   bool _userTouchedOrganization = false;
   int _depth = 3;
   bool _includeAnnotations = true;
@@ -63,6 +73,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
   @override
   void initState() {
     super.initState();
+    _needsSetup = widget.initialNeedsSetup;
     final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
     final prefs = ref.read(sharedPreferencesProvider);
     final key = 'map_gen.${widget.studySetId}';
@@ -87,6 +98,18 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
       _userTouchedOrganization = true;
     } else {
       _organization = _selectedDocs.length > 1 ? MapOrganization.topic : MapOrganization.chapter;
+    }
+
+    if (widget.mergeCurrentMap) {
+      final mapId = ref.read(workspaceProvider(widget.studySetId)).activeMapId;
+      final generation = content.map(mapId)?.generation;
+      _selectedDocs.addAll([
+        for (final source in generation?.sources ?? <MapSource>[])
+          if (content.document(source.documentId) != null) source.documentId,
+      ]);
+      _organization = MapOrganization.topic;
+      _userTouchedOrganization = true;
+      _destination = 'branch';
     }
 
     _depth = (prefs.getInt('$key.depth') ?? 3).clamp(2, 4);
@@ -132,8 +155,23 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     _ => 80,
   };
 
-  void _start() {
-    if (_selectedDocs.isEmpty) return;
+  MapDocumentSelection _selection(String id, StudySetContent content, String mapId) {
+    final previous = widget.mergeCurrentMap
+        ? content.map(mapId)?.generation?.sources.where((s) => s.documentId == id).firstOrNull
+        : null;
+    return MapDocumentSelection(documentId: id, chapters: previous?.chapters ?? []);
+  }
+
+  Future<void> _start() async {
+    if (_selectedDocs.isEmpty || _starting) return;
+    _starting = true;
+    final credential = await ref.read(assistantCredentialStateProvider.future);
+    if (!mounted) return;
+    _starting = false;
+    if (credential != AssistantCredentialState.ready) {
+      setState(() => _needsSetup = true);
+      return;
+    }
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
     final snapshot = workspace.content;
 
@@ -154,7 +192,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
         studySetId: widget.studySetId,
         mapId: targetMapId,
         title: title,
-        sources: [for (final id in _selectedDocs) MapDocumentSelection(documentId: id)],
+        sources: [for (final id in _selectedDocs) _selection(id, snapshot, targetMapId)],
         organization: _organization,
         depth: _depth,
         instructions: text.isEmpty ? null : text,
@@ -173,9 +211,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     final t = context.mmText;
     final l = context.l10n;
 
-    final credential = ref.watch(assistantCredentialStateProvider).value;
-    final isUnconfigured = credential == AssistantCredentialState.unavailable ||
-        credential == AssistantCredentialState.missingKey;
+    final isUnconfigured = _needsSetup;
 
     final loaded = ref.watch(workspaceContentProvider(widget.studySetId));
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);

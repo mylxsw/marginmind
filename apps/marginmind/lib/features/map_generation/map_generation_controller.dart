@@ -573,26 +573,28 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   Future<void> _streamBuild(MapGenerationRequest request, CancellationToken cancel, int epoch) async {
     final generator = _generator!;
-    final allPages = <int>{};
-    final allAnnotations = <String, String>{};
-    final allDocs = <String, String>{};
-
+    final pages = <String, Set<int>>{};
+    final annotations = <String, String>{};
+    final documents = <String, String>{};
     for (final task in _tasks.values) {
-      allPages.addAll(task.pages);
-      allAnnotations.addAll(task.input.context.annotations);
-      allDocs.addAll(task.input.context.documents);
+      final hasPoints = _collectedPoints.any((point) =>
+          point.source?.documentId == task.source.documentId && task.pages.contains(point.source?.page));
+      if (state!.chapterProgress[task.id] != MapChapterStatus.done && !hasPoints) continue;
+      documents.addAll(task.input.context.documents);
+      for (final entry in task.input.context.pages.entries) {
+        pages.putIfAbsent(entry.key, () => <int>{}).addAll(entry.value);
+      }
+      for (final id in task.input.context.annotations.values) {
+        if (!annotations.containsValue(id)) annotations['A${annotations.length + 1}'] = id;
+      }
     }
-
     final buildContext = MapLineContext(
       phase: MapLinePhase.generation,
       mapId: request.mapId,
       draftPrefix: '${state!.proposalId}-gen-',
-      documents: allDocs.isNotEmpty ? allDocs : {'D1': request.sources.first.documentId},
-      pages: {
-        for (final docAlias in (allDocs.isNotEmpty ? allDocs.keys : const ['D1']))
-          docAlias: allPages,
-      },
-      annotations: allAnnotations,
+      documents: documents,
+      pages: pages,
+      annotations: annotations,
       maxDepth: request.depth,
       rootParentId: request.parentId,
       existingTitles: state!.editedTitles.values,
