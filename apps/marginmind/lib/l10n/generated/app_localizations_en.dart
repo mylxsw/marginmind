@@ -5459,4 +5459,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translationRemoved => 'Translations Removed';
+
+  @override
+  String get phoneMoreOutlineAndBookmarks => 'Outline & Bookmarks';
+
+  @override
+  String get phoneMoreClose => 'Close';
+
+  @override
+  String get phoneMoreBack => 'Back';
 }

@@ -75,6 +75,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   final _pdfPointers = <int>{};
   Offset? _pointerStart;
   bool _pointerMoved = false;
+  DateTime? _lastPdfPointerUpTime;
+  Offset? _lastPdfPointerUpPos;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -635,13 +637,11 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
       entry(
         l.readingSettings,
-        () {
-          if (capabilities.readingSettings) {
-            settingsHandler?.call(context, ref, widget.studySetId);
-          } else {
-            showReadingSettings(context, ref, widget.studySetId);
-          }
-        },
+        capabilities.readingSettings
+            ? () {
+                settingsHandler?.call(context, ref, widget.studySetId);
+              }
+            : null,
         icon: MMIcons.readingSettings,
         id: 'reader-settings',
       ),
@@ -1307,19 +1307,29 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         _pdfPointers.remove(event.pointer);
         if (_pdfPointers.isEmpty) _phone?.setDrawing(false);
         if (!_pointerMoved && state.pending == null) {
+          final now = DateTime.now();
+          final isDoubleTap =
+              _lastPdfPointerUpTime != null &&
+              now.difference(_lastPdfPointerUpTime!) < const Duration(milliseconds: 350) &&
+              _lastPdfPointerUpPos != null &&
+              (event.position - _lastPdfPointerUpPos!).distance < 24;
+          _lastPdfPointerUpTime = now;
+          _lastPdfPointerUpPos = event.position;
           if (_phone != null) {
             if (state.tool != AnnotationTool.ink && state.tool != AnnotationTool.area) _chrome?.reveal();
-            // Allow selection/annotation callbacks in this frame to claim the tap.
-            final documentId = doc.id;
-            final before = controller.content;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted || ref.read(provider).activeDocumentId != documentId) return;
-              if (_selectionHolds.isEmpty &&
-                  identical(before, controller.content) &&
-                  ref.read(provider).pending == null) {
-                _phone?.onBodyTap();
-              }
-            });
+            if (!isDoubleTap) {
+              // Allow selection/annotation callbacks in this frame to claim the tap.
+              final documentId = doc.id;
+              final before = controller.content;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted || ref.read(provider).activeDocumentId != documentId) return;
+                if (_selectionHolds.isEmpty &&
+                    identical(before, controller.content) &&
+                    ref.read(provider).pending == null) {
+                  _phone?.onBodyTap();
+                }
+              });
+            }
           } else if (state.tool == AnnotationTool.select) {
             _chrome?.reveal();
           }

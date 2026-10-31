@@ -9595,6 +9595,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Translations Removed'**
   String get translationRemoved;
+
+  /// No description provided for @phoneMoreOutlineAndBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline & Bookmarks'**
+  String get phoneMoreOutlineAndBookmarks;
+
+  /// No description provided for @phoneMoreClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get phoneMoreClose;
+
+  /// No description provided for @phoneMoreBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get phoneMoreBack;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -2158,5 +2158,8 @@
   "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
   "translationEditSaved": "已保存修改",
   "translationCopied": "已拷贝译文",
-  "translationRemoved": "已移除译文"
+  "translationRemoved": "已移除译文",
+  "phoneMoreOutlineAndBookmarks": "目录与书签",
+  "phoneMoreClose": "关闭",
+  "phoneMoreBack": "返回"
 }

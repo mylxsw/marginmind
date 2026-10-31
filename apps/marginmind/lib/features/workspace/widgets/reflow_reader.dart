@@ -536,7 +536,9 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       _dismiss();
       return;
     }
-    if (usePhoneReaderControls(context)) {
+    final isPhone = usePhoneReaderControls(context);
+
+    if (isPhone) {
       PhoneReaderControlsScope.read(context)?.onBodyTap();
       WorkspaceChromeScope.maybeOf(context)?.reveal();
     } else if (page == null) {
@@ -928,14 +930,28 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         ],
       ),
     );
+    final isPhone = MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact;
     return !widget.document.capabilities().zoom
         ? pages
-        : InteractiveViewer(
-            transformationController: _fixedTransform,
-            minScale: MMReaderLayout.minZoom,
-            maxScale: MMReaderLayout.maxZoom,
-            onInteractionStart: (_) => _dismiss(),
-            child: pages,
+        : GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onDoubleTap: isPhone
+                ? () {
+                    final isZoomed = s.zoom > s.widthZoom * 1.05;
+                    if (isZoomed) {
+                      s.fitWidth();
+                    } else {
+                      s.zoomTo(1.5 * s.widthZoom);
+                    }
+                  }
+                : null,
+            child: InteractiveViewer(
+              transformationController: _fixedTransform,
+              minScale: MMReaderLayout.minZoom,
+              maxScale: MMReaderLayout.maxZoom,
+              onInteractionStart: (_) => _dismiss(),
+              child: pages,
+            ),
           );
   }
 
@@ -983,6 +999,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       flashOnly: prefs.modeFor(widget.document.id) == VocabularyHintMode.off,
     );
     final selectable = widget.document.capabilities().selectText;
+    final isPhone = usePhoneReaderControls(context);
     final highlights = workspace.content.annotationsOn(widget.document.id).where((a) => a.isText).toList();
     final resolved = <String, List<TextAnchor>>{};
     for (final a in highlights) {
@@ -1074,7 +1091,17 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
             },
             behavior: HitTestBehavior.opaque,
             onTapUp: tap,
-            onDoubleTapDown: selectable ? word : null,
+            onDoubleTapDown: (isPhone && widget.document.capabilities().zoom) ? null : (selectable ? word : null),
+            onDoubleTap: (isPhone && widget.document.capabilities().zoom)
+                ? () {
+                    final isZoomed = session.zoom > session.widthZoom * 1.05;
+                    if (isZoomed) {
+                      session.fitWidth();
+                    } else {
+                      session.zoomTo(1.5 * session.widthZoom);
+                    }
+                  }
+                : null,
             onLongPressStart: !selectable
                 ? null
                 : (d) {
