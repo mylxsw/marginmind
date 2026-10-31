@@ -584,26 +584,28 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   Future<void> _streamBuild(MapGenerationRequest request, CancellationToken cancel, int epoch) async {
     final generator = _generator!;
-    final allPages = <String, Set<int>>{};
+    final pages = <String, Set<int>>{};
     final updating = request.destination == MapGenerationDestination.update;
     final snapshot = ref.read(workspaceProvider(arg).notifier).content;
     final nodes = snapshot.nodes.where((n) => n.mapId == request.mapId).toList();
     final aliases = {for (final (i, n) in nodes.indexed) 'N${i + 1}': n.cardId};
     final reverse = {for (final e in aliases.entries) e.value: e.key};
     final titles = {for (final e in aliases.entries) e.key: snapshot.card(e.value)?.title ?? ''};
-    final allAnnotations = <String, String>{};
-    final allDocs = <String, String>{};
-
+    final annotations = <String, String>{};
+    final documents = <String, String>{};
     for (final task in _tasks.values) {
-      for (final doc in task.input.context.documents.keys) {
-        allPages.putIfAbsent(doc, () => <int>{}).addAll(task.pages);
+      final hasPoints = _collectedPoints.any(
+        (point) => point.source?.documentId == task.source.documentId && task.pages.contains(point.source?.page),
+      );
+      if (state!.chapterProgress[task.id] != MapChapterStatus.done && !hasPoints) continue;
+      documents.addAll(task.input.context.documents);
+      for (final entry in task.input.context.pages.entries) {
+        pages.putIfAbsent(entry.key, () => <int>{}).addAll(entry.value);
       }
       for (final id in task.input.context.annotations.values) {
-        if (!allAnnotations.containsValue(id)) allAnnotations['A${allAnnotations.length + 1}'] = id;
+        if (!annotations.containsValue(id)) annotations['A${annotations.length + 1}'] = id;
       }
-      allDocs.addAll(task.input.context.documents);
     }
-
     final buildContext = MapLineContext(
       phase: updating ? MapLinePhase.diff : MapLinePhase.generation,
       nodes: updating ? aliases : const {},
@@ -613,9 +615,9 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       },
       mapId: request.mapId,
       draftPrefix: '${state!.proposalId}-gen-${state!.round}-',
-      documents: allDocs.isNotEmpty ? allDocs : {'D1': request.sources.first.documentId},
-      pages: allPages,
-      annotations: allAnnotations,
+      documents: documents,
+      pages: pages,
+      annotations: annotations,
       maxDepth: request.depth,
       rootParentId: request.parentId,
       existingTitles: titles.values,

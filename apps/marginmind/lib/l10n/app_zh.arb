@@ -2119,5 +2119,7 @@
   "phoneGlassTitle": "手机 Liquid Glass",
   "phoneGlassRegular": "标准",
   "phoneGlassThick": "厚材质",
-  "phoneGlassOpaque": "不透明"
+  "phoneGlassOpaque": "不透明",
+  "phoneNavigationCloseDrawer": "关闭学习集抽屉",
+  "phoneNavigationNotes": "学习笔记"
 }

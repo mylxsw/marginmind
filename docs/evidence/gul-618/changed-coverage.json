@@ -1,8 +1,8 @@
 {
-  "baseline": "95c79ceea5bd0710790880df05c8a0d52a7aefd1",
-  "covered": 1586,
-  "lines": 1807,
-  "percent": 87.77,
+  "baseline": "93f78c04214ae26842bf4af57afb910395e6bd48",
+  "covered": 1406,
+  "lines": 1614,
+  "percent": 87.11,
   "files": [
     {
       "path": "apps/marginmind/lib/app/app_commands.dart",
@@ -16,37 +16,6 @@
         1186,
         1189,
         1194
-      ]
-    },
-    {
-      "path": "apps/marginmind/lib/features/map_generation/widgets/generate_map_sheet.dart",
-      "covered": 238,
-      "lines": 265,
-      "changed_covered": 167,
-      "changed_lines": 179,
-      "uncovered_changed": [
-        228,
-        231,
-        233,
-        234,
-        236,
-        305,
-        306,
-        379,
-        428,
-        525,
-        526,
-        546
-      ]
-    },
-    {
-      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart",
-      "covered": 206,
-      "lines": 245,
-      "changed_covered": 13,
-      "changed_lines": 14,
-      "uncovered_changed": [
-        108
       ]
     },
     {
@@ -276,7 +245,7 @@
     },
     {
       "path": "apps/marginmind/lib/features/workspace/widgets/map_source_chip.dart",
-      "covered": 24,
+      "covered": 27,
       "lines": 27,
       "changed_covered": 4,
       "changed_lines": 4,
@@ -295,8 +264,8 @@
     },
     {
       "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
-      "covered": 785,
-      "lines": 1059,
+      "covered": 556,
+      "lines": 1060,
       "changed_covered": 12,
       "changed_lines": 41,
       "uncovered_changed": [
@@ -374,19 +343,19 @@
     },
     {
       "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
-      "covered": 179,
-      "lines": 324,
+      "covered": 261,
+      "lines": 380,
       "changed_covered": 41,
       "changed_lines": 43,
       "uncovered_changed": [
-        536,
-        537
+        618,
+        619
       ]
     },
     {
       "path": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
-      "covered": 330,
-      "lines": 368,
+      "covered": 299,
+      "lines": 377,
       "changed_covered": 4,
       "changed_lines": 4,
       "uncovered_changed": []

@@ -241,6 +241,12 @@ class MindMapRenderCache {
         spec.notesHeight = height;
         spec.size = Size(width, spec.size.height + height);
       }
+      if (spec.source case final source?) {
+        spec.sourceDocumentTitle = content.document(source.documentId)?.title;
+        final sources = content.map(mapId)?.generation?.sources ?? <MapSource>[];
+        final index = sources.indexWhere((s) => s.documentId == source.documentId);
+        spec.sourceDocumentIndex = sources.length > 1 && index >= 0 ? index : null;
+      }
       _specs[id] = spec;
       geometry.add((id, parentId, spec.size.width, spec.size.height));
       var descendants = children[id == rootNodeId ? null : id] ?? const <MapNode>[];
@@ -491,6 +497,8 @@ class _NodeSpec {
 
   final _Kind kind;
   final CardSource? source;
+  String? sourceDocumentTitle;
+  int? sourceDocumentIndex;
 
   /// Shown title; empty for an excerpt or image without one (no title row).
   final String title;

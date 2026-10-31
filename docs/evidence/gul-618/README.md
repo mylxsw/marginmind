@@ -24,13 +24,14 @@
 
 Flutter 3.47.2 / Dart 3.13.2，Linux。
 
-- `dart format --output=none --set-exit-if-changed apps packages`：805 个文件，0 个改动。
+- `dart format --output=none --set-exit-if-changed apps packages`：818 个文件，0 个改动。
 - `flutter analyze --no-pub`：No issues found。
 - `python3 -m unittest discover -s tool/tests`：26 个测试通过。
 - `flutter test --no-pub --concurrency=2 --coverage test/full_translation_test.dart test/translation_controls_test.dart test/translation_lifecycle_test.dart test/translation_entry_points_test.dart test/translation_page_grid_test.dart`（`apps/marginmind`）：45 个测试通过，包含六张 Linux golden 的正常比对。
-- 新增/变更执行行覆盖率 **87.77%**；全仓合并覆盖率 **88.08%**。完整文件表与方法见 [coverage.md](coverage.md)。
+- 新增/变更执行行覆盖率 **87.11%**；全仓合并覆盖率 **85.54%**。完整文件表与方法见 [coverage.md](coverage.md)。
 - 合并最新 main 前的全量应用：1,246 通过、36 跳过、10 个 main 基线失败；另有设计包 golden 79px 基线差异，均已独立复现。详细结果和复现命令见覆盖率报告。
-- 同步最新 main（95c79cee）后：全文翻译及脑图生成/更新相关应用测试共 67 项通过，模型生成器 13 项通过，分析无问题；覆盖率按最新源码重新合并。
+- 同步 main（95c79cee）后：全文翻译及脑图生成/更新相关应用测试共 67 项通过，模型生成器 13 项通过。
+- 最后同步 main（93f78c04）后：应用集成回归 192 项通过、4 项已复现的手机 dock 基线失败，45 项翻译测试全部通过；设计组件 71 项、PDF 全量 127 项通过，分析无问题。覆盖率移除合并前所有变化文件的旧记录，使用最新源码的实测记录重新汇总。
 
 ## 截图
 

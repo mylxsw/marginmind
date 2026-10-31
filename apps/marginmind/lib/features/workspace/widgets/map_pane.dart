@@ -1,3 +1,5 @@
+import '../../map_generation/widgets/document_map_banner.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Card;
@@ -1005,6 +1007,13 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       diffFocusId: diffFocus,
                                       onDiffFocus: (id) =>
                                           ref.read(mapDiffFocusProvider(widget.studySetId).notifier).select(id),
+                                      draftSources: {
+                                        for (final line in mapGen?.lines ?? <MapLine>[])
+                                          if (line.source != null) line.id: line.source!,
+                                      },
+                                      sourceDocumentIds:
+                                          mapGen?.request.sources.map((s) => s.documentId).toList() ?? [],
+                                      onRevealDraftSource: controller.revealMapSource,
                                       skeletons: mapGen?.phase == MapGenerationPhase.reading ? mapGen?.skeletons : null,
                                       onDraftToggle: (id) {
                                         if (mapGen != null) {
@@ -1462,6 +1471,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   bottom: 0,
                   child: MapEmptyState(studySetId: widget.studySetId, mapId: state.activeMapId),
                 ),
+              Positioned(
+                top: _headerGeometry.toolbarTopInset + MMSpacing.s,
+                left: MMSpacing.m,
+                right: MMSpacing.m,
+                child: DocumentMapBanner(studySetId: widget.studySetId),
+              ),
               if (_styleOpen && (merged || !outline) && map != null)
                 Positioned(
                   left: 0,

@@ -92,14 +92,16 @@ class StudySetCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            '${l.libraryCardMeta(set.documentCount, set.cardCount)} · ${l.relativeTime(set.lastOpenedAt, now)}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: t.footnote,
-          ),
+          if (!(MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact)) ...[
+            const SizedBox(height: 2),
+            Text(
+              '${l.libraryCardMeta(set.documentCount, set.cardCount)} · ${l.relativeTime(set.lastOpenedAt, now)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: t.footnote,
+            ),
+          ],
         ],
       ),
     );

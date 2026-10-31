@@ -188,8 +188,8 @@ void main() {
       tester.view.padding = FakeViewPadding.zero;
       await tester.pump();
       final capsule = tester.getRect(find.byKey(const ValueKey('mm-tab-bar-glass')));
-      expect(capsule.bottom, 800 - MMSizes.tabBarBottomGap);
-      expect(MMTabBar.heightOf(tester.element(find.byType(MMTabBar))), capsule.height + MMSizes.tabBarBottomGap);
+      expect(capsule.bottom, 800 - MMSizes.phoneTabBarBottomInset);
+      expect(MMTabBar.heightOf(tester.element(find.byType(MMTabBar))), capsule.height + MMSizes.phoneTabBarBottomInset);
     });
   });
 

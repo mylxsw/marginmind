@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -84,6 +85,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
     final provider = reviewSessionProvider(widget.studySetId);
     final session = ref.watch(provider);
     final controller = ref.read(provider.notifier);
@@ -118,7 +120,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 4, 28, 0),
-            child: MMProgressBar(value: done, semanticLabel: l.reviewProgress),
+            child: phone
+                ? MMPhoneReviewProgress(
+                    total: session.queue.length,
+                    completed: session.index,
+                    label: l.reviewProgress,
+                    value: NumberFormat.percentPattern(l.localeName).format(done),
+                  )
+                : MMProgressBar(value: done, semanticLabel: l.reviewProgress),
           ),
           Expanded(
             child: LayoutBuilder(
@@ -185,7 +194,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         showsWindowButtons: WindowChrome.showsWindowButtons,
         toolbar: MMToolbar(
           title: l.reviewTitle,
-          subtitle: session.finished || !session.started
+          subtitle: phone || session.finished || !session.started
               ? scopeTitle
               : '$scopeTitle · ${l.reviewRemaining(session.remaining)}',
           leading: MMIconButton(
@@ -281,6 +290,13 @@ class ReviewCardView extends StatelessWidget {
     final front = face.front;
     final back = face.back;
     final source = back.source;
+    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+    final sourceButton = MMButton(
+      label: context.l10n.revealSource,
+      icon: MMIcons.revealSource,
+      variant: MMButtonVariant.plain,
+      onPressed: onRevealSource,
+    );
     final color = MMAnnotationColor.fromIndex(back.colorIndex);
     final answer = <Widget>[
       if (back.imageFileName != null)
@@ -329,23 +345,20 @@ class ReviewCardView extends StatelessWidget {
             for (final block in answer) ...[block, const SizedBox(height: 12)],
             if (source != null)
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: Text(
-                      source.textAnchor != null
-                          ? source.documentTitle
-                          : '${source.documentTitle} · ${context.l10n.pageNumber(source.page)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.footnote,
+                  if (!phone)
+                    Expanded(
+                      child: Text(
+                        source.textAnchor != null
+                            ? source.documentTitle
+                            : '${source.documentTitle} · ${context.l10n.pageNumber(source.page)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.footnote,
+                      ),
                     ),
-                  ),
-                  MMButton(
-                    label: context.l10n.revealSource,
-                    icon: MMIcons.revealSource,
-                    variant: MMButtonVariant.plain,
-                    onPressed: onRevealSource,
-                  ),
+                  if (phone) Flexible(child: sourceButton) else sourceButton,
                 ],
               ),
           ],
@@ -439,7 +452,7 @@ class _RatingBar extends StatelessWidget {
       Rating.easy => l.rateEasy,
     };
     // Under touch the buttons share the width and grow to thumb size.
-    final touch = context.mmTouch;
+    final touch = context.mmTouch || (MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact);
     final buttons = [
       for (final (i, r) in Rating.values.indexed) ...[
         if (i > 0) SizedBox(width: touch ? MMSpacing.s : 10),
@@ -479,13 +492,14 @@ class _RatingButton extends StatelessWidget {
   final bool primary;
   final VoidCallback onPressed;
 
-  /// Fills its share of the row and stands 64 tall.
+  /// Shares the row under touch; phones also keep this layout with a pointer.
   final bool touch;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
+    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
     return MMInteractive(
       onTap: onPressed,
       tooltip: shortcut,
@@ -495,7 +509,8 @@ class _RatingButton extends StatelessWidget {
         return AnimatedContainer(
           duration: MMMotion.quick,
           width: touch ? null : 104,
-          height: touch ? MMSizes.reviewRatingTouch : null,
+          height: touch && !phone ? MMSizes.reviewRatingTouch : null,
+          constraints: phone ? const BoxConstraints(minHeight: MMPhoneNavigation.ratingHeight) : null,
           padding: EdgeInsets.symmetric(vertical: 8, horizontal: touch ? 4 : 0),
           decoration: BoxDecoration(
             color: primary ? c.accentFill : (s.hovered ? c.hover : c.fill),
@@ -503,6 +518,7 @@ class _RatingButton extends StatelessWidget {
             border: s.focused ? Border.all(color: c.accent, width: 2) : null,
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
