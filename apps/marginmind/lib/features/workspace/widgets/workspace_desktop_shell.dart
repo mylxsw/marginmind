@@ -29,14 +29,12 @@ class WorkspaceDesktopShell extends ConsumerWidget {
   const WorkspaceDesktopShell({
     super.key,
     required this.studySetId,
-    required this.searchFocus,
     required this.sidebarVisible,
     required this.onShowSidebar,
     required this.onDismissSidebar,
     required this.layout,
   });
   final String studySetId;
-  final FocusNode searchFocus;
   final bool sidebarVisible;
   final VoidCallback onShowSidebar, onDismissSidebar;
   final MMSplitMode layout;
@@ -61,7 +59,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
       sidebarVisible: sidebarVisible,
       sidebarOverlay: touch,
       onSidebarDismiss: onDismissSidebar,
-      sidebar: WorkspaceSidebar(studySetId: studySetId, searchFocus: searchFocus, onDismiss: onDismissSidebar),
+      sidebar: WorkspaceSidebar(studySetId: studySetId, onDismiss: onDismissSidebar),
       contentBuilder: (context, constraints) {
         final hasPanel = state.panel != null;
         final panelWidth = math.min(360.0, constraints.maxWidth);
@@ -72,12 +70,6 @@ class WorkspaceDesktopShell extends ConsumerWidget {
               semanticLabel: l.workspaceDocumentMapTab,
               height: toolbarHeight,
               child: Container(
-                padding: EdgeInsets.only(
-                  left: switch (MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0) {
-                    final inset when inset > 0 => inset + 8,
-                    _ => 0,
-                  },
-                ),
                 key: const ValueKey('workspace-tab-row'),
                 height: toolbarHeight,
                 decoration: BoxDecoration(
@@ -88,67 +80,94 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                     bottom: BorderSide(color: c.separator, width: MMSizes.hairline),
                   ),
                 ),
-                child: Row(
+                child: CustomMultiChildLayout(
+                  delegate: _CenteredTitlebarLayout(),
                   children: [
-                    if (!sidebarVisible || touch)
-                      MMIconButton(
-                        key: const ValueKey('workspace-show-sidebar'),
-                        icon: MMIcons.sidebar,
-                        tooltip: l.showSidebar,
-                        onPressed: onShowSidebar,
+                    LayoutId(
+                      id: _TitlebarSlot.leading,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: switch (MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0) {
+                            final inset when inset > 0 => inset + 8,
+                            _ => 0,
+                          },
+                        ),
+                        child: !sidebarVisible || touch
+                            ? MMIconButton(
+                                key: const ValueKey('workspace-show-sidebar'),
+                                icon: MMIcons.sidebar,
+                                tooltip: l.showSidebar,
+                                onPressed: onShowSidebar,
+                              )
+                            : const SizedBox.shrink(),
                       ),
-                    Expanded(child: WorkspaceTabStrip(studySetId: studySetId)),
-                    if (documents) ...[
-                      Container(
-                        key: const ValueKey('workspace-layout-controls'),
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(8)),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (final entry in [
-                              (MMSplitMode.primary, MMIcons.layoutReader, l.layoutReader),
-                              (MMSplitMode.split, MMIcons.layoutSplit, l.layoutSplit),
-                              (MMSplitMode.secondary, MMIcons.layoutMap, l.layoutMap),
-                            ])
-                              MMIconButton(
-                                key: ValueKey(
-                                  'toolbar-layout-${switch (entry.$1) {
-                                    MMSplitMode.primary => 'reader',
-                                    MMSplitMode.split => 'split',
-                                    MMSplitMode.secondary => 'map',
-                                  }}',
-                                ),
-                                size: 28,
-                                icon: entry.$2,
-                                tooltip: entry.$3,
-                                selected: _shownLayout(context, constraints, state) == entry.$1,
-                                onPressed: () => owner.setLayout(entry.$1),
+                    ),
+                    LayoutId(
+                      id: _TitlebarSlot.title,
+                      child: WorkspaceTabStrip(studySetId: studySetId),
+                    ),
+                    LayoutId(
+                      id: _TitlebarSlot.trailing,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (documents) ...[
+                            Container(
+                              key: const ValueKey('workspace-layout-controls'),
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: c.quaternaryFill,
+                                borderRadius: BorderRadius.circular(8),
                               ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  for (final entry in [
+                                    (MMSplitMode.primary, MMIcons.layoutReader, l.layoutReader),
+                                    (MMSplitMode.split, MMIcons.layoutSplit, l.layoutSplit),
+                                    (MMSplitMode.secondary, MMIcons.layoutMap, l.layoutMap),
+                                  ])
+                                    MMIconButton(
+                                      key: ValueKey(
+                                        'toolbar-layout-${switch (entry.$1) {
+                                          MMSplitMode.primary => 'reader',
+                                          MMSplitMode.split => 'split',
+                                          MMSplitMode.secondary => 'map',
+                                        }}',
+                                      ),
+                                      size: 28,
+                                      icon: entry.$2,
+                                      tooltip: entry.$3,
+                                      selected: _shownLayout(context, constraints, state) == entry.$1,
+                                      onPressed: () => owner.setLayout(entry.$1),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ],
-                        ),
+                          if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant) ...[
+                            if (documents)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: SizedBox(
+                                  height: 18,
+                                  child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
+                                ),
+                              ),
+                            MMIconButton(
+                              key: const ValueKey('toolbar-assistant'),
+                              iconWidget: const AssistantIcon(),
+                              iconSize: 18,
+                              tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
+                              selected: state.panel == RightPanel.assistant,
+                              color: c.research,
+                              onPressed: () => toggleAssistant(ref, studySetId),
+                            ),
+                          ],
+                          const SizedBox(width: 12),
+                        ],
                       ),
-                    ],
-                    if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant) ...[
-                      if (documents)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: SizedBox(
-                            height: 18,
-                            child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
-                          ),
-                        ),
-                      MMIconButton(
-                        key: const ValueKey('toolbar-assistant'),
-                        iconWidget: const AssistantIcon(),
-                        iconSize: 18,
-                        tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
-                        selected: state.panel == RightPanel.assistant,
-                        color: c.research,
-                        onPressed: () => toggleAssistant(ref, studySetId),
-                      ),
-                    ],
-                    const SizedBox(width: 12),
+                    ),
                   ],
                 ),
               ),
@@ -322,4 +341,25 @@ class WorkspaceDesktopShell extends ConsumerWidget {
       vertical ? MMSizes.paneMinHeight : (hasPanel ? 280.0 : 360.0),
     );
   }
+}
+
+enum _TitlebarSlot { leading, title, trailing }
+
+/// Measure the side controls first so the tabs stay at the workspace centre,
+/// even when the sidebar toggle or assistant changes visibility.
+class _CenteredTitlebarLayout extends MultiChildLayoutDelegate {
+  @override
+  void performLayout(Size size) {
+    final sideConstraints = BoxConstraints(maxWidth: size.width / 2, maxHeight: size.height);
+    final leading = layoutChild(_TitlebarSlot.leading, sideConstraints);
+    final trailing = layoutChild(_TitlebarSlot.trailing, sideConstraints);
+    final inset = math.max(leading.width, trailing.width);
+    positionChild(_TitlebarSlot.leading, Offset(0, (size.height - leading.height) / 2));
+    positionChild(_TitlebarSlot.trailing, Offset(size.width - trailing.width, (size.height - trailing.height) / 2));
+    layoutChild(_TitlebarSlot.title, BoxConstraints.tight(Size(math.max(0, size.width - inset * 2), size.height)));
+    positionChild(_TitlebarSlot.title, Offset(inset, 0));
+  }
+
+  @override
+  bool shouldRelayout(_CenteredTitlebarLayout oldDelegate) => false;
 }

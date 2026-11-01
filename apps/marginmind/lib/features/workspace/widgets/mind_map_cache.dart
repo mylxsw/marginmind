@@ -230,7 +230,7 @@ class MindMapRenderCache {
             final body = _measure(
               note.title,
               _NodeSpec.noteStyle,
-              width - MMSpacing.m * 2 - (editing ? 0 : noteActionsWidth),
+              width - MMSpacing.m * 2 - noteActionsWidth,
               note: note.textFormat,
               source: editing,
             ).size.height;

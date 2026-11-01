@@ -505,7 +505,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                               tooltip: l.readerOutline,
                               itemBuilder: (_) => [
                                 for (final section in note.sections)
-                                  MMDropdownItem(value: section.id, icon: MMIcons.section, child: Text(section.title)),
+                                  MMDropdownItem(value: section.id, child: Text(section.title)),
                               ],
                               onSelected: _jump,
                               child: _toolbarLabel(l.readerOutline),
@@ -516,7 +516,6 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             itemBuilder: (_) => [
                               for (final template in NoteTemplate.values)
                                 MMDropdownItem(
-                                  icon: MMIcons.template,
                                   value: template,
                                   child: Row(
                                     children: [

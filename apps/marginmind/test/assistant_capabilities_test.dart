@@ -39,6 +39,21 @@ class PendingProbe extends ScriptClient {
   }
 }
 
+class PausedCapabilityPreferences extends InMemorySharedPreferencesStore {
+  PausedCapabilityPreferences(super.data) : super.withData();
+  final started = Completer<void>();
+  final release = Completer<bool>();
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    if (key == 'flutter.${AssistantCapabilityProfiles.settingsKey}') {
+      started.complete();
+      if (!await release.future) return false;
+    }
+    return super.setValue(valueType, key, value);
+  }
+}
+
 void main() {
   late SharedPreferences prefs;
   late AssistantServicesStore services;
@@ -56,6 +71,131 @@ void main() {
       models: [const ServiceModel(id: 'gpt-4.1-2025-04-14')],
     );
     await services.save(AssistantServices(services: [service], revision: 1));
+  });
+  test('production store concurrent inspect and resolve never lose maintained evidence', () async {
+    final profiles = AssistantCapabilityProfiles(prefs, services);
+    final resolver = TaskModelResolver(catalog: services.load, profiles: profiles);
+    final request = TaskRequest<String>(
+      spec: titleGenerationSpec,
+      input: {'question': 'test'},
+      inputFingerprint: 'parallel',
+    );
+    final routing = RoutingConfig(
+      document: {
+        'version': 1,
+        'revision': 0,
+        'defaults': {'quick': ModelReference('s', service.models.single.id).toJson()},
+      },
+    );
+    // Queue all callers before any refresh completes: each subsequent refresh
+    // starts before the preceding resolver resumes its synchronous lookup.
+    final rows = await Future.wait(List.generate(8, (_) => resolver.inspect(request, routing)));
+    for (final row in rows) {
+      expect(row.issue, RoutingIssue.none);
+      expect(row.config!.capabilities.evidence!.admitsPolicy, isTrue);
+    }
+    final configs = await Future.wait(List.generate(8, (_) => resolver.resolve(request, routing)));
+    for (final config in configs) {
+      expect(config.capabilities.evidence!.admitsPolicy, isTrue);
+    }
+  });
+  for (final endpointChange in [false, true]) {
+    test('pending publication rejects concurrent ${endpointChange ? 'endpoint' : 'revision'} edit', () async {
+      final profiles = AssistantCapabilityProfiles(prefs, services);
+      await profiles.refresh();
+      final identity = serviceCapabilityIdentity(service, service.models.single);
+      final platform = PausedCapabilityPreferences({
+        for (final key in prefs.getKeys()) 'flutter.$key': prefs.get(key)!,
+      });
+      final original = SharedPreferencesStorePlatform.instance;
+      SharedPreferencesStorePlatform.instance = platform;
+      addTearDown(() => SharedPreferencesStorePlatform.instance = original);
+      final pending = profiles.recordProbe(identity, ReasoningPolicy.off);
+      final rejected = expectLater(pending, throwsA(isA<ConfigurationFailure>()));
+      await platform.started.future;
+      // A valid previous snapshot remains available during an ordinary write.
+      expect(profiles.lookup(identity).evidence!.admitsPolicy, isTrue);
+      await services.save(
+        (await services.load()).upsert(
+          endpointChange ? service.copyWith(endpoint: 'https://proxy.example/v1') : service.copyWith(revision: 2),
+        ),
+      );
+      expect(profiles.lookup(identity).evidence, isNull);
+      expect(profiles.probeObservation(identity), isNull);
+      platform.release.complete(true);
+      await rejected;
+      expect(profiles.lookup(identity).evidence, isNull);
+      final resolver = TaskModelResolver(catalog: services.load, profiles: profiles);
+      final request = TaskRequest<String>(
+        spec: titleGenerationSpec,
+        input: {'question': 'test'},
+        inputFingerprint: 'edit',
+      );
+      final routing = RoutingConfig(
+        document: {
+          'version': 1,
+          'revision': 0,
+          'defaults': {'quick': ModelReference('s', service.models.single.id).toJson()},
+        },
+      );
+      // Restore the ordinary platform before the next refresh writes new rows.
+      SharedPreferencesStorePlatform.instance = original;
+      final row = await resolver.inspect(request, routing);
+      if (endpointChange) {
+        expect(row.ready, isFalse);
+      } else {
+        expect(row.ready, isTrue);
+        expect(row.config!.policy.identity, isNot(identity));
+      }
+    });
+  }
+  test('pending persistence failure discards published evidence and permits retry', () async {
+    final profiles = AssistantCapabilityProfiles(prefs, services);
+    await profiles.refresh();
+    final identity = serviceCapabilityIdentity(service, service.models.single);
+    final platform = PausedCapabilityPreferences({for (final key in prefs.getKeys()) 'flutter.$key': prefs.get(key)!});
+    final original = SharedPreferencesStorePlatform.instance;
+    SharedPreferencesStorePlatform.instance = platform;
+    addTearDown(() => SharedPreferencesStorePlatform.instance = original);
+    final pending = profiles.recordProbe(identity, ReasoningPolicy.off);
+    final rejected = expectLater(pending, throwsStateError);
+    await platform.started.future;
+    expect(profiles.lookup(identity).evidence!.admitsPolicy, isTrue);
+    platform.release.complete(false);
+    await rejected;
+    expect(profiles.lookup(identity).evidence, isNull);
+    expect(profiles.probeObservation(identity), isNull);
+    await profiles.refresh();
+    expect(profiles.lookup(identity).evidence!.admitsPolicy, isTrue);
+    expect(profiles.probeObservation(identity), isNull);
+  });
+  test('resolver suspended on credentials cannot admit an obsolete identity', () async {
+    final profiles = AssistantCapabilityProfiles(prefs, services);
+    await profiles.refresh();
+    final started = Completer<void>(), release = Completer<bool>();
+    final resolver = TaskModelResolver(
+      catalog: services.load,
+      profiles: profiles,
+      credentialsAvailable: (_) {
+        started.complete();
+        return release.future;
+      },
+    );
+    final pending = resolver.inspect(
+      TaskRequest<String>(spec: titleGenerationSpec, input: {'question': 'test'}, inputFingerprint: 'stale'),
+      RoutingConfig(
+        document: {
+          'version': 1,
+          'revision': 0,
+          'defaults': {'quick': ModelReference('s', service.models.single.id).toJson()},
+        },
+      ),
+    );
+    await started.future;
+    await services.save((await services.load()).upsert(service.copyWith(revision: 2)));
+    release.complete(true);
+    expect((await pending).ready, isFalse);
+    expect(profiles.lookup(serviceCapabilityIdentity(service, service.models.single)).evidence, isNull);
   });
   test('production provider resolver loads maintained evidence and persists restart observation', () async {
     final container = ProviderContainer(
@@ -195,6 +335,7 @@ void main() {
   test('corrupt or future documents fail closed and are never overwritten', () async {
     final profiles = AssistantCapabilityProfiles(prefs, services);
     await profiles.refresh();
+    final valid = prefs.getString(AssistantCapabilityProfiles.settingsKey)!;
     for (final raw in [
       '{',
       jsonEncode({'version': 2}),
@@ -207,6 +348,9 @@ void main() {
       }),
       jsonEncode({'version': 1, 'rules': 'future', 'entries': []}),
     ]) {
+      await prefs.setString(AssistantCapabilityProfiles.settingsKey, valid);
+      await profiles.refresh();
+      expect(profiles.lookup(serviceCapabilityIdentity(service, service.models.single)).evidence, isNotNull);
       await prefs.setString(AssistantCapabilityProfiles.settingsKey, raw);
       await expectLater(profiles.refresh(), throwsA(isA<ConfigurationFailure>()));
       expect(profiles.lookup(serviceCapabilityIdentity(service, service.models.single)).evidence, isNull);

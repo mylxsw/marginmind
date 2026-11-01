@@ -5,6 +5,47 @@ import LocalAuthentication
 import UserNotifications
 
 class MainFlutterWindow: NSWindow {
+  private weak var toolbarPointerTarget: FlutterToolbarEventView?
+
+  override func sendEvent(_ event: NSEvent) {
+    switch event.type {
+    case .leftMouseDown:
+      toolbarPointerTarget = nil
+      if let target = toolbarEventView(at: event.locationInWindow) {
+        toolbarPointerTarget = target
+        target.mouseDown(with: event)
+        return
+      }
+    case .leftMouseDragged:
+      if let target = toolbarPointerTarget {
+        target.mouseDragged(with: event)
+        return
+      }
+    case .leftMouseUp:
+      if let target = toolbarPointerTarget {
+        toolbarPointerTarget = nil
+        target.mouseUp(with: event)
+        return
+      }
+    default: break
+    }
+    super.sendEvent(event)
+  }
+
+  // The native title bar/toolbar overlaps our full-size Flutter content.
+  // Forward the whole native chrome band, including item padding and plugin
+  // overlays, so Flutter alone decides which empty areas can move the window.
+  func toolbarEventView(at point: NSPoint) -> FlutterToolbarEventView? {
+    guard let target = toolbar?.items.compactMap({ $0.view as? FlutterToolbarEventView }).first else { return nil }
+    var root = contentView
+    while let parent = root?.superview { root = parent }
+    guard let root, let hit = root.hitTest(point), hit !== root,
+          point.y >= contentLayoutRect.maxY else { return nil }
+    for type: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
+      if let button = standardWindowButton(type), hit === button || hit.isDescendant(of: button) { return nil }
+    }
+    return target
+  }
   private var speech: SpeechChannel?
   private var systemNotification: SystemNotificationChannel?
   private var mapExport: MapExportChannel?

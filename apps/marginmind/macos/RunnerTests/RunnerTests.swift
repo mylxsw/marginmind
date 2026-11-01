@@ -486,15 +486,40 @@ class RunnerTests: XCTestCase {
       window.setContentSize(size)
       window.contentView?.layoutSubtreeIfNeeded()
       let root = try XCTUnwrap(window.contentView?.superview)
+      let eventView = try XCTUnwrap(toolbar.items.last?.view as? FlutterToolbarEventView)
+      // Native item backgrounds and overlays must use Flutter's gestures too.
+      for fraction: CGFloat in [0.2, 0.5, 0.8] {
+        let point = NSPoint(x: size.width * fraction,
+          y: (window.contentLayoutRect.maxY + window.frame.height) / 2)
+        XCTAssertTrue(window.toolbarEventView(at: point) === eventView)
+      }
+      XCTAssertNil(window.toolbarEventView(at: NSPoint(x: size.width / 2, y: window.contentLayoutRect.midY)))
       for type: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
         let button = try XCTUnwrap(window.standardWindowButton(type))
         XCTAssertTrue(button.translatesAutoresizingMaskIntoConstraints)
         let center = NSPoint(x: button.bounds.midX, y: button.bounds.midY)
         let hit = root.hitTest(button.convert(center, to: root))
         XCTAssertTrue(hit === button, "Native hit testing must reach \(type)")
+        XCTAssertNil(window.toolbarEventView(at: button.convert(center, to: nil)))
         XCTAssertNotNil(button.action)
       }
     }
+    // The custom view may not cover AppKit's item background at all.
+    let eventView = try XCTUnwrap(toolbar.items.last?.view as? FlutterToolbarEventView)
+    let point = NSPoint(x: window.frame.width / 2,
+      y: (window.contentLayoutRect.maxY + window.frame.height) / 2)
+    eventView.isHidden = true
+    XCTAssertTrue(window.toolbarEventView(at: point) === eventView)
+    target.onDown = { XCTAssertFalse(window.isMovable) }
+    for type: NSEvent.EventType in [.leftMouseDown, .leftMouseDragged, .leftMouseUp] {
+      let event = try XCTUnwrap(NSEvent.mouseEvent(with: type, location: point,
+        modifierFlags: [], timestamp: 1, windowNumber: window.windowNumber,
+        context: nil, eventNumber: 1, clickCount: 2, pressure: 0.5))
+      window.sendEvent(event)
+      XCTAssertTrue(target.events.last === event)
+    }
+    XCTAssertTrue(window.isMovable)
+    eventView.isHidden = false
     window.observeToolbarFullScreenTransitions()
     let notifications = NotificationCenter.default
     for _ in 0..<2 {

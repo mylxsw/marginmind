@@ -12,8 +12,6 @@ void main() {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final focus = FocusNode();
-    addTearDown(focus.dispose);
     final calls = <String>[];
     final overrides = await testOverrides();
     MMPhoneNavigationRow row(String label) => MMPhoneNavigationRow(
@@ -35,8 +33,6 @@ void main() {
                 child: PhoneWorkspaceSidebar(
                   title: 'Study set',
                   mapId: 'map',
-                  searchFocus: focus,
-                  onSearch: (_) {},
                   onDismiss: () => calls.add('done'),
                   documents: [row('Document')],
                   maps: [row('Map')],

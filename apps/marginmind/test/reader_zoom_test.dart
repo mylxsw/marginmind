@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app_commands.dart';
@@ -26,7 +27,7 @@ Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
 }
 
 void main() {
-  testWidgets('zoom menu slider changes PDF size live and keeps the menu open', (tester) async {
+  testWidgets('zoom menu percentage drag changes PDF size live and keeps the menu open', (tester) async {
     installTestPdfBackend();
     final container = await pumpApp(tester, renderPdf: true);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -36,24 +37,56 @@ void main() {
     expect(find.byKey(const ValueKey('reader-compare')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
-    final slider = find.byKey(const ValueKey('reader-zoom-slider'));
-    expect(slider, findsOneWidget);
-    expect(find.descendant(of: find.byType(ReaderZoomSlider), matching: find.text('100%')), findsOneWidget);
-    expect(tester.getSize(find.byType(ReaderZoomSlider)).height, 56);
+    final control = find.byKey(const ValueKey('reader-zoom-control'));
+    final percentage = find.byKey(const ValueKey('reader-zoom-percentage'));
+    expect(control, findsOneWidget);
+    expect(find.descendant(of: control, matching: find.byType(Slider)), findsNothing);
+    expect(find.descendant(of: find.byType(ReaderZoomControl), matching: find.text('100%')), findsOneWidget);
+    expect(tester.getSize(find.byType(ReaderZoomControl)).height, MMSizes.dropdownRowHeight);
     expect(find.byKey(const ValueKey('reader-compare')).hitTestable(), findsOneWidget);
     final l = AppLocalizations.of(tester.element(find.byType(ReaderPane)));
     expect(find.text(l.cropAdjust), findsNothing);
     expect(find.text(l.cropMargins), findsOneWidget);
     final baseline = pdf.widthZoom;
-    final control = tester.widget<Slider>(slider);
-    control.onChanged!(1);
+    final drag = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await drag.down(tester.getCenter(percentage));
+    await drag.moveBy(const Offset(0, -160));
     await tester.pumpAndSettle();
     expect(pdf.zoom, closeTo(baseline * 2, .001));
-    expect(slider, findsOneWidget);
-    control.onChanged!(-1);
+    expect(find.descendant(of: control, matching: find.text('200%')), findsOneWidget);
+    expect(control, findsOneWidget);
+    await drag.moveBy(const Offset(0, 320));
     await tester.pumpAndSettle();
     expect(pdf.zoom, closeTo(baseline / 2, .001));
-    control.onChanged!(0);
+    expect(find.descendant(of: control, matching: find.text('50%')), findsOneWidget);
+    await drag.moveBy(const Offset(0, -160));
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, closeTo(baseline, .001));
+    // Limits clamp immediately; reversing does not require retracing the excess.
+    await drag.moveBy(const Offset(0, -1000));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: control, matching: find.text('400%')), findsOneWidget);
+    await drag.moveBy(const Offset(0, 160));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: control, matching: find.text('200%')), findsOneWidget);
+    await drag.moveBy(const Offset(0, 1000));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: control, matching: find.text('25%')), findsOneWidget);
+    await drag.moveBy(const Offset(0, -320));
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, closeTo(baseline, .001));
+    await tester.tap(find.descendant(of: control, matching: find.byTooltip(l.zoomIn)));
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, greaterThan(baseline));
+    await tester.tap(find.descendant(of: control, matching: find.byTooltip(l.zoomOut)));
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, closeTo(baseline, .001));
+    await tester.tap(percentage);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, greaterThan(baseline));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
     expect(pdf.zoom, closeTo(baseline, .001));
     // Page presets are nested and still execute through the real submenu.
@@ -64,7 +97,7 @@ void main() {
     await tester.tap(find.text(l.pdfActualSize));
     await tester.pumpAndSettle();
     expect(pdf.zoom, closeTo(1, .001));
-    expect(slider, findsNothing);
+    expect(control, findsNothing);
     await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
     expect(find.text(l.readerStylePaper), findsNothing);
@@ -80,7 +113,7 @@ void main() {
     expect(find.byKey(const ValueKey('crop-editor-toolbar')), findsOneWidget);
     expect(find.text(l.cropAdjust), findsNothing);
     expect(find.text(l.pdfFitWidth), findsNothing);
-    expect(slider, findsNothing);
+    expect(control, findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());

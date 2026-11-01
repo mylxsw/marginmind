@@ -53,7 +53,6 @@ Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor, {St
               unawaited(controller.switchModel(m, retryMessageId: retryMessageId).catchError((Object _) {}));
             },
             checked: sameModel(m, current),
-            icon: MMIcons.model,
           ),
       ],
       if (groups.isNotEmpty) const MMMenuDivider(),

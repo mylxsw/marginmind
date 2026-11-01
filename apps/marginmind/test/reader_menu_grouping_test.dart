@@ -74,7 +74,7 @@ void main() {
     await tester.pumpAndSettle();
     await openMenu(tester);
     expect(find.byKey(const ValueKey('reader-page-fit')), findsNothing);
-    expect(find.byKey(const ValueKey('reader-zoom-slider')), findsNothing);
+    expect(find.byKey(const ValueKey('reader-zoom-control')), findsNothing);
     expect(find.byKey(const ValueKey('reader-crop')), findsNothing);
     expect(find.text('Text & Layout…'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('reader-settings')));
