@@ -103,6 +103,7 @@ abstract final class MMIcons {
   static const IconData numberList = CupertinoIcons.list_number; // list.number
   static const IconData zoomIn = CupertinoIcons.plus;
   static const IconData zoomOut = CupertinoIcons.minus;
+  static const IconData addDocument = LucideIcons.filePlusCorner;
   static const IconData import = CupertinoIcons.tray_arrow_down; // square.and.arrow.down
   static const IconData library = CupertinoIcons.square_grid_2x2;
 
