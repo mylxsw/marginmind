@@ -33,12 +33,14 @@ class WorkspaceToolbar extends StatelessWidget {
     super.key,
     required this.items,
     required this.menuEntries,
+    this.trailingMenuEntries = const [],
     required this.label,
     this.menuIcon,
     this.overflowLabel,
   });
   final List<MMToolbarItem> items;
   final List<PopupMenuEntry<VoidCallback>> menuEntries;
+  final List<PopupMenuEntry<VoidCallback>> trailingMenuEntries;
   final String label;
   final Widget? menuIcon;
   final String? overflowLabel;
@@ -127,6 +129,7 @@ class WorkspaceToolbar extends StatelessWidget {
                       if (menuEntries.isNotEmpty) const PopupMenuDivider(),
                       ...scope.menuEntries,
                     ],
+                    ...trailingMenuEntries,
                   ],
                 ),
               ),

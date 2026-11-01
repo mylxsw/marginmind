@@ -1268,7 +1268,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                           enabled: map != null,
                                           child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
                                         ),
-                                        generateMapMenuItem(context, ref, widget.studySetId),
                                         MMDropdownItem<VoidCallback>(
                                           value: () => viewCommand('center', () => _viewCommand(MindMapCommand.center)),
                                           child: menuLabel(l.centerCurrentNode, const Icon(MMIcons.locate)),
@@ -1285,6 +1284,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                             child: menuLabel(l.removeFromMap, const Icon(MMIcons.trash)),
                                           ),
                                       ],
+                                      trailingMenuEntries: [generateMapMenuItem(context, ref, widget.studySetId)],
                                     ),
                                   ),
                                 ),
