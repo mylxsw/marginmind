@@ -128,12 +128,16 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: SizedBox(height: 18, child: VerticalDivider(width: 1, thickness: 1, color: c.separator)),
-                      ),
                     ],
-                    if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant)
+                    if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant) ...[
+                      if (documents)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: SizedBox(
+                            height: 18,
+                            child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
+                          ),
+                        ),
                       MMIconButton(
                         key: const ValueKey('toolbar-assistant'),
                         iconWidget: const AssistantIcon(),
@@ -143,6 +147,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                         color: c.research,
                         onPressed: () => toggleAssistant(ref, studySetId),
                       ),
+                    ],
                     const SizedBox(width: 12),
                   ],
                 ),
