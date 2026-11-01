@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foliarc · AI 功能模型配置与任务状态（GUL-645）· 交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMTypography / MMRadii), same as the other prototypes.
+   Static prototype: scenes are switched with the bar on top or with #scene-N in the URL. Not a running-app screenshot. */
+:root{
+  --win:#FFFFFF; --card:#FFFFFF; --group:rgba(120,120,128,.08);
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --hover:rgba(0,0,0,.045);
+  --accent:#007AFF; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
+  --ai:#5E5CE6; --aiTint:rgba(94,92,230,.12);
+  --glass:rgba(255,255,255,.92); --hair:rgba(0,0,0,.10); --sidebar:rgba(246,246,248,.9);
+  --popShadow:0 10px 36px rgba(0,0,0,.16); --sheetShadow:0 0 0 .5px rgba(0,0,0,.2),0 24px 70px rgba(0,0,0,.28);
+  --crit:#D70015; --caution:#B25000; --ok:#248A3D;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+}
+.dark{
+  --win:#1E1E1F; --card:#2C2C2E; --group:rgba(255,255,255,.05);
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --hover:rgba(255,255,255,.06);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.22);
+  --ai:#7D7AFF; --aiTint:rgba(125,122,255,.20);
+  --glass:rgba(44,44,47,.94); --hair:rgba(255,255,255,.10); --sidebar:rgba(40,40,42,.9);
+  --popShadow:0 12px 40px rgba(0,0,0,.5);
+  --crit:#FF6961; --caution:#FFB340; --ok:#30D158;
+}
+*{box-sizing:border-box}
+html,body{margin:0;font-family:var(--sans);font-size:13px;color:var(--label);-webkit-font-smoothing:antialiased}
+body{background:linear-gradient(135deg,#c9d6e8 0%,#e6dcef 50%,#f1e2d6 100%);min-height:100vh}
+body.dark{background:linear-gradient(135deg,#1b2333 0%,#2a2333 50%,#33281f 100%)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:default}
+#bar{position:fixed;left:0;right:0;top:0;height:34px;display:flex;align-items:center;gap:4px;padding:0 10px;background:rgba(255,255,255,.75);backdrop-filter:blur(20px);z-index:100;font-size:11.5px;overflow-x:auto;white-space:nowrap}
+#bar button{padding:3px 8px;border-radius:6px;color:#333}
+#bar button.on{background:#1d1d1f;color:#fff}
+.shot #bar{display:none}
+#stage{padding:54px 24px 24px;display:flex;justify-content:center;align-items:flex-start;gap:24px}
+.shot #stage{padding:24px}
+
+/* settings window */
+.win{position:relative;width:780px;height:600px;background:var(--win);border-radius:16px;box-shadow:var(--sheetShadow);display:flex;padding:8px;overflow:hidden;flex:none}
+.side{width:176px;flex:none;background:var(--sidebar);border-radius:12px;border:.5px solid var(--hair);padding:14px 10px 10px}
+.side h4{margin:0 8px 10px;font-size:13px;font-weight:600}
+.si{display:flex;align-items:center;gap:8px;height:28px;padding:0 8px;border-radius:7px;color:var(--label);margin-bottom:2px}
+.si.on{background:var(--fill)}
+.si i{width:14px;height:14px;border-radius:3px;background:var(--icon);opacity:.55;flex:none}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.ttl{height:48px;display:flex;align-items:center;padding:0 8px 0 24px;font-size:15px;font-weight:600;flex:none}
+.ttl .x{margin-left:auto;width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--icon);font-size:13px}
+.page{flex:1;overflow:auto;padding:4px 18px 16px}
+.col{max-width:540px;margin:0 auto}
+.hdr{padding:22px 4px 7px;font-size:11px;font-weight:600;color:var(--label2)}
+.hdr:first-child{padding-top:6px}
+.grp{background:var(--group);border-radius:10px;overflow:hidden}
+.grp+.grp{margin-top:8px}
+.row{min-height:40px;padding:0 14px;display:flex;flex-direction:column;justify-content:center;position:relative}
+.row+.row::before{content:"";position:absolute;left:14px;right:0;top:0;height:1px;background:var(--sep)}
+.rl{display:flex;align-items:center;min-height:40px;gap:12px}
+.rl .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.val{color:var(--label2)}
+.pop{display:inline-flex;align-items:center;gap:4px;height:22px;max-width:260px;padding:0 4px 0 8px;border-radius:6px;background:var(--fill4);white-space:nowrap}
+.pop span{overflow:hidden;text-overflow:ellipsis}
+.pop::after{content:"⌃⌄";font-size:8px;letter-spacing:-1px;writing-mode:vertical-lr;color:var(--icon);line-height:7px;margin-left:2px}
+.pop.inh span{color:var(--label2)}
+.pop.need span{color:var(--caution)}
+.pop.bad span{color:var(--label2);text-decoration:line-through}
+.pop.focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent)}
+.pop.hl{background:var(--accentTint)}
+.ex{display:flex;align-items:center;gap:6px;padding:0 0 9px;margin-top:-6px;font-size:11px;flex-wrap:wrap}
+.ex .ic{font-size:10px}
+.ex.crit{color:var(--crit)} .ex.caution{color:var(--caution)}
+.ex .sp{flex:1}
+.lnk{color:var(--accent);font-size:11px;font-weight:500;padding:2px 4px;border-radius:5px}
+.lnk:hover{background:var(--hover)}
+.spin{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--label3);border-top-color:transparent;display:inline-block;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.foot{flex:none;display:flex;align-items:center;gap:8px;padding:10px 18px 4px;border-top:1px solid var(--sep)}
+.foot .st{flex:1;font-size:11px;color:var(--label2)}
+.foot .st.crit{color:var(--crit)}
+.btn{height:22px;padding:0 10px;border-radius:6px;background:var(--fill);font-size:13px;display:inline-flex;align-items:center;white-space:nowrap}
+.btn.pri{background:var(--accent);color:var(--onAccent)}
+.btn.plain{background:none;color:var(--accent);padding:0 4px}
+.btn.dis{opacity:.4}
+.btn.crit{background:var(--crit);color:#fff}
+
+/* menu */
+.menu{position:absolute;z-index:40;min-width:240px;background:var(--glass);backdrop-filter:blur(30px);border-radius:8px;box-shadow:0 0 0 .5px var(--hair),var(--popShadow);padding:5px}
+.mi{display:flex;align-items:center;gap:6px;height:24px;padding:0 10px 0 6px;border-radius:5px;white-space:nowrap}
+.mi .ck{width:12px;font-size:11px;flex:none}
+.mi .b{margin-left:auto;padding-left:16px;color:var(--label3);font-size:12px}
+.mi.on{background:var(--accent);color:#fff}
+.mi.on .b{color:rgba(255,255,255,.8)}
+.mi.dis{color:var(--label3)}
+.mh{font-size:11px;font-weight:600;color:var(--label3);padding:6px 10px 2px 24px}
+.md{height:1px;background:var(--sep);margin:5px 6px}
+.tipbox{position:absolute;background:var(--label);color:var(--win);font-size:11.5px;padding:5px 9px;border-radius:7px;white-space:nowrap;z-index:50}
+
+/* sheet / hud */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;z-index:60}
+.sheet{width:340px;background:var(--card);border-radius:14px;box-shadow:var(--sheetShadow);padding:18px}
+.sheet h3{margin:0 0 10px;font-size:13px;font-weight:600}
+.sheet .lst{background:var(--group);border-radius:8px;padding:2px 0;margin-bottom:14px}
+.sheet .lst div{padding:6px 12px;font-size:12px}
+.sheet .lst div+div{border-top:1px solid var(--sep)}
+.sheet .acts{display:flex;justify-content:flex-end;gap:8px}
+.hud{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:var(--glass);backdrop-filter:blur(20px);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--popShadow);height:32px;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;white-space:nowrap;z-index:55}
+
+/* models page bits */
+.svc{display:flex;align-items:center;gap:10px;min-height:52px}
+.logo{width:28px;height:28px;border-radius:7px;background:#d97757;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.sw{width:26px;height:15px;border-radius:8px;background:var(--ok);position:relative;flex:none}
+.sw::after{content:"";position:absolute;right:1.5px;top:1.5px;width:12px;height:12px;border-radius:6px;background:#fff}
+.sw.off{background:var(--fill)} .sw.off::after{left:1.5px;right:auto}
+.minus{width:16px;height:16px;border-radius:8px;border:1px solid var(--icon);color:var(--icon);font-size:12px;line-height:13px;text-align:center}
+
+/* phone */
+.phone{width:390px;height:780px;border-radius:44px;background:#000;padding:10px;flex:none;box-shadow:0 30px 80px rgba(0,0,0,.3)}
+.screen{width:100%;height:100%;border-radius:36px;background:rgba(0,0,0,.35);position:relative;overflow:hidden}
+.bsheet{position:absolute;left:0;right:0;bottom:0;top:54px;background:var(--win);border-radius:14px 14px 0 0;display:flex;flex-direction:column}
+.bsheet .grab{width:36px;height:5px;border-radius:3px;background:var(--fill);margin:6px auto 4px}
+.bsheet .bh{display:flex;align-items:center;padding:4px 16px 8px;font-size:17px;font-weight:600}
+.seg{display:flex;gap:2px;background:var(--fill);border-radius:9px;padding:2px;margin:0 16px 10px;overflow:hidden}
+.seg span{padding:5px 10px;border-radius:7px;font-size:12px;color:var(--label2);white-space:nowrap}
+.seg span.on{background:var(--card);color:var(--label);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.phone .page{padding:0 16px 12px}
+.phone .row{min-height:52px}
+.phone .rl{min-height:52px}
+.phone .stk{flex-direction:column;align-items:stretch;gap:6px;padding:9px 0}
+.phone .stk .pop{align-self:flex-end;height:30px;border-radius:8px;max-width:100%}
+.phone .pop{height:30px;border-radius:8px}
+.phone .foot{padding:10px 16px 28px}
+.phone .btn{height:30px;border-radius:8px;padding:0 14px}
+
+/* task panel */
+.app{width:760px;height:600px;background:var(--win);border-radius:16px;box-shadow:var(--sheetShadow);position:relative;overflow:hidden;flex:none}
+.tb{height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:.5px solid var(--sep)}
+.tb .t{font-weight:600}
+.cap{height:24px;border-radius:12px;padding:0 10px 0 6px;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;background:var(--fill4)}
+.cap.caution{background:color-mix(in srgb,var(--caution) 12%,transparent);color:var(--caution)}
+.cap.crit{background:color-mix(in srgb,var(--crit) 10%,transparent);color:var(--crit)}
+.ring{width:12px;height:12px;border-radius:6px;background:conic-gradient(currentColor var(--p),var(--fill) 0)}
+.panel{position:absolute;width:372px;background:var(--glass);backdrop-filter:blur(30px);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--popShadow);padding:14px;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;align-items:baseline;gap:8px}
+.ph b{font-size:13px}
+.ph .s{margin-left:auto;font-size:11px;font-weight:500}
+.banner{border-radius:8px;padding:8px 10px;font-size:12px;display:flex;align-items:center;gap:8px}
+.banner.caution{background:color-mix(in srgb,var(--caution) 11%,transparent)}
+.banner.crit{background:color-mix(in srgb,var(--crit) 9%,transparent)}
+.banner .sp{flex:1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stats div{background:var(--fill4);border-radius:8px;padding:7px 9px}
+.stats b{display:block;font-size:15px}
+.stats span{font-size:11px;color:var(--label2)}
+.kv{display:flex;align-items:center;font-size:12px;gap:8px;min-height:24px}
+.kv .k{color:var(--label2);width:44px;flex:none}
+.kv .pop{height:22px}
+.acts{display:flex;gap:8px;align-items:center}
+.acts .sp{flex:1}
+.reader{position:absolute;left:0;top:44px;bottom:0;width:100%;padding:28px 60px;color:var(--label3);font-family:"Songti SC","Noto Serif CJK SC",serif;font-size:15px;line-height:30px}
+.reader p{margin:0 0 14px}
+.setup{position:absolute;left:50%;top:70px;transform:translateX(-50%);width:460px;background:var(--card);border-radius:16px;box-shadow:var(--sheetShadow);padding:18px;z-index:20}
+.setup h3{margin:0 0 14px;font-size:13px}
+.frm{display:grid;grid-template-columns:72px 1fr;row-gap:12px;align-items:center;font-size:13px}
+.frm .k{color:var(--label2)}
+.composer{position:absolute;right:16px;bottom:16px;width:360px;border:1.5px solid var(--ai);border-radius:16px;padding:10px 12px;background:var(--card)}
+.composer .ph2{color:var(--label3);margin-bottom:14px}
+.composer .tools{display:flex;align-items:center;gap:10px;color:var(--label2);font-size:12px}
+.composer .chip{margin-left:auto;display:inline-flex;align-items:center;gap:3px;padding:3px 6px;border-radius:6px;background:var(--hover);color:var(--label2)}
+.msg{position:absolute;left:24px;right:24px;font-size:13px;line-height:22px}
+.meta{font-size:11px;color:var(--label3);margin-top:4px}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="stage"></div>
+<script>
+const S = {
+  quickDefault:'Claude Haiku 4.5', heavyDefault:'Anthropic · Claude Opus 4.5', opus:'Anthropic · Claude Opus 4.5',
+};
+const Q = [['selection_translate','选区翻译'],['word_lookup','单词释义'],['title_generate','标题生成']];
+const H = [['assistant_chat','助手对话与解释'],['conversation_summarize','对话总结'],['document_summarize','文档归纳'],['document_translate','全文翻译'],['map_expand','思维导图扩写'],['map_generate','思维导图生成与更新'],['research','调研与查证'],['study_notes','学习笔记整理与改写'],['review_cards','复习卡与问题生成']];
+
+function sidebar(active){
+  const tabs=['通用','阅读','脑图','模型','AI 功能','联网搜索','语音'];
+  return `<div class="side"><h4>设置</h4>${tabs.map(t=>`<div class="si ${t===active?'on':''}"><i></i>${t}</div>`).join('')}</div>`;
+}
+function pop(text, cls='', extra=''){return `<span class="pop ${cls}" ${extra}><span>${text}</span></span>`}
+function row(name, right, ex=''){return `<div class="row"><div class="rl"><span class="n">${name}</span>${right}</div>${ex}</div>`}
+function exl(kind, icon, text, actions=[]){return `<div class="ex ${kind}"><span class="ic">${icon}</span><span>${text}</span><span class="sp"></span>${actions.map(a=>`<button class="lnk">${a}</button>`).join('')}</div>`}
+
+/* Options: o.rows overrides per taskType: {label, cls, ex} */
+function aiPage(o={}){
+  const r=o.rows||{};
+  const qd=o.quickDefault??pop(S.quickDefault);
+  const hd=o.heavyDefault??pop(S.heavyDefault);
+  const fn=(id,name,inh)=>{const x=r[id]||{};return row(name,x.html??pop(x.label??inh,x.cls??'inh',x.attr??''),x.ex??'')};
+  return `
+  <div class="hdr">快速任务</div>
+  <div class="grp">
+    ${row('默认模型',qd,o.quickDefaultEx??'')}
+    ${row('思考',o.quickThinking??'<span class="val">关闭</span>',o.quickThinkingEx??'')}
+  </div>
+  <div class="grp">${Q.map(([id,n])=>fn(id,n,o.quickInh??'Claude Haiku 4.5')).join('')}</div>
+  <div class="hdr">重型任务</div>
+  <div class="grp">
+    ${row('默认模型',hd,o.heavyDefaultEx??'')}
+    ${row('思考',o.heavyThinking??pop('自动'))}
+  </div>
+  <div class="grp">${H.map(([id,n])=>fn(id,n,o.heavyInh??S.opus)).join('')}</div>`;
+}
+function footer(st='',cls='',dirty=false,restore=true){
+  return `<div class="foot"><span class="st ${cls}">${st}</span><button class="btn ${restore?'':'dis'}">恢复跟随默认</button><button class="btn pri ${dirty?'':'dis'}">保存</button></div>`;
+}
+function settingsWin(active, content, foot='', overlay='', h=600){
+  return `<div class="win" style="height:${h}px">${sidebar(active)}<div class="main"><div class="ttl">${active}<span class="x">✕</span></div><div class="page" id="pg"><div class="col">${content}</div></div>${foot}${overlay}</div></div>`;
+}
+
+const normalRows={title_generate:{label:'GPT-5 mini',cls:''},document_translate:{label:'公司代理 · Claude Opus 4.5',cls:''}};
+
+const scenes = [
+ ['1 正常', ()=>settingsWin('AI 功能', aiPage({rows:normalRows}), footer(), '', 1130)],
+ ['2 选择器', ()=>settingsWin('AI 功能', aiPage({rows:{...normalRows,word_lookup:{label:'Claude Haiku 4.5',cls:'inh focus'}}}), footer(),
+   `<div class="menu" style="left:250px;top:236px;width:300px">
+     <div class="mi on"><span class="ck">✓</span>跟随默认<span class="b">Claude Haiku 4.5</span></div>
+     <div class="md"></div>
+     <div class="mh">Anthropic</div>
+     <div class="mi"><span class="ck"></span>Claude Haiku 4.5</div>
+     <div class="mi dis"><span class="ck"></span>Claude Opus 4.5<span class="b">无法关闭思考</span></div>
+     <div class="mh">公司代理</div>
+     <div class="mi"><span class="ck"></span>Claude Opus 4.5<span class="b">需验证</span></div>
+     <div class="mh">OpenAI</div>
+     <div class="mi"><span class="ck"></span>GPT-5 mini</div>
+     <div class="mh">Ollama</div>
+     <div class="mi"><span class="ck"></span>Qwen3 8B<span class="b">需验证</span></div>
+   </div>`)],
+ ['3 重型行菜单', ()=>{const w=settingsWin('AI 功能', aiPage({rows:normalRows}), footer('未保存','',true), `<div class="menu" style="left:250px;top:120px;width:300px">
+     <div class="mi"><span class="ck"></span>跟随默认<span class="b">Anthropic · Claude Opus 4.5</span></div>
+     <div class="md"></div>
+     <div class="mh">Anthropic</div>
+     <div class="mi"><span class="ck"></span>Claude Opus 4.5</div>
+     <div class="mi dis"><span class="ck"></span>Claude Haiku 3<span class="b">不支持工具调用</span></div>
+     <div class="mh">公司代理</div>
+     <div class="mi on"><span class="ck">✓</span>Claude Opus 4.5</div>
+     <div class="md"></div>
+     <div class="mh">思考</div>
+     <div class="mi"><span class="ck">✓</span>自动</div>
+     <div class="mi"><span class="ck"></span>关闭</div>
+     <div class="mi"><span class="ck"></span>标准</div>
+     <div class="mi"><span class="ck"></span>深入</div>
+   </div>`);return w.replace('id="pg"','id="pg" data-scroll="330"')}],
+ ['4 异常集合', ()=>settingsWin('AI 功能', aiPage({
+     quickDefault:pop(S.opus),
+     quickThinkingEx:exl('crit','⚠','此模型无法关闭思考',['更换模型']),
+     rows:{
+       selection_translate:{label:S.opus,cls:'inh need'},
+       word_lookup:{label:S.opus,cls:'inh need'},
+       title_generate:{label:'Qwen3 8B',cls:'',ex:exl('caution','⚠','需验证兼容性',['测试'])},
+       conversation_summarize:{label:'Claude Sonnet 4',cls:'bad',ex:exl('crit','⚠','模型已删除',['重新选择'])},
+       document_translate:{label:'公司代理 · Claude Opus 4.5',cls:'',ex:exl('caution','⚠','连接不可用',['打开模型设置'])},
+       research:{label:'Claude Haiku 3',cls:'',ex:exl('crit','⚠','此模型不支持工具调用',['重新选择'])},
+       review_cards:{label:'GPT-4.1',cls:'bad',ex:exl('crit','⚠','服务已停用',['重新选择'])},
+     }}), footer(), '', 1290)],
+ ['5 未设置默认 / 空态', ()=>`<div style="display:flex;gap:24px">${settingsWin('AI 功能', aiPage({
+     quickDefault:pop('选择模型','need'), quickThinking:'<span class="val">关闭</span>',
+     quickInh:'需配置', rows:{title_generate:{label:'GPT-5 mini',cls:''},selection_translate:{label:'需配置',cls:'need'},word_lookup:{label:'需配置',cls:'need'}}
+   }), footer('','',false,true))}</div>`],
+ ['6 空态', ()=>settingsWin('AI 功能', `<div style="height:420px;display:flex;align-items:center;justify-content:center"><button class="btn pri">添加模型</button></div>`, '')],
+ ['7 保存失败 / 冲突', ()=>'<div style="display:flex;flex-direction:column;gap:16px">'+settingsWin('AI 功能', aiPage({rows:{...normalRows,map_generate:{label:'GPT-5',cls:''}}}), footer('保存失败，请重试','crit',true))+settingsWin('AI 功能', aiPage({rows:{...normalRows,map_generate:{label:'GPT-5',cls:''}}}), `<div class="foot"><span class="st crit">设置已在其他窗口更改</span><button class="btn">重新载入</button><button class="btn pri dis">保存</button></div>`)+'</div>'],
+ ['8 模型页分配入口', ()=>settingsWin('模型', `
+   <div class="hdr">服务</div>
+   <div class="grp">
+    <div class="row"><div class="svc"><span class="logo">A</span><div style="flex:1"><div style="font-weight:600">Anthropic</div><div style="font-size:11px;color:var(--label2)">3 个模型</div></div><span class="sw"></span><span style="color:var(--icon)">⌄</span></div></div>
+    <div class="row"><div class="rl"><span class="n">Claude Haiku 4.5</span></div></div>
+    <div class="row" style="background:var(--hover)"><div class="rl"><span class="n">Claude Opus 4.5</span><button class="btn plain">分配…</button><span class="minus">−</span><span class="sw"></span></div></div>
+    <div class="row"><div class="rl"><span class="n">Claude Sonnet 4</span><span class="sw"></span></div></div>
+   </div>`, '', `<div class="hud">已添加 2 个模型<button class="btn plain">分配给功能</button></div>`)],
+ ['9 定位到模型', ()=>settingsWin('AI 功能', aiPage({heavyDefault:pop(S.heavyDefault,'hl focus'),rows:{...normalRows,assistant_chat:{label:S.opus,cls:'inh hl'},conversation_summarize:{label:S.opus,cls:'inh hl'}}}), footer())],
+ ['10 删除影响', ()=>settingsWin('模型', `
+   <div class="hdr">服务</div>
+   <div class="grp">
+    <div class="row"><div class="svc"><span class="logo">A</span><div style="flex:1"><div style="font-weight:600">Anthropic</div><div style="font-size:11px;color:var(--label2)">3 个模型</div></div><span class="sw"></span></div></div>
+    <div class="row"><div class="rl"><span class="n">Claude Opus 4.5</span><span class="minus">−</span><span class="sw"></span></div></div>
+   </div>`, '', `<div class="scrim"><div class="sheet"><h3>移除“Anthropic · Claude Opus 4.5”？</h3>
+     <div class="lst"><div>重型任务默认模型</div><div>全文翻译</div><div>调研与查证</div><div>当前对话</div></div>
+     <div class="acts"><button class="btn">取消</button><button class="btn crit">移除</button></div></div></div>`)],
+ ['11 窄屏', ()=>`<div class="phone"><div class="screen"><div class="bsheet"><div class="grab"></div><div class="bh">设置<span style="margin-left:auto;font-size:15px;color:var(--icon)">✕</span></div>
+   <div class="seg"><span>阅读</span><span>脑图</span><span>模型</span><span class="on">AI 功能</span><span>联网搜索</span></div>
+   <div class="page" data-scroll="560"><div class="col">${aiPage({rows:{
+       title_generate:{label:'GPT-5 mini',cls:''},
+       document_translate:{label:'公司代理 · Claude Opus 4.5',cls:''},
+       map_generate:{label:S.opus,cls:'inh',ex:exl('caution','⚠','需验证兼容性',['测试'])}
+     }}).replace(/<div class="rl"><span class="n">(助手对话与解释|对话总结|文档归纳|思维导图扩写|思维导图生成与更新|调研与查证|学习笔记整理与改写|复习卡与问题生成|全文翻译)<\/span>/g,'<div class="rl stk"><span class="n">$1</span>')}</div></div>
+   <div class="foot"><span class="st">未保存</span><button class="btn">恢复跟随默认</button><button class="btn pri">保存</button></div>
+   </div></div></div>`],
+ ['12 深色', ()=>settingsWin('AI 功能', aiPage({rows:{...normalRows,research:{label:'Claude Haiku 3',cls:'',ex:exl('crit','⚠','此模型不支持工具调用',['重新选择'])}}}), footer('未保存','',true), '', 1170)],
+ ['13 开始前拦截', ()=>`<div class="app"><div class="tb"><span class="t">Deep Work.pdf</span></div>
+   <div class="reader"><p>Professional activities performed in a state of distraction-free concentration that push your cognitive capabilities to their limit.</p><p>These efforts create new value, improve your skill, and are hard to replicate.</p></div>
+   <div class="setup"><h3>翻译全文</h3><div class="frm">
+     <span class="k">语言</span><span>English → 简体中文</span>
+     <span class="k">范围</span><span>全部 · 248 页</span>
+     <span class="k">模型</span><span>${pop('公司代理 · Claude Opus 4.5','bad')}</span>
+   </div>
+   <div class="ex crit" style="margin:10px 0 0 72px;padding:0">⚠ 模型已删除</div>
+   <div class="acts" style="margin-top:18px"><button class="btn plain">AI 功能设置</button><span class="sp"></span><button class="btn">取消</button><button class="btn pri dis">开始翻译</button></div></div>
+   <div class="menu" style="left:226px;top:230px;width:290px;z-index:30">
+     <div class="mi"><span class="ck"></span>跟随设置<span class="b">公司代理 · Claude Opus 4.5</span></div>
+     <div class="md"></div><div class="mh">Anthropic</div>
+     <div class="mi on"><span class="ck"></span>Claude Opus 4.5</div>
+     <div class="mi dis"><span class="ck"></span>Claude Haiku 3<span class="b">不支持工具调用</span></div>
+     <div class="mh">OpenAI</div><div class="mi"><span class="ck"></span>GPT-5</div>
+   </div></div>`],
+ ['14 长任务状态', ()=>`<div class="app"><div class="tb"><span class="t">Deep Work.pdf</span><span style="flex:1"></span>
+     <span class="cap caution"><span class="ring" style="--p:62%"></span>已中断 154/248 页</span></div>
+   <div class="reader" style="opacity:.5"><p>Professional activities performed in a state of distraction-free concentration…</p></div>
+   <div class="panel" style="right:14px;top:52px">
+     <div class="ph"><b>全文翻译</b><span style="font-size:11px;color:var(--label2)">English → 简体中文</span><span class="s" style="color:var(--caution)">已中断</span></div>
+     <div class="banner caution"><span>⚠</span><span>上次运行未完成</span><span class="sp"></span></div>
+     <div class="stats"><div><b>1,932</b><span>/ 3,104 段</span></div><div><b>41.2k</b><span>token（估）</span></div><div><b>1,172</b><span>未译</span></div></div>
+     <div class="kv"><span class="k">模型</span>${pop(S.opus)}</div>
+     <div class="acts"><button class="btn plain" style="color:var(--crit)">停止</button><span class="sp"></span><button class="btn pri">继续</button></div>
+   </div>
+   <div class="panel" style="left:14px;top:300px;width:350px">
+     <div class="ph"><b>文档归纳</b><span class="s" style="color:var(--caution)">部分完成 · 3 节未完成</span></div>
+     <div class="kv"><span class="k">模型</span><span>Anthropic · Claude Opus 4.5 → GPT-5</span></div>
+     <div class="acts"><span class="sp"></span><button class="btn">查看结果</button><button class="btn pri">重试 3 节</button></div>
+   </div>
+   <div class="panel" style="right:14px;top:330px">
+     <div class="ph"><b>思维导图生成</b><span class="s" style="color:var(--label2)">已暂停 6/14 章</span></div>
+     <div class="banner crit"><span>⚠</span><span>连接不可用</span><span class="sp"></span><button class="lnk">打开模型设置</button></div>
+     <div class="kv"><span class="k">模型</span>${pop(S.opus,'focus')}</div>
+     <div class="acts"><button class="btn plain" style="color:var(--crit)">停止</button><span class="sp"></span><button class="btn pri">继续</button></div>
+   </div></div>`],
+ ['15 后续使用', ()=>`<div class="app"><div class="tb"><span class="t">Deep Work.pdf</span><span style="flex:1"></span><span class="cap"><span class="ring" style="--p:40%"></span>已暂停 6/14 章</span></div>
+   <div class="panel" style="right:14px;top:52px">
+     <div class="ph"><b>思维导图生成</b><span class="s" style="color:var(--label2)">已暂停 6/14 章</span></div>
+     <div class="kv"><span class="k">模型</span>${pop(S.opus)}</div>
+     <div class="acts"><button class="btn plain" style="color:var(--crit)">停止</button><span class="sp"></span><button class="btn pri">继续</button></div>
+   </div>
+   <div class="scrim"><div class="sheet"><h3>后续使用 GPT-5？</h3>
+     <div class="lst"><div>已完成 6 章 · Anthropic · Claude Opus 4.5</div><div>剩余 8 章 · GPT-5</div></div>
+     <div class="acts"><button class="btn">取消</button><button class="btn pri">后续使用</button></div></div></div></div>`],
+ ['16 助手模型菜单', ()=>`<div class="app"><div class="tb"><span class="t">助手</span></div>
+   <div class="msg" style="top:70px"><div style="font-weight:600;margin-bottom:4px">对话总结</div>结论：…<div class="meta">GPT-5</div></div>
+   <div class="composer"><div class="ph2">提问…</div><div class="tools"><span>@</span><span>⊘</span><span style="color:var(--ai)">联网</span><span class="chip">Claude Opus 4.5 ⌄</span></div></div>
+   <div class="menu" style="right:30px;bottom:96px;width:250px">
+     <div class="mi on"><span class="ck">✓</span>跟随设置<span class="b">Claude Opus 4.5</span></div>
+     <div class="md"></div><div class="mh">Anthropic</div>
+     <div class="mi"><span class="ck"></span>Claude Opus 4.5</div><div class="mi"><span class="ck"></span>Claude Haiku 4.5</div>
+     <div class="mh">OpenAI</div><div class="mi"><span class="ck"></span>GPT-5</div>
+     <div class="md"></div><div class="mi"><span class="ck"></span>AI 功能设置…<span class="b">⌘,</span></div>
+   </div></div>`],
+ ['17 快速任务拦截', ()=>`<div class="app"><div class="tb"><span class="t">Deep Work.pdf</span></div>
+   <div class="reader"><p><span style="background:var(--accentTint);color:var(--label)">distraction-free concentration</span> that push your cognitive capabilities to their limit.</p></div>
+   <div class="panel" style="left:90px;top:120px;width:320px;gap:10px">
+     <div class="banner crit"><span>⚠</span><span>此模型无法关闭思考</span><span class="sp"></span></div>
+     <div class="acts"><span class="sp"></span><button class="btn">更换本次模型</button><button class="btn pri">AI 功能设置</button></div>
+   </div></div>`],
+];
+
+const bar=document.getElementById('bar'), stage=document.getElementById('stage');
+function show(i){
+  const dark = scenes[i][0].includes('深色');
+  document.body.classList.toggle('dark',dark);
+  stage.innerHTML=scenes[i][1]();
+  [...bar.children].forEach((b,j)=>b.classList.toggle('on',j===i));
+  document.querySelectorAll('[data-scroll]').forEach(p=>p.scrollTop=+p.dataset.scroll);
+  location.hash='scene-'+(i+1);
+}
+scenes.forEach(([n],i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>show(i);bar.appendChild(b)});
+const m=location.hash.match(/scene-(\d+)/);
+if(new URLSearchParams(location.search).has('shot'))document.body.classList.add('shot');
+show(m?Math.min(+m[1]-1,scenes.length-1):0);
+</script>
+</body>
+</html>
