@@ -189,6 +189,7 @@ abstract interface class ProviderPolicyCompiler {
     required ReasoningPolicy requested,
     required CapabilityIdentity identity,
     required ModelCapabilityProfile capabilities,
+    int? maxOutputTokens,
   });
 }
 

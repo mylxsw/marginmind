@@ -27,6 +27,11 @@ TaskSpec _spec(TaskType type, String result) => TaskSpec(
   promptVersion: quickPromptVersion,
   schemaVersion: '1',
   completionRule: result,
+  maxOutputTokens: type == TaskType.titleGenerate
+      ? 64
+      : type == TaskType.wordLookup
+      ? 8192
+      : null,
 );
 TaskSpec quickTaskSpec(TaskType type) => switch (type) {
   TaskType.selectionTranslate => selectionTranslationSpec,
@@ -132,3 +137,11 @@ class _QuickValidator implements TaskValidator<String> {
     return ValidationReport();
   }
 }
+
+/// Converts adapter input to the public request ceiling before resolution.
+int? quickTaskOutputLimit(TaskType type, Map<String, dynamic> input) => switch (type) {
+  TaskType.titleGenerate => 64,
+  TaskType.wordLookup => input['contextOnly'] == true ? 4096 : 8192,
+  TaskType.selectionTranslate => input['maxOutputTokens'] as int?,
+  _ => throw ArgumentError('Not a quick task'),
+};

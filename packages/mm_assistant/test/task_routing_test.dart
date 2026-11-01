@@ -73,6 +73,31 @@ void main() {
     }
     resolver = TaskModelResolver(catalog: () async => catalog, profiles: profiles);
   });
+  test('request limit reduces spec ceiling; invalid limits fail before dispatch', () async {
+    final route = routing(defaults: {'quick': const ModelReference('a', 'same').toJson()});
+    for (final (requested, expected) in [(null, 64), (32, 32), (8192, 64)]) {
+      final config = await resolver.resolve(
+        TaskRequest<String>(
+          spec: titleGenerationSpec,
+          input: {},
+          inputFingerprint: 'limit',
+          maxOutputTokens: requested,
+        ),
+        route,
+      );
+      expect(config.policy.maxOutputTokens, expected);
+    }
+    for (final invalid in [0, -1]) {
+      final row = await resolver.inspect(
+        TaskRequest<String>(spec: titleGenerationSpec, input: {}, inputFingerprint: 'limit', maxOutputTokens: invalid),
+        route,
+      );
+      expect(row.failureCode, 'invalidOutputLimit');
+    }
+    expect(quickTaskOutputLimit(TaskType.wordLookup, {'contextOnly': true}), 4096);
+    expect(quickTaskOutputLimit(TaskType.wordLookup, {'contextOnly': false}), 8192);
+    expect(quickTaskOutputLimit(TaskType.selectionTranslate, {'maxOutputTokens': 3072}), 3072);
+  });
   for (final type in TaskType.values) {
     test('${type.key} resolves class default, binding and explicit in order', () async {
       final config = routing(defaults: {type.category.name: const ModelReference('a', 'same').toJson()});

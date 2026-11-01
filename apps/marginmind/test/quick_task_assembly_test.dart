@@ -160,6 +160,7 @@ void main() {
       );
       expect(await generateAssistantTitle(execute, 'question'), 'Title');
       expect(bodies, hasLength(7));
+      expect(bodies.map((b) => b['max_completion_tokens']), [2048, 2048, 2048, 8192, 8192, 64, 64]);
       expect(bodies.every((b) => b['reasoning_effort'] == 'none'), true);
       expect(bodies.every((b) => !b.containsKey('tools') || (b['tools'] as List).isEmpty), true);
       expect(bodies.take(5).every((b) => b['model'] == 'fixture-model'), true);

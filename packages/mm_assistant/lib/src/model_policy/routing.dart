@@ -132,6 +132,7 @@ class TaskModelResolver implements ModelResolver {
       }
       snapshot = {'serviceLabel': service.name, 'modelLabel': model.displayName};
       final identity = serviceCapabilityIdentity(service, model);
+      await profiles.refresh();
       final capabilities = profiles.lookup(identity);
       validateTaskCapabilities(request.spec, capabilities);
       final policy = compiler.compile(
@@ -139,6 +140,7 @@ class TaskModelResolver implements ModelResolver {
         requested: reasoning,
         identity: identity,
         capabilities: capabilities,
+        maxOutputTokens: _requestLimit(request),
       );
       final config = ResolvedTaskConfig(
         capabilities: capabilities,
@@ -327,4 +329,10 @@ ModelReference? conversationRoutingOverride(Map<String, dynamic> view, TaskType 
   if (routing['version'] != 1) throw const ConfigurationFailure('unsupportedConversationRoutingVersion');
   final model = routing['assistantChat'] as Map?;
   return model == null ? null : ModelReference.fromJson(Map<String, dynamic>.from(model));
+}
+
+int? _requestLimit<T>(TaskRequest<T> request) {
+  final limits = [request.maxOutputTokens, request.spec.maxOutputTokens].whereType<int>().toList();
+  if (limits.any((limit) => limit <= 0)) throw const ConfigurationFailure('invalidOutputLimit');
+  return limits.isEmpty ? null : limits.reduce((a, b) => a < b ? a : b);
 }

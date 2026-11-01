@@ -113,7 +113,65 @@ class DelayedClient extends ScriptClient {
   }
 }
 
+class RetryThenRepairClient extends ScriptClient {
+  RetryThenRepairClient() : super([answer('bad'), answer('Title')]);
+  bool failed = false;
+  @override
+  Future<sdk.ModelMessage> generate(
+    List<sdk.LLMMessage> messages, {
+    List<sdk.Tool>? tools,
+    sdk.ToolChoice? toolChoice,
+    required sdk.ModelConfig modelConfig,
+    bool? jsonOutput,
+    CancelToken? cancelToken,
+  }) async {
+    if (!failed) {
+      failed = true;
+      modelConfigs.add(modelConfig);
+      final options = RequestOptions(path: '/');
+      throw DioException(
+        requestOptions: options,
+        response: Response(
+          requestOptions: options,
+          statusCode: 503,
+          headers: Headers.fromMap({
+            'retry-after': ['0'],
+          }),
+        ),
+      );
+    }
+    return super.generate(
+      messages,
+      tools: tools,
+      toolChoice: toolChoice,
+      modelConfig: modelConfig,
+      jsonOutput: jsonOutput,
+      cancelToken: cancelToken,
+    );
+  }
+}
+
 void main() {
+  test('frozen request ceiling survives archive roundtrip, transport retry and schema repair', () async {
+    final encoded = encodeRunContext(context());
+    (encoded['policy'] as Map)['maxOutputTokens'] = 64;
+    final frozen = decodeRunContext(encoded);
+    final store = Store(), client = RetryThenRepairClient();
+    final result = await runtime(store, client).start(request(), frozen).result;
+    expect(result.status, RunStatus.completed);
+    expect(client.modelConfigs, hasLength(3));
+    for (final config in client.modelConfigs) {
+      expect(config.maxTokens, 64);
+      expect(config.extra?['reasoning_effort'], 'none');
+    }
+    expect(store.saved!.context.config.policy.maxOutputTokens, 64);
+    (encoded['policy'] as Map).remove('maxOutputTokens');
+    (encoded['capabilities'] as Map)['outputTokens'] = 8192;
+    expect(decodeRunContext(encoded).config.policy.maxOutputTokens, 8192);
+    (encoded['capabilities'] as Map)['outputTokens'] = null;
+    expect(decodeRunContext(encoded).config.policy.maxOutputTokens, isNull);
+  });
+
   test('quick runs SDK, no tools/knowledge, off on every repair and records unknown usage', () async {
     final store = Store(), client = ScriptClient([answer('bad'), answer('Title')]);
     final handle = runtime(store, client).start(request(), context());

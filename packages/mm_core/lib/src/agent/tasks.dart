@@ -42,6 +42,7 @@ class TaskSpec {
     Set<String> allowedTools = const {},
     Set<ModelCapability> requiredCapabilities = const {},
     this.maxRepairs = 1,
+    this.maxOutputTokens,
   }) : allowedTools = Set.unmodifiable(allowedTools),
        requiredCapabilities = Set.unmodifiable(requiredCapabilities) {
     if (maxRepairs < 0 || (type.category == TaskCategory.quick && (allowedTools.isNotEmpty || maxRepairs > 1))) {
@@ -53,6 +54,7 @@ class TaskSpec {
   final Set<String> allowedTools;
   final Set<ModelCapability> requiredCapabilities;
   final int maxRepairs;
+  final int? maxOutputTokens;
   TaskCategory get category => type.category;
   List<String> get knowledgePacks => type.knowledgePacks;
 }
@@ -64,6 +66,7 @@ class TaskRequest<T> {
     required this.inputFingerprint,
     this.modelOverride,
     this.reasoning,
+    this.maxOutputTokens,
     this.purpose = RunPurpose.task,
   }) : input = freezeAgentJson(input);
   final TaskSpec spec;
@@ -71,6 +74,7 @@ class TaskRequest<T> {
   final String inputFingerprint;
   final ModelReference? modelOverride;
   final ReasoningPolicy? reasoning;
+  final int? maxOutputTokens;
   final RunPurpose purpose;
 }
 

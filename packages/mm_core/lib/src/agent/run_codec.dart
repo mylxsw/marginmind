@@ -44,6 +44,7 @@ Map<String, dynamic> encodeRunContext(RunContext c) {
       'effective': policy.effective.name,
       'recipe': policy.recipe.name,
       'parameters': policy.parameters,
+      'maxOutputTokens': policy.maxOutputTokens,
     },
     'routingRevision': c.config.routingRevision,
     'serviceLabel': c.config.serviceLabel,
@@ -102,6 +103,7 @@ RunContext decodeRunContext(Map<String, dynamic> j) {
       ),
       policy: ProviderCallPolicy(
         identity: id,
+        maxOutputTokens: p.containsKey('maxOutputTokens') ? p['maxOutputTokens'] : c['outputTokens'],
         requested: ReasoningPolicy.values.byName(p['requested']),
         effective: ReasoningPolicy.values.byName(p['effective']),
         recipe: ReasoningRecipe.values.byName(p['recipe']),
