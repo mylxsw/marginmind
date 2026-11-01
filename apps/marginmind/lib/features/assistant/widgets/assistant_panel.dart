@@ -20,6 +20,11 @@ import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../../../settings/settings_window.dart';
 import '../assistant_settings.dart';
+import 'assistant_task_setup.dart';
+
+import 'package:mm_assistant/mm_assistant.dart' show conversationRoutingOverride, RoutingIssue;
+import 'package:mm_core/mm_core.dart' show TaskType, ModelReference;
+
 import 'assistant_conversations.dart';
 import 'assistant_composer.dart';
 import 'assistant_markdown.dart' show sourceNumbers;
@@ -92,14 +97,15 @@ class AssistantHost extends ConsumerWidget {
       final open = ref.read(assistantControllerProvider);
       if (next == null || open.readOnly || open.messages.isNotEmpty) return;
       if (sameModel(open.model, next) && open.model.endpoint == next.endpoint) return;
-      unawaited(ref.read(assistantControllerProvider.notifier).switchModel(next).catchError((Object _) {}));
+      unawaited(ref.read(assistantControllerProvider.notifier).refreshDefaultModel(next).catchError((Object _) {}));
     });
     ref.listen(assistantUiProvider(studySetId).select((s) => s.request), (_, request) async {
       if (request == null) return;
       ref.read(assistantUiProvider(studySetId).notifier).handled(request.id);
       final l = context.l10n;
-      final configured = await ref.read(assistantConfiguredProvider.future).catchError((Object _) => false);
-      if (!configured || !context.mounted) return; // The panel shows how to connect.
+      // Each requested skill resolves its own route, including Quick translation.
+      // An unrelated legacy default must not consume or block the request.
+      if (!context.mounted) return;
       assistantSend(ref, studySetId, l, request.text, skill: request.skill);
     });
     return child;
@@ -118,7 +124,14 @@ class AssistantPanel extends ConsumerWidget {
     final ui = ref.watch(assistantUiProvider(studySetId));
     final uiNotifier = ref.read(assistantUiProvider(studySetId).notifier);
     final conversation = ref.watch(assistantControllerProvider);
-    final configured = ref.watch(assistantConfiguredProvider).value ?? false;
+    ModelReference? override;
+    try {
+      override = conversationRoutingOverride(conversation.toJson(), TaskType.assistantChat);
+    } catch (_) {
+      /* The composer keeps the repair selector visible. */
+    }
+    final route = ref.watch(assistantTaskRouteProvider((TaskType.assistantChat, override))).value;
+    final needsCredentials = route?.issue == RoutingIssue.secretUnavailable;
     final noteId = ref.watch(researchPanelProvider(studySetId).select((s) => s.noteId));
     final workspace = ref.read(workspaceProvider(studySetId).notifier);
     final header = AssistantHeader(studySetId: studySetId);
@@ -160,8 +173,8 @@ class AssistantPanel extends ConsumerWidget {
     final Widget body;
     if (ui.history) {
       body = ConversationHistory(studySetId: studySetId);
-    } else if (!configured && conversation.messages.isEmpty) {
-      body = const Center(child: SingleChildScrollView(child: ModelSetupCard()));
+    } else if (needsCredentials && conversation.messages.isEmpty) {
+      body = const Center(child: SingleChildScrollView(child: ModelSetupCard(needsKey: true)));
     } else if (conversation.messages.isEmpty) {
       body = AssistantSuggestions(studySetId: studySetId);
     } else {
@@ -180,11 +193,11 @@ class AssistantPanel extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (!ui.history && !configured && conversation.messages.isNotEmpty)
-                      const ModelSetupCard(inline: true),
+                    if (!ui.history && needsCredentials && conversation.messages.isNotEmpty)
+                      const ModelSetupCard(inline: true, needsKey: true),
                     Expanded(child: body),
                     // Browsing history must not discard the current draft.
-                    if (configured && !conversation.readOnly)
+                    if (!conversation.readOnly)
                       Visibility(
                         visible: !ui.history,
                         maintainState: true,
@@ -193,7 +206,7 @@ class AssistantPanel extends ConsumerWidget {
                           child: AssistantComposer(
                             key: ValueKey(conversation.id),
                             studySetId: studySetId,
-                            configured: configured,
+                            configured: true,
                           ),
                         ),
                       ),
@@ -433,18 +446,20 @@ class _Suggestion extends StatelessWidget {
 /// A quiet setup state, or an inline notice above an existing conversation.
 /// Configuration and credential recovery both lead to the same settings page.
 class ModelSetupCard extends ConsumerWidget {
-  const ModelSetupCard({super.key, this.inline = false});
+  const ModelSetupCard({super.key, this.inline = false, this.needsKey});
 
   final bool inline;
+  final bool? needsKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
-    final credential = ref.watch(assistantCredentialStateProvider).value;
+    final credential = this.needsKey == null ? ref.watch(assistantCredentialStateProvider).value : null;
     final needsKey =
-        credential == AssistantCredentialState.unavailable || credential == AssistantCredentialState.missingKey;
+        this.needsKey ??
+        (credential == AssistantCredentialState.unavailable || credential == AssistantCredentialState.missingKey);
     final title = needsKey ? l.assistantKeyNeedsAttention : l.assistantSetupHint;
     final action = MMButton(
       key: const ValueKey('assistant-configure-models'),

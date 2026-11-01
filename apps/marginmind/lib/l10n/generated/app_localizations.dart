@@ -6224,6 +6224,12 @@ abstract class AppLocalizations {
   /// **'URL'**
   String get webUrlPlaceholder;
 
+  /// No description provided for @webUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Web address'**
+  String get webUrlLabel;
+
   /// No description provided for @webUrlEmpty.
   ///
   /// In en, this message translates to:
@@ -6587,8 +6593,32 @@ abstract class AppLocalizations {
   /// No description provided for @convertTitle.
   ///
   /// In en, this message translates to:
-  /// **'Convert to Document'**
+  /// **'Save to Library'**
   String get convertTitle;
+
+  /// No description provided for @convertDocumentName.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Name'**
+  String get convertDocumentName;
+
+  /// No description provided for @convertFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Format'**
+  String get convertFormat;
+
+  /// No description provided for @convertPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Preview'**
+  String get convertPreview;
+
+  /// No description provided for @convertSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Document'**
+  String get convertSave;
 
   /// No description provided for @convertTitlePlaceholder.
   ///

@@ -73,6 +73,11 @@ void main() {
       owner.activateTab(WorkspaceTab.documents);
       await tester.pumpAndSettle();
       await capture('multiple-$suffix');
+      owner.openStudyNote(note.id);
+      await tester.pumpAndSettle();
+      await capture('selected-middle-$suffix');
+      owner.activateTab(WorkspaceTab.documents);
+      await tester.pumpAndSettle();
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await mouse.addPointer(location: Offset.zero);
       await mouse.moveTo(tester.getCenter(find.byKey(ValueKey('workspace-tab-note:${note.id}'))));

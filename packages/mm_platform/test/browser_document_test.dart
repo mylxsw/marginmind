@@ -13,14 +13,17 @@ void main() {
     bool badPdf = false,
     bool changeOnPrint = false,
     bool pendingStages = false,
+    bool failPreparation = false,
   }) async {
     final session = BrowserSession(Uri.parse('https://example.com/'));
     var printed = false;
+    var prepared = false;
     var polls = 0;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       MethodChannel('marginmind/browser/${session.id}'),
       (call) async {
         if (call.method == 'printPdf') {
+          expect(prepared, isTrue, reason: 'Print only after article layout and images are ready');
           printed = true;
           return Uint8List.fromList(ascii.encode(badPdf ? 'broken' : '%PDF-test'));
         }
@@ -28,6 +31,10 @@ void main() {
         final script = (call.arguments as Map)['script'] as String;
         if (script == 'JSON.stringify({url:location.href})') {
           return jsonEncode({'url': printed && changeOnPrint ? 'https://example.com/new' : session.url.toString()});
+        }
+        if (script.contains('job.preparePrint()')) prepared = true;
+        if (script.startsWith('JSON.stringify({ready:')) {
+          return failPreparation ? '{"failed":true}' : '{"ready":true}';
         }
         if (script.startsWith('JSON.stringify(globalThis[')) {
           if (pendingStages && polls++ < 2) return jsonEncode({'pending': true, 'stage': 'images'});
@@ -91,13 +98,14 @@ void main() {
     expect(stages, ['loading-reader', 'extracting', 'images', 'printing', 'complete']);
   });
   test('errors, stale data, invalid PDF and cancellation never yield partial captures', () async {
-    for (final options in [0, 1, 2, 3, 4]) {
+    for (final options in [0, 1, 2, 3, 4, 5]) {
       final s = await setup(
         fail: options == 0,
         stale: options == 1,
         missing: options == 2,
         badPdf: options == 3,
         changeOnPrint: options == 4,
+        failPreparation: options == 5,
       );
       try {
         await expectLater(

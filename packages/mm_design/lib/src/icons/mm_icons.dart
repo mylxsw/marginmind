@@ -65,10 +65,14 @@ abstract final class MMIcons {
   static const IconData markdown = LucideIcons.fileCode;
   static const IconData readingSettings = LucideIcons.aLargeSmall;
   static const IconData document = LucideIcons.fileText;
+  static const IconData pdf = LucideIcons.fileType;
+  static const IconData radio = LucideIcons.circle;
+  static const IconData radioSelected = LucideIcons.circleDot;
   static const IconData collections = LucideIcons.libraryBig;
   static const IconData studySet = LucideIcons.libraryBig;
   static const organizeNote = LucideIcons.notebookPen;
   static const IconData ai = LucideIcons.sparkles;
+
   /// Settings › AI Features: which model each feature routes to.
   static const IconData aiTasks = LucideIcons.split;
   static const IconData research = LucideIcons.fileSearch;

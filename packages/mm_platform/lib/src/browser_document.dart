@@ -100,6 +100,23 @@ extension BrowserDocumentConversion on BrowserSession {
       if (mode == BrowserDocumentMode.original) {
         check();
         onStage?.call('printing');
+        await evaluate('''
+(() => {
+  const job = globalThis[${jsonEncode(token)}];
+  job.preparePrint().then(() => job.printReady = true).catch(() => job.printFailed = true);
+  return '{}';
+})()
+''');
+        final printDeadline = DateTime.now().add(const Duration(seconds: 15));
+        while (true) {
+          final state = await evaluate(
+            'JSON.stringify({ready:globalThis[${jsonEncode(token)}]?.printReady,failed:globalThis[${jsonEncode(token)}]?.printFailed})',
+          );
+          if (state['failed'] == true) throw StateError('print_preparation_failed');
+          if (state['ready'] == true) break;
+          if (DateTime.now().isAfter(printDeadline)) throw TimeoutException('print_preparation_timeout');
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
         pdf = await _channel.invokeMethod<Uint8List>('printPdf').timeout(const Duration(seconds: 45));
         check();
         if (pdf == null ||

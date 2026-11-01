@@ -46,8 +46,10 @@ String browserDocumentScript(String readability, String token, {required bool or
   const abort = new AbortController(), x = scrollX, y = scrollY, initialUrl = location.href;
   // Leave time for serialization and the Dart-side 45 second deadline.
   const imageDeadline = performance.now() + 40000;
+  let printHost, printStyle;
+  const cleanupPrint = () => {printHost?.remove(); printStyle?.remove();};
   const restore = () => {if(original && location.href===initialUrl) scrollTo(x,y);};
-  const job = {stage: original ? 'scrolling' : 'extracting', cancel: () => {abort.abort(); restore();}};
+  const job = {stage: original ? 'scrolling' : 'extracting', cancel: () => {abort.abort(); cleanupPrint(); restore();}};
   globalThis[key] = job;
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   (async () => {
@@ -104,7 +106,9 @@ String browserDocumentScript(String readability, String token, {required bool or
       let article = new Readability(clone.cloneNode(true), {disableJSONLD:true,maxElemsToParse:50000}).parse();
       if (!article || !article.textContent.trim()) {
         if(!original) throw Error('no_content');
-        article={content:clone.body.innerHTML};
+        const fallback = clone.querySelector('main,article,[role="main"]') || clone.body;
+        fallback.querySelectorAll('nav,aside,header,footer,[role="navigation"],[role="banner"],[role="contentinfo"]').forEach(n=>n.remove());
+        article={content:fallback.innerHTML};
       }
       const body = document.implementation.createHTMLDocument('');
       body.body.innerHTML = article.content;
@@ -182,6 +186,65 @@ String browserDocumentScript(String readability, String token, {required bool or
       meta.setAttribute('content',"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; form-action 'none'");
       clone.head.prepend(meta);
       if(abort.signal.aborted || location.href!==initialUrl) throw Error('cancelled');
+      // Print a separate, isolated article. Site CSS must never shrink the
+      // entire PDF to accommodate a desktop sidebar or an oversized table.
+      job.preparePrint = async () => {
+        cleanupPrint();
+        printHost = document.createElement('div');
+        printHost.id = key + '_print';
+        printHost.style.display = 'none';
+        const shadow = printHost.attachShadow({mode:'closed'});
+        const style = document.createElement('style');
+        style.textContent = `
+          :host {color:#202124; font:13pt/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+          article {display:block; width:auto; margin:0; overflow-wrap:anywhere;}
+          h1,h2,h3,h4,h5,h6 {line-height:1.3; break-after:avoid; margin:1.3em 0 .55em;}
+          h1 {font-size:24pt; margin-top:0;} h2 {font-size:19pt;} h3 {font-size:16pt;}
+          h4,h5,h6 {font-size:13pt;}
+          p,ul,ol,blockquote,figure,pre,table {margin:0 0 1em;}
+          p,li {orphans:3; widows:3;}
+          a {color:inherit; text-decoration:underline;}
+          img {max-width:100%; height:auto; max-height:680pt; object-fit:contain;}
+          figure {margin-left:0; margin-right:0;}
+          figcaption {font-size:11pt; color:#555;}
+          blockquote {margin-left:0; padding-left:14pt; border-left:2pt solid #ddd;}
+          pre {white-space:pre-wrap; overflow-wrap:anywhere; padding:10pt; background:#f5f5f5;}
+          pre,code {font-family:ui-monospace,monospace; font-size:11pt;}
+          table {width:100%; table-layout:fixed; border-collapse:collapse; font-size:11pt;}
+          th,td {border:0.5pt solid #ddd; padding:6pt; overflow-wrap:anywhere;}
+          thead {display:table-header-group;} tr {break-inside:avoid;}
+          hr {border:0; border-top:0.5pt solid #ddd; margin:18pt 0;}
+        `;
+        const articleNode = document.createElement('article');
+        articleNode.innerHTML = body.body.innerHTML;
+        // A title is frequently outside Readability's extracted content.
+        if (!articleNode.querySelector('h1') && document.title.trim()) {
+          const heading = document.createElement('h1');
+          heading.textContent = document.title;
+          articleNode.prepend(heading);
+        }
+        for (const img of articleNode.querySelectorAll('img')) {
+          const path = img.getAttribute('src'), bytes = resources[path];
+          if (!bytes) {img.remove(); continue;}
+          const ext = path.split('.').pop();
+          const mime = ext==='svg' ? 'image/svg+xml' : ext==='jpg' ? 'image/jpeg' : 'image/'+ext;
+          img.src = 'data:'+mime+';base64,'+bytes;
+        }
+        shadow.append(style,articleNode);
+        printStyle = document.createElement('style');
+        printStyle.textContent = `@media print {
+          @page {size:A4; margin:36pt;}
+          html,body {display:block!important; width:auto!important; min-width:0!important;
+            max-width:none!important; height:auto!important; margin:0!important; padding:0!important;
+            overflow:visible!important; background:white!important; transform:none!important; zoom:1!important;}
+          body > * {display:none!important;}
+          body > #${printHost.id} {display:block!important; position:static!important;
+            width:auto!important; margin:0!important; padding:0!important;}
+        }`;
+        document.head.append(printStyle);
+        document.body.append(printHost);
+        await Promise.all([...articleNode.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
+      };
       job.result={url:initialUrl,title:document.title,html:body.body.innerHTML,
         snapshot:'<!doctype html>\n'+clone.documentElement.outerHTML,resources,diagnostics};
     } catch (_) {job.result={error:'capture_failed'};}

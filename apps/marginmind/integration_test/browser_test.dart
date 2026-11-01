@@ -60,7 +60,7 @@ void main() {
                 '<script>setTimeout(() => { document.body.dataset.downloadAttempt = "true"; document.getElementById("download").click(); }, 2500);</script>'
           : '';
       final conversion = request.uri.path == '/conversion'
-          ? '<article><h1>Conversion</h1>${List.generate(80, (i) => '<p>Paragraph $i, testing live authenticated content and real paginated printing. This passage is preserved in the offline document.</p>').join()}'
+          ? '<nav>PRINT_NAVIGATION_SECRET</nav><style>body{min-width:1600px;font-size:9px}article{width:1200px}</style><article><h1>Conversion</h1>${List.generate(80, (i) => '<p>Paragraph $i, testing live authenticated content and real paginated printing. This passage is preserved in the offline document.</p>').join()}'
                 '<img src="/authenticated.png"><p hidden>HIDDEN_SECRET</p></article><input value="FORM_SECRET">'
           : '';
       request.response.write('''<!DOCTYPE html><html><head><title>Native browser fixture</title></head>
@@ -132,6 +132,16 @@ void main() {
           debugPrint('[browser] original: PDF pages=${info.pageCount}, preview=${info.preview?.length}');
           expect(info.pageCount, greaterThan(1), reason: 'Original web style must be paginated, not one tall page');
           expect(info.preview, isNotNull);
+          final text = info.pages.map((page) => page.text).join('\n');
+          expect(text, contains('Paragraph 79'));
+          expect(text, isNot(contains('PRINT_NAVIGATION_SECRET')));
+          expect(text, isNot(contains('FORM_SECRET')));
+          final evidence = Platform.environment['MM_WEB_PDF_EVIDENCE'];
+          if (evidence != null) {
+            final target = File('${Directory.systemTemp.path}/$evidence');
+            await target.writeAsBytes(converted.pdf!);
+            debugPrint('[browser] PDF evidence: ${target.path}');
+          }
         }
       }
       debugPrint('[browser] all conversion modes complete');
