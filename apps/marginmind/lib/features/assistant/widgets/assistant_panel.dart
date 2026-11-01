@@ -173,7 +173,6 @@ class AssistantPanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           header,
-          _AssistantSubject(studySetId: studySetId),
           Expanded(
             child: Stack(
               fit: StackFit.expand,
@@ -233,42 +232,6 @@ class _DrawerTransition extends StatelessWidget {
 }
 
 /// The panel's title, history, new conversation and close controls.
-class _AssistantSubject extends ConsumerWidget {
-  const _AssistantSubject({required this.studySetId});
-  final String studySetId;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(
-      workspaceProvider(studySetId).select((s) => (s.tabs.activeId, s.activeDocumentId, s.activeMapId, s.layout)),
-    );
-    final content = ref.watch(workspaceContentProvider(studySetId));
-    final state = ref.read(workspaceProvider(studySetId));
-    if (state.tabs.active?.kind != WorkspaceTabKind.documentMap || state.activeNoteId != null) {
-      return const SizedBox.shrink();
-    }
-    final map = state.layout == MMSplitMode.secondary;
-    final title = map ? content?.map(state.activeMapId)?.title : content?.document(state.activeDocumentId ?? '')?.title;
-    if (title == null || title.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(MMSpacing.l, MMSpacing.s, MMSpacing.l, MMSpacing.m),
-      child: Row(
-        children: [
-          Icon(map ? MMIcons.mindMap : MMIcons.document, size: 16, color: context.mmColors.secondaryLabel),
-          const SizedBox(width: MMSpacing.s),
-          Expanded(
-            child: Text(
-              context.l10n.workspaceCurrentContent(title),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class AssistantHeader extends ConsumerWidget {
   const AssistantHeader({super.key, required this.studySetId});
 
