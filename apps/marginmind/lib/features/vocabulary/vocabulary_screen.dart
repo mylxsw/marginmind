@@ -780,7 +780,7 @@ class _VocabularyActions extends StatelessWidget {
         child: Container(
           width: 34,
           height: 30,
-          decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.row)),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(MMRadii.row)),
           child: Icon(MMIcons.more, size: MMSpacing.l, color: c.label),
         ),
       ),
