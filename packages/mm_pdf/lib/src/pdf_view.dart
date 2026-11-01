@@ -2833,6 +2833,7 @@ class _MMPdfViewState extends State<MMPdfView> {
             pageBackgroundPaintCallbacks: [_beginPagePaint],
             pagePaintCallbacks: [_paintMatches, _endPagePaint],
             onGeneralTap: (context, controller, details) {
+              if (details.type == PdfViewerGeneralTapType.secondaryTap) return true;
               if (details.type == PdfViewerGeneralTapType.longPress) _annotationDown = null;
               final global = controller.documentToGlobal(details.documentPosition);
               if (global != null) {

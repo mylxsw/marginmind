@@ -29,8 +29,8 @@ final t = context.mmText;     // 已着色的文本样式
 
 | 组件 | 说明 |
 | --- | --- |
-| `MMWindowScaffold` | 窗口骨架：可收起的悬浮侧栏 + 工具栏 + 内容；侧栏收起时工具栏自动给红绿灯让位。上方有 `MMWindowBottomBar` 时，在内容下方显示它提供的底栏（手机的 Tab），软键盘弹出时隐藏；`sheet` 盖在包括底栏在内的整个窗口上。 |
-| `MMSidebar` / `MMSidebarSection` / `MMSidebarItem` / `MMCount` / `MMBadge` | 悬浮玻璃侧栏与 28pt 行。 |
+| `MMWindowScaffold` | 窗口骨架：可收起的侧栏 + 工具栏 + 内容；桌面侧栏宽 236pt，无额外外边距，顶部 Tab 栏与内容共用窗口背景且不画横向分隔线；Tab 自身保留选中背景和细边框；侧栏收起时工具栏自动给红绿灯让位。上方有 `MMWindowBottomBar` 时，在内容下方显示它提供的底栏（手机的 Tab），软键盘弹出时隐藏；`sheet` 盖在包括底栏在内的整个窗口上。 |
+| `MMSidebar` / `MMSidebarSection` / `MMSidebarItem` / `MMCount` / `MMBadge` | 桌面侧栏贴边、无外层圆角/描边/阴影，以不透明侧栏底色区分工作区；触控抽屉保留悬浮玻璃。行高 28pt。 |
 | `MMToolbar` / `MMToolbarGroup` / `MMToolbarButton` / `MMToolbarDivider` / `MMToolbarSearchField` | 统一工具栏与玻璃胶囊按钮组；空白处拖动窗口、双击缩放。 |
 | `MMSplitView` | 两栏 + 可拖动分隔线（8pt 热区、双击复位），隐藏的面板保持挂载，但不保留键盘焦点；窗口太窄时自动只显示主面板。 |
 | `MMSegmentedControl` | 分段控件，选中段为白色浮起。 |
@@ -216,4 +216,4 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 
 空脑图以“从资料生成脑图”作为标题，真实资料标题独立显示为系统强调色描边主题节点，来源显示保存的网页域名或文件格式。节点右侧的＋与底部“新建空白主题”共用手动新建行为。`MMSizes.mapEmptyStateWidth` 为620pt；来源节点最大320pt、最小224×76pt，长标题两行省略并保留全文提示。补充要求表单标明选填，底部分隔出设置与生成按钮，下面是三条可切换的要求建议。窄窗使用较短间距并可纵向滚动；触控标签至少44pt。AI实心按钮使用research/onResearch配色。设计及实际渲染对照见 `docs/evidence/map-empty-canvas/design-qa.md`。
 
-研究笔记的 PDF 页边图标：桌面鼠标进入即显示已有笔记，不抢焦点；移出 500ms 后关闭，移入卡片取消关闭。点击固定弹窗，触屏保留点击/长按与页面滑动。滚动、切换文档、Esc 或点击外部关闭预览。
+研究笔记的 PDF 页边图标：桌面悬停不显示笔记，点击后立即打开笔记卡片；移开鼠标不自动关闭。Esc、点击外部或切换文档关闭卡片。触屏保留点击/长按与页面滑动。

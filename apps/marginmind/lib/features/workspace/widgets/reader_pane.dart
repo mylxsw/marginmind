@@ -80,23 +80,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   bool _pointerMoved = false;
   DateTime? _lastPdfPointerUpTime;
   Offset? _lastPdfPointerUpPos;
-  // Hover stays local: previewing a note must not rebuild the map or
-  // replace a text selection / keyboard focus in the workspace.
-  final _notePreview = ValueNotifier<({String documentId, PendingResearchNote note})?>(null);
-  Timer? _notePreviewExit;
-
-  void _dismissNotePreview() {
-    _notePreviewExit?.cancel();
-    _notePreview.value = null;
-  }
-
-  void _holdNotePreview() => _notePreviewExit?.cancel();
-
-  void _leaveNotePreview() {
-    _notePreviewExit?.cancel();
-    _notePreviewExit = Timer(MMMotion.hoverExit, _dismissNotePreview);
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -130,8 +113,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     for (final reason in _selectionHolds) {
       _chrome?.release(reason);
     }
-    _notePreviewExit?.cancel();
-    _notePreview.dispose();
     _focus.dispose();
     super.dispose();
   }
@@ -238,10 +219,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   Widget _buildReader(BuildContext context) {
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
-    ref.listen(provider.select((s) => (s.activeDocumentId, s.pending, s.tool, s.layout, s.activeNoteId)), (_, _) {
-      _dismissNotePreview();
-    });
-    ref.listen(workspaceBrowserProvider(widget.studySetId).select((s) => s.visible), (_, _) => _dismissNotePreview());
     ref.listen(provider.select((s) => s.activeDocumentId), (_, _) {
       for (final reason in _selectionHolds) {
         _chrome?.release(reason);
@@ -326,7 +303,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     }
 
     void dismissSelection() {
-      _dismissNotePreview();
       if (ref.read(provider).pending != null) {
         controller.dismissPending();
         _pdf.clearSelection();
@@ -506,7 +482,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       (AnnotationTool.select, MMIcons.select, l.toolSelect, 60),
       (AnnotationTool.highlight, MMIcons.highlight, l.toolHighlight, 50),
       (AnnotationTool.underline, MMIcons.underline, l.toolUnderline, 40),
-      (AnnotationTool.ink, MMIcons.pen, l.toolPen, 30),
+      (AnnotationTool.ink, MMIcons.inkAnnotations, l.toolPen, 30),
       (AnnotationTool.area, MMIcons.areaSelect, l.toolArea, 10),
     ];
     final documents = DocumentSwitcher(
@@ -943,7 +919,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     MMDropdownItem<Object>(
                       value: AnnotationTool.ink,
                       enabled: controller.canUseTool(AnnotationTool.ink),
-                      child: _menuRow(MMIcons.pen, l.toolPen),
+                      child: _menuRow(MMIcons.inkAnnotations, l.toolPen),
                     ),
                     MMDropdownItem<Object>(
                       value: 'sync',
@@ -1370,7 +1346,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final translation = translating ? ref.watch(readerTranslationProvider(widget.studySetId)) : null;
     final compareSession = ref.read(readerCompareProvider(widget.studySetId).notifier);
     void dismissSelection() {
-      _dismissNotePreview();
       if (ref.read(provider).pending != null) {
         controller.dismissPending();
         pdf.clearSelection();
@@ -1575,18 +1550,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   dismissSelection();
                 }
               },
-              onMarkerHover: (id, bounds, hovering) {
-                if (!id.startsWith('note:')) return;
-                if (!hovering) {
-                  if (_notePreview.value?.note.attachmentId == id.substring(5)) _leaveNotePreview();
-                  return;
-                }
-                if (ref.read(provider).pending != null || crop.editing) return;
-                _holdNotePreview();
-                _notePreview.value = (documentId: doc.id, note: PendingResearchNote(id.substring(5), bounds));
-              },
               onHighlightTap: (id, bounds) {
-                _dismissNotePreview();
                 if (id.startsWith('vocabulary:')) {
                   onVocabularyTap(id, bounds);
                   return;
@@ -1670,32 +1634,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     ),
             ),
           ),
-        Positioned.fill(
-          child: ValueListenableBuilder(
-            valueListenable: _notePreview,
-            builder: (context, preview, _) {
-              if (preview == null || preview.documentId != doc.id || state.pending != null || crop.editing) {
-                return const SizedBox.shrink();
-              }
-              return MMFloatingToolbarLayout(
-                padding: EdgeInsets.only(top: chrome.top, bottom: chrome.bottom),
-                avoid: (viewport) => _pagePillArea(viewport, chrome.bottom, source: doc.origin != null),
-                anchor: preview.note.viewportRect,
-                child: MouseRegion(
-                  onEnter: (_) => _holdNotePreview(),
-                  onExit: (_) => _leaveNotePreview(),
-                  child: ResearchNotePopover(
-                    key: ValueKey(preview.note.attachmentId),
-                    studySetId: widget.studySetId,
-                    attachmentId: preview.note.attachmentId,
-                    autofocus: false,
-                    onDismiss: _dismissNotePreview,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
         if (!comparing && usePhoneReaderControls(context) && !crop.editing)
           Positioned(
             bottom: 0,

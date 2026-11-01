@@ -172,12 +172,12 @@ void main() {
 
   testWidgets('sidebar hides and the library is one click away', (tester) async {
     await openFirstSet(tester);
-    await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
+    await tester.tap(find.byIcon(MMIcons.sidebarClose).hitTestable().first);
     await tester.pumpAndSettle();
     expect(find.text('Mind Maps').hitTestable(), findsNothing);
     await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(MMIcons.library));
+    await tester.tap(find.byKey(const ValueKey('workspace-home')));
     await tester.pumpAndSettle();
     expect(find.text('All Study Sets'), findsWidgets);
   });

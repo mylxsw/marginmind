@@ -138,6 +138,9 @@ abstract final class MMSizes {
   /// Space reserved at the top of the sidebar for the window buttons.
   static const double windowButtonsHeight = 28;
 
+  /// Matches the macOS unified toolbar: window button centers sit at y=26.
+  static const double windowTitlebarHeight = 52;
+
   /// Width the window buttons need when the sidebar is hidden and they sit
   /// in the toolbar instead.
   static const double windowButtonsWidth = 78;

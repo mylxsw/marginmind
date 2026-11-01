@@ -12,8 +12,8 @@ import 'context_menu_region.dart';
 import 'flat_surface.dart';
 import 'window_scaffold.dart';
 
-/// Floating glass sidebar (macOS 26): inset 8 from the window edges,
-/// radius 16, with room at the top for the system window buttons.
+/// Edge-to-edge desktop navigation; touch drawers retain their floating glass.
+/// Both leave room at the top for the system window buttons.
 class MMSidebar extends StatelessWidget {
   const MMSidebar({
     super.key,
@@ -38,17 +38,19 @@ class MMSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final reduce = MMAppearance.reduceTransparencyOf(context) || MMFlatSurface.of(context);
+    final flat = !MMInput.of(context).touchPlatform;
+    final reduce = flat || MMAppearance.reduceTransparencyOf(context) || MMFlatSurface.of(context);
     final chrome = MMWindowChrome.maybeOf(context);
-    const radius = BorderRadius.all(Radius.circular(MMRadii.sidebar));
+    final radius = flat ? BorderRadius.zero : const BorderRadius.all(Radius.circular(MMRadii.sidebar));
 
     Widget panel = Container(
       decoration: BoxDecoration(
         color: reduce ? c.sidebarOpaque : c.sidebar,
         borderRadius: radius,
-        border: Border.all(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: 0.5),
+        border: flat ? null : Border.all(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: 0.5),
       ),
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+      // Desktop removes the outer inset; keep window-button controls at y=26.
+      padding: EdgeInsets.fromLTRB(10, flat ? 12 : 3.5, 10, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -81,11 +83,13 @@ class MMSidebar extends StatelessWidget {
     }
     return Container(
       width: width,
-      margin: const EdgeInsets.fromLTRB(MMSizes.sidebarInset, MMSizes.sidebarInset, 0, MMSizes.sidebarInset),
+      margin: flat
+          ? EdgeInsets.zero
+          : const EdgeInsets.fromLTRB(MMSizes.sidebarInset, MMSizes.sidebarInset, 0, MMSizes.sidebarInset),
       decoration: BoxDecoration(
         borderRadius: radius,
         boxShadow: [
-          for (final s in MMFlatSurface.of(context) ? <BoxShadow>[] : c.sidebarShadow)
+          for (final s in flat || MMFlatSurface.of(context) ? <BoxShadow>[] : c.sidebarShadow)
             BoxShadow(color: s.color, offset: s.offset, blurRadius: s.blurRadius, blurStyle: BlurStyle.outer),
         ],
       ),

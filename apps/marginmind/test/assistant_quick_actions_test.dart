@@ -428,6 +428,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  test('assistant stays next to the toolbar even when the selection extends below it', () {
+    final delegate = QuickActionsPlacement(
+      toolbar: const Rect.fromLTWH(600, 180, 310, 34),
+      selection: const Rect.fromLTWH(395, 220, 730, 100),
+      viewport: const Rect.fromLTWH(244, 100, 1036, 720),
+    );
+    final constraints = delegate.getConstraintsForChild(const BoxConstraints.tightFor(width: 1280, height: 820));
+    final offset = delegate.getPositionForChild(const Size(1280, 820), Size(constraints.maxWidth, 300));
+    expect(offset.dy, 222);
+    expect(offset.dx + constraints.maxWidth, 910);
+  });
+
+  test('assistant moves above the toolbar near the bottom edge', () {
+    final delegate = QuickActionsPlacement(
+      toolbar: const Rect.fromLTWH(600, 740, 310, 34),
+      selection: const Rect.fromLTWH(395, 700, 730, 30),
+      viewport: const Rect.fromLTWH(244, 100, 1036, 720),
+    );
+    final offset = delegate.getPositionForChild(const Size(1280, 820), const Size(408, 300));
+    expect(offset.dy + 300, 732);
+  });
+
   test('a tall selection leaves enough height for the floating answer', () {
     final delegate = QuickActionsPlacement(
       toolbar: const Rect.fromLTWH(600, 350, 310, 34),

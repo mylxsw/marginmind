@@ -29,6 +29,27 @@ Future<void> openTag(WidgetTester tester, String value) async {
 }
 
 void main() {
+  testWidgets('sidebar controls align with the titlebar and Home returns to the library', (tester) async {
+    final c = await openSidebar(tester);
+    final home = find.byKey(const ValueKey('workspace-home')).hitTestable();
+    final hide = find.byKey(const ValueKey('workspace-hide-sidebar')).hitTestable();
+    expect(inSidebar(find.text('认知科学入门')), findsNothing);
+    expect(tester.getCenter(home).dy, 26);
+    expect(tester.getCenter(hide).dy, 26);
+    expect(tester.getCenter(home).dx, lessThan(tester.getCenter(hide).dx));
+    await tester.tap(hide);
+    await tester.pumpAndSettle();
+    final show = find.byKey(const ValueKey('workspace-show-sidebar')).hitTestable();
+    expect(tester.getCenter(show).dy, 26);
+    expect(tester.getSize(find.byKey(const ValueKey('workspace-tab-row'))).height, 52);
+    await tester.tap(show);
+    await tester.pumpAndSettle();
+    await tester.tap(home);
+    await tester.pumpAndSettle();
+    expect(c.read(navigationProvider), isA<LibraryRoute>());
+    expect(tester.takeException(), isNull);
+  });
+
   for (final phone in [false, true]) {
     testWidgets('tags close the ${phone ? 'phone' : 'tablet'} directory and display on the right', (tester) async {
       final c = await pumpApp(

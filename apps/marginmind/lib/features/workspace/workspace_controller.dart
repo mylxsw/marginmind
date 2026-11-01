@@ -1316,9 +1316,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ReaderSelectionCommand.assistant => activeCapabilities.selectText || activeCapabilities.capture,
     ReaderSelectionCommand.highlight || ReaderSelectionCommand.deleteHighlight => activeCapabilities.annotate,
     ReaderSelectionCommand.marginNote => activeCapabilities.marginNotes,
-    ReaderSelectionCommand.excerpt ||
-    ReaderSelectionCommand.note ||
-    ReaderSelectionCommand.locateCard => activeCapabilities.excerpt,
+    ReaderSelectionCommand.excerpt || ReaderSelectionCommand.locateCard => activeCapabilities.excerpt,
   };
 
   Future<void> setTool(AnnotationTool tool) {
@@ -3092,7 +3090,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Adds a note under the selection (see [addNote]) and starts editing its
   /// text, as one undo step like [addTopicAndEdit].
-  Future<Card?> addNoteAndEdit(String text) => _createAndEdit((_) => addNote(text));
+  Future<Card?> addNoteAndEdit() => _createAndEdit((_) => addNote(''));
 
   /// Runs [create] (given the selection before it) in a transaction and opens
   /// the created card for editing. A null card aborts the transaction.

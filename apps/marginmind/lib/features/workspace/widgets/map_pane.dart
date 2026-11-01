@@ -245,8 +245,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       .addTopicAndEdit(context.l10n.newTopicName, asChild: asChild);
 
   /// A new note under the selection, open for editing like a new topic.
-  Future<void> addNote() =>
-      ref.read(workspaceProvider(widget.studySetId).notifier).addNoteAndEdit(context.l10n.newNoteText);
+  Future<void> addNote() => ref.read(workspaceProvider(widget.studySetId).notifier).addNoteAndEdit();
 
   Future<void> _clipboard(MindMapCommand command) async {
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);

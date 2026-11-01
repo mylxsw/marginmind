@@ -75,7 +75,7 @@ Future<bool?> showAssistantQuickActions(
 );
 
 /// Keeps the toolbar in place and puts the answer below it, or above the
-/// selection if that side has more room. Long answers scroll inside the card.
+/// toolbar if that side has more room. Long answers scroll inside the card.
 class QuickActionsPlacement extends SingleChildLayoutDelegate {
   QuickActionsPlacement({required this.toolbar, required this.selection, required this.viewport, this.maxWidth = 408});
 
@@ -83,18 +83,10 @@ class QuickActionsPlacement extends SingleChildLayoutDelegate {
   final double maxWidth;
 
   Rect _bounds(Size size) => viewport.intersect(Offset.zero & size).deflate(8);
-  double _bottom(Rect bounds) {
-    final belowSelection = math.max(toolbar.bottom, selection.bottom) + 8;
-    final belowToolbar = toolbar.bottom + 8;
-    // A tall selection can leave only a sliver for the answer. In that case
-    // anchor to the toolbar so the actions and answer remain usable.
-    return bounds.bottom - belowSelection < 400 && bounds.bottom - belowToolbar >= 400 ? belowToolbar : belowSelection;
-  }
-
-  double get _top => math.min(toolbar.top, selection.top) - 8;
-  bool _below(Rect bounds) =>
-      bounds.bottom - _bottom(bounds) >= 460 || bounds.bottom - _bottom(bounds) >= _top - bounds.top;
-  double _room(Rect bounds) => _below(bounds) ? bounds.bottom - _bottom(bounds) : _top - bounds.top;
+  double get _bottom => toolbar.bottom + 8;
+  double get _top => toolbar.top - 8;
+  bool _below(Rect bounds) => bounds.bottom - _bottom >= 460 || bounds.bottom - _bottom >= _top - bounds.top;
+  double _room(Rect bounds) => _below(bounds) ? bounds.bottom - _bottom : _top - bounds.top;
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
@@ -115,7 +107,7 @@ class QuickActionsPlacement extends SingleChildLayoutDelegate {
       bounds.left,
       math.max(bounds.left, bounds.right - childSize.width),
     );
-    final y = _below(bounds) ? _bottom(bounds) : _top - childSize.height;
+    final y = _below(bounds) ? _bottom : _top - childSize.height;
     return Offset(x.toDouble(), y.clamp(bounds.top, math.max(bounds.top, bounds.bottom - childSize.height)));
   }
 

@@ -43,7 +43,12 @@ void main() {
         final view = tester.binding.renderViews.first;
         final im = (await tester.runAsync(
           () => (view.debugLayer! as OffsetLayer).toImage(
-            Rect.fromLTWH(0, 0, view.size.width, name.contains('menu') ? 360 : 104),
+            Rect.fromLTWH(
+              0,
+              0,
+              view.size.width,
+              name.startsWith('workspace-') ? view.size.height : (name.contains('menu') ? 360 : 104),
+            ),
             pixelRatio: 2,
           ),
         ))!;
@@ -56,6 +61,11 @@ void main() {
 
       final suffix = dark ? 'dark' : 'light';
       await capture('single-$suffix');
+      owner.setLayout(MMSplitMode.split);
+      await tester.pumpAndSettle();
+      await capture('workspace-$suffix');
+      owner.setLayout(MMSplitMode.secondary);
+      await tester.pumpAndSettle();
       owner.openStudyNote(note.id);
       owner.openStudyNote('second');
       owner.activateTab(WorkspaceTab.vocabulary);

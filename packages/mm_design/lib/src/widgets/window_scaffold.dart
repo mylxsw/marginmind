@@ -35,7 +35,7 @@ class MMWindowChrome extends InheritedWidget {
 }
 
 /// The window layout used by every MarginMind window: a collapsible
-/// floating sidebar, a unified toolbar and the content below it.
+/// sidebar (flat on desktop), a unified toolbar and the content below it.
 ///
 /// The background fills the window; sidebar, toolbar and content stay inside
 /// the safe area (status bar, home indicator, landscape side insets). With
@@ -122,7 +122,7 @@ class MMWindowScaffold extends StatelessWidget {
     final c = context.mmColors;
     final open = sidebar != null && sidebarVisible;
     final inline = open && !sidebarOverlay;
-    final fullWidth = sidebarWidth + MMSizes.sidebarInset;
+    final fullWidth = sidebarWidth + (MMInput.of(context).touchPlatform ? MMSizes.sidebarInset : 0);
     final duration = MMAppearance.duration(context, MMMotion.layout);
     if (MMInput.of(context).touchPlatform && contentBuilder == null) {
       return _touch(context, c, open, inline, fullWidth, duration);

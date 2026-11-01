@@ -54,7 +54,7 @@ void main() {
         id: 'native-note',
         title: '间隔重复与主动回想',
         question: '怎样记得更牢？',
-        body: '把练习分散到不同的日子，每次合上书主动回想。\n这条笔记已保存，悬停即可查看。',
+        body: '把练习分散到不同的日子，每次合上书主动回想。\n这条笔记已保存，点击图标即可查看。',
         createdAt: testNow,
         updatedAt: testNow,
       ),
@@ -79,11 +79,13 @@ void main() {
     await mouse.addPointer(location: const Offset(1, 1));
     await mouse.moveTo(tester.getCenter(marker));
     await tester.pump();
-    expect(popover, findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(popover, findsNothing);
     expect(container.read(workspaceProvider('demo-1')).pending, isNull);
-    await mouse.moveTo(tester.getCenter(popover));
+    await mouse.down(tester.getCenter(marker));
+    await mouse.up();
+    expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingResearchNote>());
     await tester.pump();
-    await tester.pump(MMMotion.hoverExit + MMMotion.quick);
     expect(popover, findsOneWidget);
     const evidence = String.fromEnvironment('MM_NOTE_PREVIEW_EVIDENCE');
     if (evidence.isNotEmpty) {
@@ -92,28 +94,22 @@ void main() {
         pixelRatio: 1,
       );
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      final output = File('${Directory.systemTemp.path}/foliarc-note-hover.png');
+      final output = File('${Directory.systemTemp.path}/foliarc-note-click.png');
       await output.writeAsBytes(data!.buffer.asUint8List());
       debugPrint('Note preview screenshot: ${output.path}');
       image.dispose();
     }
     await mouse.moveTo(const Offset(1, 1));
     await tester.pump();
-    await tester.pump(MMMotion.hoverExit);
-    expect(popover, findsNothing);
-    // Clicking the same icon must pin the note without advancing the clock.
-    await mouse.down(tester.getCenter(marker));
-    await mouse.up();
-    expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingResearchNote>());
-    await tester.pump();
-    expect(popover, findsOneWidget);
-    await tester.pump(MMMotion.hoverExit * 2);
-    expect(popover, findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(popover, findsOneWidget, reason: 'moving away must not dismiss a clicked note');
     final sourceBounds = (container.read(workspaceProvider('demo-1')).pending as PendingResearchNote).viewportRect;
-    await mouse.removePointer();
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
     expect(popover, findsNothing);
+    await mouse.moveTo(tester.getCenter(marker));
+    await tester.pump(const Duration(seconds: 1));
+    expect(popover, findsNothing, reason: 'hover must not reopen a dismissed note');
     await tester.tapAt(tester.getTopLeft(find.byType(MMPdfView)) + sourceBounds.center, kind: PointerDeviceKind.touch);
     expect(
       container.read(workspaceProvider('demo-1')).pending,
@@ -125,6 +121,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump(const Duration(milliseconds: 700));
     expect(popover, findsNothing, reason: 'the later classified PDF tap must not reopen the note');
+    await mouse.removePointer();
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();

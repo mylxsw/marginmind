@@ -15,8 +15,8 @@ import 'reader_crop_test.dart' show drain;
 
 void main() {
   setUp(installTestPdfBackend);
-  for (final dismissal in ['exit', 'escape', 'outside', 'scroll', 'document', 'open']) {
-    testWidgets('note hover is immediate, keeps focus and supports $dismissal dismissal', (tester) async {
+  for (final dismissal in ['escape', 'outside', 'document', 'open']) {
+    testWidgets('hover does not open a note; clicking supports $dismissal dismissal', (tester) async {
       final container = await pumpApp(tester, renderPdf: true, size: const Size(1600, 1000));
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await drain(tester);
@@ -55,42 +55,25 @@ void main() {
       await mouse.addPointer(location: const Offset(1, 1));
       await mouse.moveTo(tester.getCenter(marker));
       await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(popover, findsNothing);
+      expect(container.read(provider), same(state), reason: 'hover must not change workspace state');
+      expect(FocusManager.instance.primaryFocus, same(focus));
+      await mouse.down(tester.getCenter(marker));
+      await mouse.up();
+      expect(container.read(provider).pending, isA<PendingResearchNote>());
+      await tester.pump();
       expect(popover, findsOneWidget);
       expect(find.text('Existing note body'), findsOneWidget);
-      expect(
-        container.read(provider),
-        same(state),
-        reason: 'hover must not rebuild the workspace through shared state',
-      );
-      expect(FocusManager.instance.primaryFocus, same(focus));
-      // The pointer can cross the gap and use the card without it disappearing.
-      await mouse.moveTo(tester.getCenter(popover));
-      await tester.pump();
-      await tester.pump(MMMotion.hoverExit + MMMotion.quick);
-      expect(popover, findsOneWidget);
+      await mouse.moveTo(const Offset(1, 1));
+      await tester.pump(const Duration(seconds: 1));
+      expect(popover, findsOneWidget, reason: 'moving away must not dismiss a clicked note');
       switch (dismissal) {
-        case 'exit':
-          await mouse.moveTo(const Offset(1, 1));
-          await tester.pump();
-          await tester.pump(MMMotion.hoverExit - const Duration(milliseconds: 1));
-          expect(popover, findsOneWidget);
-          await tester.pump(const Duration(milliseconds: 1));
         case 'escape':
           await tester.sendKeyEvent(LogicalKeyboardKey.escape);
           await tester.pump();
         case 'outside':
           await tester.tapAt(const Offset(500, 700));
-          await tester.pump();
-        case 'scroll':
-          await mouse.moveTo(const Offset(600, 600));
-          await tester.pump();
-          tester.binding.handlePointerEvent(
-            const PointerScrollEvent(
-              position: Offset(600, 600),
-              scrollDelta: Offset(0, 30),
-              kind: PointerDeviceKind.mouse,
-            ),
-          );
           await tester.pump();
         case 'open':
           await tester.tap(find.byKey(const ValueKey('popover-open-note')));
@@ -101,6 +84,11 @@ void main() {
           await tester.pump();
       }
       expect(popover, findsNothing);
+      if (dismissal != 'document' && dismissal != 'open') {
+        await mouse.moveTo(tester.getCenter(marker));
+        await tester.pump(const Duration(seconds: 1));
+        expect(popover, findsNothing, reason: 'hover must not reopen a dismissed note');
+      }
       await mouse.removePointer();
       await tester.pumpWidget(const SizedBox());
       await drain(tester);
