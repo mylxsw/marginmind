@@ -40,8 +40,8 @@ void main() {
     await tester.tap(hide);
     await tester.pumpAndSettle();
     final show = find.byKey(const ValueKey('workspace-show-sidebar')).hitTestable();
-    expect(tester.getCenter(show).dy, 26);
-    expect(tester.getSize(find.byKey(const ValueKey('workspace-tab-row'))).height, 52);
+    expect(tester.getCenter(show).dy, MMSizes.desktopWindowTitlebarHeight / 2);
+    expect(tester.getSize(find.byKey(const ValueKey('workspace-tab-row'))).height, MMSizes.desktopWindowTitlebarHeight);
     await tester.tap(show);
     await tester.pumpAndSettle();
     await tester.tap(home);

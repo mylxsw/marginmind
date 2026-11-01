@@ -95,7 +95,7 @@ void main() {
     expect(app.container.read(assistantUiProvider('demo-1')).contexts, mainUi.contexts);
     expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
     await tester.enterText(find.byKey(const ValueKey('assistant-input')), '参考内容的草稿');
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.tap(find.byKey(const ValueKey('assistant-close')));
     await tester.pumpAndSettle();
     expect(app.workspace.state.panel, RightPanel.reference);
     expect(find.byKey(const ValueKey('details-ask-assistant')), findsOneWidget);
@@ -119,7 +119,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('macOS toolbar opens and closes the assistant on release', (tester) async {
+  testWidgets('macOS assistant sidebar spans the window and restores its toolbar entry on close', (tester) async {
     final app = await openAssistantApp(tester);
     final button = find.byKey(const ValueKey('toolbar-assistant'));
     final mark = find.descendant(of: button, matching: find.byType(MMAssistantIcon));
@@ -133,14 +133,21 @@ void main() {
     for (final palette in MMAssistantPalette.values) {
       await app.container.read(settingsProvider.notifier).setAssistantIcon(palette);
       await tester.pump();
-      expect(tester.widget<MMAssistantIcon>(mark).palette, palette);
+      expect(button, findsNothing);
       final header = find.descendant(of: find.byType(AssistantHeader), matching: find.byType(MMAssistantIcon));
       expect(tester.widget<MMAssistantIcon>(header).palette, palette);
     }
-    await tester.tap(button, kind: PointerDeviceKind.mouse);
+    expect(button, findsNothing);
+    final panelRect = tester.getRect(find.byKey(const ValueKey('workspace-right-sidebar')));
+    final tabRect = tester.getRect(find.byKey(const ValueKey('workspace-tab-row')));
+    expect(panelRect.top, tabRect.top);
+    expect(panelRect.left, tabRect.right);
+    await tester.tap(find.byKey(const ValueKey('assistant-close')), kind: PointerDeviceKind.mouse);
     expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
     await tester.pumpAndSettle();
     expect(find.byType(AssistantHeader), findsNothing);
+    expect(button, findsOneWidget);
+    expect(tester.widget<MMAssistantIcon>(mark).palette, MMAssistantPalette.values.last);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   testWidgets('storage becoming inaccessible during a question is not reported as an invalid API key', (tester) async {
@@ -692,7 +699,7 @@ void main() {
       await tester.tap(find.byIcon(MMIcons.sidebarClose).hitTestable().first);
       await tester.pumpAndSettle();
       expect(sidebarShown(), isFalse);
-      await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+      await tester.tap(find.byKey(const ValueKey('assistant-close')));
       await tester.pumpAndSettle();
       expect(sidebarShown(), isFalse);
       await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));

@@ -83,6 +83,7 @@ abstract final class MMSizes {
   static const double hairline = .5;
   static const double nodeStroke = 1;
   static const double paneHeaderHeight = 44;
+  static const double desktopPaneHeaderHeight = 40;
   static const double tabletPaneHeaderHeight = 52;
   static const double phoneWorkspaceToolbarHeight = 50;
   static const double thumbDock = 56;
@@ -141,6 +142,7 @@ abstract final class MMSizes {
 
   /// Matches the macOS unified toolbar: window button centers sit at y=26.
   static const double windowTitlebarHeight = 52;
+  static const double desktopWindowTitlebarHeight = 44;
 
   /// Width the window buttons need when the sidebar is hidden and they sit
   /// in the toolbar instead.

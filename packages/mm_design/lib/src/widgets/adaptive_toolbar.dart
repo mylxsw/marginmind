@@ -413,7 +413,9 @@ class _ToolbarBox extends RenderBox
         final rect = Rect.fromCenter(
           center: bounds.center + offset,
           width: bounds.width + 6,
-          height: MMSizes.toolbarGroupHeight,
+          // Keep compact desktop groups close to their controls while retaining
+          // the existing visual capsule inside larger touch targets.
+          height: (bounds.height + 4).clamp(0, MMSizes.toolbarGroupHeight).toDouble(),
         );
         context.canvas.drawRRect(
           RRect.fromRectAndRadius(rect, const Radius.circular(MMRadii.capsule)),

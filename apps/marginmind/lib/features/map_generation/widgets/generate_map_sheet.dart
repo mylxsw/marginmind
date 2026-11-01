@@ -6,6 +6,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/providers.dart';
+import '../../../shared/document_icon.dart';
 import '../../../shared/l10n.dart';
 import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
@@ -494,11 +495,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                scanned.contains(selected.first.id)
-                    ? MMReaderIcons.area
-                    : selected.first.format == DocumentFormat.pdf
-                    ? MMIcons.document
-                    : MMIcons.ebook,
+                scanned.contains(selected.first.id) ? MMReaderIcons.area : documentIcon(selected.first),
                 size: 18,
                 color: c.secondaryLabel,
               ),

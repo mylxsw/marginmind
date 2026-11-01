@@ -49,7 +49,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(r.container.read(workspaceProvider('demo-1')).sidebarVisible, isTrue);
     expect(find.text('Reading Appearance'), findsNothing);
-    expect(tester.getRect(find.byKey(const ValueKey('workspace-tab-row'))).height, MMSizes.windowTitlebarHeight);
+    expect(tester.getRect(find.byKey(const ValueKey('workspace-tab-row'))).height, MMSizes.desktopWindowTitlebarHeight);
     expect(find.byTooltip('Zoom In'), findsOneWidget);
     expect(find.byTooltip('Zoom Out'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('reader-more')));
