@@ -53,6 +53,9 @@ abstract final class MMIcons {
   static const IconData studySet = CupertinoIcons.book_fill; // books.vertical.fill
   static const organizeNote = LucideIcons.notebookPen;
   static const IconData ai = CupertinoIcons.sparkles; // sparkles
+
+  /// Settings › AI Features: which model each feature routes to.
+  static const IconData aiTasks = LucideIcons.split;
   static const IconData research = CupertinoIcons.doc_text_search; // text.magnifyingglass
   static const IconData info = CupertinoIcons.info_circle; // info.circle
   static const IconData select = CupertinoIcons.cursor_rays; // cursorarrow

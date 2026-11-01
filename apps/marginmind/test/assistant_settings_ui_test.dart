@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/assistant_services.dart';
+import 'package:marginmind/features/assistant/settings/model_route_picker.dart';
 import 'package:marginmind/features/assistant/settings/web_search_settings.dart';
 import 'package:marginmind/features/assistant/widgets/service_logo.dart';
 import 'package:marginmind/settings/settings_window.dart';
@@ -379,13 +380,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(_services(app).enabledModelsByService[service.id]!.map((m) => m.model), ['gpt-5']);
 
-    // Make GPT-5 the default from its row (shown on hover).
-    expect(find.byKey(const ValueKey('model-set-default-gpt-5')), findsNothing);
+    // “Assign…” on its row (shown on hover) opens AI Features; GPT-5 becomes the heavy default there.
+    expect(find.byKey(const ValueKey('model-assign-gpt-5')), findsNothing);
     await _hover(tester, find.byKey(const ValueKey('model-gpt-5')));
-    await tester.tap(find.byKey(const ValueKey('model-set-default-gpt-5')));
+    await tester.tap(find.byKey(const ValueKey('model-assign-gpt-5')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-ai-tasks')), findsOneWidget);
+    final heavyDefault = find.byWidgetPredicate((w) => w is ModelRoutePicker && w.semanticLabel == '重型任务 · 默认模型');
+    await tester.tap(heavyDefault);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('GPT-5').hitTestable().last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('ai-tasks-save')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<ModelRoutePicker>(heavyDefault).selected, ModelReference(service.id, 'gpt-5'));
+    // Until every caller resolves through routing, the heavy default is mirrored for them.
     expect(_services(app).defaultModel!.modelId, 'gpt-5');
-    expect(find.byKey(const ValueKey('model-default')), findsOneWidget);
     // The empty conversation follows the new default.
     expect(conversationOf(tester).model.model, 'gpt-5');
 
@@ -690,7 +700,7 @@ void main() {
     expect(serviceBrand(ServiceProtocol.gemini, ''), ServiceBrand.gemini);
     expect(serviceBrand(ServiceProtocol.anthropic, ''), ServiceBrand.anthropic);
     expect(serviceBrand(ServiceProtocol.ollama, ''), ServiceBrand.ollama);
-    expect(SettingsTab.values, hasLength(6));
+    expect(SettingsTab.values, hasLength(7));
   });
 
   testWidgets('service marks render on light and dark tiles', (tester) async {

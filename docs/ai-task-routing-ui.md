@@ -355,3 +355,22 @@
 | 窄屏、键盘与无障碍 | §8、§9 |
 | 长任务 partial / paused / interrupted 与本次模型 | §7 |
 | 不暴露内部 prompt、taskType、协议参数 | 原则、§10 |
+
+## 14. 实现与组件接口（GUL-648）
+
+设置页已按本文 §1–§4、§8–§9 实现。§5 对话菜单、§6 开始前拦截、§7 任务面板的业务接线由各迁移任务完成，使用下列组件，不另做判断。
+
+| 位置 | 接口 | 用法 |
+| --- | --- | --- |
+| `settings/settings_window.dart` | `showSettings(context, tab: SettingsTab.aiTasks, focus: AiTaskFocusTask(type) / AiTaskFocusModel(ref))`；`SettingsNavigation.maybeOf(context)?.go(...)` | 窗口外打开定位；窗口内切换分区 |
+| `settings/model_route_picker.dart` | `ModelRoutePicker`、`ModelRouteGroup/Option`、`ModelRouteTone`、`routeModelLabel()`、`routeModelNames()`、`reasoningLabel()` | 任务设置面板的“模型”行：`followLabel: l.aiTasksUseSetting`，`onChanged(null)` = 跟随设置，非空 = 本次显式选择（写入 `TaskRequest.modelOverride`）；run 面板不传 `followLabel` |
+| `settings/ai_task_status.dart` | `routingIssueText(l, issue, failureCode:)`、`routingIssueBlocks(issue)`、`routingIssueInvalid(issue)`、`RoutingIssueLine`、`RunStatusCapsule`、`runModelsLabel(catalog, manifest.configurationPhases)`、`aiTaskName(l, type)` | 输入是 `TaskModelResolver.inspect()` 的 `RoutingRowState` 和 RunManifest；组件不判断能力、不按名字匹配 |
+| `settings/ai_routing_usage.dart` | `aiRoutingUsageIndexProvider`（全部学习集的会话档案 + 可恢复 run，经 `PersistentTaskAssembly.usageIndex`）、`confirmRoutedRemoval()` | 删除确认；索引读取失败时提示“无法确认使用情况”，不当作无引用 |
+| `settings/ai_task_settings.dart` | `aiTaskRoutingSpecsProvider` | 各领域注册真实 `TaskSpec` 后覆盖此 provider，设置页即按其 `requiredCapabilities` 显示“不支持工具调用”等；默认只含类别信息 |
+
+已知限制：
+
+- 能力档案为空时所有模型显示“需验证”。“测试”只证明连通（“已连接 · 兼容性未验证”），不会把 unknown 变为可运行；探测结果的持久化与可信来源属 GUL-655。
+- 保存后若重型默认可用，会同步旧的服务目录默认模型，供尚未迁移的调用方使用；全部迁移后应删除该同步（`saveAiTaskDraft`）。
+- “已保存，进行中的任务不受影响”未实现，保存后统一显示“已保存”；运行中 run 本身不受影响（快照冻结）。
+- 删除确认中“当前对话”统一计入“n 个对话”。
