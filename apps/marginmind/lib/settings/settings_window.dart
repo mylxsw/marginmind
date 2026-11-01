@@ -331,7 +331,10 @@ class _GeneralPage extends ConsumerWidget {
             ),
           ],
         ),
-        if (MMPlatformCapabilities.current.assistant) const MMSettingsGroup(children: [AssistantIconPicker()]),
+        if (MMPlatformCapabilities.current.assistant) ...[
+          const SizedBox(height: MMSpacing.l),
+          const MMSettingsGroup(children: [AssistantIconPicker()]),
+        ],
         const AppIconPicker(),
         if (MMPlatformCapabilities.current.webBrowser) ...[
           const SizedBox(height: MMSpacing.m),
