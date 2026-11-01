@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/assistant_services.dart';
+import 'package:marginmind/features/assistant/settings/model_route_picker.dart';
 import 'package:marginmind/features/assistant/settings/web_search_settings.dart';
 import 'package:marginmind/features/assistant/widgets/service_logo.dart';
 import 'package:marginmind/settings/settings_window.dart';
@@ -236,8 +237,8 @@ void main() {
   });
 
   testWidgets('credential recovery opens Model Settings and uses its save flow', (tester) async {
-    final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
-    final app = await openAssistantApp(tester, key: false, secretStore: secrets, catalog: catalog);
+    final secrets = UnavailableKeyStore(), catalog = FakeCatalog(), client = ScriptClient([answer('好的')]);
+    final app = await openAssistantApp(tester, key: false, secretStore: secrets, catalog: catalog, client: client);
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
@@ -249,21 +250,52 @@ void main() {
     expect(find.byKey(const ValueKey('settings-general')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
     await tester.pumpAndSettle();
+    expect(find.text('无法读取 API Key，请重新填写并保存。'), findsOneWidget);
     await _enter(tester, 'service-key', 'valid-test-key');
+    expect(find.text('无法读取 API Key，请重新填写并保存。'), findsNothing, reason: 'answered by the new key');
     await _save(tester);
+    // The Keychain write failed after the disabled fence was persisted: the card
+    // names the real cause (not an invalid key), the switch shows the fence.
     expect(find.textContaining('暂时无法保存 API Key'), findsOneWidget);
     expect(find.text('API Key 无效'), findsNothing);
+    bool switchOn() => tester.widget<MMSwitch>(find.byKey(const ValueKey('service-switch-legacy-claude'))).value;
+    expect(switchOn(), isFalse);
+    expect(_services(app).services.firstWhere((s) => s.id == 'legacy-claude').enabled, isFalse);
     expect(await app.container.read(assistantConfiguredProvider.future), isFalse);
     expect(secrets.values, isEmpty);
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: find.byKey(const ValueKey('service-key')), matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      'valid-test-key',
+      reason: 'the draft key is kept for the retry',
+    );
+
+    // The retry saves and verifies the key; the fence stays until the user turns the service on.
     secrets
       ..blockReads = false
       ..blockWrites = false;
     await _save(tester);
     expect(catalog.checked.single.$2, 'valid-test-key');
-    expect(await app.container.read(assistantConfiguredProvider.future), isTrue);
     expect(secrets.values[AssistantServicesStore.account('legacy-claude')], 'valid-test-key');
+    expect(find.textContaining('暂时无法保存 API Key'), findsNothing);
+    expect(find.byKey(const ValueKey('service-off')), findsOneWidget);
+    expect(switchOn(), isFalse);
+    expect(await app.container.read(assistantConfiguredProvider.future), isFalse);
+    expect(client.calls, 0, reason: 'no business request while the service is off');
+
+    await tester.tap(find.byKey(const ValueKey('service-switch-legacy-claude')));
+    await tester.pumpAndSettle();
+    expect(switchOn(), isTrue);
+    expect(find.byKey(const ValueKey('service-off')), findsNothing);
+    expect(await app.container.read(assistantConfiguredProvider.future), isTrue);
+    expect(client.calls, 0, reason: 'enabling only changes settings');
     await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-window')), findsNothing);
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
     expect(find.byKey(const ValueKey('assistant-suggestions')), findsOneWidget);
   }, semanticsEnabled: false);
@@ -368,6 +400,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('add-models-confirm')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('add-models')), findsNothing);
+    expect(find.text('已添加 2 个模型'), findsOneWidget);
+    expect(find.text('分配给功能'), findsOneWidget, reason: 'the HUD offers assignment');
     final added = _services(app).services.firstWhere((s) => s.id == service.id).models;
     expect(added.map((m) => m.id), ['gpt-5', 'my-model']);
     expect(added.every((m) => m.enabled && m.tools == ToolCapability.unknown), isTrue);
@@ -379,13 +413,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(_services(app).enabledModelsByService[service.id]!.map((m) => m.model), ['gpt-5']);
 
-    // Make GPT-5 the default from its row (shown on hover).
-    expect(find.byKey(const ValueKey('model-set-default-gpt-5')), findsNothing);
+    // “Assign…” on its row (shown on hover) opens AI Features; GPT-5 becomes the heavy default there.
+    expect(find.byKey(const ValueKey('model-assign-gpt-5')), findsNothing);
     await _hover(tester, find.byKey(const ValueKey('model-gpt-5')));
-    await tester.tap(find.byKey(const ValueKey('model-set-default-gpt-5')));
+    await tester.tap(find.byKey(const ValueKey('model-assign-gpt-5')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-ai-tasks')), findsOneWidget);
+    final heavyDefault = find.byWidgetPredicate((w) => w is ModelRoutePicker && w.semanticLabel == '重型任务 · 默认模型');
+    await tester.tap(heavyDefault);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('GPT-5').hitTestable().last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('ai-tasks-save')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<ModelRoutePicker>(heavyDefault).selected, ModelReference(service.id, 'gpt-5'));
+    // Until every caller resolves through routing, the heavy default is mirrored for them.
     expect(_services(app).defaultModel!.modelId, 'gpt-5');
-    expect(find.byKey(const ValueKey('model-default')), findsOneWidget);
     // The empty conversation follows the new default.
     expect(conversationOf(tester).model.model, 'gpt-5');
 
@@ -690,7 +733,7 @@ void main() {
     expect(serviceBrand(ServiceProtocol.gemini, ''), ServiceBrand.gemini);
     expect(serviceBrand(ServiceProtocol.anthropic, ''), ServiceBrand.anthropic);
     expect(serviceBrand(ServiceProtocol.ollama, ''), ServiceBrand.ollama);
-    expect(SettingsTab.values, hasLength(6));
+    expect(SettingsTab.values, hasLength(7));
   });
 
   testWidgets('service marks render on light and dark tiles', (tester) async {

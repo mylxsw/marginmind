@@ -10327,6 +10327,474 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pale Blue'**
   String get mapBackgroundBlue;
+
+  /// No description provided for @aiTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Features'**
+  String get aiTasksTitle;
+
+  /// No description provided for @aiTasksQuick.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Tasks'**
+  String get aiTasksQuick;
+
+  /// No description provided for @aiTasksHeavy.
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy Tasks'**
+  String get aiTasksHeavy;
+
+  /// No description provided for @aiTasksThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get aiTasksThinking;
+
+  /// No description provided for @aiTasksThinkingAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get aiTasksThinkingAuto;
+
+  /// No description provided for @aiTasksThinkingOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get aiTasksThinkingOff;
+
+  /// No description provided for @aiTasksThinkingStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get aiTasksThinkingStandard;
+
+  /// No description provided for @aiTasksThinkingDeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep'**
+  String get aiTasksThinkingDeep;
+
+  /// No description provided for @aiTasksUseDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Default'**
+  String get aiTasksUseDefault;
+
+  /// No description provided for @aiTasksUseSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Setting'**
+  String get aiTasksUseSetting;
+
+  /// No description provided for @aiTasksChooseModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Model'**
+  String get aiTasksChooseModel;
+
+  /// No description provided for @aiTasksNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Set'**
+  String get aiTasksNotSet;
+
+  /// No description provided for @aiTasksReasonThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t turn off thinking'**
+  String get aiTasksReasonThinking;
+
+  /// No description provided for @aiTasksReasonTools.
+  ///
+  /// In en, this message translates to:
+  /// **'No tool use'**
+  String get aiTasksReasonTools;
+
+  /// No description provided for @aiTasksReasonStructured.
+  ///
+  /// In en, this message translates to:
+  /// **'No structured output'**
+  String get aiTasksReasonStructured;
+
+  /// No description provided for @aiTasksReasonContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Context too small'**
+  String get aiTasksReasonContext;
+
+  /// No description provided for @aiTasksReasonUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Not supported'**
+  String get aiTasksReasonUnsupported;
+
+  /// No description provided for @aiTasksUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get aiTasksUnverified;
+
+  /// No description provided for @aiTasksIssueThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'This model can\'t turn off thinking'**
+  String get aiTasksIssueThinking;
+
+  /// No description provided for @aiTasksIssueUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility not verified'**
+  String get aiTasksIssueUnknown;
+
+  /// No description provided for @aiTasksIssueReachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected · compatibility not verified'**
+  String get aiTasksIssueReachable;
+
+  /// No description provided for @aiTasksIssueTools.
+  ///
+  /// In en, this message translates to:
+  /// **'This model doesn\'t support tool use'**
+  String get aiTasksIssueTools;
+
+  /// No description provided for @aiTasksIssueStructured.
+  ///
+  /// In en, this message translates to:
+  /// **'This model doesn\'t support structured output'**
+  String get aiTasksIssueStructured;
+
+  /// No description provided for @aiTasksIssueContext.
+  ///
+  /// In en, this message translates to:
+  /// **'This model\'s context is too small'**
+  String get aiTasksIssueContext;
+
+  /// No description provided for @aiTasksIssueUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This model doesn\'t support this feature'**
+  String get aiTasksIssueUnsupported;
+
+  /// No description provided for @aiTasksIssueDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Model removed'**
+  String get aiTasksIssueDeleted;
+
+  /// No description provided for @aiTasksIssueModelOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Model off'**
+  String get aiTasksIssueModelOff;
+
+  /// No description provided for @aiTasksIssueServiceOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Service off'**
+  String get aiTasksIssueServiceOff;
+
+  /// No description provided for @aiTasksIssueServiceRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Service removed'**
+  String get aiTasksIssueServiceRemoved;
+
+  /// No description provided for @aiTasksIssueConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection unavailable'**
+  String get aiTasksIssueConnection;
+
+  /// No description provided for @aiTasksIssueInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting can\'t be read'**
+  String get aiTasksIssueInvalid;
+
+  /// No description provided for @aiTasksChangeModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Model'**
+  String get aiTasksChangeModel;
+
+  /// No description provided for @aiTasksTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get aiTasksTest;
+
+  /// No description provided for @aiTasksChooseAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Again'**
+  String get aiTasksChooseAgain;
+
+  /// No description provided for @aiTasksOpenModelSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Model Settings'**
+  String get aiTasksOpenModelSettings;
+
+  /// No description provided for @aiTasksReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to Defaults'**
+  String get aiTasksReset;
+
+  /// No description provided for @aiTasksConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed in another window'**
+  String get aiTasksConflict;
+
+  /// No description provided for @aiTasksReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get aiTasksReload;
+
+  /// No description provided for @aiTasksAddModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Model'**
+  String get aiTasksAddModel;
+
+  /// No description provided for @aiTasksCloseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes to AI Features?'**
+  String get aiTasksCloseTitle;
+
+  /// No description provided for @aiTasksDontSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t Save'**
+  String get aiTasksDontSave;
+
+  /// No description provided for @aiTasksAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign…'**
+  String get aiTasksAssign;
+
+  /// No description provided for @aiTasksAddedModels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 model} other{Added {count} models}}'**
+  String aiTasksAddedModels(int count);
+
+  /// No description provided for @aiTasksAssignToFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign to Features'**
+  String get aiTasksAssignToFeatures;
+
+  /// No description provided for @aiTasksRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove “{name}”?'**
+  String aiTasksRemoveTitle(String name);
+
+  /// No description provided for @aiTasksQuickDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick default'**
+  String get aiTasksQuickDefault;
+
+  /// No description provided for @aiTasksHeavyDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy default'**
+  String get aiTasksHeavyDefault;
+
+  /// No description provided for @aiTasksConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 conversation} other{{count} conversations}}'**
+  String aiTasksConversations(int count);
+
+  /// No description provided for @aiTasksMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String aiTasksMore(int count);
+
+  /// No description provided for @aiTasksUsageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check where it\'s used'**
+  String get aiTasksUsageUnavailable;
+
+  /// No description provided for @aiTasksRunLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{task} · {source}'**
+  String aiTasksRunLabel(String task, String source);
+
+  /// No description provided for @aiTasksModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get aiTasksModel;
+
+  /// No description provided for @aiTasksRunAwaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs confirmation'**
+  String get aiTasksRunAwaiting;
+
+  /// No description provided for @aiTasksRunPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get aiTasksRunPaused;
+
+  /// No description provided for @aiTasksRunPausedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused {done}/{total}'**
+  String aiTasksRunPausedCount(int done, int total);
+
+  /// No description provided for @aiTasksRunInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted'**
+  String get aiTasksRunInterrupted;
+
+  /// No description provided for @aiTasksRunInterruptedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted {done}/{total}'**
+  String aiTasksRunInterruptedCount(int done, int total);
+
+  /// No description provided for @aiTasksRunPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially complete · {count} {unit} unfinished'**
+  String aiTasksRunPartial(int count, String unit);
+
+  /// No description provided for @aiTasksRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get aiTasksRunFailed;
+
+  /// No description provided for @aiTasksRunStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get aiTasksRunStopped;
+
+  /// No description provided for @aiTasksRunStoppedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped {done}/{total}'**
+  String aiTasksRunStoppedCount(int done, int total);
+
+  /// No description provided for @aiTasksRunCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get aiTasksRunCompleted;
+
+  /// No description provided for @aiTasksRunUnfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Last run didn\'t finish'**
+  String get aiTasksRunUnfinished;
+
+  /// No description provided for @aiTasksRetryUnfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry {count} {unit}'**
+  String aiTasksRetryUnfinished(int count, String unit);
+
+  /// No description provided for @aiTaskSelectionTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection Translation'**
+  String get aiTaskSelectionTranslate;
+
+  /// No description provided for @aiTaskWordLookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Word Lookup'**
+  String get aiTaskWordLookup;
+
+  /// No description provided for @aiTaskTitleGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Title Generation'**
+  String get aiTaskTitleGenerate;
+
+  /// No description provided for @aiTaskAssistantChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant Chat & Explain'**
+  String get aiTaskAssistantChat;
+
+  /// No description provided for @aiTaskConversationSummarize.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation Summary'**
+  String get aiTaskConversationSummarize;
+
+  /// No description provided for @aiTaskDocumentSummarize.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Summary'**
+  String get aiTaskDocumentSummarize;
+
+  /// No description provided for @aiTaskDocumentTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Translation'**
+  String get aiTaskDocumentTranslate;
+
+  /// No description provided for @aiTaskMapExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Mind Map Expansion'**
+  String get aiTaskMapExpand;
+
+  /// No description provided for @aiTaskMapGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Mind Map Generation & Update'**
+  String get aiTaskMapGenerate;
+
+  /// No description provided for @aiTaskResearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Research & Verification'**
+  String get aiTaskResearch;
+
+  /// No description provided for @aiTaskStudyNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Study Note Organizing'**
+  String get aiTaskStudyNotes;
+
+  /// No description provided for @aiTaskReviewCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Cards & Questions'**
+  String get aiTaskReviewCards;
+
+  /// No description provided for @aiTasksProfilesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load model capabilities'**
+  String get aiTasksProfilesUnavailable;
+
+  /// No description provided for @aiTasksProbeUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Test result not saved'**
+  String get aiTasksProbeUnsaved;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
