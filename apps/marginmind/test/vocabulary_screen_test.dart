@@ -158,6 +158,7 @@ Future<(ProviderContainer, InMemoryVocabularyRepository)> open(
 
 Future<void> tap(WidgetTester tester, Finder f) async {
   await tester.ensureVisible(f);
+  await tester.pumpAndSettle();
   await tester.tap(f);
   await tester.pumpAndSettle();
 }
@@ -218,7 +219,8 @@ void main() {
     expect(find.text('Today'), findsOneWidget);
     expect(find.byKey(const ValueKey('vocabulary-row-bird')), findsNothing);
     expect(find.byTooltip('Occurrences in this document'), findsOneWidget);
-    await tap(tester, find.text('All').first);
+    await tap(tester, find.byKey(const ValueKey('vocabulary-scope')));
+    await tap(tester, find.text('All study sets').last);
     expect(find.text('Earlier'), findsOneWidget);
     final search = find.descendant(of: find.byType(MMSearchField), matching: find.byType(TextField));
     await tester.enterText(search, 'birds');
@@ -265,7 +267,9 @@ void main() {
     expect((await repo.load()).single.status, VocabularyStatus.known);
     await tap(tester, find.text('Undo'));
     expect((await repo.load()).single.status, VocabularyStatus.learning);
-    await button(tester, 'Delete from vocabulary');
+    expect(find.text('Delete from vocabulary'), findsNothing);
+    await tap(tester, find.byKey(const ValueKey('vocabulary-more')));
+    await tap(tester, find.text('Delete from vocabulary'));
     expect(await repo.load(), isEmpty);
     await tap(tester, find.text('Undo'));
     expect(await repo.load(), hasLength(1));
@@ -281,6 +285,111 @@ void main() {
     await tap(tester, find.byTooltip('Back'));
     await tap(tester, find.byTooltip('Back'));
     expect(c.read(navigationProvider), isA<LibraryRoute>());
+  });
+  screenTest('status counts track scope and search without being limited by the active tab', (tester) async {
+    await open(
+      tester,
+      scoped: true,
+      entries: [
+        word('cat'),
+        word('bird', contexts: [source('other', set: 'demo-2')]),
+        word('dog', status: VocabularyStatus.known),
+      ],
+    );
+    Finder tab(String status) => find.byKey(ValueKey('vocabulary-status-$status'));
+    void count(String status, String value) {
+      expect(find.descendant(of: tab(status), matching: find.text(value)), findsOneWidget);
+    }
+
+    count('learning', '1');
+    count('known', '1');
+    count('all', '2');
+    await tap(tester, tab('known'));
+    count('learning', '1');
+    count('all', '2');
+    expect(find.byKey(const ValueKey('vocabulary-row-cat')), findsNothing);
+    await tap(tester, find.byKey(const ValueKey('vocabulary-scope')));
+    await tap(tester, find.text('All study sets').last);
+    count('learning', '2');
+    count('known', '1');
+    count('all', '3');
+    await tap(tester, tab('all'));
+    final search = find.descendant(of: find.byType(MMSearchField), matching: find.byType(TextField));
+    await tester.enterText(search, 'birds');
+    await tester.pumpAndSettle();
+    count('learning', '1');
+    count('known', '0');
+    count('all', '1');
+    await tester.enterText(search, '');
+    await tester.pumpAndSettle();
+    await tap(tester, find.byKey(const ValueKey('vocabulary-scope')));
+    await tap(tester, find.text('This study set').last);
+    count('learning', '1');
+    count('known', '1');
+    count('all', '2');
+    expect(find.byKey(const ValueKey('vocabulary-row-bird')), findsNothing);
+  });
+  screenTest('more menu dismisses safely and known entries can return to learning', (tester) async {
+    final (_, repo) = await open(tester, entryId: 'dog');
+    await tap(tester, find.byKey(const ValueKey('vocabulary-more')));
+    expect(find.text('Delete from vocabulary'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete from vocabulary'), findsNothing);
+    expect(await repo.load(), hasLength(2));
+    await button(tester, 'Learn again');
+    expect((await repo.load()).last.status, VocabularyStatus.learning);
+    expect(find.widgetWithText(MMButton, 'Mark as known'), findsOneWidget);
+    await settleHud(tester);
+  });
+  screenTest('touch filters and footer remain usable in a narrow window with larger text', (tester) async {
+    final (_, repo) = await open(tester, compact: true, scoped: true, chinese: true, entries: [word('cat')]);
+    tester.view.physicalSize = const Size(320, 900);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(const ValueKey('vocabulary-status-learning'))).height, greaterThanOrEqualTo(44));
+    await tap(tester, find.byKey(const ValueKey('vocabulary-scope')));
+    await tap(tester, find.text('全部学习集').last);
+    await tap(tester, find.byKey(const ValueKey('vocabulary-row-cat')));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('vocabulary-more')),
+      200,
+      scrollable: find.descendant(of: find.byType(VocabularyDetail), matching: find.byType(Scrollable)).first,
+    );
+    await tap(tester, find.byKey(const ValueKey('vocabulary-more')));
+    expect(find.text('从生词本移除'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(await repo.load(), hasLength(1));
+    expect(tester.takeException(), isNull);
+  });
+  screenTest('embedded vocabulary uses its available width when the workspace sidebar is open', (tester) async {
+    final (c, repo) = await open(tester, scoped: true, entries: [word('cat')]);
+    tester.view.physicalSize = const Size(600, 900);
+    c.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    c.read(workspaceProvider('demo-1').notifier).activateTab(WorkspaceTab.vocabulary);
+    await tester.pumpAndSettle();
+    expect(find.byType(VocabularyDetail), findsNothing);
+    await tap(tester, find.byKey(const ValueKey('vocabulary-row-cat')));
+    expect(find.byType(VocabularyDetail), findsOneWidget);
+    expect(find.byKey(const ValueKey('vocabulary-row-cat')), findsNothing);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('vocabulary-more')),
+      200,
+      scrollable: find.descendant(of: find.byType(VocabularyDetail), matching: find.byType(Scrollable)).first,
+    );
+    await tap(tester, find.byKey(const ValueKey('vocabulary-more')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    await button(tester, 'Mark as known');
+    expect((await repo.load()).single.status, VocabularyStatus.known);
+    expect(find.byType(VocabularyDetail), findsNothing);
+    await tap(tester, find.text('Undo'));
+    expect((await repo.load()).single.status, VocabularyStatus.learning);
+    expect(tester.takeException(), isNull);
+    await settleHud(tester);
   });
   for (final text in [false, true]) {
     screenTest('same/cross set navigation, deleted sources, text=$text', (tester) async {

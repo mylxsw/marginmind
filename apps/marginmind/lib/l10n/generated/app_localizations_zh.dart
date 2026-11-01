@@ -3602,6 +3602,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyThisSet => '本学习集';
 
   @override
+  String get vocabularyAllSets => '全部学习集';
+
+  @override
+  String get vocabularyScope => '学习集范围';
+
+  @override
   String get vocabularyAll => '全部';
 
   @override
@@ -3659,7 +3665,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyLearnAgain => '重新学习';
 
   @override
-  String get vocabularyDelete => '从生词本删除';
+  String get vocabularyDelete => '从生词本移除';
 
   @override
   String get vocabularyRemoved => '已移除';

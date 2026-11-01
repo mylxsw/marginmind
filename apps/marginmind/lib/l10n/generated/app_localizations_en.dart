@@ -3753,6 +3753,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vocabularyThisSet => 'This study set';
 
   @override
+  String get vocabularyAllSets => 'All study sets';
+
+  @override
+  String get vocabularyScope => 'Study set scope';
+
+  @override
   String get vocabularyAll => 'All';
 
   @override

@@ -6746,6 +6746,18 @@ abstract class AppLocalizations {
   /// **'This study set'**
   String get vocabularyThisSet;
 
+  /// No description provided for @vocabularyAllSets.
+  ///
+  /// In en, this message translates to:
+  /// **'All study sets'**
+  String get vocabularyAllSets;
+
+  /// No description provided for @vocabularyScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Study set scope'**
+  String get vocabularyScope;
+
   /// No description provided for @vocabularyAll.
   ///
   /// In en, this message translates to:

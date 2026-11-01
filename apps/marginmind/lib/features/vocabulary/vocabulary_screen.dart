@@ -38,11 +38,15 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
   bool _pushed = false;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(builder: _buildContent);
+
+  Widget _buildContent(BuildContext context, BoxConstraints constraints) {
     final l = context.l10n;
     final data = ref.watch(vocabularyProvider);
     final setId = widget.route.studySetId;
-    final window = MediaQuery.sizeOf(context);
+    // An embedded tab can be much narrower than the window when the workspace
+    // sidebar/reference is open. Choose the layout using the space we own.
+    final window = constraints.biggest;
     final safe = MediaQuery.paddingOf(context);
     final compact =
         MMSizeClass.fromSize(Size(window.width - safe.horizontal, window.height - safe.vertical)) ==
@@ -60,22 +64,24 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
       }
     }
     final query = _query.trim().toLowerCase();
-    final visible =
-        entries
-            .where(
-              (e) =>
-                  (_status == null || e.status == _status) &&
-                  (_allSets || e.contexts.any((c) => c.studySetId == setId) || (counts[e.id] ?? 0) > 0) &&
-                  (query.isEmpty ||
-                      [
-                        e.term,
-                        e.gloss,
-                        ...e.forms,
-                        ...e.senses.map((s) => s.meaning),
-                      ].any((v) => v.toLowerCase().contains(query))),
-            )
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    // Count the current scope/search before applying the status tab, so the
+    // other tabs keep meaningful counts while a status is selected.
+    final matching = entries
+        .where(
+          (e) =>
+              (_allSets || e.contexts.any((c) => c.studySetId == setId) || (counts[e.id] ?? 0) > 0) &&
+              (query.isEmpty ||
+                  [
+                    e.term,
+                    e.gloss,
+                    ...e.forms,
+                    ...e.senses.map((s) => s.meaning),
+                  ].any((v) => v.toLowerCase().contains(query))),
+        )
+        .toList();
+    final learningCount = matching.where((e) => e.status == VocabularyStatus.learning).length;
+    final visible = matching.where((e) => _status == null || e.status == _status).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final selected = visible.where((e) => e.id == _selected).firstOrNull ?? (compact ? null : visible.firstOrNull);
     final showDetail = compact && (_pushed || widget.route.entryId != null) && selected != null;
     void back() {
@@ -94,36 +100,41 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
     Widget list = Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(MMSpacing.m),
+          padding: const EdgeInsets.all(MMSpacing.l),
           child: Column(
             children: [
-              MMSearchField(placeholder: l.vocabularySearch, onChanged: (v) => setState(() => _query = v)),
-              const SizedBox(height: MMSpacing.s),
-              MMSegmentedControl<bool>(
-                expand: true,
-                value: _allSets,
-                onChanged: (v) => setState(() => _allSets = v),
-                segments: [
-                  if (setId != null) MMSegment(value: false, label: l.vocabularyThisSet),
-                  MMSegment(value: true, label: l.vocabularyAll),
+              Row(
+                children: [
+                  Expanded(child: Text(l.vocabularyTitle, style: context.mmText.title3)),
+                  const SizedBox(width: MMSpacing.s),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: _VocabularyScope(
+                        allSets: _allSets,
+                        hasStudySet: setId != null,
+                        onChanged: (value) => setState(() => _allSets = value),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: MMSpacing.s),
-              MMSegmentedControl<VocabularyStatus?>(
-                expand: true,
+              const SizedBox(height: MMSpacing.m),
+              MMSearchField(placeholder: l.vocabularySearch, onChanged: (v) => setState(() => _query = v)),
+              const SizedBox(height: MMSpacing.m),
+              _VocabularyStatusTabs(
                 value: _status,
                 onChanged: (v) => setState(() => _status = v),
-                segments: [
-                  MMSegment(value: VocabularyStatus.learning, label: l.vocabularyLearning),
-                  MMSegment(value: VocabularyStatus.known, label: l.vocabularyKnown),
-                  MMSegment(value: null, label: l.vocabularyAll),
-                ],
+                learning: learningCount,
+                known: matching.length - learningCount,
               ),
             ],
           ),
         ),
         Expanded(
           child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m),
             children: [
               if (visible.isEmpty)
                 Padding(
@@ -133,68 +144,90 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
               for (final recent in [true, false]) ...[
                 if (visible.any((e) => !e.createdAt.toLocal().isBefore(today) == recent))
                   Padding(
-                    padding: const EdgeInsets.all(MMSpacing.m),
+                    padding: const EdgeInsets.fromLTRB(MMSpacing.xs, MMSpacing.m, MMSpacing.xs, MMSpacing.s),
                     child: Text(recent ? l.vocabularyToday : l.vocabularyEarlier, style: context.mmText.footnote),
                   ),
                 for (final e in visible.where((e) => !e.createdAt.toLocal().isBefore(today) == recent))
-                  MMInteractive(
-                    key: ValueKey('vocabulary-row-${e.id}'),
-                    selected: selected?.id == e.id,
-                    semanticLabel: e.term,
-                    onTap: () => setState(() {
-                      _selected = e.id;
-                      _pushed = true;
-                    }),
-                    builder: (context, state) => Container(
-                      padding: const EdgeInsets.all(MMSpacing.m),
-                      decoration: BoxDecoration(
-                        color: selected?.id == e.id
-                            ? context.mmColors.selectedRow
-                            : state.hovered
-                            ? context.mmColors.hover
-                            : null,
-                        borderRadius: BorderRadius.circular(MMRadii.row),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  e.term,
-                                  style: context.mmText.headline,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  e.senses.isEmpty ? '—' : e.senses.map((s) => s.meaning).join('；'),
-                                  style: context.mmText.footnote,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                          Tooltip(
-                            message: e.status == VocabularyStatus.learning ? l.vocabularyLearning : l.vocabularyKnown,
-                            child: Container(
-                              width: MMSpacing.s,
-                              height: MMSpacing.s,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: e.status == VocabularyStatus.learning
-                                    ? context.mmColors.vocabulary
-                                    : context.mmColors.secondaryLabel,
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: MMSpacing.xs),
+                    child: MMInteractive(
+                      key: ValueKey('vocabulary-row-${e.id}'),
+                      selected: selected?.id == e.id,
+                      semanticLabel: e.term,
+                      onTap: () => setState(() {
+                        _selected = e.id;
+                        _pushed = true;
+                      }),
+                      builder: (context, state) => Container(
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          color: selected?.id == e.id
+                              ? context.mmColors.vocabularyTint
+                              : state.hovered
+                              ? context.mmColors.hover
+                              : null,
+                          borderRadius: BorderRadius.circular(MMRadii.row),
+                        ),
+                        child: Stack(
+                          children: [
+                            if (selected?.id == e.id)
+                              Positioned(
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: 3,
+                                child: ColoredBox(color: context.mmColors.vocabulary),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.all(MMSpacing.m),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          e.term,
+                                          style: context.mmText.headline,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: MMSpacing.xs),
+                                        Text(
+                                          e.senses.isEmpty ? '—' : e.senses.map((s) => s.meaning).join('；'),
+                                          style: context.mmText.footnote,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: MMSpacing.s),
+                                  Tooltip(
+                                    message: e.status == VocabularyStatus.learning
+                                        ? l.vocabularyLearning
+                                        : l.vocabularyKnown,
+                                    child: Container(
+                                      width: MMSizes.vocabularyDot,
+                                      height: MMSizes.vocabularyDot,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: e.status == VocabularyStatus.learning
+                                            ? context.mmColors.vocabulary
+                                            : context.mmColors.secondaryLabel,
+                                      ),
+                                    ),
+                                  ),
+                                  if ((counts[e.id] ?? 0) > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: MMSpacing.s),
+                                      child: Tooltip(message: l.vocabularyOccurrences, child: MMCount(counts[e.id]!)),
+                                    ),
+                                ],
                               ),
                             ),
-                          ),
-                          if ((counts[e.id] ?? 0) > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(left: MMSpacing.s),
-                              child: Tooltip(message: l.vocabularyOccurrences, child: MMCount(counts[e.id]!)),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -247,6 +280,138 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
           leading: MMIconButton(icon: MMIcons.chevronLeft, tooltip: l.back, onPressed: back),
         ),
         body: body,
+      ),
+    );
+  }
+}
+
+class _VocabularyScope extends StatelessWidget {
+  const _VocabularyScope({required this.allSets, required this.hasStudySet, required this.onChanged});
+  final bool allSets, hasStudySet;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n, c = context.mmColors;
+    final label = allSets ? l.vocabularyAllSets : l.vocabularyThisSet;
+    return MMDropdownButton<bool>(
+      key: const ValueKey('vocabulary-scope'),
+      tooltip: l.vocabularyScope,
+      enabled: hasStudySet,
+      onSelected: onChanged,
+      itemBuilder: (_) => [
+        for (final (value, title) in [(false, l.vocabularyThisSet), (true, l.vocabularyAllSets)])
+          MMDropdownItem(
+            value: value,
+            child: Row(
+              children: [
+                SizedBox(width: MMSpacing.l, child: value == allSets ? const Icon(MMIcons.check, size: 14) : null),
+                const SizedBox(width: MMSpacing.s),
+                Expanded(child: Text(title)),
+              ],
+            ),
+          ),
+      ],
+      child: Semantics(
+        label: l.vocabularyScope,
+        value: label,
+        child: ExcludeSemantics(
+          child: MMControlFrame(
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 30),
+              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xs),
+              decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.row)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.callout),
+                  ),
+                  if (hasStudySet) ...[
+                    const SizedBox(width: MMSpacing.s),
+                    Icon(MMIcons.chevronDown, size: 12, color: c.icon),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Feature-tinted tabs keep the system segmented controls elsewhere neutral.
+class _VocabularyStatusTabs extends StatelessWidget {
+  const _VocabularyStatusTabs({
+    required this.value,
+    required this.learning,
+    required this.known,
+    required this.onChanged,
+  });
+  final VocabularyStatus? value;
+  final int learning, known;
+  final ValueChanged<VocabularyStatus?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors, l = context.l10n;
+    return Container(
+      padding: const EdgeInsets.all(MMSpacing.xxs),
+      decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.capsuleButton)),
+      child: Row(
+        children: [
+          for (final (status, label, count) in [
+            (VocabularyStatus.learning, l.vocabularyLearning, learning),
+            (VocabularyStatus.known, l.vocabularyKnown, known),
+            (null, l.vocabularyAll, learning + known),
+          ])
+            Expanded(
+              child: MMInteractive(
+                key: ValueKey('vocabulary-status-${status?.name ?? 'all'}'),
+                selected: value == status,
+                semanticLabel: label,
+                semanticValue: '$count',
+                tooltip: '$label · $count',
+                onTap: () => onChanged(status),
+                builder: (context, state) => MMControlFrame(
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 28),
+                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: value == status
+                          ? c.vocabularyTint
+                          : state.hovered
+                          ? c.hover
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(MMRadii.capsuleButton - MMSpacing.xxs),
+                      border: Border.all(
+                        color: value == status || state.focused ? c.vocabulary : Colors.transparent,
+                        width: state.focused ? 2 : MMSizes.hairline,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.mmText.callout.copyWith(
+                              fontWeight: value == status ? FontWeight.w600 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: MMSpacing.xs),
+                        Text('$count', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -557,31 +722,122 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
           ),
         ),
         const SizedBox(height: MMSpacing.xxl),
-        Wrap(
-          spacing: MMSpacing.m,
-          runSpacing: MMSpacing.s,
-          children: [
-            MMButton(
-              label: e.status == VocabularyStatus.learning ? l.vocabularyMarkKnown : l.vocabularyLearnAgain,
-              onPressed: () => _edit(
-                (entries, now) => _editor.setStatus(
-                  entries,
-                  e.id,
-                  e.status == VocabularyStatus.learning ? VocabularyStatus.known : VocabularyStatus.learning,
-                  now,
-                ),
-                message: e.status == VocabularyStatus.learning ? l.vocabularyKnown : l.vocabularyLearning,
-              ),
+        _VocabularyActions(
+          status: e.status,
+          onStatus: () => _edit(
+            (entries, now) => _editor.setStatus(
+              entries,
+              e.id,
+              e.status == VocabularyStatus.learning ? VocabularyStatus.known : VocabularyStatus.learning,
+              now,
             ),
-            MMButton(
-              label: l.vocabularyDelete,
-              variant: MMButtonVariant.plain,
-              color: context.mmColors.critical,
-              onPressed: () => _edit((entries, now) => _editor.remove(entries, e.id), message: l.vocabularyRemoved),
-            ),
-          ],
+            message: e.status == VocabularyStatus.learning ? l.vocabularyKnown : l.vocabularyLearning,
+          ),
+          onDelete: () => _edit((entries, now) => _editor.remove(entries, e.id), message: l.vocabularyRemoved),
         ),
       ],
+    );
+  }
+}
+
+class _VocabularyActions extends StatelessWidget {
+  const _VocabularyActions({required this.status, required this.onStatus, required this.onDelete});
+  final VocabularyStatus status;
+  final VoidCallback onStatus, onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n, c = context.mmColors;
+    final learning = status == VocabularyStatus.learning;
+    final statusLabel = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: MMSizes.vocabularyDot,
+          height: MMSizes.vocabularyDot,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: learning ? c.vocabulary : c.secondaryLabel),
+        ),
+        const SizedBox(width: MMSpacing.s),
+        Flexible(child: Text(learning ? l.vocabularyLearning : l.vocabularyKnown, style: context.mmText.callout)),
+      ],
+    );
+    final primary = MMButton(
+      key: const ValueKey('vocabulary-toggle-status'),
+      label: learning ? l.vocabularyMarkKnown : l.vocabularyLearnAgain,
+      icon: learning ? MMIcons.check : MMIcons.retry,
+      variant: MMButtonVariant.primary,
+      color: c.vocabulary,
+      foregroundColor: c.brightness == Brightness.dark ? c.canvas : c.page,
+      onPressed: onStatus,
+    );
+    final more = MMDropdownButton<String>(
+      key: const ValueKey('vocabulary-more'),
+      tooltip: l.moreTools,
+      width: 190,
+      child: MMControlFrame(
+        child: Container(
+          width: 34,
+          height: 30,
+          decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.row)),
+          child: Icon(MMIcons.more, size: MMSpacing.l, color: c.label),
+        ),
+      ),
+      onSelected: (_) => onDelete(),
+      itemBuilder: (_) => [
+        MMDropdownItem(
+          value: 'remove',
+          child: Row(
+            children: [
+              Icon(MMIcons.trash, color: c.critical),
+              const SizedBox(width: MMSpacing.s),
+              Expanded(
+                child: Text(l.vocabularyDelete, style: TextStyle(color: c.critical)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    Widget commands({required bool expand}) => Row(
+      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      children: [
+        if (expand) Expanded(child: primary) else primary,
+        const SizedBox(width: MMSpacing.l),
+        Container(width: MMSizes.hairline, height: MMSpacing.l, color: c.separator),
+        const SizedBox(width: MMSpacing.s),
+        more,
+      ],
+    );
+    return Container(
+      key: const ValueKey('vocabulary-actions'),
+      padding: const EdgeInsets.only(top: MMSpacing.l),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: c.separator, width: MMSizes.hairline),
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(13) / 13;
+          if (constraints.maxWidth < 360 * textScale) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                statusLabel,
+                const SizedBox(height: MMSpacing.s),
+                commands(expand: true),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: statusLabel),
+              const SizedBox(width: MMSpacing.m),
+              commands(expand: false),
+            ],
+          );
+        },
+      ),
     );
   }
 }

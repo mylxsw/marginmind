@@ -1918,6 +1918,8 @@
   "vocabularyUS": "US",
   "vocabularySearch": "Search words and meanings",
   "vocabularyThisSet": "This study set",
+  "vocabularyAllSets": "All study sets",
+  "vocabularyScope": "Study set scope",
   "vocabularyAll": "All",
   "vocabularyToday": "Today",
   "vocabularyEarlier": "Earlier",
