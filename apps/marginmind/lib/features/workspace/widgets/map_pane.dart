@@ -691,7 +691,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
       children: [
         SizedBox.square(
           dimension: MMSizes.dropdownIcon,
-          child: Center(child: icon),
+          child: IconTheme.merge(
+            data: const IconThemeData(size: MMSizes.dropdownIcon),
+            child: Center(child: icon),
+          ),
         ),
         const SizedBox(width: MMSpacing.s),
         Expanded(child: Text(label)),

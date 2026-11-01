@@ -29,6 +29,14 @@ void main() {
       Future<void> openPicker() async {
         await tester.tap(find.byKey(const ValueKey('map-more')));
         await tester.pumpAndSettle();
+        final styleItem = find.byKey(const ValueKey('map-style-menu'));
+        final styleIcon = find.descendant(of: styleItem, matching: find.byIcon(MMIcons.mapStyle));
+        final glyph = tester.widget<RichText>(find.descendant(of: styleIcon, matching: find.byType(RichText)));
+        expect(glyph.text.style?.fontSize, MMSizes.dropdownIcon);
+        expect(
+          tester.getRect(styleIcon).right,
+          lessThan(tester.getRect(find.descendant(of: styleItem, matching: find.text('Style'))).left),
+        );
         await tester.tap(find.byKey(const ValueKey('map-switch-menu')));
         await tester.pumpAndSettle();
       }
