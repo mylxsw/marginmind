@@ -417,6 +417,38 @@ class WorkspaceSidebar extends ConsumerWidget {
       );
     }
 
+    final canAddWebPage = ref.watch(canAddWebPageProvider);
+    List<PopupMenuEntry<String>> documentEntries(BuildContext _) => [
+      MMDropdownItem(value: 'import', child: Text(l.importDocument)),
+      if (canAddWebPage) MMDropdownItem(value: 'web', child: Text(l.addWebPage)),
+    ];
+    List<PopupMenuEntry<String>> mapEntries(BuildContext _) => [
+      MMDropdownItem(value: 'new', child: Text(l.newMap)),
+      if (betaEnabled)
+        MMDropdownItem(
+          value: 'generate',
+          child: Row(
+            children: [
+              Expanded(child: Text(l.mapGenerateMenu)),
+              const SizedBox(width: MMSpacing.xs),
+              const MMBetaBadge(),
+            ],
+          ),
+        ),
+    ];
+    void addContent(String value) {
+      switch (value) {
+        case 'import':
+          pickAndImportDocuments(context, ref, studySetId);
+        case 'web':
+          dispatchAddWebPage(context, ref, studySetId);
+        case 'new':
+          showNewMapSheet(context, ref, studySetId);
+        case 'generate':
+          showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId);
+      }
+    }
+
     return MMSidebar(
       topTrailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -437,6 +469,23 @@ class WorkspaceSidebar extends ConsumerWidget {
         ],
       ),
       header: MMSearchField(placeholder: l.searchInSet, focusNode: searchFocus, onChanged: controller.setSidebarQuery),
+      footer: Align(
+        alignment: Alignment.centerRight,
+        child: MMDropdownButton<String>(
+          key: const ValueKey('workspace-add-content'),
+          tooltip: l.addDocumentMenu,
+          width: MMSizes.dropdownWideWidth,
+          icon: const Icon(MMIcons.add),
+          onSelected: addContent,
+          itemBuilder: (context) => [
+            MMDropdownHeader(l.sectionDocuments),
+            ...documentEntries(context),
+            const PopupMenuDivider(),
+            MMDropdownHeader(l.sectionMaps),
+            ...mapEntries(context),
+          ],
+        ),
+      ),
       children: [
         if (empty)
           Padding(
@@ -453,13 +502,8 @@ class WorkspaceSidebar extends ConsumerWidget {
                     tooltip: l.addDocumentMenu,
                     width: MMSizes.dropdownWideWidth,
                     icon: const Icon(MMIcons.add),
-                    onSelected: (value) => value == 'web'
-                        ? dispatchAddWebPage(context, ref, studySetId)
-                        : pickAndImportDocuments(context, ref, studySetId),
-                    itemBuilder: (_) => [
-                      MMDropdownItem(value: 'import', child: Text(l.importDocument)),
-                      MMDropdownItem(value: 'web', child: Text(l.addWebPage)),
-                    ],
+                    onSelected: addContent,
+                    itemBuilder: documentEntries,
                   )
                 : MMIconButton(
                     icon: MMIcons.add,
@@ -478,22 +522,8 @@ class WorkspaceSidebar extends ConsumerWidget {
                     tooltip: l.newMap,
                     width: MMSizes.dropdownWideWidth,
                     icon: const Icon(MMIcons.add),
-                    onSelected: (value) => value == 'generate'
-                        ? showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId)
-                        : showNewMapSheet(context, ref, studySetId),
-                    itemBuilder: (_) => [
-                      MMDropdownItem(value: 'new', child: Text(l.newMap)),
-                      MMDropdownItem(
-                        value: 'generate',
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(l.mapGenerateMenu)),
-                            const SizedBox(width: MMSpacing.xs),
-                            const MMBetaBadge(),
-                          ],
-                        ),
-                      ),
-                    ],
+                    onSelected: addContent,
+                    itemBuilder: mapEntries,
                   )
                 : MMIconButton(
                     key: const ValueKey('add-map-menu'),
