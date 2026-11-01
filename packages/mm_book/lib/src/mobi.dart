@@ -30,6 +30,7 @@ class MobiParser {
     }
     var base = 0;
     var header = _MobiHeader(records.first);
+    final legacyHeader = header;
     if (header.encryption != 0) throw const BookParseException(BookErrorKind.drm, 'MOBI uses DRM');
     final boundary = header.exth[121]?.firstOrNull;
     if (header.version < 8 && boundary != null) {
@@ -69,7 +70,10 @@ class MobiParser {
       if (text.length > maxBytes) _limit();
     }
     final raw = text.takeBytes();
-    if (raw.length != textLength) _damaged('MOBI text length mismatch');
+    // KF8 producers may count only the main markup flow in textLength.
+    // Validate against the FDST below before accepting additional CSS flows.
+    final hasFlows = header.version == 8 && header.field(0xc4) > 1 && header.field(0xc4) != 0xffffffff;
+    if (!hasFlows && raw.length != textLength) _damaged('MOBI text length mismatch');
     if (_Binary(raw).magic('%MOP')) {
       final pdf = _printReplica(raw);
       return Book(header.title, [], {}, [], metadata: header.metadata, pdf: pdf);
@@ -77,36 +81,48 @@ class MobiParser {
     if (header.type == 248) _damaged('AZW4 has no Print Replica payload');
     final resources = <String, Uint8List>{};
     var resourceBytes = 0;
+    final resourceRanges = <(int, int)>[];
+    if (base > 0) {
+      var first = legacyHeader.field(0x6c);
+      if (first == 0xffffffff) first = legacyHeader.data.u16(8) + 1;
+      if (first > base - 1) _damaged('Invalid shared MOBI resource index');
+      resourceRanges.add((first, base - 1));
+    }
     var firstResource = header.field(0x6c);
     if (firstResource == 0xffffffff) firstResource = textCount + 1;
     if (base + firstResource > records.length) _damaged('Invalid MOBI resource index');
-    for (var i = base + firstResource; i < records.length; i++) {
-      final data = records[i];
-      final mime = _mime(data, '');
-      if (mime.startsWith('image/')) {
-        resourceBytes += data.length;
-        if (resourceBytes + raw.length > maxBytes) _limit();
-        resources['resource-${i - base - firstResource + 1}'] = data;
-      }
-      if (_Binary(data).magic('FONT')) {
-        final font = _Binary(data);
-        final flags = font.u32(8), start = font.u32(12), size = font.u32(4);
-        if (size > maxBytes) _limit();
-        var payload = Uint8List.fromList(font.slice(start, font.length - start));
-        if ((flags & 2) != 0) {
-          final keySize = font.u32(16), keyStart = font.u32(20);
-          if (keySize == 0) _damaged('Empty MOBI font key');
-          final key = font.slice(keyStart, keySize);
-          for (var j = 0; j < payload.length && j < 1040; j++) {
-            payload[j] ^= key[j % keySize];
-          }
+    resourceRanges.add((base + firstResource, records.length));
+    var resourceOffset = 0;
+    for (final (resourceStart, resourceEnd) in resourceRanges) {
+      for (var i = resourceStart; i < resourceEnd; i++) {
+        final data = records[i];
+        final mime = _mime(data, '');
+        if (mime.startsWith('image/')) {
+          resourceBytes += data.length;
+          if (resourceBytes + raw.length > maxBytes) _limit();
+          resources['resource-${resourceOffset + i - resourceStart + 1}'] = data;
         }
-        if ((flags & 1) != 0) payload = ZLibDecoder().decodeBytes(payload, maxOutputSize: size);
-        if (payload.length != size) _damaged('Invalid MOBI font size');
-        resourceBytes += payload.length;
-        if (resourceBytes + raw.length > maxBytes) _limit();
-        resources['resource-${i - base - firstResource + 1}'] = payload;
+        if (_Binary(data).magic('FONT')) {
+          final font = _Binary(data);
+          final flags = font.u32(8), start = font.u32(12), size = font.u32(4);
+          if (size > maxBytes) _limit();
+          var payload = Uint8List.fromList(font.slice(start, font.length - start));
+          if ((flags & 2) != 0) {
+            final keySize = font.u32(16), keyStart = font.u32(20);
+            if (keySize == 0) _damaged('Empty MOBI font key');
+            final key = font.slice(keyStart, keySize);
+            for (var j = 0; j < payload.length && j < 1040; j++) {
+              payload[j] ^= key[j % keySize];
+            }
+          }
+          if ((flags & 1) != 0) payload = ZLibDecoder().decodeBytes(payload, maxOutputSize: size);
+          if (payload.length != size) _damaged('Invalid MOBI font size');
+          resourceBytes += payload.length;
+          if (resourceBytes + raw.length > maxBytes) _limit();
+          resources['resource-${resourceOffset + i - resourceStart + 1}'] = payload;
+        }
       }
+      resourceOffset += resourceEnd - resourceStart;
     }
     final diagnostics = <String>[];
     final parts = <Uint8List>[];
@@ -132,6 +148,7 @@ class MobiParser {
           last = end;
         }
         if (last != raw.length) _damaged('Unaccounted KF8 flow data');
+        if (textLength != raw.length && textLength != main.length) _damaged('MOBI text length mismatch');
       }
       final skel = header.field(0xfc), frag = header.field(0xf8);
       if (skel == 0xffffffff) _unsupported('KF8 without skeleton index');

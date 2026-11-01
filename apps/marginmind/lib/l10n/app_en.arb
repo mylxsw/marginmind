@@ -1831,6 +1831,7 @@
   "importErrorKfx": "KFX isn’t supported",
   "importErrorEmpty": "No readable content",
   "importErrorUnsupported": "Unsupported format",
+  "importErrorLimit": "The file size or expanded content exceeds the import limit",
   "readerFontSmaller": "Smaller Text",
   "readerFontLarger": "Larger Text",
   "readerLineTight": "Tight",

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/library/library_controller.dart';
 
 import '../../../packages/mm_pdf/test/support/pdf_backend.dart';
@@ -33,6 +34,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import 'helpers.dart';
+import '../../../packages/mm_book/test/fixtures.dart' as fixtures;
 
 class BrowserCapabilities extends MMPlatformCapabilities {
   const BrowserCapabilities() : super(TargetPlatform.macOS);
@@ -131,7 +133,39 @@ void main() {
     );
     expect(
       documentImportError(const book.BookParseException(book.BookErrorKind.limitExceeded, 'Large book')),
-      DocumentImportError.unavailable,
+      DocumentImportError.limitExceeded,
+    );
+    expect(
+      documentImportError(const FormatException('Document exceeds import limit')),
+      DocumentImportError.limitExceeded,
+    );
+  });
+
+  test('image-heavy Kindle imports above 64 MiB share the reader and parser budget', () async {
+    final directory = await Directory.systemTemp.createTemp('mm_large_mobi');
+    addTearDown(() => directory.delete(recursive: true));
+    final source = File('${directory.path}/large.mobi');
+    await source.writeAsBytes(fixtures.mobi('<p>Large Kindle book</p>', tail: [Uint8List(1)]));
+    final handle = await source.open(mode: FileMode.append);
+    await handle.truncate(64 * 1024 * 1024 + 1);
+    await handle.close();
+    for (final name in ['large.mobi', 'large.azw3']) {
+      final package = await const DocumentImporter().prepare(
+        (path: source.path, name: name),
+        id: 'large',
+        now: testNow,
+      );
+      final manifest = jsonDecode(utf8.decode(package.files[package.document.fileName]!));
+      final chapter = jsonDecode(utf8.decode(package.files[manifest['spine'][0]['path']]!));
+      expect(chapter['canonicalText'], 'Large Kindle book');
+      expect(package.files[package.document.sourceFileName]!.length, 64 * 1024 * 1024 + 1);
+    }
+    final oversized = await source.open(mode: FileMode.append);
+    await oversized.truncate(256 * 1024 * 1024 + 1);
+    await oversized.close();
+    await expectLater(
+      const DocumentImporter().prepare((path: source.path, name: 'large.mobi'), id: 'large', now: testNow),
+      throwsA(isA<FormatException>().having(documentImportError, 'kind', DocumentImportError.limitExceeded)),
     );
   });
 
@@ -455,6 +489,7 @@ void main() {
       (DocumentImportError.drm, 'Protected by DRM'),
       (DocumentImportError.unsupported, 'Unsupported format'),
       (DocumentImportError.kfx, 'KFX isn’t supported'),
+      (DocumentImportError.limitExceeded, 'The file size or expanded content exceeds the import limit'),
     ]) {
       showNotice(
         tester.element(find.byType(ReaderPane)),
@@ -464,6 +499,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Couldn’t Import “Book.epub”'), findsOneWidget);
       expect(find.text(reason), findsOneWidget);
+      expect(tester.getSize(find.byKey(const ValueKey('import-failed-sheet'))).width, 520);
+      expect(tester.takeException(), isNull);
       expect(find.byKey(const ValueKey('import-failed-badge')), findsOneWidget);
       expect(
         find.descendant(of: find.byKey(const ValueKey('import-failed-badge')), matching: find.byIcon(MMIcons.shield)),
@@ -486,6 +523,32 @@ void main() {
     expect(find.text('2 documents couldn’t be imported'), findsOneWidget);
     expect(find.text('B.mobi — The file is damaged'), findsOneWidget);
     expect(find.byKey(const ValueKey('import-failed-badge')), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('import failure fits a phone with a long filename and multiple errors', (tester) async {
+    await pumpApp(
+      tester,
+      size: const Size(390, 844),
+      overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+    );
+    final name = '${List.filled(20, 'Very long book title ').join()}.mobi';
+    showNotice(
+      tester.element(find.byType(Text).first),
+      ImportedNotice(
+        0,
+        [name, 'B.mobi'],
+        errors: {name: DocumentImportError.limitExceeded, 'B.mobi': DocumentImportError.damaged},
+      ),
+      rootTitle: '',
+    );
+    await tester.pumpAndSettle();
+    final rect = tester.getRect(find.byKey(const ValueKey('import-failed-sheet')));
+    expect(rect.width, lessThanOrEqualTo(390));
+    expect(rect.left, greaterThanOrEqualTo(0));
+    expect(rect.right, lessThanOrEqualTo(390));
+    expect(tester.takeException(), isNull);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
   });

@@ -6392,6 +6392,12 @@ abstract class AppLocalizations {
   /// **'Unsupported format'**
   String get importErrorUnsupported;
 
+  /// No description provided for @importErrorLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The file size or expanded content exceeds the import limit'**
+  String get importErrorLimit;
+
   /// No description provided for @readerFontSmaller.
   ///
   /// In en, this message translates to:

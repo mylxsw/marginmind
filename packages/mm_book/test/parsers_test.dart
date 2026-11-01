@@ -199,6 +199,36 @@ void main() {
     expect(mobiParser.parse(hybrid).chapters.single.canonicalText, 'Hello 😀\uFFFC');
     expect(() => mobiParser.parse(palm(kf8Records(badFragment: true))), throwsA(error(BookErrorKind.damaged)));
   });
+  test('KF8 accepts a main-flow text length but rejects unaccounted or truncated flows', () {
+    final records = kf8Records();
+    final mainLength = records[1].length - 14;
+    u32(records[0], 4, mainLength);
+    final book = mobiParser.parse(palm(records));
+    expect(book.chapters.single.canonicalText, 'Hello 😀\uFFFC');
+    expect(utf8.decode(book.resources['flow-1']!), 'p {color: red}');
+    u32(records[0], 4, mainLength - 1);
+    expect(() => mobiParser.parse(palm(records)), throwsA(error(BookErrorKind.damaged)));
+    u32(records[0], 4, mainLength);
+    u32(records[6], 24, records[1].length - 1);
+    expect(() => mobiParser.parse(palm(records)), throwsA(error(BookErrorKind.damaged)));
+    u32(records[6], 24, records[1].length + 1);
+    expect(() => mobiParser.parse(palm(records)), throwsA(error(BookErrorKind.damaged)));
+  });
+  test('hybrid KF8 retains shared images and numbers its own resources after them', () {
+    final old = Uint8List.fromList(utf8.encode('<p>OLD</p>'));
+    final shared = Uint8List.fromList([0xff, 0xd8, 0xff, 0]);
+    final modern = kf8Records();
+    final own = modern.last;
+    final book = mobiParser.parse(
+      palm([mobiHeader(old.length, boundary: 4), old, shared, Uint8List.fromList(ascii.encode('BOUNDARY')), ...modern]),
+    );
+    expect(book.resources['resource-1'], shared);
+    expect(book.resources['resource-2'], own);
+    expect(
+      book.chapters.single.blocks.expand((b) => b.runs).where((r) => r.resource != null).single.resource,
+      'resource-1',
+    );
+  });
   test('AZW4 extracts the indexed PDF payload', () {
     final pdf = ascii.encode('%PDF-1.7\n%%EOF');
     final raw = Uint8List(20 + pdf.length);

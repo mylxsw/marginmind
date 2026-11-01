@@ -1,0 +1,33 @@
+MOBI import repair verification — 2026-11-01
+
+Original reported file: 曼昆经济学原理-微观.mobi (86,135,884 bytes).
+Before: rejected by 64 MiB import limit; raising the limit exposed a KF8
+main-flow length mismatch and missing resources shared with the legacy section.
+After: DocumentImporter.prepare -> FileLibraryStore.importDocumentPackage ->
+new FileLibraryStore -> ReflowDocument.load succeeds in a temporary library.
+560 chapters, 560 image references, 562 resources (including stylesheet).
+All referenced images loaded with resource length and SHA-256 verification.
+Page 1 decoded at 718 x 1024, page 280 at 711 x 1024,
+and page 560 at 706 x 1024. User library was not modified.
+
+Additional local MOBI parser checks passed:
+曼昆经济学原理-宏观.mobi: 379 chapters / 381 resources.
+人月神话.mobi: 1 chapter / 42 resources.
+稻盛和夫经营思想.mobi: 190 chapters / 29 resources.
+
+Automated checks:
+- packages/mm_book: dart test — 84 passed.
+- App document_formats_test.dart + library_test.dart + temporary original-file
+  verification above: flutter test --no-pub — 30 passed.
+- Covers >64 MiB MOBI/AZW3, >256 MiB rejection, separate limit error,
+  hybrid shared image numbering, main-flow-only KF8 length, malformed flows,
+  desktop dialog width 520, and phone long filename / multiple-error layout.
+- Dialog screenshot checks: 2 passed.
+
+Screenshots use a synthetic failure notice to demonstrate the error layout;
+they do not represent a new failure importing the repaired original book.
+
+Final checks:
+- flutter analyze --no-pub (workspace): no issues found.
+- flutter build macos --release --no-pub: succeeded, Foliarc.app (93.7 MB).
+- Release build was not launched or installed over the running Debug app.

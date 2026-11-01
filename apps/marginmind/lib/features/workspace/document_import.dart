@@ -26,10 +26,13 @@ class DocumentImporter {
     if (format == DocumentFormat.unknown) {
       throw const book.BookParseException(book.BookErrorKind.unsupported, 'Unsupported document');
     }
-    final bytes = await MMDocumentFiles.read(
-      file.path,
-      maxBytes: format == DocumentFormat.pdf ? 256 * 1024 * 1024 : 64 * 1024 * 1024,
-    );
+    // Image-heavy Kindle books can exceed 64 MiB even with very little text.
+    // Keep the file reader and parser on the same bounded import budget.
+    final maxBytes = switch (format) {
+      DocumentFormat.pdf || DocumentFormat.mobi || DocumentFormat.azw3 => 256 * 1024 * 1024,
+      _ => 64 * 1024 * 1024,
+    };
+    final bytes = await MMDocumentFiles.read(file.path, maxBytes: maxBytes);
     cancellation?.check();
     final ext = file.name.split('.').last.toLowerCase();
     final original = 'documents/${sha256.convert(bytes)}.$ext';
@@ -48,7 +51,7 @@ class DocumentImporter {
         files: {original: bytes},
       );
     }
-    final parsed = await const book.BookParser().parse(
+    final parsed = await book.BookParser(maxBytes: maxBytes).parse(
       book.SourceBytes(file.name, bytes),
       cancellation: cancellation,
       resolver: (path) => MMDocumentFiles.readRelativeResource(file.path, path),
@@ -153,7 +156,7 @@ class DocumentImports extends Notifier<List<DocumentImportTask>> {
   }
 }
 
-enum DocumentImportError { drm, damaged, unsupported, kfx, empty, unavailable }
+enum DocumentImportError { drm, damaged, unsupported, kfx, empty, limitExceeded, unavailable }
 
 DocumentImportError documentImportError(Object error) {
   if (error is book.BookParseException) {
@@ -162,12 +165,12 @@ DocumentImportError documentImportError(Object error) {
       book.BookErrorKind.drm => DocumentImportError.drm,
       book.BookErrorKind.unsupported =>
         error.message.contains('KFX') ? DocumentImportError.kfx : DocumentImportError.unsupported,
-      book.BookErrorKind.limitExceeded => DocumentImportError.unavailable,
+      book.BookErrorKind.limitExceeded => DocumentImportError.limitExceeded,
       _ => DocumentImportError.damaged,
     };
   }
   if (error is FormatException) {
-    if (error.message == 'Document exceeds import limit') return DocumentImportError.unavailable;
+    if (error.message == 'Document exceeds import limit') return DocumentImportError.limitExceeded;
     return error.message == 'No readable content' ? DocumentImportError.empty : DocumentImportError.damaged;
   }
   return DocumentImportError.unavailable;

@@ -3559,6 +3559,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importErrorUnsupported => 'Unsupported format';
 
   @override
+  String get importErrorLimit => 'The file size or expanded content exceeds the import limit';
+
+  @override
   String get readerFontSmaller => 'Smaller Text';
 
   @override

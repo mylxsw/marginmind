@@ -3414,6 +3414,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importErrorUnsupported => '不支持此格式';
 
   @override
+  String get importErrorLimit => '文档大小或解压后的内容超出导入上限';
+
+  @override
   String get readerFontSmaller => '缩小字号';
 
   @override
