@@ -40,8 +40,11 @@ void main() {
       final hide = find.byKey(const ValueKey('workspace-hide-sidebar'));
       final expandedCenter = tester.getCenter(hide).dy;
       expect(expandedCenter, 26);
+      expect(tester.getSize(find.byKey(const ValueKey('workspace-tab-row'))).height, 44);
       for (final key in ['toolbar-layout-reader', 'toolbar-layout-split', 'toolbar-layout-map', 'toolbar-assistant']) {
-        expect(tester.getCenter(find.byKey(ValueKey(key))).dy, expandedCenter, reason: key);
+        final control = tester.getRect(find.byKey(ValueKey(key)));
+        expect(control.center.dy, expandedCenter, reason: key);
+        expect(control.bottom, lessThanOrEqualTo(44), reason: key);
       }
       await tester.tap(hide);
       await tester.pumpAndSettle();
@@ -51,6 +54,13 @@ void main() {
       await tester.tap(show);
       await tester.pumpAndSettle();
       expect(tester.getCenter(hide).dy, expandedCenter);
+    }
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    for (final key in ['assistant-new', 'assistant-close', 'assistant-history-button']) {
+      final control = tester.getRect(find.byKey(ValueKey(key)));
+      expect(control.center.dy, 26, reason: key);
+      expect(control.bottom, lessThanOrEqualTo(44), reason: key);
     }
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));

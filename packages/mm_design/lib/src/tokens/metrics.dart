@@ -142,9 +142,9 @@ abstract final class MMSizes {
 
   /// Matches the macOS unified toolbar: window button centers sit at y=26.
   static const double windowTitlebarHeight = 52;
-  // Window chrome keeps the native button center even when pane toolbars
-  // use denser desktop spacing.
-  static const double desktopWindowTitlebarHeight = windowTitlebarHeight;
+
+  /// Compact tab row; its controls still use the native y=26 center.
+  static const double desktopWindowTitlebarHeight = 44;
 
   /// Width the window buttons need when the sidebar is hidden and they sit
   /// in the toolbar instead.

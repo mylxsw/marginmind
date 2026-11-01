@@ -260,7 +260,11 @@ class AssistantHeader extends ConsumerWidget {
     final ui = ref.read(assistantUiProvider(studySetId).notifier);
     return Container(
       height: context.mmTouchPlatform ? MMSizes.tabletPaneHeaderHeight : MMSizes.desktopWindowTitlebarHeight,
-      padding: const EdgeInsets.only(left: MMSpacing.l, right: MMSpacing.s),
+      padding: EdgeInsets.only(
+        left: MMSpacing.l,
+        right: MMSpacing.s,
+        top: context.mmTouchPlatform ? 0 : MMSizes.windowTitlebarHeight - MMSizes.desktopWindowTitlebarHeight,
+      ),
       decoration: context.mmTouchPlatform
           ? BoxDecoration(
               border: Border(bottom: BorderSide(color: c.separator)),
