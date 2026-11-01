@@ -609,18 +609,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
           const MMMenuDivider(),
           MMMenuItem(l.moveUp, () => controller.shiftSelected(-1), shortcut: '⌘↑', icon: MMIcons.moveUp),
           MMMenuItem(l.moveDown, () => controller.shiftSelected(1), shortcut: '⌘↓', icon: MMIcons.moveDown),
-          if (ref
-              .read(workspaceProvider(widget.studySetId))
-              .selectedCardIds
-              .any((id) => content.annotation(content.card(id)?.annotationId ?? '') != null)) ...[
-            const MMMenuDivider(),
-            for (final color in MMAnnotationColor.values)
-              MMMenuItem(
-                l.colorName(color),
-                () => controller.recolorCards(ref.read(workspaceProvider(widget.studySetId)).selectedCardIds, color),
-                icon: MMIcons.palette,
-              ),
-          ],
           const MMMenuDivider(),
           if (ref.read(workspaceProvider(widget.studySetId)).selectedCardIds.length >= 2)
             MMMenuItem(
