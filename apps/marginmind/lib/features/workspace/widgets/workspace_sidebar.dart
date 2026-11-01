@@ -297,7 +297,6 @@ class WorkspaceSidebar extends ConsumerWidget {
           icon: MMIcons.vocabulary,
           label: l.vocabularyTitle,
           trailing: vocabularyCount > 0 ? MMBadge('$vocabularyCount') : null,
-          selected: state.tabs.active?.kind == WorkspaceTabKind.vocabulary,
           onTap: () => controller.activateTab(WorkspaceTab.vocabulary),
         ),
       if (matches(l.review))
@@ -305,7 +304,6 @@ class WorkspaceSidebar extends ConsumerWidget {
           icon: MMIcons.review,
           label: l.review,
           trailing: due > 0 ? MMBadge('$due', prominent: true) : null,
-          selected: state.tabs.active?.kind == WorkspaceTabKind.review,
           onTap: () => controller.activateTab(WorkspaceTab.review),
         ),
       if (content != null && content.reviewLogs.isNotEmpty && matches(l.statistics))
@@ -313,7 +311,6 @@ class WorkspaceSidebar extends ConsumerWidget {
           key: const ValueKey('sidebar-statistics'),
           icon: MMIcons.statistics,
           label: l.statistics,
-          selected: state.tabs.active?.kind == WorkspaceTabKind.statistics,
           onTap: () => controller.activateTab(WorkspaceTab.statistics),
         ),
     ];
@@ -404,7 +401,6 @@ class WorkspaceSidebar extends ConsumerWidget {
                 key: const ValueKey('sidebar-tags'),
                 icon: MMIcons.tag,
                 label: l.allTags,
-                selected: state.panel == RightPanel.tags,
                 onTap: controller.showTags,
               ),
             ) as MMPhoneNavigationRow,
@@ -527,7 +523,6 @@ class WorkspaceSidebar extends ConsumerWidget {
               key: const ValueKey('sidebar-tags'),
               icon: MMIcons.tag,
               label: l.sectionTags,
-              selected: state.panel == RightPanel.tags,
               onTap: controller.showTags,
             ),
           ),

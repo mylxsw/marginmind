@@ -253,7 +253,7 @@ class MMSidebarItem extends StatelessWidget {
               ? selectionStyle == MMSidebarSelectionStyle.accent
                     ? c.accentTint
                     : c.selectedRow
-              : (s.hovered ? c.hover : Colors.transparent),
+              : (s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent)),
           borderRadius: BorderRadius.circular(MMRadii.row),
           border: s.focused ? Border.all(color: c.accent, width: 2) : null,
         ),
