@@ -683,6 +683,54 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     return profiles.probeObservation(serviceCapabilityIdentity(service, entry)) != null;
   }
 
+  Future<void> _explainCompatibility(ModelReference model, VoidCallback? onChoose) async {
+    final l = context.l10n;
+    final catalog = ref.read(assistantServicesProvider).value;
+    final serviceName = catalog?.services.where((service) => service.id == model.serviceId).firstOrNull?.name;
+    final action = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.aiTasksCompatibilityTitle),
+        content: SizedBox(
+          width: 440,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.aiTasksCompatibilityExplanation),
+                const SizedBox(height: MMSpacing.m),
+                Text(l.aiTasksCompatibilityModel),
+                SelectableText('${serviceName ?? model.serviceId} · ${model.modelId}'),
+                const SizedBox(height: MMSpacing.m),
+                Text(l.aiTasksCompatibilityConnectionOnly),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(MaterialLocalizations.of(dialogContext).closeButtonLabel),
+          ),
+          TextButton(
+            key: const ValueKey('ai-compatibility-test-connection'),
+            onPressed: () => Navigator.pop(dialogContext, 'test'),
+            child: Text(l.aiTasksTest),
+          ),
+          TextButton(
+            key: const ValueKey('ai-compatibility-change-model'),
+            onPressed: onChoose == null ? null : () => Navigator.pop(dialogContext, 'choose'),
+            child: Text(l.aiTasksChangeModel),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || _draft.saving) return;
+    if (action == 'test') unawaited(_probe(model));
+    if (action == 'choose') onChoose?.call();
+  }
+
   /// The line under a row, if its state needs a decision.
   Widget? _issue(String id, RoutingRowState? row, {VoidCallback? onChoose, bool showThinking = true}) {
     if (row == null) return null;
@@ -701,13 +749,19 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
             key: ValueKey('ai-issue-$id'),
             text: l.aiTasksProbeUnsaved,
             critical: false,
-            action: l.aiTasksTest,
+            action: l.aiTasksCompatibilityHelp,
             actionKey: ValueKey('ai-action-$id'),
-            onAction: _draft.saving ? null : () => unawaited(_probe(model!)),
+            onAction: _draft.saving ? null : () => unawaited(_explainCompatibility(model!, onChoose)),
           );
         }
         if (probe?.$1 == _ProbeOutcome.reachable || (probe == null && model != null && _accepted(model))) {
-          return RoutingIssueLine(key: ValueKey('ai-issue-$id'), text: l.aiTasksIssueReachable, critical: false);
+          return RoutingIssueLine(
+            key: ValueKey('ai-issue-$id'),
+            text: l.aiTasksIssueReachable,
+            action: l.aiTasksCompatibilityHelp,
+            actionKey: ValueKey('ai-action-$id'),
+            onAction: _draft.saving ? null : () => unawaited(_explainCompatibility(model!, onChoose)),
+          );
         }
         if (probe?.$1 == _ProbeOutcome.unreachable) {
           return RoutingIssueLine(
@@ -722,12 +776,11 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
         return RoutingIssueLine(
           key: ValueKey('ai-issue-$id'),
           text: text,
-          critical: false,
-          action: model == null ? null : l.aiTasksTest,
+          action: model == null ? null : l.aiTasksCompatibilityHelp,
           actionKey: ValueKey('ai-action-$id'),
           busy: probe?.$1 == _ProbeOutcome.running,
           onCancel: model == null ? null : () => _cancelProbe(model),
-          onAction: model == null || _draft.saving ? null : () => unawaited(_probe(model)),
+          onAction: model == null || _draft.saving ? null : () => unawaited(_explainCompatibility(model, onChoose)),
         );
       case RoutingIssue.secretUnavailable:
         return RoutingIssueLine(

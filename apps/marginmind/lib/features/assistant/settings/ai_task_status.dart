@@ -49,9 +49,8 @@ String? routingIssueText(AppLocalizations l, RoutingIssue issue, {String? failur
 };
 
 /// Whether the issue stops the feature until the user changes something.
-/// Unverified compatibility and an unreadable key can still be tried.
-bool routingIssueBlocks(RoutingIssue issue) =>
-    !{RoutingIssue.none, RoutingIssue.unknown, RoutingIssue.secretUnavailable}.contains(issue);
+/// Matches resolver admission: only a ready route can dispatch a task.
+bool routingIssueBlocks(RoutingIssue issue) => issue != RoutingIssue.none;
 
 /// Whether a reference no longer resolves to an enabled model.
 bool routingIssueInvalid(RoutingIssue issue) =>

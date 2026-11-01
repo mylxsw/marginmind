@@ -263,7 +263,7 @@ void main() {
     );
     // The class defaults resolve, but eight real feature contracts require
     // tools/history replay. Keep their warnings even when they inherit.
-    expect(find.text('需验证兼容性'), findsNWidgets(8));
+    expect(find.text('此模型尚未适配此功能，请更换模型'), findsNWidgets(8));
   });
 
   testWidgets('saving task defaults leaves the legacy catalog byte-for-byte unchanged', (tester) async {
@@ -360,7 +360,7 @@ void main() {
         [(ReasoningPolicy.auto, '自动')],
       );
       // Unknown capabilities are said once, on each default row, never per inheriting feature.
-      expect(find.text('需验证兼容性'), findsNWidgets(2));
+      expect(find.text('此模型尚未适配此功能，请更换模型'), findsNWidgets(2));
       expect(find.text('跟随默认'), findsNothing);
       expect(find.text('未保存'), findsNothing);
       expect(tester.widget<MMButton>(find.byKey(const ValueKey('ai-tasks-save'))).onPressed, isNull);
@@ -374,7 +374,7 @@ void main() {
       // The menu: follow (with the effective model), then models grouped by service.
       expect(find.text('跟随默认'), findsOneWidget);
       expect(find.text('Proxy'), findsWidgets);
-      expect(find.text('需验证'), findsNWidgets(3));
+      expect(find.text('尚未适配'), findsNWidgets(3));
       await tester.tap(find.text('Claude Opus').hitTestable().last);
       await tester.pumpAndSettle();
       final picker = _pickerOf(tester, name);
@@ -732,9 +732,9 @@ void main() {
       expect(_stored(container).binding(TaskType.studyNotes).model, _haiku);
     });
 
-    testWidgets('“Test” runs a cancellable probe; acceptance alone stays unverified', (tester) async {
+    testWidgets('connection testing explains its limits and retains a change-model action', (tester) async {
       late _Probe probe;
-      await _open(
+      final container = await _open(
         tester,
         overrides: [
           assistantCapabilityProbeProvider.overrideWith(
@@ -743,13 +743,46 @@ void main() {
         ],
       );
       await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
+      await tester.pumpAndSettle();
+      probe = container.read(assistantCapabilityProbeProvider) as _Probe;
+      expect(probe.calls, isEmpty, reason: 'viewing the explanation must not send a request');
+      expect(find.text(l.aiTasksCompatibilityExplanation), findsOneWidget);
+      expect(find.text('Anthropic · haiku'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('ai-compatibility-test-connection')));
       await tester.pump();
       expect(probe.calls, [_haiku]);
       expect(find.byType(CupertinoActivityIndicator), findsWidgets);
       probe.result.complete();
       await tester.pumpAndSettle();
-      expect(find.text('已连接 · 兼容性未验证'), findsOneWidget);
-      expect(find.text('需验证兼容性'), findsOneWidget, reason: 'the heavy default is still untested');
+      expect(find.text('连接正常，但此功能尚未适配，请更换模型'), findsOneWidget);
+      expect(find.text('此模型尚未适配此功能，请更换模型'), findsOneWidget, reason: 'the heavy default is still untested');
+      await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
+      await tester.pumpAndSettle();
+      expect(find.text(l.aiTasksCompatibilityExplanation), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('ai-compatibility-change-model')));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text(l.aiTasksUnverified), findsWidgets, reason: 'the menu marks models that are not adapted');
+    });
+
+    testWidgets('compatibility explanation fits a narrow screen with large text', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _open(
+        tester,
+        size: const Size(320, 640),
+        overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+      );
+      final action = find.byKey(const ValueKey('ai-action-default-quick'));
+      await tester.ensureVisible(action);
+      await tester.tap(action);
+      await tester.pumpAndSettle();
+      expect(find.text(l.aiTasksCompatibilityExplanation), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byKey(const ValueKey('ai-compatibility-change-model')));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('an unreadable key says “Connection unavailable” and opens the service', (tester) async {
@@ -783,7 +816,7 @@ void main() {
       await tester.tap(picker);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('mm-action-sheet')), findsOneWidget);
-      expect(find.text('需验证'), findsWidgets, reason: 'notes stay in the sheet');
+      expect(find.text('尚未适配'), findsWidgets, reason: 'notes stay in the sheet');
       expect(tester.takeException(), isNull);
     }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
   });
@@ -805,7 +838,7 @@ void main() {
       await tester.tap(_row('重型任务 · 默认模型'));
       await tester.pumpAndSettle();
       expect(find.text('GPT-4.1'), findsWidgets);
-      expect(find.text('需验证'), findsNothing, reason: 'the reviewed exact rule is loaded before any row resolves');
+      expect(find.text('尚未适配'), findsNothing, reason: 'the reviewed exact rule is loaded before any row resolves');
       await tester.tap(find.text('GPT-4.1').hitTestable().last);
       await tester.pumpAndSettle();
       expect(
@@ -815,18 +848,18 @@ void main() {
             .map((e) => e.$1),
         [ReasoningPolicy.auto, ReasoningPolicy.off],
       );
-      expect(find.text('需验证兼容性'), findsNothing);
+      expect(find.text('此模型尚未适配此功能，请更换模型'), findsNothing);
     });
 
     testWidgets('changing the service identity refreshes rows, menus and thinking choices', (tester) async {
       final container = await openMaintained(tester);
       await _choose(tester, '重型任务 · 默认模型', 'GPT-4.1');
-      expect(find.text('需验证兼容性'), findsNothing);
+      expect(find.text('此模型尚未适配此功能，请更换模型'), findsNothing);
       await container
           .read(assistantServicesProvider.notifier)
           .updateDetails('openai', endpoint: 'https://proxy.example/v1');
       await tester.pumpAndSettle();
-      expect(find.text('需验证兼容性'), findsOneWidget, reason: 'a proxy endpoint is not the reviewed identity');
+      expect(find.text('此模型尚未适配此功能，请更换模型'), findsOneWidget, reason: 'a proxy endpoint is not the reviewed identity');
       expect(
         tester
             .widget<MMPopUpButton<ReasoningPolicy>>(find.byKey(const ValueKey('ai-tasks-heavy-reasoning')))
@@ -836,7 +869,7 @@ void main() {
       );
       await tester.tap(_row(aiTaskName(l, TaskType.research)));
       await tester.pumpAndSettle();
-      expect(find.text('需验证'), findsOneWidget);
+      expect(find.text('尚未适配'), findsOneWidget);
     });
 
     testWidgets('a failed profile refresh is visible and retryable; the draft stays', (tester) async {
@@ -871,8 +904,10 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('ai-compatibility-test-connection')));
+      await tester.pumpAndSettle();
       expect(find.text('测试结果未保存'), findsOneWidget);
-      expect(find.text('已连接 · 兼容性未验证'), findsNothing);
+      expect(find.text('连接正常，但此功能尚未适配，请更换模型'), findsNothing);
       expect(find.text('连接不可用'), findsNothing);
     });
   });
@@ -899,7 +934,9 @@ void main() {
 
       expect(routingIssueText(l, RoutingIssue.capabilityMissing, failureCode: 'tools:unsupported'), '此模型不支持工具调用');
       expect(routingIssueText(l, RoutingIssue.unset), isNull);
-      expect(routingIssueBlocks(RoutingIssue.unknown), isFalse);
+      expect(routingIssueBlocks(RoutingIssue.unknown), isTrue);
+      expect(routingIssueBlocks(RoutingIssue.secretUnavailable), isTrue);
+      expect(routingIssueBlocks(RoutingIssue.none), isFalse);
       expect(routingIssueBlocks(RoutingIssue.deleted), isTrue);
 
       final catalog = AssistantServices(services: [_anthropic, _proxy]);

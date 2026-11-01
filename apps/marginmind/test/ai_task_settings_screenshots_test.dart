@@ -152,6 +152,15 @@ void main() {
     if (!skip) await _loadFonts();
   });
 
+  testWidgets('AI features: compatibility explanation', (tester) async {
+    await _open(tester, prefs: _prefs(dark: true));
+    await _save(tester, 'compatibility-status');
+    await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await _save(tester, 'compatibility-explanation');
+  }, skip: skip);
+
   testWidgets('AI features: normal, menu, draft', (tester) async {
     await _open(tester, prefs: _prefs());
     await _save(tester, '01-normal');

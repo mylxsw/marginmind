@@ -5711,16 +5711,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiTasksReasonUnsupported => '不支持';
 
   @override
-  String get aiTasksUnverified => '需验证';
+  String get aiTasksUnverified => '尚未适配';
 
   @override
   String get aiTasksIssueThinking => '此模型无法关闭思考';
 
   @override
-  String get aiTasksIssueUnknown => '需验证兼容性';
+  String get aiTasksIssueUnknown => '此模型尚未适配此功能，请更换模型';
 
   @override
-  String get aiTasksIssueReachable => '已连接 · 兼容性未验证';
+  String get aiTasksIssueReachable => '连接正常，但此功能尚未适配，请更换模型';
 
   @override
   String get aiTasksIssueTools => '此模型不支持工具调用';
@@ -5756,7 +5756,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiTasksChangeModel => '更换模型';
 
   @override
-  String get aiTasksTest => '测试';
+  String get aiTasksTest => '测试连接';
 
   @override
   String get aiTasksChooseAgain => '重新选择';
@@ -5948,4 +5948,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get workspaceScrollTabsRight => '向右滚动标签页';
+
+  @override
+  String get aiTasksCompatibilityHelp => '查看原因';
+
+  @override
+  String get aiTasksCompatibilityTitle => '此模型为什么暂时不能用？';
+
+  @override
+  String get aiTasksCompatibilityExplanation =>
+      '当前版本还没有完成这个模型在此功能中的适配。连接测试只能确认服务有响应，不能解除使用限制。\n\n请更换模型，或等待应用更新。列表中标注「尚未适配」的模型也暂时不能使用此功能。如果连接测试已通过，无需反复测试或修改 API Key。';
+
+  @override
+  String get aiTasksCompatibilityModel => '当前模型';
+
+  @override
+  String get aiTasksCompatibilityConnectionOnly => '仅检查连接，不会解除此功能的使用限制。';
 }
