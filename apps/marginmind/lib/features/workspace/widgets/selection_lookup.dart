@@ -109,8 +109,12 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
       final saved = entry;
       final settings = ref.read(settingsProvider);
       final target = settings.selectionTranslationDirection.targetLanguage(term);
-      final service = ref.read(wordLookupProvider);
-      final model = ref.read(assistantDefaultModelProvider);
+      final sourceLanguage = switch (settings.selectionTranslationDirection) {
+        SelectionTranslationDirection.automatic => null,
+        SelectionTranslationDirection.englishToChinese => 'en',
+        SelectionTranslationDirection.chineseToEnglish => 'zh',
+      };
+      final service = ref.read(wordLookupProvider(widget.studySetId));
       final prefs = ref.read(sharedPreferencesProvider);
       final online = prefs.getBool(assistantOnlineKey(widget.studySetId)) ?? prefs.getBool('assistant.online') ?? true;
       final source = saved?.contexts
@@ -122,15 +126,6 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                 (c.sentenceTranslation ?? '').isNotEmpty,
           )
           .firstOrNull;
-      final cached = source != null && saved != null && saved.senses.isNotEmpty;
-      if (model == null && !cached) {
-        setState(() => _problem = context.l10n.vocabularySetup);
-        return;
-      }
-      if (!online && model?.provider != AssistantProvider.ollama && !cached) {
-        setState(() => _problem = context.l10n.vocabularyOffline);
-        return;
-      }
       WordLookupResult result;
       if (saved != null && saved.senses.isNotEmpty) {
         final wordContext = source != null
@@ -138,8 +133,8 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
             : await service.lookupContext(
                 lemma: saved.term,
                 sentence: _sentence.text,
+                sourceLanguage: sourceLanguage,
                 targetLanguage: target,
-                model: model,
                 cancel: _cancel,
                 online: online,
               );
@@ -156,8 +151,8 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
         result = await service.lookup(
           term: term,
           sentence: _sentence.text,
+          sourceLanguage: sourceLanguage,
           targetLanguage: target,
-          model: model,
           cancel: _cancel,
           online: online,
         );
@@ -168,8 +163,11 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
     } catch (e) {
       if (mounted && !_cancel.isCancelled) {
         setState(
-          () => _problem = e is ResearchFailure && e.kind == ResearchFailureKind.authentication
+          () => _problem =
+              e is ConfigurationFailure || e is ResearchFailure && e.kind == ResearchFailureKind.authentication
               ? context.l10n.vocabularySetup
+              : e is ResearchFailure && e.kind == ResearchFailureKind.network
+              ? context.l10n.vocabularyOffline
               : context.l10n.selectionTranslationFailed,
         );
       }

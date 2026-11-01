@@ -7,15 +7,13 @@ import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
-import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
 import '../../../settings/app_settings.dart';
 import '../../../settings/settings_window.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_overlays.dart' show inScope;
 import '../../assistant/widgets/assistant_quick_actions.dart' show QuickActionsPlacement;
-import '../reader_translation.dart';
+import '../../assistant/quick_tasks.dart';
 import 'vocabulary_add_button.dart';
 import '../selection_vocabulary_context.dart';
 
@@ -106,22 +104,11 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
         setState(() => _problem = _Problem.sameLanguage);
         return;
       }
-      final model = ref.read(assistantDefaultModelProvider);
-      if (model == null) {
-        setState(() => _problem = _Problem.setup);
-        return;
-      }
-      final prefs = ref.read(sharedPreferencesProvider);
-      final online = prefs.getBool(assistantOnlineKey(widget.studySetId)) ?? prefs.getBool('assistant.online') ?? true;
-      if (!online && model.provider != AssistantProvider.ollama) {
-        setState(() => _problem = _Problem.offline);
-        return;
-      }
       if (paragraph.text.length > 24000) {
         setState(() => _problem = _Problem.tooLong);
         return;
       }
-      translator = await ref.read(paragraphTranslatorProvider)(model);
+      translator = await ref.read(selectionTranslatorProvider(widget.studySetId))();
       if (!current()) return;
       final translated = await cancel
           .bind(
@@ -134,8 +121,12 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
     } catch (error) {
       if (current()) {
         setState(
-          () => _problem = error is ResearchFailure && error.kind == ResearchFailureKind.authentication
+          () => _problem =
+              error is ConfigurationFailure ||
+                  error is ResearchFailure && error.kind == ResearchFailureKind.authentication
               ? _Problem.setup
+              : error is ResearchFailure && error.kind == ResearchFailureKind.network
+              ? _Problem.offline
               : _Problem.failed,
         );
       }

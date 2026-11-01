@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:mm_core/mm_core.dart';
 
 import 'providers.dart';
+import 'quick_tasks.dart';
 
 class ParagraphTranslation {
   const ParagraphTranslation(this.text, {this.tokens, this.inputTokens, this.bytes});
@@ -47,6 +48,44 @@ abstract interface class PackedParagraphTranslator implements ParagraphTranslato
     String? sourceLanguage,
     String note = '',
   });
+}
+
+/// Selection-only adapter. Full-document scheduling keeps its own task policy.
+class TaskParagraphTranslator implements ParagraphTranslator {
+  TaskParagraphTranslator(this.execute);
+  final QuickTaskExecutor execute;
+  final _active = <CancellationToken>{};
+  bool _closed = false;
+  @override
+  Future<ParagraphTranslation> translate(
+    TranslationParagraph paragraph,
+    String language,
+    CancellationToken cancel,
+    int maxTokens, {
+    String? sourceLanguage,
+  }) async {
+    if (_closed) throw const ResearchFailure(ResearchFailureKind.cancelled);
+    _active.add(cancel);
+    try {
+      final text = await execute(TaskType.selectionTranslate, {
+        'text': paragraph.text,
+        'sourceLanguage': sourceLanguage,
+        'targetLanguage': language,
+      }, cancel);
+      cancel.check();
+      return ParagraphTranslation(text);
+    } finally {
+      _active.remove(cancel);
+    }
+  }
+
+  @override
+  void close() {
+    _closed = true;
+    for (final cancel in _active) {
+      cancel.cancel();
+    }
+  }
 }
 
 /// Direct model calls: no agent, skills, tools or document-controlled commands.

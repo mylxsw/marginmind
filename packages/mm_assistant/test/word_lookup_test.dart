@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:dart_agent_core/dart_agent_core.dart';
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:test/test.dart';
 
 import 'support.dart';
+import 'task_runtime_test.dart' as fixture;
+import 'model_policy_test.dart' as policy;
 
 const model = AssistantModel(
   provider: AssistantProvider.compatible,
@@ -56,32 +56,23 @@ Future<WordContext> context(WordLookup service, {String sentence = 'Progress pla
   cancel: CancellationToken(),
 );
 
-class PendingClient extends ScriptClient {
-  PendingClient() : super([]);
-  final pending = Completer<ModelMessage>();
-  CancelToken? token;
-  @override
-  Future<ModelMessage> generate(
-    List<LLMMessage> messages, {
-    List<Tool>? tools,
-    ToolChoice? toolChoice,
-    required ModelConfig modelConfig,
-    bool? jsonOutput,
-    CancelToken? cancelToken,
-  }) {
-    token = cancelToken;
-    return pending.future;
-  }
-}
-
-class TrackingDio extends DioForNative {
-  bool closed = false;
-  @override
-  void close({bool force = false}) {
-    closed = true;
-    super.close(force: force);
-  }
-}
+WordLookup serviceFor(ScriptClient client) => WordLookup.tasks((type, input, cancel) async {
+  final runtime = SdkAgentRuntime(
+    store: fixture.Store(),
+    tasks: quickTaskRegistry(),
+    knowledge: standardKnowledgeRegistry(),
+    testClient: client,
+    loadModel: (_) async =>
+        RuntimeModelBinding(model: policy.model(ModelProtocol.chatCompletions), key: '', serviceRevision: 1),
+  );
+  final handle = runtime.start(
+    TaskRequest<String>(spec: quickTaskSpec(type), input: input, inputFingerprint: quickInputFingerprint(input)),
+    fixture.context(),
+  );
+  final result = await handle.result;
+  if (result.status != RunStatus.completed) throw const ResearchFailure(ResearchFailureKind.protocol);
+  return result.value!;
+});
 
 void main() {
   test('typed parsing, empty phonetics, Unicode gloss and immutable lists', () {
@@ -253,7 +244,7 @@ void main() {
     'canonical lemma cache, inflected aliases, target/sentence isolation, lightweight requests and clearing',
     () async {
       final client = ScriptClient(List.generate(8, (_) => answer(jsonEncode(value()))));
-      final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+      final service = serviceFor(client);
       final first = await lookup(service);
       expect(await lookup(service, term: ' PLATEAUS '), same(first));
       expect(await lookup(service, term: 'plateau'), same(first));
@@ -264,8 +255,10 @@ void main() {
       await context(service, sentence: 'A new sentence.');
       expect(client.calls, 4);
       final prompt = client.requests.last.first.toJson().toString();
-      expect(prompt, contains('contextMeaning, sentenceTranslation'));
-      expect(prompt, isNot(contains('phonetics')));
+      expect(prompt, contains('contextMeaning'));
+      expect(client.requests.last.last.toJson().toString(), contains('contextOnly'));
+      expect(client.requests.last.last.toJson().toString(), contains('true'));
+      // Both modes share a schema; contextOnly selects the lightweight result.
       await context(service, sentence: 'A new sentence.');
       expect(client.calls, 4);
       await lookup(service, term: 'plateau', sentence: 'A new sentence.');
@@ -280,7 +273,7 @@ void main() {
   );
   test('explicit regeneration bypasses and replaces the cache', () async {
     final client = ScriptClient([answer(jsonEncode(value())), answer(jsonEncode(value()..['gloss'] = '新释义'))]);
-    final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+    final service = serviceFor(client);
     await lookup(service);
     final fresh = await service.lookup(
       term: 'plateaus',
@@ -305,7 +298,7 @@ void main() {
       ]
       ..['forms'] = List.generate(20, (i) => 'FORM$i');
     final client = ScriptClient([answer('Result:\n```json\n${jsonEncode(j)}\n```')]);
-    final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+    final service = serviceFor(client);
     final result = await lookup(service);
     expect(result.gloss, '一二三四五六七八');
     expect(result.ukPhonetic, '');
@@ -317,14 +310,14 @@ void main() {
   });
   test('automatic source detection matches selection translation defaults', () async {
     final client = ScriptClient([answer(jsonEncode(value()))]);
-    final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+    final service = serviceFor(client);
     expect(service.timeout, const Duration(seconds: 90));
     await lookup(service, source: null);
-    expect(client.requests.single.first.toJson().toString(), contains('detect source language automatically'));
+    expect(client.requests.single.first.toJson().toString(), contains('automatic detection'));
   });
   test('cache is bounded and evicts oldest values', () async {
     final client = ScriptClient(List.generate(130, (_) => answer(jsonEncode(value()))));
-    final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+    final service = serviceFor(client);
     for (var i = 0; i < 129; i++) {
       await lookup(service, sentence: '$i');
     }
@@ -334,25 +327,24 @@ void main() {
   test('invalid and incomplete responses are not cached; failed calls can retry', () async {
     final client = ScriptClient([
       answer('{}'),
+      answer('{}'),
       answer('partial', stop: 'length'),
       call('execute', '{}'),
       answer(jsonEncode(value())),
     ]);
-    final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+    final service = serviceFor(client);
     for (var i = 0; i < 3; i++) {
       await expectLater(lookup(service), throwsA(failure(ResearchFailureKind.protocol)));
     }
     await lookup(service);
-    expect(client.calls, 4);
+    expect(client.calls, 5);
   });
-  test('validates input, configuration and online policy before making a connection', () async {
-    var connections = 0;
-    final service = WordLookup(
-      connect: (_) async {
-        connections++;
-        return AssistantConnection(ScriptClient([answer(jsonEncode(value()))]), Dio());
-      },
-    );
+  test('validates input before dispatch and lets runtime resolve configuration', () async {
+    var calls = 0;
+    final service = WordLookup.tasks((_, _, _) async {
+      calls++;
+      return jsonEncode(value());
+    });
     for (final request in [
       () => lookup(service, term: ''),
       () => lookup(service, term: 'x' * 65),
@@ -364,26 +356,22 @@ void main() {
     ]) {
       await expectLater(request(), throwsA(failure(ResearchFailureKind.invalidRequest)));
     }
-    await expectLater(lookup(service, selected: null), throwsA(failure(ResearchFailureKind.authentication)));
-    await expectLater(lookup(service, online: false), throwsA(failure(ResearchFailureKind.network)));
-    final cancel = CancellationToken()..cancel();
-    await expectLater(lookup(service, cancel: cancel), throwsA(failure(ResearchFailureKind.cancelled)));
-    expect(connections, 0);
-    const local = AssistantModel(
-      provider: AssistantProvider.ollama,
-      model: 'local',
-      endpoint: 'http://localhost:11434',
-      localEnabled: true,
+    await expectLater(
+      lookup(service, cancel: CancellationToken()..cancel()),
+      throwsA(failure(ResearchFailureKind.cancelled)),
     );
-    await lookup(service, selected: local, online: false);
-    expect(connections, 1);
-    final invalidTimeout = WordLookup(connect: service.connect, timeout: Duration.zero);
+    expect(calls, 0);
+    await lookup(service, selected: null, online: false);
+    expect(calls, 1);
+    final invalidTimeout = WordLookup.tasks(service.execute, timeout: Duration.zero);
     await expectLater(lookup(invalidTimeout), throwsA(failure(ResearchFailureKind.invalidRequest)));
+    final unready = WordLookup.tasks((_, _, _) async => throw const ConfigurationFailure('unknownCapabilities'));
+    await expectLater(lookup(unready), throwsA(isA<ConfigurationFailure>()));
   });
   test('maps auth/network failures without exposing raw error details, including key resolution', () async {
     for (final status in [401, 403, 429]) {
-      final service = WordLookup(
-        connect: (_) async => throw DioException(
+      final service = WordLookup.tasks(
+        (_, _, _) async => throw DioException(
           requestOptions: RequestOptions(),
           response: Response(requestOptions: RequestOptions(), statusCode: status),
           message: 'secret',
@@ -394,51 +382,49 @@ void main() {
         throwsA(failure(status == 429 ? ResearchFailureKind.rateLimited : ResearchFailureKind.authentication)),
       );
     }
-    final service = WordLookup(connect: (_) async => throw StateError('secret'));
+    final service = WordLookup.tasks((_, _, _) async => throw StateError('secret'));
     await expectLater(lookup(service), throwsA(failure(ResearchFailureKind.unavailable)));
   });
   for (final cancelRequest in [true, false]) {
-    test(
-      '${cancelRequest ? 'cancellation' : 'timeout'} aborts transport, closes connection and drops late result',
-      () async {
-        final client = PendingClient(), dio = TrackingDio();
-        final service = WordLookup(
-          connect: (_) async => AssistantConnection(client, dio),
-          timeout: const Duration(milliseconds: 20),
-        );
-        final cancel = CancellationToken();
-        final future = lookup(service, cancel: cancel);
-        final expectation = expectLater(
-          future,
-          throwsA(failure(cancelRequest ? ResearchFailureKind.cancelled : ResearchFailureKind.timeout)),
-        );
-        await Future<void>.delayed(Duration.zero);
-        if (cancelRequest) cancel.cancel();
-        await expectation;
-        expect(client.token!.isCancelled, isTrue);
-        expect(dio.closed, isTrue);
-        client.pending.complete(answer(jsonEncode(value())));
-        await Future<void>.delayed(Duration.zero);
-      },
-    );
-  }
-  test('cancels during credential loading and closes a connection that arrives after timeout', () async {
-    for (final cancelRequest in [true, false]) {
-      final gate = Completer<AssistantConnection>(), dio = TrackingDio();
-      final service = WordLookup(connect: (_) => gate.future, timeout: const Duration(milliseconds: 20));
+    test('${cancelRequest ? 'cancellation' : 'timeout'} cancels runtime token and drops late result', () async {
+      final pending = Completer<String>();
+      CancellationToken? token;
+      final service = WordLookup.tasks((_, _, cancel) {
+        token = cancel;
+        return pending.future;
+      }, timeout: const Duration(milliseconds: 20));
       final cancel = CancellationToken();
-      final future = lookup(service, cancel: cancel);
       final expectation = expectLater(
-        future,
+        lookup(service, cancel: cancel),
         throwsA(failure(cancelRequest ? ResearchFailureKind.cancelled : ResearchFailureKind.timeout)),
       );
+      await Future<void>.delayed(Duration.zero);
       if (cancelRequest) cancel.cancel();
       await expectation;
-      final client = ScriptClient([]);
-      gate.complete(AssistantConnection(client, dio));
+      expect(token!.isCancelled, true);
+      pending.complete(jsonEncode(value()));
       await Future<void>.delayed(Duration.zero);
-      expect(dio.closed, isTrue);
-      expect(client.calls, 0);
-    }
+    });
+  }
+  test('cancel before dispatch makes no request; late result never fills cache', () async {
+    final pending = Completer<String>();
+    var calls = 0;
+    final service = WordLookup.tasks((_, _, _) {
+      calls++;
+      return calls == 1 ? pending.future : Future.value(jsonEncode(value()));
+    });
+    await expectLater(
+      lookup(service, cancel: CancellationToken()..cancel()),
+      throwsA(failure(ResearchFailureKind.cancelled)),
+    );
+    expect(calls, 0);
+    final cancel = CancellationToken();
+    final expectation = expectLater(lookup(service, cancel: cancel), throwsA(failure(ResearchFailureKind.cancelled)));
+    cancel.cancel();
+    await expectation;
+    pending.complete(jsonEncode(value()));
+    await Future<void>.delayed(Duration.zero);
+    await lookup(service);
+    expect(calls, 2);
   });
 }

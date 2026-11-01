@@ -41,3 +41,5 @@ export 'src/task_runtime/registry.dart';
 export 'src/knowledge/registry.dart';
 export 'src/model_policy/routing.dart';
 export 'src/model_policy/probe.dart';
+
+export 'src/quick_tasks.dart';

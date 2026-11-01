@@ -489,13 +489,12 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
     setState(() => _busy = true);
     try {
       final result = await ref
-          .read(wordLookupProvider)
+          .read(wordLookupProvider(widget.studySetId ?? entry.contexts.firstOrNull?.studySetId ?? ''))
           .lookup(
             term: entry.term,
             sentence: entry.contexts.firstOrNull?.sentence ?? entry.term,
             sourceLanguage: entry.language,
             targetLanguage: Localizations.localeOf(context).languageCode,
-            model: ref.read(assistantDefaultModelProvider),
             cancel: cancel,
             refresh: true,
             online:
