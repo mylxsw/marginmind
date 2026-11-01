@@ -40,7 +40,8 @@ void main() {
       resolver: resolver,
       key: (_) async => 'fixture-key',
       connection: (model, key, policy) {
-        expect(policy, isNull);
+        expect(policy!.effective, ReasoningPolicy.auto);
+        expect(policy.parameters, isEmpty);
         return AssistantConnection(client, Dio());
       },
     );
@@ -50,7 +51,7 @@ void main() {
     expect(result.profile.thinking, ThinkingCapability.unknown);
     expect(resolver.reasoningOptions(result.profile), isEmpty);
     expect(client.toolRequests.single, isEmpty);
-    expect(client.modelConfigs.single.extra, isNull);
+    expect(client.modelConfigs.single.extra, isEmpty);
     expect(profiles.lookup(result.identity).thinking, ThinkingCapability.unknown);
     await expectLater(
       probe.probe(const ModelReference('a', 'same'), cancellation: CancellationToken(), reasoning: ReasoningPolicy.off),

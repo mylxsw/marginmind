@@ -13,6 +13,7 @@ class TaskDefinition<T> {
     required this.validator,
     required this.validateInput,
     this.createBindings,
+    this.createControlledBindings,
     this.retryInput,
     this.reconcileUnfinished,
     this.tools = const [],
@@ -27,6 +28,7 @@ class TaskDefinition<T> {
   /// For failed runs without validator missing IDs, the domain reconciles
   /// checkpoint progress/receipts before declaring any range safe to retry.
   final Set<String> Function(Map<String, dynamic> original, Map<String, dynamic> checkpoint)? reconcileUnfinished;
+  final TaskBindings Function(TaskExecutionScope)? createControlledBindings;
   final TaskSpec spec;
   final String instructions;
   final T Function(String) decode;
@@ -63,4 +65,14 @@ class TaskBindings {
       hooks = List.unmodifiable(hooks);
   final List<Tool> tools;
   final List<AgentHook> hooks;
+}
+
+/// Host hooks keep network authorization and citation ownership. The native
+/// search port is parent-bound and can be passed into webSearchProvider.
+class TaskExecutionScope {
+  TaskExecutionScope({required this.context, required this.state, required this.input, required this.nativeSearch});
+  final RunContext context;
+  final AgentState state;
+  final Map<String, dynamic> input;
+  final SearchProvider nativeSearch;
 }

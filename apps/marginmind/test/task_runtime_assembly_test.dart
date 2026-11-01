@@ -84,6 +84,23 @@ void main() {
     final bodies = <Map<String, dynamic>>[];
     final subscription = server.listen((request) async {
       bodies.add(jsonDecode(await utf8.decoder.bind(request).join()));
+      if (bodies.last['stream'] == true) {
+        request.response.headers.set('content-type', 'text/event-stream');
+        request.response.write(
+          'data: ${jsonEncode({
+            'choices': [
+              {
+                'index': 0,
+                'delta': {'content': 'Image title'},
+                'finish_reason': 'stop',
+              },
+            ],
+            'usage': {'prompt_tokens': 9, 'completion_tokens': 2, 'total_tokens': 11},
+          })}\n\ndata: [DONE]\n\n',
+        );
+        await request.response.close();
+        return;
+      }
       request.response.headers.contentType = ContentType.json;
       request.response.write(
         jsonEncode({
@@ -120,6 +137,7 @@ void main() {
       final caps = ModelCapabilityProfile(
         identity: identity,
         thinking: ThinkingCapability.switchable,
+        multimodal: CapabilitySupport.supported,
         policies: {ReasoningPolicy.off: ReasoningRecipe.effortNone},
         evidence: CapabilityEvidence(
           source: CapabilityEvidenceSource.maintainedProfile,
@@ -170,6 +188,42 @@ void main() {
       final reopened = FileRunStore(dir);
       expect((await reopened.load('assembly'))!.status, RunStatus.completed);
       expect((await reopened.loadResult('assembly'))!['value'], {'title': 'Title'});
+      final imageRequest = TaskRequest<String>(
+        spec: fixture.spec,
+        input: {'text': 'image question'},
+        inputFingerprint: 'image',
+        images: [TaskImage(base64Data: 'AQID', mimeType: 'image/png')],
+        streamDrafts: true,
+        maxOutputTokens: 21,
+      );
+      final imageHandle = await assembly.start(imageRequest, runId: 'assembly-image');
+      final drafts = <String>[];
+      imageHandle.events.listen((e) {
+        if (e.draft != null) drafts.add(e.draft!);
+      });
+      expect((await imageHandle.result).value, 'Image title');
+      await pumpEventQueue();
+      expect(drafts.join(), 'Image title');
+      expect(jsonEncode(bodies.last['messages']), contains('data:image/png;base64,AQID'));
+      expect(bodies.last['max_completion_tokens'], 21);
+      expect(
+        (await reopened.load('assembly-image'))!.checkpoint['images'],
+        imageRequest.images.map((i) => i.toJson()).toList(),
+      );
+      // Probe factory shares the durable store but never upgrades an unknown profile.
+      profiles.clear();
+      final probe = assembly.createCapabilityProbe();
+      final probeResult = await probe.probe(context.config.model, cancellation: CancellationToken());
+      expect(probeResult.issue, RoutingIssue.unknown);
+      final probeRecord = probe.steps.records.values.singleWhere((r) => r.stage == RunPurpose.capabilityProbe.name);
+      expect((await reopened.load(probeRecord.context.runId))!.usage.inputTokens, 9);
+      expect(bodies.last['max_completion_tokens'], 16);
+      expect(bodies.last.containsKey('reasoning_effort'), false);
+      await expectLater(
+        assembly.freeze(fixture.request(), runId: 'still-unknown'),
+        throwsA(isA<ConfigurationFailure>()),
+      );
+      profiles.put(caps);
       final state = sdk.AgentState(
         sessionId: 'legacy-conversation',
         metadata: {
