@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:window_manager/window_manager.dart';
@@ -12,6 +13,7 @@ abstract final class DesktopWindow {
   static final ValueListenable<bool> fullScreen = _fullScreen;
   static final _fullScreen = ValueNotifier<bool>(false);
   static final _listener = _FullScreenListener();
+  static const _windowGestures = MethodChannel('marginmind/window_gestures');
 
   static bool get isDesktop =>
       !kIsWeb &&
@@ -43,6 +45,7 @@ abstract final class DesktopWindow {
       await WindowManipulator.makeTitlebarTransparent();
       await WindowManipulator.enableFullSizeContentView();
       await WindowManipulator.hideTitle();
+      await _windowGestures.invokeMethod<void>('configure');
       // MainFlutterWindow installs the unified native toolbar and forwards
       // its content events to Flutter. AppKit owns the window button layout.
     }
@@ -61,12 +64,20 @@ abstract final class DesktopWindow {
 
   /// Starts a native window drag (call from a pan-start on empty chrome).
   static void startDragging() {
-    if (isDesktop) windowManager.startDragging();
+    if (isMacOS) {
+      unawaited(_windowGestures.invokeMethod<void>('startDragging'));
+    } else if (isDesktop) {
+      unawaited(windowManager.startDragging());
+    }
   }
 
   /// Title-bar double-click behavior: zoom / unzoom.
   static Future<void> toggleZoom() async {
     if (!isDesktop) return;
+    if (isMacOS) {
+      await _windowGestures.invokeMethod<void>('toggleZoom');
+      return;
+    }
     if (await windowManager.isMaximized()) {
       await windowManager.unmaximize();
     } else {
