@@ -553,7 +553,7 @@ void main() {
           case 'esc':
             await key(tester, LogicalKeyboardKey.escape);
           case 'root':
-            await tester.tap(find.text('认知科学入门').last);
+            await tester.tap(find.descendant(of: find.byType(MindMapCanvas), matching: find.text('认知科学入门')));
           default:
             await tester.tapAt(blank(tester));
         }

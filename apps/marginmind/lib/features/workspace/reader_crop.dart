@@ -20,11 +20,13 @@ class ReaderCropState {
 
 final readerCropProvider = NotifierProvider.autoDispose.family<ReaderCropSession, ReaderCropState, String>(
   ReaderCropSession.new,
+  dependencies: [workspaceProvider, documentPdfProvider],
 );
 
 final readerDocumentCropProvider = NotifierProvider.autoDispose
     .family<ReaderCropSession, ReaderCropState, (String, String)>(
       (key) => ReaderCropSession(key.$1, documentId: key.$2),
+      dependencies: [workspaceProvider, documentPdfProvider],
     );
 
 /// A draft stays in the reading session. Only Done writes one undoable edit.

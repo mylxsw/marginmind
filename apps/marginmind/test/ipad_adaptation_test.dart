@@ -152,9 +152,7 @@ void main() {
       await t.pumpAndSettle();
       final send = find.byKey(const ValueKey('assistant-send'));
       expect(t.getRect(send).bottom, lessThanOrEqualTo(size.height - 340));
-      if (size.height > size.width) {
-        expect(t.getRect(find.byKey(const ValueKey('tablet-workspace-panel'))).width, greaterThan(size.width * .8));
-      }
+      expect(t.getRect(find.byKey(const ValueKey('workspace-right-sidebar'))).width, 348);
       await t.enterText(input, '解释这一段');
       await t.pumpAndSettle();
       await t.tap(send);
@@ -177,23 +175,14 @@ void main() {
       controller.setLayout(MMSplitMode.primary);
       controller.openPanel(RightPanel.assistant);
       await t.pumpAndSettle();
-      final panel = find.byKey(const ValueKey('tablet-workspace-panel'));
+      final panel = find.byKey(const ValueKey('workspace-right-sidebar'));
       expect(panel, findsOneWidget);
       final reader = t.getRect(find.byType(ReaderPane));
-      expect(reader.overlaps(t.getRect(panel)), isFalse);
-      await t.tapAt(t.getCenter(find.byKey(const ValueKey('pdf-placeholder-c1'))));
+      expect(reader.overlaps(t.getRect(panel)), size.width < 700);
+      await t.tapAt(Offset(reader.left + 20, reader.center.dy));
       await t.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
-      if (size.height > size.width) {
-        final grip = t.getRect(find.byKey(const ValueKey('tablet-panel-resize')));
-        expect(grip.size, const Size.square(44));
-        expect(t.getRect(panel).contains(grip.center), isTrue);
-        expect(grip.overlaps(t.getRect(find.byKey(const ValueKey('tablet-reader-navigation')))), isFalse);
-        final before = t.getSize(panel).height;
-        await t.drag(find.byKey(const ValueKey('tablet-panel-resize')), const Offset(0, -70));
-        await t.pumpAndSettle();
-        expect(t.getSize(panel).height, greaterThan(before));
-      }
+      expect(find.byKey(const ValueKey('tablet-panel-resize')), findsNothing);
       await t.tap(find.byKey(const ValueKey('assistant-close')));
       await t.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).panel, isNull);

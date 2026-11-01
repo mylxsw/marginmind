@@ -136,6 +136,7 @@ Future<AssistantApp> openAssistantApp(
   FakeSecrets? secretStore,
   MemoryConversationArchive? archive,
   bool realWrites = false,
+  bool settle = true,
 }) async {
   final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
   final store = archive ?? MemoryConversationArchive();
@@ -150,6 +151,7 @@ Future<AssistantApp> openAssistantApp(
     size: size,
     prefs: {'settings.language': 'zh', ...prefs},
     content: repo,
+    settle: settle,
     overrides: [
       assistantSecretsProvider.overrideWithValue(secrets),
       assistantArchiveProvider.overrideWith((ref, id) => store.archive),
@@ -204,7 +206,11 @@ Future<AssistantApp> openAssistantApp(
     ],
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await pumpFor(tester, 8);
+  }
   final workspace = container.read(workspaceProvider('demo-1').notifier);
   executor.content = () => workspace.content;
   return (
@@ -263,8 +269,18 @@ Future<void> openAssistantModelSettings(WidgetTester tester) async {
 }
 
 /// The scoped assistant controller of the open window.
-AssistantController assistantOf(WidgetTester tester) =>
-    ProviderScope.containerOf(tester.element(find.byType(AssistantPanel))).read(assistantControllerProvider.notifier);
+AssistantController assistantOf(WidgetTester tester) => ProviderScope.containerOf(
+  tester.element(
+    find.byType(AssistantPanel).evaluate().isNotEmpty
+        ? find.byType(AssistantPanel).first
+        : find.byType(AssistantPanel, skipOffstage: false).first,
+  ),
+).read(assistantControllerProvider.notifier);
 
-Conversation conversationOf(WidgetTester tester) =>
-    ProviderScope.containerOf(tester.element(find.byType(AssistantPanel))).read(assistantControllerProvider);
+Conversation conversationOf(WidgetTester tester) => ProviderScope.containerOf(
+  tester.element(
+    find.byType(AssistantPanel).evaluate().isNotEmpty
+        ? find.byType(AssistantPanel).first
+        : find.byType(AssistantPanel, skipOffstage: false).first,
+  ),
+).read(assistantControllerProvider);

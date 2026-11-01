@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/workspace_content_host.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,6 +83,7 @@ Future<ProviderContainer> pumpApp(
   DateTime Function()? clock,
   List<Override> overrides = const [],
   Size size = const Size(1280, 820),
+  bool settle = true,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -95,7 +98,7 @@ Future<ProviderContainer> pumpApp(
     clock: clock,
   );
   await tester.pumpWidget(ProviderScope(overrides: [...base, ...overrides], child: const MarginMindApp()));
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
   return ProviderScope.containerOf(tester.element(find.byType(MarginMindApp)));
 }
 
@@ -209,3 +212,29 @@ Future<void> toggleMapStyle(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('map-style-menu')).hitTestable());
   await tester.pumpAndSettle();
 }
+
+/// Document management remains in More after removing the document title row.
+Future<void> openReaderDocumentMenu(WidgetTester tester) async {
+  final title = find.byKey(const ValueKey('reader-documents')).hitTestable();
+  if (title.evaluate().isNotEmpty) {
+    await tester.tap(title.first);
+  } else {
+    await tester.tap(find.byKey(const ValueKey('reader-more')).hitTestable().first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('reader-switch-document')));
+  }
+  await tester.pumpAndSettle();
+}
+
+WorkspaceState referenceState(WidgetTester tester) {
+  final target = tester.widget<WorkspaceCommandTarget>(find.byType(WorkspaceCommandTarget).last);
+  return target.container.read(workspaceProvider(target.studySetId));
+}
+
+WorkspaceController referenceWorkspace(WidgetTester tester) {
+  final target = tester.widget<WorkspaceCommandTarget>(find.byType(WorkspaceCommandTarget).last);
+  return target.container.read(workspaceProvider(target.studySetId).notifier);
+}
+
+ProviderContainer referenceContainer(WidgetTester tester) =>
+    tester.widget<WorkspaceCommandTarget>(find.byType(WorkspaceCommandTarget).last).container;

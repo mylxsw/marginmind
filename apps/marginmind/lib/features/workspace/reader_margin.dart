@@ -23,6 +23,7 @@ class ReaderMarginState {
 
 final readerMarginProvider = NotifierProvider.autoDispose.family<ReaderMarginSession, ReaderMarginState, String>(
   ReaderMarginSession.new,
+  dependencies: [workspaceProvider],
 );
 
 class ReaderMarginSession extends Notifier<ReaderMarginState> {

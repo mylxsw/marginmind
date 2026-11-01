@@ -70,11 +70,20 @@ extension AssistantSkillText on AssistantSkill {
 /// the map alone no page.
 final assistantAutoContextsProvider = Provider.family<List<ContextItem>, String>((ref, studySetId) {
   final s = ref.watch(
-    workspaceProvider(studySetId)
-        .select((s) => (s.layout, s.activeDocumentId, s.selectedCardId, s.activeMapId, s.content)),
+    workspaceProvider(studySetId).select(
+      (s) => (
+        s.layout,
+        s.activeDocumentId,
+        s.selectedCardId,
+        s.activeMapId,
+        s.content,
+        s.tabs.active?.kind,
+        s.activeNoteId,
+      ),
+    ),
   );
-  final (layout, documentId, cardId, mapId, content) = s;
-  if (content == null) return const [];
+  final (layout, documentId, cardId, mapId, content, kind, noteId) = s;
+  if (content == null || kind != WorkspaceTabKind.documentMap || noteId != null) return const [];
   final pages = ref.watch(readingPagesProvider(studySetId));
   final document = documentId == null ? null : content.document(documentId);
   return [
@@ -83,7 +92,7 @@ final assistantAutoContextsProvider = Provider.family<List<ContextItem>, String>
     if (cardId != null && layout != MMSplitMode.primary && content.node(cardId, mapId: mapId) != null)
       nodeContext(mapId: mapId, nodeId: cardId, title: researchCardTitle(content, cardId), auto: true),
   ];
-});
+}, dependencies: [workspaceProvider, readingPagesProvider]);
 
 /// The contexts the next message carries: the attached ones, then the
 /// automatic ones the user did not leave out or attach already.

@@ -5512,4 +5512,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noteProgressPreviewEmpty => '每完成一节，正文会显示在这里';
+
+  @override
+  String get workspaceDocumentMapTab => '文档与脑图';
+
+  @override
+  String get workspaceReferenceTitle => '参考内容';
+
+  @override
+  String workspaceReferenceFrom(String title) {
+    return '来自：$title';
+  }
+
+  @override
+  String get workspaceNoTabs => '从左侧选择内容，开始阅读';
+
+  @override
+  String workspaceTagMatches(int count) {
+    return '$count 个匹配主题';
+  }
+
+  @override
+  String workspaceCurrentContent(String title) {
+    return '当前内容：$title';
+  }
 }

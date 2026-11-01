@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -1196,7 +1198,11 @@ void main() {
     await key(tester, LogicalKeyboardKey.escape);
     app.workspace.selectMapRoot();
     await focusMap(tester);
-    await tester.tap(find.text('认知科学入门').last, buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await tester.tap(
+      find.descendant(of: find.byType(MindMapCanvas), matching: find.text('认知科学入门')),
+      buttons: kSecondaryMouseButton,
+      kind: PointerDeviceKind.mouse,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('扩展整张脑图…'));
     await tester.pumpAndSettle();

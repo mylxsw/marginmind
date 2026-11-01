@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:async';
 
 import 'reading_settings.dart';
@@ -59,7 +60,9 @@ import 'web_source.dart';
 
 /// Source pane: document renderer, tools, document switcher and navigation.
 class ReaderPane extends ConsumerStatefulWidget {
-  const ReaderPane({super.key, required this.studySetId});
+  const ReaderPane({super.key, required this.studySetId, this.showDocumentTitle = true});
+
+  final bool showDocumentTitle;
 
   final String studySetId;
 
@@ -202,7 +205,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   activeDocumentId: null,
                   onOpen: (id) {
                     ref.read(workspaceBrowserProvider(widget.studySetId).notifier).hide();
-                    workspace.openDocument(id);
+                    workspace.isReference ? workspace.openDocumentReference(id) : workspace.openDocument(id);
                   },
                   onClose: null,
                 ),
@@ -487,8 +490,46 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       documents: controller.content.documents,
       activeDocumentId: state.activeDocumentId,
       primaryCompare: comparing,
-      onOpen: controller.openDocument,
+      onOpen: controller.isReference ? controller.openDocumentReference : controller.openDocument,
       onClose: document == null ? null : () => controller.closeDocument(document.id),
+    );
+    command('reader-switch-document', () {
+      if (!mounted) {
+        return;
+      }
+      final box = context.findRenderObject() as RenderBox?;
+      final position = box != null && box.hasSize ? box.localToGlobal(Offset(box.size.width, 40)) : Offset.zero;
+      showMMMenu(context, position: position, entries: documents.menuEntries(context, ref));
+    });
+    final documentMenu = MMDropdownSubmenu<VoidCallback>.items(
+      key: const ValueKey('reader-switch-document'),
+      label: l.switchDocument,
+      icon: MMIcons.collections,
+      width: MMSizes.dropdownWideWidth,
+      itemBuilder: (_) => [
+        for (final item in documents.menuEntries(context, ref))
+          switch (item) {
+            MMMenuDivider() => const PopupMenuDivider(),
+            MMMenuHeader(:final label) => MMDropdownHeader<VoidCallback>(label),
+            MMMenuItem() => MMDropdownItem<VoidCallback>(
+              value: item.onSelected,
+              enabled: item.onSelected != null,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.mmText.callout,
+                    ),
+                  ),
+                  if (item.checked == true) const Icon(MMIcons.check, size: 14),
+                ],
+              ),
+            ),
+          },
+      ],
     );
     final items = <MMToolbarItem>[
       MMToolbarItem(
@@ -587,20 +628,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           icon: MMReaderIcons.syncToMap,
         ),
       ),
-      MMToolbarItem(
-        id: 'documents',
-        priority: 70,
-        child: documents,
-        menuEntry: entry(
-          l.switchDocument,
-          () => showMMMenu(context, position: Offset.zero, entries: documents.menuEntries(context, ref)),
-          icon: MMIcons.collections,
-          id: 'reader-switch-document',
-        ),
-      ),
+      if (widget.showDocumentTitle)
+        MMToolbarItem(id: 'documents', priority: 70, child: documents, menuEntry: documentMenu),
     ];
     // Rich zoom controls remain available alongside grouped reader commands.
     final menuEntries = <PopupMenuEntry<VoidCallback>>[
+      if (!widget.showDocumentTitle) documentMenu,
       MMDropdownHeader<VoidCallback>(l.readerMenuReading),
       entry(
         l.marginNotes,
@@ -1130,7 +1163,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       : _toolbar(context, state, controller, style, ocr?.running == true ? source : null),
                 ),
                 const SizedBox(width: MMSpacing.s),
-                if (ref.watch(readerCompareProvider(widget.studySetId)) == null)
+                if (widget.showDocumentTitle && ref.watch(readerCompareProvider(widget.studySetId)) == null)
                   DocumentSwitcher(
                     studySetId: widget.studySetId,
                     documents: content.documents,
@@ -1170,37 +1203,52 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   ),
                 )
               : LayoutBuilder(
-                  builder: (context, constraints) => Row(
-                    children: [
-                      if (state.readerPanelVisible && doc.contentManifest == null)
-                        Padding(
-                          padding: EdgeInsets.only(bottom: chrome.bottom),
-                          child: _ResizableReaderSidebar(
+                  builder: (context, constraints) {
+                    final viewport = ref.watch(readerCompareProvider(widget.studySetId)) != null
+                        ? ReaderCompareView(
                             studySetId: widget.studySetId,
-                            document: doc,
-                            pdf: _pdf,
-                            available: constraints.maxWidth,
-                          ),
-                        ),
-                      Expanded(
-                        child: ref.watch(readerCompareProvider(widget.studySetId)) != null
-                            ? ReaderCompareView(
-                                studySetId: widget.studySetId,
-                                viewport: (document, side) => _viewport(
-                                  context,
-                                  state,
-                                  controller,
-                                  content,
-                                  document,
-                                  rootTitle,
-                                  dismissSelection,
-                                  side: side,
-                                ),
-                              )
-                            : _viewport(context, state, controller, content, doc, rootTitle, dismissSelection),
+                            viewport: (document, side) => _viewport(
+                              context,
+                              state,
+                              controller,
+                              content,
+                              document,
+                              rootTitle,
+                              dismissSelection,
+                              side: side,
+                            ),
+                          )
+                        : _viewport(context, state, controller, content, doc, rootTitle, dismissSelection);
+                    final visible = state.readerPanelVisible && doc.contentManifest == null;
+                    final overlay =
+                        constraints.maxWidth <
+                        MMSizes.readerSidebarMinWidth + MMSizes.readerContentMinWidth + MMSizes.dividerHitWidth;
+                    Widget sidebar() => Padding(
+                      padding: EdgeInsets.only(bottom: chrome.bottom),
+                      child: _ResizableReaderSidebar(
+                        studySetId: widget.studySetId,
+                        document: doc,
+                        pdf: _pdf,
+                        available: constraints.maxWidth,
+                        overlay: overlay,
                       ),
-                    ],
-                  ),
+                    );
+                    if (visible && overlay) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          viewport,
+                          Positioned(left: 0, top: 0, bottom: 0, child: sidebar()),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        if (visible) sidebar(),
+                        Expanded(child: viewport),
+                      ],
+                    );
+                  },
                 ),
         ),
       ],
@@ -1945,7 +1993,9 @@ class _ResizableReaderSidebar extends ConsumerWidget {
     required this.document,
     required this.pdf,
     required this.available,
+    this.overlay = false,
   });
+  final bool overlay;
   final double available;
   final String studySetId;
   final Document document;
@@ -1953,11 +2003,15 @@ class _ResizableReaderSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preferred = ref.watch(settingsProvider.select((s) => s.readerSidebarWidth));
-    final width = preferred.clamp(
-      MMSizes.readerSidebarMinWidth,
-      (available - MMSizes.readerContentMinWidth).clamp(MMSizes.readerSidebarMinWidth, MMSizes.readerSidebarMaxWidth),
-    );
+    final maxSidebar = overlay
+        ? math.max(0.0, math.min(MMSizes.readerSidebarMaxWidth, available * .7))
+        : (available - MMSizes.readerContentMinWidth - MMSizes.dividerHitWidth).clamp(
+            MMSizes.readerSidebarMinWidth,
+            MMSizes.readerSidebarMaxWidth,
+          );
+    final width = preferred.clamp(math.min(MMSizes.readerSidebarMinWidth, maxSidebar), maxSidebar).toDouble();
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         ReaderSidebar(studySetId: studySetId, document: document, pdf: pdf, width: width),
         MouseRegion(

@@ -197,15 +197,21 @@ void main() {
     await tester.tap(find.text('Second passage'));
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
-    expect(state().activeDocumentId, original.documents.last.id);
-    expect(state().reveal?.page, 7);
-    expect(state().flashAnnotationId, merged.segments.last.annotationId);
+    expect(referenceState(tester).activeDocumentId, original.documents.last.id);
+    expect(referenceState(tester).reveal?.page, 7);
+    expect(
+      referenceState(tester).reveal!.rects,
+      controller.content.annotation(merged.segments.last.annotationId!)!.rects,
+    );
     controller.revealCard(merged.id);
     await tester.pumpAndSettle();
-    expect(state().activeDocumentId, original.documents.first.id);
-    expect(state().reveal?.page, 2);
+    expect(referenceState(tester).activeDocumentId, original.documents.first.id);
+    expect(referenceState(tester).reveal?.page, 2);
     controller.tapHighlight(merged.segments.last.annotationId!);
-    expect(state().flashAnnotationId, merged.segments.last.annotationId);
+    expect(
+      referenceState(tester).reveal!.rects,
+      controller.content.annotation(merged.segments.last.annotationId!)!.rects,
+    );
     expect(state().flashCardId, merged.id);
     await controller.undo();
     await tester.pumpAndSettle();

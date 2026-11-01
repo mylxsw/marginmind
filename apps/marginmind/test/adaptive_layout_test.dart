@@ -306,11 +306,11 @@ void main() {
       controller.showDetails('c3');
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
-      final panel = find.byKey(const ValueKey('tablet-workspace-panel'));
+      final panel = find.byKey(const ValueKey('workspace-right-sidebar'));
       expect(panel, findsOneWidget);
-      expect(tester.getRect(panel).width, ipadPortrait.size.width - 16);
+      expect(tester.getRect(panel).width, 348);
       expect(tester.getRect(panel).right, ipadPortrait.size.width - MMSpacing.s);
-      expect(rectOf(tester, ReaderPane).width, ipadPortrait.size.width);
+      expect(rectOf(tester, ReaderPane).right, lessThanOrEqualTo(tester.getRect(panel).left));
       await tester.tapAt(const Offset(40, 400));
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).panel, RightPanel.details);
@@ -348,7 +348,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
       expect(
-        rectOf(tester, MapPane).overlaps(tester.getRect(find.byKey(const ValueKey('tablet-workspace-panel')))),
+        rectOf(tester, MapPane).overlaps(tester.getRect(find.byKey(const ValueKey('workspace-right-sidebar')))),
         isFalse,
       );
     });
@@ -458,14 +458,14 @@ void main() {
       expect(find.byKey(const ValueKey('mm-drawer-scrim')), findsNothing);
       expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
       expect(find.byKey(const ValueKey('reader-more')), findsOneWidget);
-      expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), MMSizes.toolbarButton);
+      expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), const Size.square(28));
       container.read(workspaceProvider('demo-1').notifier).showDetails('c3');
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
       // Touch input does not resize desktop controls.
       await tester.tapAt(const Offset(600, 300));
       await tester.pumpAndSettle();
-      expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), MMSizes.toolbarButton);
+      expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), const Size.square(28));
     });
 
     testWidgets('a wide desktop window is unchanged', (tester) async {

@@ -355,8 +355,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.descendant(of: row, matching: find.byType(MMBadge)), findsNothing);
     await tap(tester, row);
-    expect((c.read(navigationProvider) as VocabularyRoute).studySetId, 'demo-1');
-    await tap(tester, find.byTooltip('Back'));
+    expect(c.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(c.read(workspaceProvider('demo-1')).tabs.active?.kind, WorkspaceTabKind.vocabulary);
+    c.read(workspaceProvider('demo-1').notifier).closeTab('vocabulary');
+    await tester.pumpAndSettle();
     expect(c.read(navigationProvider), isA<WorkspaceRoute>());
   });
   screenTest('failed saves and stale undo never overwrite newer user data', (tester) async {

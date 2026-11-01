@@ -1,3 +1,6 @@
+import '../review/review_controller.dart';
+import 'workspace_tabs.dart';
+export 'workspace_tabs.dart';
 import '../map_generation/document_map_navigation.dart';
 import 'translation_schedulers.dart';
 import '../study_notes/note_update_sources.dart';
@@ -28,7 +31,6 @@ export '../../settings/app_settings.dart' show AnnotationTool;
 enum MapViewMode { map, outline }
 
 /// What the right panel shows. One panel, one content at a time.
-enum RightPanel { assistant, details }
 
 /// Where the right panel was opened from: in split layout the other pane
 /// steps aside (the map for the source, the source for the map).
@@ -160,8 +162,37 @@ class ImportedNotice extends WorkspaceNotice {
   final List<String> failed;
 }
 
+/// Model edits belong to the study set. Reference scopes isolate presentation,
+/// while writes, transactions and undo keep one chronological history.
+class WorkspaceEditHistory extends ChangeNotifier {
+  final List<StudySetContent> _undo = [];
+  final List<StudySetContent> _redo = [];
+  Future<void> _pendingEdits = Future.value();
+  StudySetContent? _transactionBefore;
+  int _transactionDepth = 0;
+  bool _disposed = false;
+  void sync() {
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+}
+
+final workspaceEditHistoryProvider = Provider.family<WorkspaceEditHistory, String>((ref, id) {
+  final history = WorkspaceEditHistory();
+  ref.onDispose(history.dispose);
+  return history;
+});
+
 /// Live reading positions do not invalidate workspace layout or native menus.
-final readingPagesProvider = NotifierProvider.family<ReadingPages, Map<String, int>, String>(ReadingPages.new);
+final readingPagesProvider = NotifierProvider.family<ReadingPages, Map<String, int>, String>(
+  ReadingPages.new,
+  dependencies: const [],
+);
 
 class ReadingPages extends Notifier<Map<String, int>> {
   ReadingPages(this.studySetId);
@@ -176,6 +207,7 @@ enum NoteReference { document, map }
 class WorkspaceState {
   const WorkspaceState({
     this.content,
+    this.tabs = const WorkspaceTabs(),
     this.activeNoteId,
     this.noteReference,
     this.noteSplitFraction = .55,
@@ -226,6 +258,7 @@ class WorkspaceState {
 
   /// Latest repository snapshot, including completed writes before stream delivery.
   final StudySetContent? content;
+  final WorkspaceTabs tabs;
 
   final String? noteAnnotationId;
   final String? activeNoteId;
@@ -318,6 +351,7 @@ class WorkspaceState {
 
   WorkspaceState copyWith({
     StudySetContent? content,
+    WorkspaceTabs? tabs,
     String? noteAnnotationId,
     String? activeNoteId,
     bool closeNote = false,
@@ -380,6 +414,7 @@ class WorkspaceState {
   }) {
     return WorkspaceState(
       content: content ?? this.content,
+      tabs: tabs ?? this.tabs,
       noteAnnotationId: noteAnnotationId ?? this.noteAnnotationId,
       activeNoteId: closeNote ? null : activeNoteId ?? this.activeNoteId,
       noteReference: closeNote || closeNoteReference ? null : noteReference ?? this.noteReference,
@@ -482,6 +517,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   @override
   WorkspaceState build() {
+    _history = ref.read(workspaceEditHistoryProvider(studySetId));
+    _history.addListener(_historyChanged);
+    ref.onDispose(() => _history.removeListener(_historyChanged));
     ref.watch(translationSchedulersProvider(studySetId));
     ref.onDispose(() {
       _flashTimer?.cancel();
@@ -506,6 +544,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       state = state.copyWith(underlineColor: next.$1, underlineStyle: next.$2);
     });
     final initialState = WorkspaceState(
+      canUndo: _transactionDepth == 0 && _undo.isNotEmpty,
+      canRedo: _transactionDepth == 0 && _redo.isNotEmpty,
       tool: ref.read(settingsProvider).annotationTool,
       color: ref.read(highlightPaletteProvider).current,
       underlineColor: ref.read(settingsProvider).underlineColor,
@@ -556,13 +596,31 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Content before each undoable edit, newest last; redo holds what undo
   /// replaced.
-  final List<StudySetContent> _undo = [];
-  final List<StudySetContent> _redo = [];
+  late WorkspaceEditHistory _history;
+  List<StudySetContent> get _undo => _history._undo;
+  List<StudySetContent> get _redo => _history._redo;
   static const _historyLimit = 100;
 
-  Future<void> _pendingEdits = Future.value();
-  StudySetContent? _transactionBefore;
-  int _transactionDepth = 0;
+  Future<void> get _pendingEdits => _history._pendingEdits;
+  set _pendingEdits(Future<void> value) => _history._pendingEdits = value;
+  StudySetContent? get _transactionBefore => _history._transactionBefore;
+  set _transactionBefore(StudySetContent? value) => _history._transactionBefore = value;
+  int get _transactionDepth => _history._transactionDepth;
+  set _transactionDepth(int value) => _history._transactionDepth = value;
+
+  /// Let an unmounted reference finish saves queued by its editors before its
+  /// provider container is disposed. The visible sidebar closes immediately.
+  Future<void> flushEdits() async {
+    for (final timer in _pageTimers.values) {
+      timer.cancel();
+    }
+    _pageTimers.clear();
+    await _pendingEdits;
+    while (ref.mounted && _transactionDepth > 0) {
+      await commitTransaction();
+    }
+    await _pendingEdits;
+  }
 
   /// Serializes writes and transaction boundaries, including callers that
   /// enqueue commit immediately after an edit without awaiting that edit.
@@ -580,11 +638,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   });
 
   Future<void> commitTransaction() => _enqueue(() async {
-    if (_transactionDepth == 0) return;
+    if (!ref.mounted || _transactionDepth == 0) return;
     if (--_transactionDepth != 0) return;
     final before = _transactionBefore;
     _transactionBefore = null;
-    if (before != null && !_sameEdits(before, content)) _record(before);
+    final current = await _repo.load(studySetId);
+    if (before != null && !_sameEdits(before, current)) _record(before);
     _syncHistory();
   });
 
@@ -673,12 +732,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     _flash(cardId: ids.last, cardIds: Set.unmodifiable(ids));
   }
 
-  void _syncHistory() {
+  void _syncHistory() => _history.sync();
+
+  void _historyChanged() {
     if (!ref.mounted) return;
-    state = state.copyWith(
-      canUndo: _transactionDepth == 0 && _undo.isNotEmpty,
-      canRedo: _transactionDepth == 0 && _redo.isNotEmpty,
-    );
+    final canUndo = _transactionDepth == 0 && _undo.isNotEmpty;
+    final canRedo = _transactionDepth == 0 && _redo.isNotEmpty;
+    if (state.canUndo == canUndo && state.canRedo == canRedo) return;
+    state = state.copyWith(canUndo: canUndo, canRedo: canRedo);
   }
 
   Future<UndoneNotice?> undo() => _travel(_undo, _redo, redo: false);
@@ -707,6 +768,37 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Opens the last-read document on first load, drops tabs (and the
   /// selection) whose target no longer exists.
   static WorkspaceState _withTabs(WorkspaceState s, StudySetContent c) {
+    var tabs = s.tabs;
+    if ((s.activeDocumentId != null && c.document(s.activeDocumentId!) == null) ||
+        (s.activeMapId != MindMap.defaultId && c.map(s.activeMapId) == null)) {
+      tabs = tabs.clearSubjectReferences();
+    }
+    for (final tab in tabs.open) {
+      if (tab.kind == WorkspaceTabKind.note && c.studyNote(tab.noteId ?? '') == null) {
+        tabs = tabs.close(tab.id);
+      }
+    }
+    for (final entry in tabs.contexts.entries) {
+      final reference = entry.value.reference;
+      if (reference == null || reference.studySetId != null) continue;
+      final exists = switch (reference.kind) {
+        WorkspaceReferenceKind.document => c.document(reference.id) != null,
+        WorkspaceReferenceKind.map => c.map(reference.id) != null,
+        WorkspaceReferenceKind.note => c.studyNote(reference.id) != null,
+        WorkspaceReferenceKind.vocabulary => true,
+        WorkspaceReferenceKind.card => c.card(reference.id) != null,
+      };
+      if (!exists) tabs = tabs.update(const WorkspaceTabContext(), tabId: entry.key);
+    }
+    if (!identical(tabs, s.tabs)) {
+      s = s.copyWith(
+        tabs: tabs,
+        activeNoteId: tabs.active?.noteId,
+        closeNote: tabs.active?.kind != WorkspaceTabKind.note,
+        panel: tabs.current.panel,
+        closePanel: tabs.current.panel == null,
+      );
+    }
     var open = [
       for (final id in s.openDocumentIds)
         if (c.document(id) != null) id,
@@ -763,8 +855,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       if (!ref.mounted ||
           _clipboardBusy ||
           content.map(id) == null ||
-          (forDocumentId != null && state.activeDocumentId != forDocumentId)) {
+          (forDocumentId != null &&
+              (state.activeDocumentId != forDocumentId ||
+                  (!isReference && state.tabs.active?.kind != WorkspaceTabKind.documentMap)))) {
         return;
+      }
+      if (!isReference && !keepNote) {
+        activateTab(WorkspaceTab.documents);
+        if (state.activeMapId != id) _replaceSharedSubject();
       }
       state = state.copyWith(
         closeNote: !keepNote,
@@ -776,7 +874,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         clearPending: true,
         clearFlash: true,
       );
-      ref.read(documentMapNavigationProvider(studySetId).notifier).recordMap(id);
+      ref.container.read(documentMapNavigationProvider(studySetId).notifier).recordMap(id);
     });
   }
 
@@ -805,6 +903,166 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (_editing != null || _creating || _clipboardBusy) return;
     final editor = _editor;
     await _update((c) => StudySetEditor(newId: editor.newId, now: editor.now, mapId: mapId).placeCard(c, cardId));
+  }
+
+  /// Reference readers edit the same repository, with independent presentation.
+  bool get isReference => false;
+
+  void startReview({String? mapId, String? branchId, String? tag}) {
+    activateTab(WorkspaceTab.review);
+    ref.container
+        .read(reviewSessionProvider(studySetId).notifier)
+        .startScope(mapId: mapId, branchId: branchId, tag: tag);
+  }
+
+  ProviderSubscription<ReviewSessionState>? _reviewSession;
+
+  void activateTab(WorkspaceTab tab) {
+    if (tab.kind == WorkspaceTabKind.review) {
+      _reviewSession ??= ref.listen(reviewSessionProvider(studySetId), (_, _) {});
+    }
+
+    if (tab.kind == WorkspaceTabKind.note && content.studyNote(tab.noteId ?? '') == null) return;
+    _installTabs(state.tabs.activate(tab));
+  }
+
+  void _installTabs(WorkspaceTabs tabs) {
+    final tab = tabs.active;
+    final context = tabs.current;
+    _panelRestore = null;
+    state = state.copyWith(
+      tabs: tabs,
+      activeNoteId: tab?.kind == WorkspaceTabKind.note ? tab!.noteId : null,
+      closeNote: tab?.kind != WorkspaceTabKind.note,
+      panel: context.panel,
+      closePanel: context.panel == null,
+      detailCardId: context.detailCardId,
+      clearPending: true,
+      closeNoteReference: true,
+    );
+  }
+
+  void closeTab(String id) {
+    if (id == WorkspaceTab.review.id) {
+      _reviewSession?.close();
+      _reviewSession = null;
+    }
+
+    final wasActive = state.tabs.activeId == id;
+    final tabs = state.tabs.close(id);
+    if (wasActive) {
+      _installTabs(tabs);
+    } else {
+      state = state.copyWith(tabs: tabs);
+    }
+  }
+
+  void _replaceSharedSubject() {
+    if (isReference) return;
+    final tabs = state.tabs.clearSubjectReferences();
+    state = state.copyWith(
+      tabs: tabs,
+      closePanel: state.tabs.activeId == WorkspaceTab.documents.id && tabs.current.panel == null,
+      clearPending: true,
+    );
+    _panelRestore = null;
+  }
+
+  void openReference(WorkspaceReference reference) {
+    if (state.tabs.active == null) return;
+    state = state.copyWith(
+      tabs: state.tabs.update(WorkspaceTabContext(panel: RightPanel.reference, reference: reference)),
+      panel: RightPanel.reference,
+      clearPending: true,
+    );
+  }
+
+  void openReferenceAssistant() {
+    final context = state.tabs.current;
+    if (context.reference == null) return;
+    state = state.copyWith(
+      panel: RightPanel.assistant,
+      tabs: state.tabs.update(
+        WorkspaceTabContext(panel: RightPanel.assistant, reference: context.reference, referenceAssistant: true),
+      ),
+    );
+  }
+
+  void openVocabularyReference(String id) => openReference(WorkspaceReference.vocabulary(id));
+
+  void openStudyNoteReference(String id) {
+    if (content.studyNote(id) != null) openReference(WorkspaceReference.note(id));
+  }
+
+  Future<bool> openAnchorReference(SourceAnchor anchor, {String? sourceStudySetId}) async {
+    if (isReference) return revealAnchor(anchor);
+    if (sourceStudySetId == null || sourceStudySetId == studySetId) {
+      final valid = switch (anchor.target) {
+        PdfTarget(:final documentId) || TextTarget(:final documentId) => content.document(documentId) != null,
+        CardTarget(:final cardId) => content.isPlaced(cardId, mapId: anchor.mapId ?? state.activeMapId),
+      };
+      if (!valid) return false;
+    }
+    final target = anchor.target;
+    final reference = switch (target) {
+      PdfTarget(:final documentId) || TextTarget(:final documentId) => WorkspaceReference.document(
+        documentId,
+        anchor: anchor,
+        studySetId: sourceStudySetId,
+      ),
+      CardTarget() => WorkspaceReference.map(
+        anchor.mapId ?? state.activeMapId,
+        anchor: anchor,
+        studySetId: sourceStudySetId,
+      ),
+    };
+    openReference(reference);
+    return true;
+  }
+
+  void openDocumentReference(String id, {SourceAnchor? anchor}) {
+    if (content.document(id) == null) return;
+    if (isReference) {
+      openDocument(id, followMap: false);
+    } else {
+      openReference(WorkspaceReference.document(id, anchor: anchor));
+    }
+  }
+
+  Future<void> openMainMap(String id) async {
+    await selectMap(id);
+    if (!ref.mounted || state.activeMapId != id) return;
+    final map = content.map(id);
+    final docId = map?.generation?.sources.firstOrNull?.documentId;
+    if (docId != null && content.document(docId) != null && state.activeDocumentId != docId) {
+      openDocument(docId, followMap: false);
+    }
+    setLayout(MMSplitMode.secondary);
+  }
+
+  Future<void> revealTagTopic(String mapId, String cardId) async {
+    if (!content.isPlaced(cardId, mapId: mapId)) return;
+    // Dismiss the drawer on its original tab before navigating elsewhere.
+    if (state.panel == RightPanel.tags) closePanel();
+    activateTab(WorkspaceTab.documents);
+    await selectMap(mapId);
+    if (!ref.mounted || state.activeMapId != mapId) return;
+    final card = content.card(cardId);
+    final docId =
+        card?.source?.documentId ??
+        content.annotation(card?.annotationId ?? '')?.documentId ??
+        content.map(mapId)?.generation?.sources.firstOrNull?.documentId;
+    if (docId != null) openDocument(docId, followMap: false);
+    await revealAnchor(
+      SourceAnchor(
+        mapId: mapId,
+        target: CardTarget(cardId: cardId),
+      ),
+      asReference: false,
+    );
+    if (!ref.mounted) return;
+    if (state.panel == RightPanel.tags) closePanel();
+    state = state.copyWith(clearTagFilter: true);
   }
 
   // ---- panels ---------------------------------------------------------------
@@ -853,14 +1111,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// asking the assistant leaves the user's pane choices alone.
   void openPanel(RightPanel content, {PanelOrigin origin = PanelOrigin.toolbar}) {
     if (state.panel == null) _panelRestore = (layout: state.layout, sidebarVisible: state.sidebarVisible);
-    final layout = panelFloats || content == RightPanel.assistant || state.layout != MMSplitMode.split
-        ? null
-        : switch (origin) {
-            PanelOrigin.reader => MMSplitMode.primary,
-            PanelOrigin.map => MMSplitMode.secondary,
-            PanelOrigin.toolbar => null,
-          };
-    state = state.copyWith(panel: content, layout: layout);
+    state = state.copyWith(
+      panel: content,
+      tabs: state.tabs.update(
+        WorkspaceTabContext(panel: content, reference: state.tabs.current.reference, detailCardId: state.detailsCardId),
+      ),
+    );
   }
 
   /// Closes the right panel and restores its layout, keeping manual choices.
@@ -871,7 +1127,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final restore = _panelRestore;
     _panelRestore = null;
     state = state.copyWith(
-      closePanel: true,
+      closePanel: state.panel == RightPanel.reference || state.tabs.current.reference == null,
+      panel: state.panel != RightPanel.reference && state.tabs.current.reference != null ? RightPanel.reference : null,
+      tabs: state.tabs.update(
+        WorkspaceTabContext(
+          panel: state.panel != RightPanel.reference && state.tabs.current.reference != null
+              ? RightPanel.reference
+              : null,
+          reference: state.panel == RightPanel.reference ? null : state.tabs.current.reference,
+        ),
+      ),
+      clearTagFilter: true,
       layout: restore?.layout,
       sidebarVisible: restore?.sidebarVisible,
       // Keyboard focus goes back to the card the details showed.
@@ -897,7 +1163,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final id = cardId ?? state.selectedCardId;
     if (id == null || content.card(id) == null) return;
     openPanel(RightPanel.details, origin: PanelOrigin.map);
-    state = state.copyWith(selectedCardId: id, detailCardId: id);
+    state = state.copyWith(
+      selectedCardId: id,
+      detailCardId: id,
+      tabs: state.tabs.update(
+        WorkspaceTabContext(panel: RightPanel.details, reference: state.tabs.current.reference, detailCardId: id),
+      ),
+    );
   }
 
   /// ⌘I: shows the selected card's details, or closes them. Open details
@@ -971,7 +1243,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void closeFind() => state = state.copyWith(findVisible: false);
 
   void setLayout(MMSplitMode layout) {
-    if (state.panel == RightPanel.assistant && _panelRestore != null) {
+    if (!isReference && state.tabs.activeId != WorkspaceTab.documents.id) {
+      activateTab(WorkspaceTab.documents);
+    }
+    if (_panelRestore != null) {
       _panelRestore = (layout: layout, sidebarVisible: _panelRestore!.sidebarVisible);
     }
     state = state.copyWith(layout: layout, closeNote: true);
@@ -1174,7 +1449,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// comes back, since the user asked to see a document.
   void openDocument(String id, {bool followMap = true}) {
     if (content.document(id) == null) return;
+    if (!isReference) activateTab(WorkspaceTab.documents);
     final changed = state.activeDocumentId != id;
+    if (changed) _replaceSharedSubject();
     final open = state.openDocumentIds.contains(id) ? state.openDocumentIds : [...state.openDocumentIds, id];
     state = state.copyWith(
       openDocumentIds: open,
@@ -1185,9 +1462,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       clearPending: true,
       layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
     );
-    if (changed) {
+    if (changed && !isReference) {
       unawaited(
-        ref
+        ref.container
             .read(documentMapNavigationProvider(studySetId).notifier)
             .documentChanged(id, followMap: followMap && state.activeNoteId == null),
       );
@@ -1195,6 +1472,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   void closeDocument(String id) {
+    if (!isReference && state.activeDocumentId == id) _replaceSharedSubject();
     final open = [...state.openDocumentIds]..remove(id);
     final wasActive = state.activeDocumentId == id;
     state = state.copyWith(
@@ -1205,7 +1483,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       clearPending: true,
     );
     if (wasActive) {
-      unawaited(ref.read(documentMapNavigationProvider(studySetId).notifier).documentChanged(state.activeDocumentId));
+      unawaited(
+        ref.container.read(documentMapNavigationProvider(studySetId).notifier).documentChanged(state.activeDocumentId),
+      );
     }
   }
 
@@ -1605,16 +1885,28 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void openStudyNote(String id) {
     if (content.studyNote(id) == null) return;
-    state = state.copyWith(activeNoteId: id, clearTagFilter: true, closeNoteReference: true, clearPending: true);
+    activateTab(WorkspaceTab(WorkspaceTabKind.note, noteId: id));
   }
 
   void showNoteReference(NoteReference reference) {
     if (state.activeNoteId == null) return;
     if (reference == NoteReference.document && state.activeDocumentId == null) return;
+    if (!isReference) {
+      openReference(
+        reference == NoteReference.document
+            ? WorkspaceReference.document(state.activeDocumentId!)
+            : WorkspaceReference.map(state.activeMapId),
+      );
+      return;
+    }
     state = state.copyWith(noteReference: reference);
   }
 
   Future<void> openNoteMap(String id) async {
+    if (!isReference) {
+      if (content.map(id) != null) openReference(WorkspaceReference.map(id));
+      return;
+    }
     final noteId = state.activeNoteId;
     if (noteId == null) return;
     await selectMap(id, keepNote: true);
@@ -1622,7 +1914,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     showNoteReference(NoteReference.map);
   }
 
-  void closeNoteReference() => state = state.copyWith(closeNoteReference: true);
+  void closeNoteReference() {
+    if (state.panel == RightPanel.reference) closePanel();
+    state = state.copyWith(closeNoteReference: true);
+  }
 
   void setNoteSplitFraction(double value) => state = state.copyWith(noteSplitFraction: value.clamp(.1, .9));
 
@@ -1633,6 +1928,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         content.nodes.where((n) => n.cardId == cardId && n.mapId == state.activeMapId).firstOrNull ??
         content.nodes.where((n) => n.cardId == cardId).firstOrNull;
     if (node == null) return;
+    if (!isReference) {
+      openReference(
+        WorkspaceReference.map(
+          node.mapId,
+          anchor: SourceAnchor(
+            mapId: node.mapId,
+            target: CardTarget(cardId: cardId),
+          ),
+        ),
+      );
+      return;
+    }
     if (node.mapId != state.activeMapId) await selectMap(node.mapId, keepNote: true);
     if (!ref.mounted || state.activeNoteId != noteId || state.activeMapId != node.mapId) return;
     await _update((c) => _expandAncestors(c, cardId), undoable: false);
@@ -1650,6 +1957,22 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void revealNoteMargin(String id) {
     final note = content.marginNotes.where((n) => n.id == id).firstOrNull;
     if (note == null || content.document(note.documentId) == null) return;
+    if (!isReference) {
+      openReference(
+        WorkspaceReference.document(
+          note.documentId,
+          anchor: SourceAnchor(
+            target: note.anchor?.textAnchors.isNotEmpty == true
+                ? TextTarget(documentId: note.documentId, textAnchors: note.anchor!.textAnchors)
+                : PdfTarget(
+                    documentId: note.documentId,
+                    pages: [AnnotationPage(page: note.page, rects: const [])],
+                  ),
+          ),
+        ),
+      );
+      return;
+    }
     openDocument(note.documentId, followMap: false);
     state = state.copyWith(
       reveal: note.anchor?.textAnchors.isNotEmpty == true
@@ -1831,6 +2154,23 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void revealNoteAnnotation(String id) {
     final annotation = content.annotation(id);
     if (annotation == null || annotation.needsReview) return;
+    if (!isReference) {
+      state = state.copyWith(noteAnnotationId: id);
+      openReference(
+        WorkspaceReference.document(
+          annotation.documentId,
+          anchor: SourceAnchor(
+            target: annotation.isText
+                ? TextTarget(documentId: annotation.documentId, textAnchors: annotation.textAnchors)
+                : PdfTarget(
+                    documentId: annotation.documentId,
+                    pages: [AnnotationPage(page: annotation.page, rects: annotation.rects)],
+                  ),
+          ),
+        ),
+      );
+      return;
+    }
     openDocument(annotation.documentId, followMap: false);
     state = state.copyWith(
       noteAnnotationId: id,
@@ -2124,6 +2464,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           },
         )
         .firstOrNull;
+    if (!isReference && (target is PdfTarget || target is TextTarget)) {
+      unawaited(openAnchorReference(SourceAnchor(target: target!)));
+      return;
+    }
     if (target is PdfTarget) _revealPdf(target);
     if (target is TextTarget) {
       openDocument(target.documentId);
@@ -2152,7 +2496,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Back to where a research started: the page and sentence, or the node.
   /// False when that place no longer exists.
-  Future<bool> revealAnchor(SourceAnchor anchor) async {
+  Future<bool> revealAnchor(SourceAnchor anchor, {bool asReference = true}) async {
+    if (asReference && !isReference) return openAnchorReference(anchor);
     switch (anchor.target) {
       case PdfTarget target when content.document(target.documentId) != null:
         _revealPdf(target);
@@ -2442,7 +2787,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// source to a new excerpt.
   Future<void> showCardInMap(String cardId) async {
     final shown = await revealAnchor(SourceAnchor(target: CardTarget(cardId: cardId)));
-    if (shown && ref.mounted) setLayout(MMSplitMode.secondary);
+    if (shown && ref.mounted && isReference) setLayout(MMSplitMode.secondary);
   }
 
   MapEditReason? get mergeReason => _editor.mergeReason(content, state.selectedCardIds);
@@ -2487,6 +2832,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (index < 0 || index >= segments.length) return;
     final annotation = content.annotation(segments[index].annotationId ?? '');
     if (annotation == null) return;
+    if (!isReference) {
+      if (!annotation.needsReview) {
+        revealNoteAnnotation(annotation.id);
+      } else {
+        openDocumentReference(annotation.documentId);
+      }
+      return;
+    }
     openDocument(annotation.documentId);
     if (annotation.needsReview) return;
     state = state.copyWith(
@@ -2501,6 +2854,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void revealMapSource(CardSource source) {
     final document = content.document(source.documentId);
     if (document == null || source.page < 1 || source.page > document.pageCount) return;
+    if (!isReference) {
+      openDocumentReference(
+        source.documentId,
+        anchor: SourceAnchor(
+          target: PdfTarget(
+            documentId: source.documentId,
+            pages: [AnnotationPage(page: source.page, rects: const [])],
+          ),
+        ),
+      );
+      return;
+    }
     openDocument(source.documentId, followMap: false);
     state = state.copyWith(reveal: RevealRequest(source.documentId, source.page, const [], ++_revealNonce));
   }
@@ -2510,6 +2875,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final card = content.card(cardId);
     if (card == null) return;
     if (card.source case final source?) {
+      if (!isReference) {
+        revealMapSource(source);
+        return;
+      }
       openDocument(source.documentId, followMap: false);
       state = state.copyWith(
         selectedCardId: cardId,
@@ -2557,12 +2926,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Tags navigate to their own content view; they do not filter sidebar search.
   void filterTag(String? tag) {
     if (tag != null && _blockExpansionEdit()) return;
-    state = state.copyWith(
-      tagFilter: tag,
-      clearTagFilter: tag == null,
-      closeNote: tag != null,
-      layout: tag == null ? null : _layoutShowingMap,
-    );
+    if (tag == null) {
+      if (state.panel == RightPanel.tags) closePanel();
+      state = state.copyWith(clearTagFilter: true);
+      return;
+    }
+    openPanel(RightPanel.tags);
+    state = state.copyWith(tagFilter: tag);
+  }
+
+  void showTags() {
+    openPanel(RightPanel.tags);
+    state = state.copyWith(clearTagFilter: true);
   }
 
   Future<void> setTags(String cardId, Iterable<String> tags) {
@@ -3101,11 +3476,19 @@ class _MarkEditSession {
   final bool created;
 }
 
-final workspaceProvider = NotifierProvider.family<WorkspaceController, WorkspaceState, String>(WorkspaceController.new);
+final workspaceProvider = NotifierProvider.family<WorkspaceController, WorkspaceState, String>(
+  WorkspaceController.new,
+  dependencies: [readingPagesProvider],
+);
 
 /// Workspace presentation ignores persisted reading metadata. The repository
 /// remains authoritative; library Continue Learning still observes contentProvider.
-final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref, id) {
+final workspaceContentProvider = Provider.family<StudySetContent?, String>(
+  createWorkspaceContent,
+  dependencies: [workspaceProvider],
+);
+
+StudySetContent? createWorkspaceContent(Ref ref, String id) {
   StudySetContent? visible;
   bool sameDocument(Document a, Document b) =>
       a.id == b.id &&
@@ -3150,4 +3533,4 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       return visible;
     }),
   );
-});
+}

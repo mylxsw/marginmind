@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,22 +39,22 @@ void main() {
     await settleHud(tester);
   });
 
-  testWidgets('sidebar document and map choices supplement the pinned note', (tester) async {
+  testWidgets('sidebar document and map choices return to the shared main tab', (tester) async {
     final container = await openNote(tester);
     final owner = container.read(workspaceProvider('demo-1').notifier);
     await tester.tap(find.byKey(ValueKey('sidebar-map-${MindMap.defaultId}')));
     await tester.pumpAndSettle();
-    expect(container.read(workspaceProvider('demo-1')).activeNoteId, 'written');
-    expect(container.read(workspaceProvider('demo-1')).noteReference, NoteReference.map);
+    expect(container.read(workspaceProvider('demo-1')).activeNoteId, isNull);
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, 'documentMap');
     expect(find.byType(MapPane), findsOneWidget);
     final documentId = owner.content.documents.last.id;
     await tester.tap(find.byKey(ValueKey('document-row-$documentId')));
     await tester.pumpAndSettle();
-    expect(container.read(workspaceProvider('demo-1')).activeNoteId, 'written');
-    expect(container.read(workspaceProvider('demo-1')).noteReference, NoteReference.document);
+    expect(container.read(workspaceProvider('demo-1')).activeNoteId, isNull);
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, 'documentMap');
     expect(container.read(workspaceProvider('demo-1')).activeDocumentId, documentId);
     expect(find.byType(ReaderPane), findsOneWidget);
-    owner.closeNoteReference();
+    owner.openStudyNote('written');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('note-back')));
     await tester.pumpAndSettle();
@@ -62,7 +63,7 @@ void main() {
     await settleHud(tester);
   });
 
-  testWidgets('source opens to the right; resizing and closing retain the note editor', (tester) async {
+  testWidgets('source opens to the right; closing and switching retain the note editor', (tester) async {
     final container = await openNote(tester);
     final owner = container.read(workspaceProvider('demo-1').notifier);
     final noteState = tester.state(find.byType(StudyNoteView));
@@ -70,15 +71,19 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('note-source-quote')));
     await tester.pumpAndSettle();
     expect(container.read(workspaceProvider('demo-1')).activeNoteId, 'written');
-    expect(container.read(workspaceProvider('demo-1')).noteReference, NoteReference.document);
+    expect(container.read(workspaceProvider('demo-1')).tabs.current.reference!.kind, WorkspaceReferenceKind.document);
     final noteRect = tester.getRect(find.byType(StudyNoteView));
     final sourceRect = tester.getRect(find.byType(ReaderPane));
     expect(sourceRect.left, greaterThanOrEqualTo(noteRect.right));
-    expect(container.read(workspaceProvider('demo-1')).reveal?.page, 24);
-    await tester.drag(find.byKey(const ValueKey('note-reference-divider')), const Offset(-70, 0));
+    expect(
+      ProviderScope.containerOf(tester.element(find.byType(ReaderPane))).read(workspaceProvider('demo-1')).reveal?.page,
+      24,
+    );
+    owner.activateTab(WorkspaceTab.documents);
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byType(StudyNoteView)).width, lessThan(noteRect.width));
-    await tester.tap(find.byKey(const ValueKey('note-reference-close')).hitTestable());
+    owner.openStudyNote('written');
+    await tester.pumpAndSettle();
+    owner.closePanel();
     await tester.pumpAndSettle();
     expect(find.byType(ReaderPane), findsNothing);
     expect(identical(tester.state(find.byType(StudyNoteView)), noteState), isTrue);
@@ -130,9 +135,10 @@ void main() {
     await tester.pumpAndSettle();
     final state = container.read(workspaceProvider('demo-1'));
     expect(state.activeNoteId, 'written');
-    expect(state.activeMapId, map.id);
-    expect(state.selectedCardId, card.id);
-    expect(state.noteReference, NoteReference.map);
+    expect(state.tabs.current.reference!.id, map.id);
+    final nested = ProviderScope.containerOf(tester.element(find.byType(MapPane)));
+    expect(nested.read(workspaceProvider('demo-1')).selectedCardId, card.id);
+    expect(state.tabs.current.reference!.kind, WorkspaceReferenceKind.map);
     expect(find.byType(MapPane), findsOneWidget);
     expect(tester.getRect(find.byType(MapPane)).left, greaterThan(tester.getRect(find.byType(StudyNoteView)).left));
     await settleHud(tester);
@@ -151,15 +157,15 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('note-source-quote')));
       await tester.pumpAndSettle();
       expect(find.byType(ReaderPane), findsOneWidget);
-      expect(find.byKey(const ValueKey('note-reference-close')).hitTestable(), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('note-reference-close')).hitTestable());
+      expect(find.byTooltip('关闭').hitTestable(), findsOneWidget);
+      await tester.tap(find.byTooltip('关闭').hitTestable());
       await tester.pumpAndSettle();
       expect(identical(tester.state(find.byType(StudyNoteView)), noteState), isTrue);
       expect(container.read(workspaceProvider('demo-1')).activeNoteId, 'written');
       owner.showNoteReference(NoteReference.map);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('note-reference-close')).hitTestable(), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('note-reference-close')).hitTestable());
+      expect(find.byTooltip('关闭').hitTestable(), findsOneWidget);
+      await tester.tap(find.byTooltip('关闭').hitTestable());
       await tester.pumpAndSettle();
       expect(find.byType(MapPane), findsNothing);
       expect(tester.takeException(), isNull);

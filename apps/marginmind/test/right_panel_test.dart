@@ -134,9 +134,7 @@ void main() {
   });
 
   group('right panel', () {
-    testWidgets('details from the map hide the source; closing restores layout, sidebar, view and focus', (
-      tester,
-    ) async {
+    testWidgets('details keep the selected split; closing preserves layout, sidebar, view and focus', (tester) async {
       final app = await _open(tester);
       app.controller.selectCard(_excerptId);
       await tester.pumpAndSettle();
@@ -148,11 +146,11 @@ void main() {
       expect(_state(app.container).panel, RightPanel.details);
       expect(
         _state(app.container).layout,
-        MMSplitMode.secondary,
-        reason: 'opened from the map: the source steps aside',
+        MMSplitMode.split,
+        reason: 'right content never changes the chosen main layout',
       );
       expect(_sidebarShown(tester), isTrue);
-      expect(tester.getSize(_panel).width, MMSizes.rightPanelWidth);
+      expect(tester.getSize(_panel).width, 348);
       expect(_inPanel(find.text(_quote)), findsOneWidget);
       expect(_inPanel(find.text('Excerpt')), findsOneWidget);
       expect(_mapView(tester), view, reason: 'opening the panel leaves the map view alone');
@@ -200,17 +198,17 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('assistant keeps both panes visible in a narrow window', (tester) async {
+    testWidgets('assistant retains both panes while a narrow window shows the readable source', (tester) async {
       final app = await _open(tester, size: const Size(1000, 720));
       app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.reader);
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.split);
       expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
-      expect(find.byType(MindMapCanvas), findsOneWidget);
+      expect(find.byType(MindMapCanvas, skipOffstage: false), findsOneWidget);
       expect(find.byKey(const ValueKey('pdf-placeholder-c1')), findsOneWidget);
       expect(_sidebarShown(tester), isTrue);
       expect(_state(app.container).sidebarAutoCollapsed, isFalse);
-      expect(tester.getSize(find.byType(MindMapCanvas)).width, greaterThan(0));
+      expect(tester.getSize(find.byType(MindMapCanvas, skipOffstage: false)).width, greaterThan(0));
       expect(tester.takeException(), isNull);
       app.controller.closePanel();
       await tester.pumpAndSettle();
@@ -218,34 +216,24 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('a narrow window collapses the sidebar beside a 360 pt panel and brings it back', (tester) async {
+    testWidgets('a narrow window preserves the sidebar choice beside the content panel', (tester) async {
       final app = await _open(tester, size: const Size(1000, 720));
-      expect(_sidebarShown(tester), isTrue);
       app.controller.selectCard(_excerptId);
       app.controller.showDetails();
       await tester.pumpAndSettle();
-      expect(_sidebarShown(tester), isFalse);
-      expect(_state(app.container).sidebarVisible, isTrue, reason: 'the user’s choice is kept');
-      expect(_state(app.container).sidebarAutoCollapsed, isTrue);
-      expect(tester.getSize(_panel).width, MMSizes.rightPanelNarrowWidth);
-      expect(tester.takeException(), isNull);
-
-      app.controller.closePanel();
-      await tester.pumpAndSettle();
       expect(_sidebarShown(tester), isTrue);
       expect(_state(app.container).sidebarAutoCollapsed, isFalse);
-
-      // Asking for the sidebar while there is no room for both gives it the
-      // panel's place.
-      app.controller.showDetails();
-      await tester.pumpAndSettle();
-      expect(_sidebarShown(tester), isFalse);
+      expect(tester.getSize(_panel).width, 348);
       app.controller.toggleSidebar();
       await tester.pumpAndSettle();
-      expect(_state(app.container).panel, isNull);
-      expect(_sidebarShown(tester), isTrue);
-      expect(_state(app.container).layout, MMSplitMode.split);
+      expect(_state(app.container).panel, RightPanel.details);
+      expect(_sidebarShown(tester), isFalse);
+      app.controller.closePanel();
+      await tester.pumpAndSettle();
+      expect(_sidebarShown(tester), isFalse, reason: 'manual sidebar choices survive closing the right content');
+      app.controller.showSidebar();
       await settleHud(tester);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('dark appearance renders the panel with the assistant and details', (tester) async {
@@ -255,7 +243,7 @@ void main() {
       app.controller.toggleAssistantPanel();
       await tester.pumpAndSettle();
       final colors = MMColors.dark;
-      final header = tester.widget<Text>(_inPanel(find.text('Assistant')));
+      final header = tester.widget<Text>(_inPanel(find.text('AI Assistant')));
       expect(header.style!.color, colors.label);
       expect(tester.takeException(), isNull);
       app.controller.selectCard(_excerptId);
@@ -482,7 +470,7 @@ void main() {
       await tester.tap(_inPanel(find.text('Reveal in Source · Page 24')));
       await tester.pumpAndSettle();
       final state = _state(app.container);
-      expect(state.reveal?.documentId, 'c1');
+      expect(referenceState(tester).reveal?.documentId, 'c1');
       expect(state.layout, MMSplitMode.split, reason: 'the source comes back to show the excerpt');
       await settleHud(tester);
     });

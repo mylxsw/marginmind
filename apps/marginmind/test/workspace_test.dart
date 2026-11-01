@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
     final sidebar = find.byType(MMSidebar);
     Finder inSidebar(String text) => find.descendant(of: sidebar, matching: find.text(text));
-    await tester.tap(find.byKey(const ValueKey('sidebar-tag-Science')));
+    controller.filterTag('Science');
     await tester.pumpAndSettle();
     expect(inSidebar('遗忘的规律'), findsNothing);
     expect(inSidebar('对策一：间隔重复'), findsNothing);
@@ -92,7 +92,7 @@ void main() {
     expect(inSidebar('遗忘的规律'), findsNothing);
     expect(inSidebar('Cards'), findsNothing);
     await tester.enterText(find.byType(TextField).first, '');
-    await tester.tap(find.byKey(const ValueKey('tag-back-to-map')));
+    controller.closePanel();
     await tester.pumpAndSettle();
     expect(container.read(workspaceProvider('demo-1')).tagFilter, isNull);
     await tester.enterText(find.byType(TextField).first, 'practice');
@@ -233,16 +233,16 @@ void main() {
       expect(c.cardForAnnotation(plain), isNotNull);
     });
 
-    test('revealing a card opens its document and requests a scroll', () async {
+    test('revealing a card opens an owned reference without switching the main document', () async {
       controller.openDocument('c2');
       final excerpt = controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt);
       controller.setLayout(MMSplitMode.secondary);
       controller.revealCard(excerpt.id);
       final state = container.read(workspaceProvider('demo-1'));
-      expect(state.activeDocumentId, 'c1');
-      expect(state.layout, MMSplitMode.split);
-      expect(state.reveal!.page, 24);
-      expect(state.flashAnnotationId, isNotNull);
+      expect(state.activeDocumentId, 'c2');
+      expect(state.layout, MMSplitMode.secondary);
+      expect(state.tabs.current.reference!.id, 'c1');
+      expect((state.tabs.current.reference!.anchor!.target as PdfTarget).pages.first.page, 24);
     });
 
     test('removing a card keeps its highlight; deleting the highlight removes both', () async {

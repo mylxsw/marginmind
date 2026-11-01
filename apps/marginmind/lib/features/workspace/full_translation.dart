@@ -316,6 +316,7 @@ class FullTranslationState {
 final fullTranslationProvider = NotifierProvider.autoDispose
     .family<FullTranslationController, FullTranslationState, (String, String, String)>(
       (key) => FullTranslationController(key.$1, key.$2, key.$3),
+      dependencies: [readerTranslationProvider, translationParagraphsProvider, workspaceProvider],
     );
 
 class FullTranslationController extends Notifier<FullTranslationState> {

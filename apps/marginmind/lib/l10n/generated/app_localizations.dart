@@ -10093,6 +10093,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The preview appears as each section is completed'**
   String get noteProgressPreviewEmpty;
+
+  /// No description provided for @workspaceDocumentMapTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents & Mind Maps'**
+  String get workspaceDocumentMapTab;
+
+  /// No description provided for @workspaceReferenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get workspaceReferenceTitle;
+
+  /// No description provided for @workspaceReferenceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From: {title}'**
+  String workspaceReferenceFrom(String title);
+
+  /// No description provided for @workspaceNoTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Open content from the sidebar'**
+  String get workspaceNoTabs;
+
+  /// No description provided for @workspaceTagMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} matching topics'**
+  String workspaceTagMatches(int count);
+
+  /// No description provided for @workspaceCurrentContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current content: {title}'**
+  String workspaceCurrentContent(String title);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -203,15 +203,16 @@ void main() {
     tester.widgetList<MapSourceChip>(find.byType(MapSourceChip)).firstWhere((c) => c.onTap != null).onTap!();
     await tester.pumpAndSettle();
     final state = c.read(workspaceProvider('demo-1'));
-    expect(state.activeDocumentId, 'c2');
+    expect(referenceState(tester).activeDocumentId, 'c2');
     expect(state.activeMapId, MindMap.defaultId);
-    expect(state.reveal?.page, 2);
+    expect(referenceState(tester).reveal?.page, 2);
     expect(find.byKey(const ValueKey('map-follow-notice')), findsNothing);
     ws.revealMapSource(CardSource(documentId: 'missing', page: 1));
     ws.revealMapSource(CardSource(documentId: 'c1', page: 9999));
-    expect(c.read(workspaceProvider('demo-1')).activeDocumentId, 'c2');
+    expect(c.read(workspaceProvider('demo-1')).tabs.current.reference?.id, 'c2');
     ws.revealMapSource(CardSource(documentId: 'c1', page: 3));
-    expect(c.read(workspaceProvider('demo-1')).reveal?.page, 3);
+    await tester.pumpAndSettle();
+    expect(referenceState(tester).reveal?.page, 3);
   });
 
   testWidgets('maps settings changes follow switch', (tester) async {
@@ -385,8 +386,8 @@ void main() {
         .firstWhere((c) => c.documentIndex == 1 && c.onTap != null);
     await tester.tap(find.byWidget(chip));
     await tester.pumpAndSettle();
-    expect(c.read(workspaceProvider('demo-1')).activeDocumentId, 'c2');
-    expect(c.read(workspaceProvider('demo-1')).reveal?.page, 1);
+    expect(referenceState(tester).activeDocumentId, 'c2');
+    expect(referenceState(tester).reveal?.page, 1);
     expect(await gen.keep(), greaterThan(0));
     await tester.pumpAndSettle();
     expect(c.read(workspaceProvider('demo-1')).activeMapId, 'combined');

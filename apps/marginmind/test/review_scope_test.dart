@@ -116,7 +116,9 @@ void main() {
     expect(find.text('Suspend Card'), findsNothing);
     await tester.tap(find.text('Review Branch'));
     await tester.pumpAndSettle();
-    final route = container.read(navigationProvider) as ReviewRoute;
+    expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.review.id);
+    final route = container.read(reviewSessionProvider('demo-1').notifier);
     expect(route.branchId, 'c3');
     expect(route.mapId, MindMap.defaultId);
     expect(container.read(reviewSessionProvider('demo-1')).queue, [excerpt.id]);
@@ -134,6 +136,7 @@ void main() {
     await controller.setTags(excerpt.id, ['Memory']);
     await controller.setTags(note.id, ['memory']);
     await controller.setTags('c4', ['Plan']);
+    controller.setSidebarQuery('Plan');
     await tester.pumpAndSettle();
 
     // Nothing to review under a tag carried only by a topic: no menu.
@@ -146,6 +149,7 @@ void main() {
     expect(find.text('Review Tag'), findsNothing);
 
     await controller.setSuspended(note.id, suspended: true);
+    controller.setSidebarQuery('Memory');
     await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('sidebar-tag-Memory')),
@@ -155,7 +159,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Review Tag'));
     await tester.pumpAndSettle();
-    final route = container.read(navigationProvider) as ReviewRoute;
+    expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.review.id);
+    final route = container.read(reviewSessionProvider('demo-1').notifier);
     expect(route.tag, 'Memory');
     expect(container.read(reviewSessionProvider('demo-1')).queue, [excerpt.id]);
     expect(find.text('Memory · 1 left'), findsOneWidget);
@@ -195,7 +201,7 @@ void main() {
     await tester.pumpAndSettle();
     command('Review Tag').onSelected!();
     await tester.pumpAndSettle();
-    expect((container.read(navigationProvider) as ReviewRoute).tag, 'Memory');
+    expect(container.read(reviewSessionProvider('demo-1').notifier).tag, 'Memory');
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
 
@@ -203,7 +209,7 @@ void main() {
     await tester.pumpAndSettle();
     command('Review Branch').onSelected!();
     await tester.pumpAndSettle();
-    expect((container.read(navigationProvider) as ReviewRoute).branchId, 'c3');
+    expect(container.read(reviewSessionProvider('demo-1').notifier).branchId, 'c3');
     await settleHud(tester);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 }

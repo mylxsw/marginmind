@@ -22,4 +22,5 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
 
 final researchPanelProvider = NotifierProvider.family<ResearchPanelController, ResearchPanelState, String>(
   ResearchPanelController.new,
+  dependencies: [workspaceProvider],
 );

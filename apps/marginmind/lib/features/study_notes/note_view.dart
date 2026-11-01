@@ -400,7 +400,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           final floating = constraints.maxWidth >= MMNoteLayout.tocMinWidth;
           final scope = WorkspaceToolbarScope.maybeOf(context);
           final globalMenu = scope?.ownsActions == true;
-          final compact = constraints.maxWidth < MMSizes.noteSetupSheetWidth;
+          final compact = constraints.maxWidth < (context.mmTouchPlatform ? 960 : MMSizes.noteSetupSheetWidth);
           Widget mergeHeader(Widget header) {
             if (scope == null) return header;
             return MMToolbar.content(

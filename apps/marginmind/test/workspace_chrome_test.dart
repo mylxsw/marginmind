@@ -322,9 +322,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Vocabulary').last);
     await tester.pumpAndSettle();
-    expect(container.read(navigationProvider), isA<VocabularyRoute>());
+    expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.vocabulary.id);
     expect(find.byType(PhoneTabBar), findsNothing);
-    await tester.binding.handlePopRoute();
+    await tester.tap(find.byKey(const ValueKey('close-workspace-tab-vocabulary')));
     await tester.pumpAndSettle();
     expect(container.read(navigationProvider), isA<WorkspaceRoute>());
     expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);

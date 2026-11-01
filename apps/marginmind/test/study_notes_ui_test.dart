@@ -142,7 +142,10 @@ void main() {
     expect(find.text('My original note'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('note-source-quote')));
     await tester.pumpAndSettle();
-    expect(container.read(workspaceProvider('demo-1')).reveal?.documentId, owner.content.annotations.first.documentId);
+    expect(
+      container.read(workspaceProvider('demo-1')).tabs.current.reference?.id,
+      owner.content.annotations.first.documentId,
+    );
     owner.tapHighlight(owner.content.annotations.first.id);
     await tester.pumpAndSettle();
     expect(find.byType(StudyNoteView), findsOneWidget);
@@ -358,7 +361,7 @@ void main() {
   });
 
   testWidgets('compact More exposes TOC and layout submenus, changes layouts and exports', (tester) async {
-    final container = await openNote(tester, size: const Size(1280, 820));
+    final container = await openNote(tester, size: const Size(1240, 820));
     container.read(workspaceProvider('demo-1').notifier).showNoteReference(NoteReference.document);
     await tester.pumpAndSettle();
     expect(tester.widget<Icon>(find.byKey(const ValueKey('note-toolbar-icon'))).icon, MMIcons.studyNote);
@@ -399,7 +402,7 @@ void main() {
     final note = content.studyNotes.single;
     await openNote(
       tester,
-      size: const Size(1440, 1000),
+      size: const Size(1280, 1000),
       content: content.copyWith(
         studyNotes: [
           note.copyWith(

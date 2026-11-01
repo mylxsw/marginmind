@@ -56,12 +56,12 @@ final documentPdfProvider = Provider.family<MMPdfViewController, (String, String
   final controller = MMPdfViewController();
   ref.onDispose(controller.dispose);
   return controller;
-});
+}, dependencies: const []);
 
 final readerPdfProvider = Provider.family<MMPdfViewController, String>((ref, studySetId) {
   final id = ref.watch(workspaceProvider(studySetId).select((s) => s.activeDocumentId));
   return ref.watch(documentPdfProvider((studySetId, id)));
-});
+}, dependencies: [workspaceProvider, documentPdfProvider]);
 
 /// Application-wide vocabulary, provided by the storage composition root.
 final vocabularyRepositoryProvider = Provider<VocabularyRepository>(

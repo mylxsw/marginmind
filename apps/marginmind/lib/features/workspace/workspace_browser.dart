@@ -17,6 +17,7 @@ class WorkspaceBrowserState {
 
 final workspaceBrowserProvider = NotifierProvider.autoDispose.family<WorkspaceBrowser, WorkspaceBrowserState, String>(
   WorkspaceBrowser.new,
+  dependencies: [workspaceProvider],
 );
 
 /// GUL-577 installs the conversion sheet here. The browser owns navigation and
@@ -25,6 +26,7 @@ typedef BrowserConverter = Future<void> Function(BuildContext context, String st
 final browserConverterProvider = Provider<BrowserConverter?>(
   (ref) =>
       (context, id, session) => showWebConversion(context, ref, id, session),
+  dependencies: [workspaceBrowserProvider, workspaceProvider],
 );
 
 class WorkspaceBrowser extends Notifier<WorkspaceBrowserState> {

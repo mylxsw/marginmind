@@ -11,14 +11,14 @@ final assistantMapEditExecutorProvider = Provider.family<MapEditExecutor, String
     ref.watch(contentRepositoryProvider),
     AssistantWrites(studySetId: studySetId, newId: editor.newId, now: editor.now),
   );
-});
+}, dependencies: [workspaceProvider]);
 final assistantNoteSaverProvider = Provider.family<NoteSaver, String>((ref, studySetId) {
   final editor = ref.watch(editorProvider);
   return WorkspaceNoteSaver(
     ref.watch(workspaceProvider(studySetId).notifier),
     AssistantWrites(studySetId: studySetId, newId: editor.newId, now: editor.now),
   );
-});
+}, dependencies: [workspaceProvider]);
 
 class WorkspaceMapEditExecutor implements MapEditExecutor {
   WorkspaceMapEditExecutor(this.workspace, this.repository, this.writes);

@@ -123,10 +123,11 @@ void main() {
       await tester.tap(find.text('Review').last);
       await tester.pumpAndSettle();
       expect(find.byType(ReviewScreen), findsOneWidget);
-      expect(selectedTab(tester), PhoneTab.review);
+      expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.review.id);
+      expect(find.byType(PhoneTabBar), findsNothing);
       expect(tester.takeException(), isNull, reason: 'review');
 
-      await tester.tap(tab(PhoneTab.library));
+      nav.showLibrary();
       await tester.pumpAndSettle();
       expect(find.byType(LibraryScreen), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'library');
@@ -325,8 +326,9 @@ void main() {
       await tester.tap(find.text('View'));
       await tester.pumpAndSettle();
       final state = container.read(workspaceProvider('demo-1'));
-      expect(state.layout, MMSplitMode.secondary);
-      expect(state.selectedCardId, 'c4');
+      expect(state.layout, isNot(MMSplitMode.secondary));
+      expect(state.tabs.current.reference?.kind, WorkspaceReferenceKind.map);
+      expect(referenceState(tester).selectedCardId, 'c4');
       expect(find.byType(PhoneTabBar), findsNothing);
       await settleHud(tester);
 
@@ -423,7 +425,7 @@ void main() {
     // Compact tablet companion remains separate from its source.
     container.read(workspaceProvider('demo-1').notifier).showDetails('c3');
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('tablet-workspace-panel')), findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-right-sidebar')), findsOneWidget);
     await settleHud(tester);
   });
 

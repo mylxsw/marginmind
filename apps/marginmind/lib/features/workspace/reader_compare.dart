@@ -46,6 +46,15 @@ List<AlignPoint> insertCompareAlignment(ReadingAlignment mapping, List<AlignPoin
 
 final readerCompareProvider = NotifierProvider.family<ReaderCompareSession, ComparePair?, String>(
   ReaderCompareSession.new,
+  dependencies: [
+    compareDocumentInfoProvider,
+    documentPdfProvider,
+    readerMarginProvider,
+    reflowSessionProvider,
+    translationParagraphsProvider,
+    workspaceContentProvider,
+    workspaceProvider,
+  ],
 );
 
 /// One session owns the pair, scroll driver and original positions across remounts.
@@ -558,4 +567,4 @@ final compareDocumentInfoProvider = FutureProvider.family<({String? language, bo
   } catch (_) {
     return (language: fallback, hasText: null);
   }
-});
+}, dependencies: [workspaceProvider]);

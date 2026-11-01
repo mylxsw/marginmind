@@ -1,3 +1,5 @@
+import 'helpers.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart' hide Card;
@@ -13,7 +15,6 @@ import 'package:mm_pdf/mm_pdf.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_composer.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
-import 'package:marginmind/features/workspace/workspace_controller.dart';
 
 import 'assistant_support.dart';
 
@@ -211,7 +212,7 @@ void main() {
     expect(find.byKey(const ValueKey('assistant-configure-models')), findsOneWidget);
     await tester.tap(find.text('p.24'));
     await pumpFor(tester);
-    expect(app.container.read(workspaceProvider('demo-1')).reveal?.page, 24);
+    expect(referenceState(tester).reveal?.page, 24);
     expect(tester.takeException(), isNull);
   });
 

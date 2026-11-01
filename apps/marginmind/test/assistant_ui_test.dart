@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -76,6 +78,46 @@ Future<void> _press(WidgetTester tester, LogicalKeyboardKey key, {bool shift = f
 }
 
 void main() {
+  testWidgets('reference AI uses its own context and returns to its retained content', (tester) async {
+    final client = ScriptClient([answer('参考回答')]);
+    final app = await openAssistantApp(tester, client: client);
+    final mainUi = app.container.read(assistantUiProvider('demo-1'));
+    final node = app.workspace.content.cards.firstWhere((c) => c.kind == CardKind.topic).id;
+    final mainDocument = app.workspace.state.activeDocumentId;
+    app.workspace.openReference(WorkspaceReference.card(node));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('details-ask-assistant')));
+    await tester.pumpAndSettle();
+    expect(app.workspace.state.panel, RightPanel.assistant);
+    expect(app.workspace.state.tabs.current.referenceAssistant, isTrue);
+    expect(app.workspace.state.activeDocumentId, mainDocument);
+    expect(app.container.read(assistantUiProvider('demo-1')).contexts, mainUi.contexts);
+    expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('assistant-input')), '参考内容的草稿');
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    expect(app.workspace.state.panel, RightPanel.reference);
+    expect(find.byKey(const ValueKey('details-ask-assistant')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('details-ask-assistant')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: find.byKey(const ValueKey('assistant-input')), matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '参考内容的草稿',
+    );
+    await tester.tap(find.byKey(const ValueKey('assistant-send')));
+    await pumpFor(tester, 30);
+    expect(client.calls, 1);
+    expect(conversationOf(tester).messages.last.text, '参考回答');
+    final mainScope = ProviderScope.containerOf(tester.element(find.byType(AssistantHost).first));
+    expect(mainScope.read(assistantControllerProvider).messages, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('macOS toolbar opens and closes the assistant on release', (tester) async {
     final app = await openAssistantApp(tester);
     final button = find.byKey(const ValueKey('toolbar-assistant'));
@@ -209,7 +251,15 @@ void main() {
     // p.24 goes back to the passage.
     await tester.tap(find.text('p.24'));
     await tester.pumpAndSettle();
-    expect(app.container.read(workspaceProvider('demo-1')).reveal?.page, 24);
+    expect(
+      (app.container.read(workspaceProvider('demo-1')).tabs.current.reference!.anchor!.target as PdfTarget)
+          .pages
+          .first
+          .page,
+      24,
+    );
+    app.container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
+    await tester.pumpAndSettle();
     // Copy keeps the page as text.
     String? copied;
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
@@ -654,7 +704,7 @@ void main() {
     final app = await openAssistantApp(tester, size: const Size(1000, 700), prefs: {'settings.appearance': 'dark'});
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byType(AssistantPanel)).width, MMSizes.rightPanelNarrowWidth);
+    expect(tester.getSize(find.byType(AssistantPanel)).width, MMSizes.rightPanelNarrowWidth - 12);
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
     expect(tester.takeException(), isNull);
   });

@@ -1,3 +1,5 @@
+import '../features/workspace/workspace_content_host.dart';
+
 import 'dart:async';
 
 import '../features/assistant/expansion_controller.dart';
@@ -392,6 +394,8 @@ class _AppMenusState extends ConsumerState<AppMenus> {
   bool _readerFocused = false;
   bool _noteFocused = false;
   bool _voiceFocused = false;
+  WorkspaceCommandTarget? _commandTarget;
+  ProviderSubscription<WorkspaceState>? _referenceCommands;
 
   bool get _isTextFocused =>
       FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
@@ -413,7 +417,18 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final readerFocused = focus != null && Actions.maybeFind<ReaderNavIntent>(focus) != null;
     final noteFocused = focus != null && Actions.maybeFind<NoteFormatIntent>(focus) != null;
     final voiceFocused = focus != null && Actions.maybeFind<VoiceInputIntent>(focus) != null;
-    if (textFocused == _textFocused &&
+    final focusedTarget = WorkspaceCommandTarget.focused();
+    final target = focusedTarget?.isMounted() == true ? focusedTarget : null;
+    final targetChanged = target?.container != _commandTarget?.container;
+    if (targetChanged) {
+      _referenceCommands?.close();
+      _commandTarget = target;
+      _referenceCommands = target?.container.listen(workspaceProvider(target.studySetId), (_, _) {
+        if (mounted) setState(() {});
+      });
+    }
+    if (!targetChanged &&
+        textFocused == _textFocused &&
         mapFocused == _mapFocused &&
         readerFocused == _readerFocused &&
         noteFocused == _noteFocused &&
@@ -431,6 +446,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
 
   @override
   void dispose() {
+    _referenceCommands?.close();
     FocusManager.instance.removeListener(_focusChanged);
     DesktopWindow.fullScreen.removeListener(_windowChanged);
     super.dispose();
@@ -445,12 +461,20 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final workspaceId = route is WorkspaceRoute ? route.studySetId : null;
     final inWorkspace = workspaceId != null;
 
-    final workspace = inWorkspace ? ref.read(workspaceProvider(workspaceId).notifier) : null;
+    final commandTarget = _commandTarget?.isMounted() == true ? _commandTarget : null;
+    final commandId = commandTarget?.studySetId ?? workspaceId;
+    final commandContainer = commandTarget?.container;
+    final workspace = !inWorkspace
+        ? null
+        : commandContainer != null
+        ? commandContainer.read(workspaceProvider(commandId!).notifier)
+        : ref.read(workspaceProvider(workspaceId).notifier);
     if (inWorkspace) {
       ref.watch(
         workspaceProvider(workspaceId).select(
           (s) => (
             s.activeNoteId,
+            s.tabs,
             s.noteAnnotationId,
             s.selectedAnnotationIds,
             s.selectedCardId,
@@ -473,18 +497,31 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       );
       ref.watch(workspaceContentProvider(workspaceId));
     }
-    final workspaceState = inWorkspace ? ref.read(workspaceProvider(workspaceId)) : null;
-    final browserState = inWorkspace ? ref.watch(workspaceBrowserProvider(workspaceId)) : null;
+    final workspaceState = !inWorkspace
+        ? null
+        : commandContainer != null
+        ? commandContainer.read(workspaceProvider(commandId!))
+        : ref.read(workspaceProvider(workspaceId));
+    final browserState = !inWorkspace
+        ? null
+        : commandContainer != null
+        ? commandContainer.read(workspaceBrowserProvider(commandId!))
+        : ref.watch(workspaceBrowserProvider(workspaceId));
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
     final expansion = inWorkspace ? ref.watch(expansionControllerProvider(workspaceId)) : null;
+    final mainContentActive =
+        workspace?.isReference == true || workspaceState?.tabs.active?.kind == WorkspaceTabKind.documentMap;
     final editable =
+        mainContentActive &&
+        workspaceState?.activeNoteId == null &&
         expansion == null &&
         workspace != null &&
         workspaceState?.editingCardId == null &&
         workspaceState?.editingMarkId == null;
     final hasDocument =
+        mainContentActive &&
         browserState?.visible != true &&
         workspace != null &&
         workspaceState!.activeDocumentId != null &&
@@ -495,9 +532,15 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final capabilities = document?.capabilities(runtime: DocumentRuntime(ocr: MMPlatformCapabilities.current.pdfOcr));
     final canRead = hasDocument && (!_textFocused || _readerFocused);
     final findsInDocument = hasDocument && _readerFocused && capabilities!.search;
-    final pdf = inWorkspace ? ref.read(readerPdfProvider(workspaceId)) : null;
+    final pdf = !inWorkspace
+        ? null
+        : commandContainer != null
+        ? commandContainer.read(readerPdfProvider(commandId!))
+        : ref.read(readerPdfProvider(workspaceId));
     final reflow = document?.contentManifest == null
         ? null
+        : commandContainer != null
+        ? commandContainer.read(reflowSessionProvider((commandId!, document!.id)))
         : ref.read(reflowSessionProvider((workspaceId!, document!.id)));
     final bookmarkContent = workspace?.content;
     final bookmarkPage = workspace?.activePage ?? 0;
@@ -519,6 +562,18 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final settings = AppCommand(l.settings, () => showSettings(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
+      if (inWorkspace)
+        AppCommand(
+          l.closeTab,
+          ref.read(workspaceProvider(workspaceId)).tabs.activeId == null
+              ? null
+              : () {
+                  final owner = ref.read(workspaceProvider(workspaceId).notifier);
+                  final id = ref.read(workspaceProvider(workspaceId)).tabs.activeId;
+                  if (id != null) owner.closeTab(id);
+                },
+          shortcut: primaryShortcut(LogicalKeyboardKey.keyW),
+        ),
       AppCommand(
         l.newStudySet,
         inLibrary ? () => newStudySetFromPdfs(context, ref) : null,
@@ -842,14 +897,22 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final study = [
       AppCommand(
         l.startReview,
-        inWorkspace ? () => nav.startReview(workspaceId, mapId: reviewMapId) : null,
+        inWorkspace ? () => ref.read(workspaceProvider(workspaceId).notifier).startReview(mapId: reviewMapId) : null,
         shortcut: AppShortcuts.review,
       ),
       AppCommand(
         l.reviewBranch,
-        branchDue ? () => nav.startReview(workspaceId!, mapId: reviewMapId, branchId: selected) : null,
+        branchDue
+            ? () =>
+                  ref.read(workspaceProvider(workspaceId!).notifier).startReview(mapId: reviewMapId, branchId: selected)
+            : null,
       ),
-      AppCommand(l.reviewTag, tagDue ? () => nav.startReview(workspaceId!, mapId: reviewMapId, tag: tagFilter) : null),
+      AppCommand(
+        l.reviewTag,
+        tagDue
+            ? () => ref.read(workspaceProvider(workspaceId!).notifier).startReview(mapId: reviewMapId, tag: tagFilter)
+            : null,
+      ),
       AppCommand(
         selectedCard?.suspended ?? false ? l.resumeCard : l.suspendCard,
         editable && selectedCard != null && (selectedCard.suspended || selectedCard.kind != CardKind.topic)

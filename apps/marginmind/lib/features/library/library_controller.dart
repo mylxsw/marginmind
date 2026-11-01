@@ -98,4 +98,7 @@ class LibraryViewController extends Notifier<LibraryViewState> {
   }
 }
 
-final libraryViewProvider = NotifierProvider<LibraryViewController, LibraryViewState>(LibraryViewController.new);
+final libraryViewProvider = NotifierProvider<LibraryViewController, LibraryViewState>(
+  LibraryViewController.new,
+  dependencies: [workspaceProvider],
+);

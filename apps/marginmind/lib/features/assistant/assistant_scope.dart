@@ -118,7 +118,7 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
       )(agent, conversation, question);
     },
   );
-});
+}, dependencies: [assistantMapEditExecutorProvider, assistantNoteSaverProvider, workspaceProvider]);
 
 // ---- panel state ---------------------------------------------------------------------
 
@@ -196,6 +196,7 @@ class AssistantUi {
 
 final assistantUiProvider = NotifierProvider.family<AssistantUiController, AssistantUi, String>(
   AssistantUiController.new,
+  dependencies: const [],
 );
 
 class AssistantUiController extends Notifier<AssistantUi> {

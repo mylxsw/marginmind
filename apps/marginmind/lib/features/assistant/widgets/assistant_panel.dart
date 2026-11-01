@@ -1,9 +1,12 @@
+import '../../workspace/workspace_content_host.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_core/mm_core.dart' show TextReadingPosition;
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/l10n.dart';
@@ -40,20 +43,23 @@ class _AssistantScopeState extends ConsumerState<AssistantScope> {
   late final _dependencies = ref.read(assistantDependenciesForProvider(widget.studySetId));
 
   @override
-  Widget build(BuildContext context) => ProviderScope(
-    overrides: [
-      assistantDependenciesProvider.overrideWithValue(_dependencies),
-      assistantControllerProvider.overrideWith(AssistantController.new),
-      assistantBackgroundProvider.overrideWith(AssistantBackground.new),
-    ],
-    child: MMPlatformCapabilities.current.assistant
-        ? _AssistantHost(studySetId: widget.studySetId, child: widget.child)
-        : widget.child,
-  );
+  Widget build(BuildContext context) {
+    final scope = ProviderScope(
+      overrides: [
+        assistantDependenciesProvider.overrideWithValue(_dependencies),
+        assistantControllerProvider.overrideWith(AssistantController.new),
+        assistantBackgroundProvider.overrideWith(AssistantBackground.new),
+      ],
+      child: MMPlatformCapabilities.current.assistant
+          ? AssistantHost(studySetId: widget.studySetId, child: widget.child)
+          : widget.child,
+    );
+    return WorkspaceDataScope(container: ProviderScope.containerOf(context, listen: false), child: scope);
+  }
 }
 
-class _AssistantHost extends ConsumerWidget {
-  const _AssistantHost({required this.studySetId, required this.child});
+class AssistantHost extends ConsumerWidget {
+  const AssistantHost({super.key, required this.studySetId, required this.child});
 
   final String studySetId;
   final Widget child;
@@ -166,6 +172,7 @@ class AssistantPanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           header,
+          _AssistantSubject(studySetId: studySetId),
           Expanded(
             child: Stack(
               fit: StackFit.expand,
@@ -225,6 +232,42 @@ class _DrawerTransition extends StatelessWidget {
 }
 
 /// The panel's title, history, new conversation and close controls.
+class _AssistantSubject extends ConsumerWidget {
+  const _AssistantSubject({required this.studySetId});
+  final String studySetId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(
+      workspaceProvider(studySetId).select((s) => (s.tabs.activeId, s.activeDocumentId, s.activeMapId, s.layout)),
+    );
+    final content = ref.watch(workspaceContentProvider(studySetId));
+    final state = ref.read(workspaceProvider(studySetId));
+    if (state.tabs.active?.kind != WorkspaceTabKind.documentMap || state.activeNoteId != null) {
+      return const SizedBox.shrink();
+    }
+    final map = state.layout == MMSplitMode.secondary;
+    final title = map ? content?.map(state.activeMapId)?.title : content?.document(state.activeDocumentId ?? '')?.title;
+    if (title == null || title.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(MMSpacing.l, MMSpacing.s, MMSpacing.l, MMSpacing.m),
+      child: Row(
+        children: [
+          Icon(map ? MMIcons.mindMap : MMIcons.document, size: 16, color: context.mmColors.secondaryLabel),
+          const SizedBox(width: MMSpacing.s),
+          Expanded(
+            child: Text(
+              context.l10n.workspaceCurrentContent(title),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class AssistantHeader extends ConsumerWidget {
   const AssistantHeader({super.key, required this.studySetId});
 
@@ -235,14 +278,11 @@ class AssistantHeader extends ConsumerWidget {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
-    final title = ref.watch(assistantControllerProvider.select((s) => s.title));
     final history = ref.watch(assistantUiProvider(studySetId).select((s) => s.history));
     final ui = ref.read(assistantUiProvider(studySetId).notifier);
-    var shown = title.trim().isEmpty ? l.assistant : title.trim();
-    if (shown.runes.length > 24) shown = '${String.fromCharCodes(shown.runes.take(24))}…';
     return Container(
-      height: context.mmTouchPlatform ? 52 : MMSizes.toolbarGroupHeight + MMSpacing.s,
-      padding: const EdgeInsets.only(left: MMSpacing.s + 2, right: MMSpacing.s),
+      height: 52,
+      padding: const EdgeInsets.only(left: MMSpacing.l, right: MMSpacing.s),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: c.separator)),
       ),
@@ -256,20 +296,23 @@ class AssistantHeader extends ConsumerWidget {
                 Container(
                   width: MMSpacing.xl,
                   height: MMSpacing.xl,
-                  decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(MMRadii.excerpt)),
+                  decoration: BoxDecoration(
+                    color: c.research.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Icon(
                     MMIcons.ai,
                     size: context.mmTouchPlatform ? 16 : context.mmToolbarIcon,
-                    color: Colors.white,
+                    color: c.research,
                   ),
                 ),
                 const SizedBox(width: MMSpacing.s),
                 Expanded(
                   child: Text(
-                    shown,
+                    l.aiAssistant,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: t.headline.copyWith(color: c.label),
+                    style: t.title3.copyWith(color: c.label),
                   ),
                 ),
               ],
@@ -334,10 +377,16 @@ class AssistantSuggestions extends ConsumerWidget {
     ].where((c) => c.kind == ContextKind.node || c.kind == ContextKind.branch).firstOrNull;
     // No node attached: the latest topic excerpted from the page being read.
     if (topic == null && page != null) {
-      final card = content.cards
-          .where((c) => content.annotation(c.annotationId ?? '')?.documentId == page.documentId)
-          .where((c) => content.annotation(c.annotationId!)!.page == page.page)
-          .lastOrNull;
+      final card = content.cards.where((card) {
+        final annotation = content.annotation(card.annotationId ?? '');
+        if (annotation == null || annotation.documentId != page.documentId) return false;
+        if (annotation.isText) {
+          final position = content.document(annotation.documentId)?.readingPosition;
+          return position is TextReadingPosition &&
+              annotation.textAnchors.any((anchor) => anchor.chapterId == position.chapterId);
+        }
+        return annotation.pages.any((part) => part.page == page.page);
+      }).lastOrNull;
       final parent = card == null ? null : content.node(card.id, mapId: mapId)?.parentId;
       if (parent != null) topic = nodeContext(mapId: mapId, nodeId: parent, title: researchCardTitle(content, parent));
     }

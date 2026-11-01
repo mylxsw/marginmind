@@ -34,6 +34,7 @@ final ideaExpanderFactoryProvider = Provider<Future<IdeaExpander> Function()>(
 
 final expansionControllerProvider = NotifierProvider.autoDispose.family<ExpansionController, ExpansionPreview?, String>(
   ExpansionController.new,
+  dependencies: [assistantMapEditExecutorProvider, workspaceProvider],
 );
 
 enum ExpansionPhase { planning, plan, generating, review, stopped, error }

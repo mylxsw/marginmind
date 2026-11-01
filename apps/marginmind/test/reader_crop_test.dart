@@ -144,7 +144,7 @@ void main() {
         workspace.setSplitFraction(fraction);
         await tester.pumpAndSettle();
         final bounds = tester.getRect(toolbar);
-        if (fraction == .1) expect(bounds.width, lessThanOrEqualTo(MMSizes.readerContentMinWidth));
+        if (fraction == .1) expect(bounds.width, lessThanOrEqualTo(tester.getRect(find.byType(ReaderPane)).width));
         final pane = tester.getRect(find.byType(ReaderPane));
         expect(bounds.left, greaterThanOrEqualTo(pane.left));
         expect(bounds.right, lessThanOrEqualTo(pane.right));

@@ -26,7 +26,6 @@ Future<ProviderContainer> openPhoneSidebar(WidgetTester tester) async {
 
 Finder phoneRow(String label) => find.ancestor(of: find.text(label), matching: find.byType(MMPhoneNavigationRow));
 Finder tag(String label) => find.byKey(ValueKey('sidebar-tag-$label'));
-const expandKey = ValueKey('sidebar-tags-expand');
 
 List<String> groups(WidgetTester tester) =>
     tester.widgetList<MMPhoneNavigationGroup>(find.byType(MMPhoneNavigationGroup)).map((group) => group.title).toList();
@@ -104,65 +103,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('phone tags preview ten, expand, retain selection, filter and reset for another map', (tester) async {
+  testWidgets('phone tags open one right drawer and keep all maps available', (tester) async {
     final container = await openPhoneSidebar(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
-    final originalMap = container.read(workspaceProvider('demo-1')).activeMapId;
     final names = [for (var i = 1; i <= 12; i++) 'Tag ${i.toString().padLeft(2, '0')}'];
-    await controller.setTags('c3', names.take(10).toList());
-    await tester.pumpAndSettle();
-    expect(find.byKey(expandKey), findsNothing);
     await controller.setTags('c3', names);
     await tester.pumpAndSettle();
-    expect(tag(names[9]), findsOneWidget);
-    expect(tag(names[10]), findsNothing);
-    expect(find.descendant(of: find.byKey(expandKey), matching: find.text('2')), findsOneWidget);
-    final tagsGroup = tester
-        .widgetList<MMPhoneNavigationGroup>(find.byType(MMPhoneNavigationGroup))
-        .singleWhere((group) => group.title == 'Tags');
-    expect(tagsGroup.trailing, isNull);
-    await tester.tap(find.byKey(expandKey));
+    expect(tag(names.last), findsNothing, reason: 'the sidebar has one Tags entry');
+    await tester.tap(find.byKey(const ValueKey('sidebar-tags')));
     await tester.pumpAndSettle();
-    expect(tag(names[11]), findsOneWidget);
-    await tester.tap(tag(names[11]));
+    expect(container.read(workspaceProvider('demo-1')).panel, RightPanel.tags);
+    expect(find.byKey(const ValueKey('phone-workspace-sidebar')).hitTestable(), findsNothing);
+    await tester.ensureVisible(find.byKey(ValueKey('tag-filter-${names.last}')));
+    await tester.tap(find.byKey(ValueKey('tag-filter-${names.last}')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Show Sidebar').hitTestable().first);
+    final mapId = container.read(workspaceProvider('demo-1')).activeMapId;
+    await tester.ensureVisible(find.byKey(ValueKey('tag-result-$mapId-c3')));
+    await tester.tap(find.byKey(ValueKey('tag-result-$mapId-c3')));
     await tester.pumpAndSettle();
-    // Switching to tag content can remount the drawer with its default preview.
-    if (tester.widget<MMPhoneNavigationRow>(find.byKey(expandKey)).item.label == 'Expand') {
-      await tester.tap(find.byKey(expandKey));
-      await tester.pumpAndSettle();
-    }
-    await tester.tap(find.byKey(expandKey));
-    await tester.pumpAndSettle();
-    expect(names.where((name) => tag(name).evaluate().isNotEmpty), hasLength(10));
-    expect(tester.widget<MMPhoneNavigationRow>(tag(names[11])).item.selected, isTrue);
-
-    controller.setSidebarQuery('Tag 11');
-    await tester.pumpAndSettle();
-    expect(tag(names[10]), findsOneWidget);
-    expect(tag(names[11]), findsNothing);
-    expect(find.byKey(expandKey), findsNothing);
-    controller.setSidebarQuery('no possible sidebar match');
-    await tester.pumpAndSettle();
-    expect(groups(tester), isEmpty);
-    controller.setSidebarQuery('');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(expandKey));
-    await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider('demo-1')).panel, isNull);
+    expect(container.read(workspaceProvider('demo-1')).selectedCardId, 'c3');
+    expect(container.read(workspaceProvider('demo-1')).tabs.open.length, 1);
     await controller.addMap('Empty map');
+    controller.showTags();
     await tester.pumpAndSettle();
-    expect(groups(tester), isNot(contains('Tags')));
-    await controller.selectMap(originalMap);
-    await tester.pumpAndSettle();
-    expect(tester.widget<MMPhoneNavigationRow>(find.byKey(expandKey)).item.label, 'Expand');
-    // Reset only the tag preview: changing maps must retain the search field.
-    await tester.enterText(find.byType(EditableText).hitTestable(), 'Empty map');
-    await tester.pumpAndSettle();
-    final emptyMap = controller.content.maps.singleWhere((map) => map.title == 'Empty map');
-    await controller.selectMap(emptyMap.id);
-    await tester.pumpAndSettle();
-    expect(tester.widget<EditableText>(find.byType(EditableText).hitTestable()).controller.text, 'Empty map');
+    expect(find.byKey(ValueKey('tag-filter-${names.last}')), findsOneWidget, reason: 'tags are shared across maps');
+    controller.closePanel();
+    await settleHud(tester);
     expect(tester.takeException(), isNull);
   });
 }

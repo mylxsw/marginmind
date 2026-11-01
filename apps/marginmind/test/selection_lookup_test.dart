@@ -204,7 +204,10 @@ void main() {
       expect(star, findsOneWidget);
       expect(find.text('加入生词本'), findsNothing);
       final card = tester.getRect(find.byKey(const ValueKey('selection-lookup-result')));
-      final close = find.byWidgetPredicate((w) => w is MMIconButton && w.icon == MMIcons.close);
+      final close = find.descendant(
+        of: find.byType(SelectionLookup),
+        matching: find.byWidgetPredicate((w) => w is MMIconButton && w.icon == MMIcons.close),
+      );
       final closeRect = tester.getRect(close);
       expect(closeRect.top - card.top, MMSpacing.s);
       expect(card.right - closeRect.right, MMSpacing.s);
@@ -300,9 +303,11 @@ void main() {
     expect(container.read(vocabularyProvider).requireValue.entries.single.status, VocabularyStatus.known);
     await tester.tap(find.text('详情 ›'));
     await tester.pumpAndSettle();
-    final route = container.read(navigationProvider) as VocabularyRoute;
-    expect(route.entryId, container.read(vocabularyProvider).requireValue.entries.single.id);
-    expect(find.byType(VocabularyScreen), findsOneWidget);
+    expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(
+      container.read(workspaceProvider('demo-1')).tabs.current.reference?.id,
+      container.read(vocabularyProvider).requireValue.entries.single.id,
+    );
     expect(find.byType(VocabularyDetail), findsOneWidget);
     expect(find.text('meticulous'), findsWidgets);
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('marginmind/speech'), null);

@@ -163,7 +163,7 @@ void main() {
     expect(controller.state.activeDocumentId, document.id);
     expect(container.read(workspaceBrowserProvider('demo-1')).session, isNull);
     expect(find.byType(WebSourceAttribution), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('reader-documents')));
+    await openReaderDocumentMenu(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open Original Page'));
     await tester.pumpAndSettle();
@@ -186,7 +186,7 @@ void main() {
             ],
           ),
         );
-    await tester.tap(find.byKey(const ValueKey('reader-documents')));
+    await openReaderDocumentMenu(tester);
     await tester.pumpAndSettle();
     expect(find.textContaining('Needs Review'), findsNothing);
     await tester.tap(find.text('Refetch Page'));

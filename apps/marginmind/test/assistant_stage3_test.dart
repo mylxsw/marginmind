@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/gestures.dart' show kSecondaryButton, PointerDeviceKind;
@@ -53,6 +55,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('proposal-apply')));
     await pumpFor(tester, 30);
     expect(app.workspace.content.cards.length, count + 1);
+    app.workspace.openPanel(RightPanel.assistant);
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('proposal-undo')), findsOneWidget);
 
     // The card's undo: the topic goes and the proposal can be applied again.
@@ -145,7 +149,11 @@ void main() {
     final app = await openAssistantApp(tester, client: ScriptClient([answer('整理好了'), answer('出好了')]));
     final root = app.container.read(studySetProvider('demo-1'))!.title;
     Future<void> rootMenu(String item) async {
-      await tester.tap(find.text(root).last, buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
+      await tester.tap(
+        find.descendant(of: find.byType(MindMapCanvas), matching: find.text(root)),
+        buttons: kSecondaryButton,
+        kind: PointerDeviceKind.mouse,
+      );
       await tester.pumpAndSettle();
       expect(find.text('问助手'), findsOneWidget);
       expect(find.text('整理这个分支…'), findsOneWidget);

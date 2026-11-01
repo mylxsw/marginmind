@@ -2301,5 +2301,26 @@
       }
     }
   },
-  "noteProgressPreviewEmpty": "每完成一节，正文会显示在这里"
+  "noteProgressPreviewEmpty": "每完成一节，正文会显示在这里",
+  "workspaceDocumentMapTab": "文档与脑图",
+  "workspaceReferenceTitle": "参考内容",
+  "workspaceReferenceFrom": "来自：{title}",
+  "@workspaceReferenceFrom": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceNoTabs": "从左侧选择内容，开始阅读",
+  "workspaceTagMatches": "{count} 个匹配主题",
+  "@workspaceTagMatches": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceCurrentContent": "当前内容：{title}",
+  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}}
 }

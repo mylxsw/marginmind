@@ -1,3 +1,5 @@
+import '../workspace_controller.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -8,7 +10,6 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
-import '../../../app/navigation.dart';
 import '../../../app/app_commands.dart';
 import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
@@ -435,8 +436,8 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                                         onPressed: () {
                                           Navigator.of(context).pop();
                                           ref
-                                              .read(navigationProvider.notifier)
-                                              .showVocabulary(studySetId: widget.studySetId, entryId: saved.id);
+                                              .read(workspaceProvider(widget.studySetId).notifier)
+                                              .openVocabularyReference(saved.id);
                                         },
                                       ),
                                     ),

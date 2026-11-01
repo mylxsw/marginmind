@@ -4,6 +4,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  testWidgets('a closed More menu lets Escape reach the owning pane', (tester) async {
+    var dismissed = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MMTheme.light(),
+        home: CallbackShortcuts(
+          bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => dismissed++},
+          child: Scaffold(
+            body: MMDropdownMenuButton<int>(
+              tooltip: 'More',
+              icon: MMIcons.more,
+              itemBuilder: (_) => [const MMDropdownItem(value: 1, child: Text('Action'))],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Action'), findsNothing);
+    expect(dismissed, 0, reason: 'the first Escape closes the open menu only');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(dismissed, 1, reason: 'the closed menu must not swallow the pane command');
+  });
+
   for (final reduced in [false, true]) {
     testWidgets('dropdown shows every row at full size in its first frame (reduced: $reduced)', (tester) async {
       int? selected;

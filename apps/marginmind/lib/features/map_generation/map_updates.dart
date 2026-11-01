@@ -49,7 +49,7 @@ final currentMapSourceProvider = FutureProvider.autoDispose.family<MapSource?, (
         cancellation: cancellation,
       );
   return digest.source;
-});
+}, dependencies: [documentDigestBuilderProvider, workspaceProvider]);
 
 final mapHasUpdatesProvider = Provider.autoDispose.family<bool, (String, String)>((ref, key) {
   final (studySetId, mapId) = key;
@@ -65,4 +65,4 @@ final mapHasUpdatesProvider = Provider.autoDispose.family<bool, (String, String)
     if (source == null || source.fingerprint != old.fingerprint || source.readThrough > old.readThrough) return true;
   }
   return false;
-});
+}, dependencies: [currentMapSourceProvider]);

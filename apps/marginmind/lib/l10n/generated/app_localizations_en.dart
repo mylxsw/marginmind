@@ -5737,4 +5737,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteProgressPreviewEmpty => 'The preview appears as each section is completed';
+
+  @override
+  String get workspaceDocumentMapTab => 'Documents & Mind Maps';
+
+  @override
+  String get workspaceReferenceTitle => 'Reference';
+
+  @override
+  String workspaceReferenceFrom(String title) {
+    return 'From: $title';
+  }
+
+  @override
+  String get workspaceNoTabs => 'Open content from the sidebar';
+
+  @override
+  String workspaceTagMatches(int count) {
+    return '$count matching topics';
+  }
+
+  @override
+  String workspaceCurrentContent(String title) {
+    return 'Current content: $title';
+  }
 }

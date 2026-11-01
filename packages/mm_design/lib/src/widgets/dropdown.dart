@@ -292,7 +292,7 @@ class _MMDropdownMenuButtonState<T> extends State<MMDropdownMenuButton<T>> {
   Widget build(BuildContext context) => _MMDropdownMenuScope<T>(
     select: _select,
     child: CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.escape): _controller.close},
+      bindings: {if (_controller.isOpen) const SingleActivator(LogicalKeyboardKey.escape): _controller.close},
       child: MenuAnchor(
         controller: _controller,
         childFocusNode: _buttonFocus,

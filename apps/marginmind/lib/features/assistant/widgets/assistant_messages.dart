@@ -137,8 +137,6 @@ Future<void> revealContext(BuildContext context, WidgetRef ref, String studySetI
     _ => null,
   };
   if (target == null) return;
-  final layout = ref.read(workspaceProvider(studySetId)).layout;
-  if (target.target is PdfTarget && layout == MMSplitMode.secondary) workspace.setLayout(MMSplitMode.split);
   final found = await workspace.revealAnchor(target);
   if (!found && context.mounted) MMHud.show(context, context.l10n.assistantAnchorGone, icon: MMIcons.warning);
 }

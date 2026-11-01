@@ -21,9 +21,10 @@ import 'right_panel.dart';
 /// state. Edits go through the controller, so the map follows and each one
 /// is a single undo step.
 class CardDetails extends ConsumerWidget {
-  const CardDetails({super.key, required this.studySetId});
+  const CardDetails({super.key, required this.studySetId, this.ownerTitle});
 
   final String studySetId;
+  final String? ownerTitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,19 +59,42 @@ class CardDetails extends ConsumerWidget {
               onPressed: () => askAboutNode(ref, studySetId, card.id),
             ),
           ];
-    final header = RightPanelHeader(icon: icon, title: kindLabel, onClose: controller.closePanel, actions: ask);
+    Widget withOwner(Widget header) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        header,
+        if (ownerTitle?.isNotEmpty == true)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.s),
+              child: Text(
+                l.workspaceReferenceFrom(ownerTitle!),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: t.footnote.copyWith(color: c.secondaryLabel),
+              ),
+            ),
+          ),
+      ],
+    );
+    final header = withOwner(
+      RightPanelHeader(icon: icon, title: kindLabel, onClose: controller.closePanel, actions: ask),
+    );
     if (card == null) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [header]);
     // A research card shows its note: the same note the source's mark opens.
     if (card.kind == CardKind.research && card.researchNoteId != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          RightPanelHeader(
-            icon: icon,
-            title: kindLabel,
-            color: c.research,
-            onClose: controller.closePanel,
-            actions: ask,
+          withOwner(
+            RightPanelHeader(
+              icon: icon,
+              title: kindLabel,
+              color: c.research,
+              onClose: controller.closePanel,
+              actions: ask,
+            ),
           ),
           Expanded(
             child: ResearchNoteView(studySetId: studySetId, noteId: card.researchNoteId!),

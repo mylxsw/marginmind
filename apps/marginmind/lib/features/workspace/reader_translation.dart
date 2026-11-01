@@ -33,7 +33,7 @@ final translationParagraphsProvider = FutureProvider.autoDispose.family<List<Tra
   final path = workspace.filePath(doc);
   final ocr = ref.watch(readerOcrProvider(path));
   return MMPdfEngine.translationParagraphs(ocr.document?.path ?? path, doc.id);
-});
+}, dependencies: [workspaceProvider, readingPagesProvider]);
 
 // A page can contain many PDF text runs, especially with reasoning models.
 // Keep work bounded per viewed page rather than applying a short whole-job
@@ -99,7 +99,17 @@ class ReaderTranslationState {
 }
 
 final readerTranslationProvider = NotifierProvider.autoDispose
-    .family<ReaderTranslationController, ReaderTranslationState, String>(ReaderTranslationController.new);
+    .family<ReaderTranslationController, ReaderTranslationState, String>(
+      ReaderTranslationController.new,
+      dependencies: [
+        readingPagesProvider,
+        workspaceProvider,
+        readerCompareProvider,
+        reflowSessionProvider,
+        documentPdfProvider,
+        translationParagraphsProvider,
+      ],
+    );
 
 class ReaderTranslationController extends Notifier<ReaderTranslationState> {
   ReaderTranslationController(this.studySetId);
@@ -309,6 +319,7 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
 /// Explicit source input invalidates an outstanding translation-driven jump.
 final translationSourceInputProvider = NotifierProvider.autoDispose.family<TranslationSourceInput, int, String>(
   TranslationSourceInput.new,
+  dependencies: const [],
 );
 
 class TranslationSourceInput extends Notifier<int> {

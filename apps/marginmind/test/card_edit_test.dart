@@ -344,7 +344,7 @@ void main() {
       expect(controller.content.card(excerpt.id)!.title, '曲线');
       await doubleTap(tester, find.text('曲线'));
       expect(_field, findsNothing);
-      expect(container.read(workspaceProvider('demo-1')).reveal, isNotNull);
+      expect(referenceState(tester).reveal, isNotNull);
 
       // ⌥⌘N: a note under the selection, multi-line with ⇧Enter.
       await key(tester, LogicalKeyboardKey.keyN, primary: true, alt: true);

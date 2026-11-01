@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
-import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
@@ -441,7 +440,7 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                   hasChevron: true,
                   onTap: () {
                     _close();
-                    ref.read(navigationProvider.notifier).startReview(widget.studySetId);
+                    ref.read(workspaceProvider(widget.studySetId).notifier).activateTab(WorkspaceTab.review);
                   },
                 ),
                 Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
@@ -452,7 +451,7 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                   hasChevron: true,
                   onTap: () {
                     _close();
-                    ref.read(navigationProvider.notifier).showVocabulary(studySetId: widget.studySetId);
+                    ref.read(workspaceProvider(widget.studySetId).notifier).activateTab(WorkspaceTab.vocabulary);
                   },
                 ),
               ],

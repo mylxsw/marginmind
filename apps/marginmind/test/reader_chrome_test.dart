@@ -25,11 +25,8 @@ Future<ProviderContainer> openSet(WidgetTester tester, {Size size = const Size(1
 
 String windowTitle(WidgetTester tester) => tester.widget<Title>(find.byType(Title).last).title;
 
-bool selected(WidgetTester tester, IconData icon) => tester
-    .widget<MMToolbarButton>(
-      find.descendant(of: find.byType(MMToolbar), matching: find.widgetWithIcon(MMToolbarButton, icon)),
-    )
-    .selected;
+bool selected(WidgetTester tester, IconData icon) =>
+    tester.widget<MMIconButton>(find.byWidgetPredicate((w) => w is MMIconButton && w.icon == icon).first).selected;
 
 /// Reported layout overflows (a toolbar narrower than any real window) are not under test.
 void drainOverflow(WidgetTester tester) {
@@ -85,29 +82,28 @@ void main() {
     for (final width in [1280.0, 900.0]) {
       testWidgets('all documents are available from entry at width $width', (tester) async {
         final container = await openSet(tester, size: Size(width, 820));
-        final switcher = find.byKey(const ValueKey('reader-documents'));
+        final switcher = find.byKey(const ValueKey('reader-more'));
         expect(container.read(provider).openDocumentIds, ['c1']);
         expect(switcher, findsOneWidget);
-        expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.collections)), findsOneWidget);
+        expect(find.byKey(const ValueKey('reader-documents')), findsNothing);
         expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.document)), findsNothing);
         expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.chevronDown)), findsNothing);
         final reader = find.byType(ReaderPane);
         expect(find.descendant(of: reader, matching: find.text('学习的底层逻辑')), findsNothing);
         expect(tester.getRect(switcher).right, lessThanOrEqualTo(tester.getRect(reader).right));
 
-        await tester.tap(switcher);
+        await openReaderDocumentMenu(tester);
         await tester.pumpAndSettle();
-        final current = find.ancestor(of: find.text('学习的底层逻辑').last, matching: find.byType(MMDropdownItem<String>));
+        final current = find.ancestor(of: find.text('学习的底层逻辑').last, matching: find.byType(MenuItemButton)).last;
         expect(find.descendant(of: current, matching: find.byIcon(MMIcons.check)), findsOneWidget);
         final other = find.text('论文：检索练习效应').last;
         final label = tester.widget<Text>(other);
-        expect(label.style!.fontSize, 12);
-        expect(label.style!.fontWeight, FontWeight.w500);
-        final otherRow = find.ancestor(of: other, matching: find.byType(MMDropdownItem<String>));
-        expect(tester.getSize(otherRow).height, 30);
+        expect(label.maxLines, 1);
+        expect(label.overflow, TextOverflow.ellipsis);
+        final otherRow = find.ancestor(of: other, matching: find.byType(MenuItemButton)).last;
+        expect(tester.getSize(otherRow).height, greaterThanOrEqualTo(24));
         final closeLabel = tester.widget<Text>(find.text('Close Current Document'));
-        expect(closeLabel.style, label.style);
-        expect(tester.getRect(find.text('Close Current Document')).left, tester.getRect(other).left);
+        expect(closeLabel.data, 'Close Current Document');
 
         // The second document has never been clicked in the sidebar.
         await tester.tap(other);
@@ -116,12 +112,12 @@ void main() {
         expect(windowTitle(tester), '论文：检索练习效应 — 认知科学入门 — Foliarc');
         expect(container.read(provider).openDocumentIds, ['c1', 'c2']);
 
-        await tester.tap(switcher);
+        await openReaderDocumentMenu(tester);
         await tester.pumpAndSettle();
         await tester.tap(find.text('论文：检索练习效应').last);
         await tester.pumpAndSettle();
         expect(container.read(provider).openDocumentIds, ['c1', 'c2']);
-        await tester.tap(switcher);
+        await openReaderDocumentMenu(tester);
         await tester.pumpAndSettle();
         await tester.tap(find.text('Close Current Document'));
         await tester.pumpAndSettle();
@@ -129,7 +125,7 @@ void main() {
         expect(container.read(provider).activeDocumentId, 'c1');
         expect(switcher, findsOneWidget);
         // Closing a viewer never removes its document from the switcher.
-        await tester.tap(switcher);
+        await openReaderDocumentMenu(tester);
         await tester.pumpAndSettle();
         expect(find.text('论文：检索练习效应').last, findsOneWidget);
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -140,20 +136,17 @@ void main() {
 
     testWidgets('closing the last viewer leaves the menu available to reopen it', (tester) async {
       final container = await openSet(tester);
-      final switcher = find.byKey(const ValueKey('reader-documents'));
-      await tester.tap(switcher);
+      final switcher = find.byKey(const ValueKey('reader-more'));
+      await openReaderDocumentMenu(tester);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Close Current Document'));
       await tester.pumpAndSettle();
       expect(container.read(provider).activeDocumentId, isNull);
       expect(switcher, findsOneWidget);
-      await tester.tap(switcher);
+      await openReaderDocumentMenu(tester);
       await tester.pumpAndSettle();
-      final close = find.ancestor(
-        of: find.text('Close Current Document'),
-        matching: find.byType(MMDropdownItem<String>),
-      );
-      expect(tester.widget<PopupMenuItem<String>>(close).enabled, isFalse);
+      final close = find.ancestor(of: find.text('Close Current Document'), matching: find.byType(MenuItemButton));
+      expect(tester.widget<MenuItemButton>(close).onPressed != null, isFalse);
       await tester.tap(find.text('学习的底层逻辑').last);
       await tester.pumpAndSettle();
       expect(container.read(provider).activeDocumentId, 'c1');

@@ -50,6 +50,8 @@ class WorkspaceSidebar extends ConsumerWidget {
           s.sidebarQuery,
           s.activeMapId,
           s.activeNoteId,
+          s.tabs.activeId,
+          s.panel,
           s.noteReference,
           s.activeDocumentId,
           s.tagFilter,
@@ -134,17 +136,10 @@ class WorkspaceSidebar extends ConsumerWidget {
             }(),
             selected:
                 state.tagFilter == null &&
-                (state.activeNoteId == null || state.noteReference == NoteReference.map) &&
+                state.tabs.active?.kind == WorkspaceTabKind.documentMap &&
                 map.id == state.activeMapId,
             selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
-            onTap: () async {
-              if (state.activeNoteId != null) {
-                await controller.openNoteMap(map.id);
-              } else {
-                await controller.selectMap(map.id);
-                controller.setLayout(MMSplitMode.secondary);
-              }
-            },
+            onTap: () => controller.openMainMap(map.id),
             onContextMenu: (position) => _mapMenu(context, ref, map, position),
           ),
     ];
@@ -215,7 +210,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               trailing: _DocumentTranslationTrailing(studySetId: studySetId, document: d),
               selected:
                   !browser.visible &&
-                  (state.activeNoteId == null || state.noteReference == NoteReference.document) &&
+                  state.tabs.active?.kind == WorkspaceTabKind.documentMap &&
                   d.id == state.activeDocumentId,
               selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
               onTap: () {
@@ -297,14 +292,16 @@ class WorkspaceSidebar extends ConsumerWidget {
           icon: MMIcons.vocabulary,
           label: l.vocabularyTitle,
           trailing: vocabularyCount > 0 ? MMBadge('$vocabularyCount') : null,
-          onTap: () => ref.read(navigationProvider.notifier).showVocabulary(studySetId: studySetId),
+          selected: state.tabs.active?.kind == WorkspaceTabKind.vocabulary,
+          onTap: () => controller.activateTab(WorkspaceTab.vocabulary),
         ),
       if (matches(l.review))
         MMSidebarItem(
           icon: MMIcons.review,
           label: l.review,
           trailing: due > 0 ? MMBadge('$due', prominent: true) : null,
-          onTap: () => ref.read(navigationProvider.notifier).startReview(studySetId, mapId: state.activeMapId),
+          selected: state.tabs.active?.kind == WorkspaceTabKind.review,
+          onTap: () => controller.activateTab(WorkspaceTab.review),
         ),
       if (content != null && content.reviewLogs.isNotEmpty && matches(l.statistics))
         MMSidebarItem(
@@ -314,7 +311,12 @@ class WorkspaceSidebar extends ConsumerWidget {
           onTap: () => ref.read(navigationProvider.notifier).showStats(studySetId),
         ),
     ];
-    final tagCounts = content?.tagCounts(mapId: state.activeMapId) ?? const <String, int>{};
+    final tagCounts = <String, int>{};
+    for (final map in content?.maps ?? const <MindMap>[]) {
+      for (final entry in content!.tagCounts(mapId: map.id).entries) {
+        tagCounts.update(entry.key, (n) => n + entry.value, ifAbsent: () => entry.value);
+      }
+    }
     final tagFilter = state.tagFilter;
     final tags = [
       for (final tag in tagCounts.keys)
@@ -332,12 +334,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                     context,
                     position: position,
                     entries: [
-                      MMMenuItem(
-                        l.reviewTag,
-                        () => ref
-                            .read(navigationProvider.notifier)
-                            .startReview(studySetId, mapId: state.activeMapId, tag: tag),
-                      ),
+                      MMMenuItem(l.reviewTag, () => controller.startReview(mapId: state.activeMapId, tag: tag)),
                     ],
                   )
                 : null,
@@ -358,8 +355,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
           selected: card.id == state.selectedCardId,
           onTap: () async {
-            await controller.revealAnchor(SourceAnchor(target: CardTarget(cardId: card.id)));
-            if (content!.annotation(card.annotationId ?? '') != null) controller.revealCard(card.id);
+            await controller.revealTagTopic(state.activeMapId, card.id);
           },
         ),
     ];
@@ -393,10 +389,20 @@ class WorkspaceSidebar extends ConsumerWidget {
                 },
               ),
             ),
-          for (final row in learn)
-            if (row.icon != MMIcons.vocabulary) phoneRow(row, cautionCount: row.icon == MMIcons.review),
+          for (final row in learn) phoneRow(row, cautionCount: row.icon == MMIcons.review),
         ],
-        tags: [for (final row in tags) phoneRow(row) as MMPhoneNavigationRow],
+        tags: [
+          if (query.isEmpty || matches(l.sectionTags) || tags.isNotEmpty)
+            phoneRow(
+              MMSidebarItem(
+                key: const ValueKey('sidebar-tags'),
+                icon: MMIcons.tag,
+                label: l.allTags,
+                selected: state.panel == RightPanel.tags,
+                onTap: controller.showTags,
+              ),
+            ) as MMPhoneNavigationRow,
+        ],
         results: query.isEmpty ? const [] : [for (final row in cards) phoneRow(row)],
         searching: query.isNotEmpty,
         onAddDocument: () => pickAndImportDocuments(context, ref, studySetId),
@@ -510,7 +516,19 @@ class WorkspaceSidebar extends ConsumerWidget {
           ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
         if (cards.isNotEmpty) MMSidebarSection(title: l.sectionCards, children: cards),
-        if (tags.isNotEmpty) _SidebarTags(key: ValueKey((studySetId, state.activeMapId)), tags: tags),
+        if (query.isEmpty || matches(l.sectionTags))
+          Padding(
+            padding: const EdgeInsets.only(top: MMSpacing.m),
+            child: MMSidebarItem(
+              key: const ValueKey('sidebar-tags'),
+              icon: MMIcons.tag,
+              label: l.sectionTags,
+              selected: state.panel == RightPanel.tags,
+              onTap: controller.showTags,
+            ),
+          ),
+        if (query.isNotEmpty && tags.isNotEmpty)
+          _SidebarTags(key: ValueKey((studySetId, state.activeMapId)), tags: tags),
       ],
     );
   }

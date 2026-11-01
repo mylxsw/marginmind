@@ -412,7 +412,7 @@ void main() {
     expect(find.byType(StudyNoteView), findsOneWidget);
     expect(find.byKey(const ValueKey('note-update-apply')), findsOneWidget);
     expect(container.read(noteUpdateRequestedProvider('written')), isFalse);
-    expect(container.read(workspaceProvider('demo-1')).noteReference, NoteReference.document);
+    expect(container.read(workspaceProvider('demo-1')).tabs.current.reference?.kind, WorkspaceReferenceKind.document);
     await tester.tap(find.byKey(const ValueKey('note-update-cancel')));
     await settleHud(tester);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));

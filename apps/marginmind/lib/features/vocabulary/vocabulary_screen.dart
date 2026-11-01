@@ -1,3 +1,5 @@
+import '../workspace/workspace_content_host.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -21,7 +23,8 @@ import 'vocabulary_source_flash.dart';
 /// A single application-level destination, also usable by lookup/hit cards via
 /// AppNavigation.showVocabulary(entryId: ...). Direct links reveal known words.
 class VocabularyScreen extends ConsumerStatefulWidget {
-  const VocabularyScreen({super.key, required this.route});
+  const VocabularyScreen({super.key, required this.route, this.embedded = false});
+  final bool embedded;
   final VocabularyRoute route;
   @override
   ConsumerState<VocabularyScreen> createState() => _VocabularyScreenState();
@@ -204,6 +207,31 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
     Widget detail = selected == null
         ? const SizedBox.expand()
         : VocabularyDetail(key: ValueKey(selected.id), entry: selected, studySetId: setId);
+    final body = data.hasError
+        ? Center(child: Text(l.somethingWentWrong))
+        : data.isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : compact
+        ? (showDetail ? detail : list)
+        : Row(
+            children: [
+              SizedBox(width: MMSizes.vocabularyListWidth, child: list),
+              const VerticalDivider(width: MMSpacing.xxs),
+              Expanded(child: detail),
+            ],
+          );
+    if (widget.embedded) {
+      return Column(
+        children: [
+          if (showDetail)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: MMIconButton(icon: MMIcons.chevronLeft, tooltip: l.back, onPressed: back),
+            ),
+          Expanded(child: body),
+        ],
+      );
+    }
     return MMBackHandler(
       onBack: () {
         if (!showDetail) return false;
@@ -218,19 +246,7 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
           title: l.vocabularyTitle,
           leading: MMIconButton(icon: MMIcons.chevronLeft, tooltip: l.back, onPressed: back),
         ),
-        body: data.hasError
-            ? Center(child: Text(l.somethingWentWrong))
-            : data.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : compact
-            ? (showDetail ? detail : list)
-            : Row(
-                children: [
-                  SizedBox(width: MMSizes.vocabularyListWidth, child: list),
-                  const VerticalDivider(width: MMSpacing.xxs),
-                  Expanded(child: detail),
-                ],
-              ),
+        body: body,
       ),
     );
   }
@@ -630,39 +646,52 @@ class _VocabularyExample extends ConsumerWidget {
                   style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
               if (canJump)
-                MMButton(
-                  label: currentSetId == source.studySetId ? l.vocabularyReturn : l.vocabularyOpenSet,
-                  color: context.mmColors.accent,
-                  icon: MMIcons.openExternal,
-                  variant: MMButtonVariant.plain,
-                  onPressed: () async {
-                    try {
-                      final content = await ref.read(contentProvider(source.studySetId).future);
-                      if (content.document(source.documentId) == null || !ref.context.mounted) return;
-                      final target = source.textAnchor != null
-                          ? TextTarget(documentId: source.documentId, textAnchors: [source.textAnchor!])
-                          : PdfTarget(
-                              documentId: source.documentId,
-                              pages: [AnnotationPage(page: source.page!, rects: source.rects)],
-                              quote: source.sentence,
-                            );
-                      await ref.read(studySetRepositoryProvider).markOpened(source.studySetId);
-                      if (!context.mounted) return;
-                      final owner = ref.read(workspaceProvider(source.studySetId).notifier);
-                      final flash = ref.read(vocabularySourceFlashProvider.notifier);
-                      final navigation = ref.read(navigationProvider.notifier);
-                      final browser = ref.read(workspaceBrowserProvider(source.studySetId).notifier);
-                      browser.hide();
-                      navigation.openStudySet(source.studySetId);
-                      if (await owner.revealAnchor(SourceAnchor(target: target))) {
-                        owner.setLayout(MMSplitMode.primary);
-                        flash.show(source);
+                Flexible(
+                  child: MMButton(
+                    label: currentSetId == source.studySetId ? l.vocabularyReturn : l.vocabularyOpenSet,
+                    color: context.mmColors.accent,
+                    icon: MMIcons.openExternal,
+                    variant: MMButtonVariant.plain,
+                    onPressed: () async {
+                      try {
+                        final content = await ref.read(contentProvider(source.studySetId).future);
+                        if (content.document(source.documentId) == null || !ref.context.mounted) return;
+                        final target = source.textAnchor != null
+                            ? TextTarget(documentId: source.documentId, textAnchors: [source.textAnchor!])
+                            : PdfTarget(
+                                documentId: source.documentId,
+                                pages: [AnnotationPage(page: source.page!, rects: source.rects)],
+                                quote: source.sentence,
+                              );
+                        await ref.read(studySetRepositoryProvider).markOpened(source.studySetId);
+                        if (!context.mounted) return;
+                        final host = WorkspaceContentHost.maybeOf(context);
+                        if (host != null) {
+                          await host.openSource(source.studySetId, SourceAnchor(target: target));
+                          return;
+                        }
+                        final owner = ref.read(workspaceProvider(source.studySetId).notifier);
+                        final flash = ref.read(vocabularySourceFlashProvider.notifier);
+                        final navigation = ref.read(navigationProvider.notifier);
+                        final browser = ref.read(workspaceBrowserProvider(source.studySetId).notifier);
+                        browser.hide();
+                        navigation.openStudySet(source.studySetId);
+                        if (await owner.revealAnchor(SourceAnchor(target: target), asReference: false)) {
+                          owner.setLayout(MMSplitMode.primary);
+                          flash.show(source);
+                        }
+                      } catch (_) {
+                        if (context.mounted) MMHud.show(context, l.somethingWentWrong);
                       }
-                    } catch (_) {
-                      if (context.mounted) MMHud.show(context, l.somethingWentWrong);
-                    }
-                  },
+                    },
+                  ),
                 ),
               MMIconButton(
                 key: ValueKey('delete-example-${source.id}'),

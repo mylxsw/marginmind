@@ -116,8 +116,9 @@ void main() {
     final card = controller.content.cardForAnnotation(annotation.id)!;
     controller.revealCard(card.id);
     await tester.pumpAndSettle();
-    expect(session.position!.chapterId, anchor.chapterId);
-    expect(session.position!.offset, annotation.textAnchors.first.start);
+    final reference = referenceContainer(tester).read(reflowSessionProvider(('demo-1', doc.id)));
+    expect(reference.position!.chapterId, anchor.chapterId);
+    expect(reference.position!.offset, annotation.textAnchors.first.start);
     await controller.undo();
     await tester.pumpAndSettle();
     expect(controller.content.annotations, isEmpty);
@@ -126,13 +127,13 @@ void main() {
     expect(controller.content.annotations.single.isText, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.pageDown);
     await tester.pumpAndSettle();
-    expect(session.position!.offset, greaterThan(annotation.textAnchors.first.start));
+    expect(reference.position!.offset, greaterThan(annotation.textAnchors.first.start));
     controller.setLayout(MMSplitMode.secondary);
     await tester.pumpAndSettle();
     controller.revealCard(card.id);
     await tester.pumpAndSettle();
     expect(
-      container.read(reflowSessionProvider(('demo-1', doc.id))).position!.offset,
+      referenceContainer(tester).read(reflowSessionProvider(('demo-1', doc.id))).position!.offset,
       annotation.textAnchors.first.start,
     );
     await controller.setReadingPosition(

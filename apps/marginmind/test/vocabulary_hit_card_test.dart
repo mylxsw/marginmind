@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/workspace_controller.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -51,7 +53,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Details ›'));
     await tester.pumpAndSettle();
-    expect(c.read(navigationProvider), isA<VocabularyRoute>());
+    expect(c.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(c.read(workspaceProvider('demo-1')).tabs.current.reference!.kind, WorkspaceReferenceKind.vocabulary);
     expect(find.byType(VocabularyHitCard), findsNothing);
     await settleHud(tester);
   });

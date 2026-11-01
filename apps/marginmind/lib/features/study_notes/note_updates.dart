@@ -83,7 +83,7 @@ final noteChangesProvider = Provider.family<NoteChanges?, (String, String)>((ref
   final note = content?.studyNote(identity.$2);
   final ignored = ref.watch(noteIgnoredUpdatesProvider(identity));
   return content == null || note == null ? null : collectNoteChanges(content, note, ignored: ignored);
-});
+}, dependencies: [workspaceContentProvider]);
 
 final noteUpdateRequestedProvider = NotifierProvider.family<NoteUpdateRequested, bool, String>(NoteUpdateRequested.new);
 

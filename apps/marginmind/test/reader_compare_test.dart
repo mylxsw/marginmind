@@ -65,9 +65,9 @@ void main() {
     await drain(tester);
     await container.read(readerCompareProvider('demo-1').notifier).select('c2', readerWidth: 1600);
     await drain(tester);
-    await tester.tap(find.byKey(const ValueKey('reader-documents')));
+    container.read(workspaceProvider('demo-1').notifier).showSidebar();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('第 3 章讲义').last);
+    await tester.tap(find.byKey(const ValueKey('document-row-third')));
     await drain(tester);
     final pair = container.read(readerCompareProvider('demo-1'))!;
     expect(pair.leftDocumentId, 'third');
@@ -189,7 +189,7 @@ void main() {
     await drain(tester);
     expect(container.read(readerCompareProvider('demo-1'))!.id, pair.id);
     expect(container.read(readerCompareProvider('demo-1'))!.sync, true);
-    await tester.tap(find.byKey(const ValueKey('reader-compare-view')), warnIfMissed: false);
+    await tester.tapAt(tester.getTopLeft(find.byKey(const ValueKey('reader-compare-view'))) + const Offset(8, 200));
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await drain(tester);
     expect(container.read(readerCompareProvider('demo-1')), isNull);

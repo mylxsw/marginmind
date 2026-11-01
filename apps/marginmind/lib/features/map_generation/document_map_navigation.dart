@@ -15,7 +15,10 @@ class DocumentMapNotice {
 }
 
 final documentMapNavigationProvider = NotifierProvider.autoDispose
-    .family<DocumentMapNavigation, DocumentMapNotice, String>(DocumentMapNavigation.new);
+    .family<DocumentMapNavigation, DocumentMapNotice, String>(
+      DocumentMapNavigation.new,
+      dependencies: [workspaceProvider],
+    );
 
 /// Presentation history belongs to the learning set, never to generated content
 /// or its undo stack. Opening a citation keeps the current map in view.

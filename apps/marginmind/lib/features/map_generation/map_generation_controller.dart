@@ -268,7 +268,7 @@ final mapDocumentOutlineProvider = FutureProvider.family<List<PdfOutlineEntry>, 
   } catch (_) {
     return [];
   }
-});
+}, dependencies: [workspaceContentProvider, workspaceProvider]);
 
 final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, String>((ref, studySetId) {
   final workspace = ref.read(workspaceProvider(studySetId).notifier);
@@ -297,7 +297,7 @@ final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, Str
       }
     },
   );
-});
+}, dependencies: [workspaceProvider]);
 
 final mapQuotePageProvider = Provider<Future<TranslationPage?> Function(String, int)>((ref) => MMPdfEngine.quotePage);
 
@@ -319,7 +319,10 @@ final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>(
 );
 
 final mapGenerationControllerProvider = NotifierProvider.autoDispose
-    .family<MapGenerationController, MapGenerationPreview?, String>(MapGenerationController.new);
+    .family<MapGenerationController, MapGenerationPreview?, String>(
+      MapGenerationController.new,
+      dependencies: [assistantMapEditExecutorProvider, documentDigestBuilderProvider, workspaceProvider],
+    );
 
 class _ChapterTask {
   _ChapterTask({

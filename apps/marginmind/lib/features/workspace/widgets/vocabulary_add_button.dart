@@ -6,7 +6,6 @@ import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
-import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../../vocabulary/selection_vocabulary.dart';
@@ -119,7 +118,7 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
 
   void _details(String id) {
     Navigator.of(context).pop();
-    ref.read(navigationProvider.notifier).showVocabulary(studySetId: widget.studySetId, entryId: id);
+    ref.read(workspaceProvider(widget.studySetId).notifier).openVocabularyReference(id);
   }
 
   @override

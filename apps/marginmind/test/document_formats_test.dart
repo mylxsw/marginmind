@@ -221,14 +221,14 @@ void main() {
       } else {
         expect(add, findsNothing);
       }
-      await tester.tap(find.byKey(const ValueKey('reader-documents')));
+      await openReaderDocumentMenu(tester);
       await tester.pumpAndSettle();
       expect(find.text('Import Document…'), findsOneWidget);
       if (available) {
         await tester.tap(find.text('Add Web Page…'));
         await tester.pumpAndSettle();
         expect(opened, 2);
-        await tester.tap(find.byKey(const ValueKey('reader-documents')));
+        await openReaderDocumentMenu(tester);
         await tester.pumpAndSettle();
       } else {
         expect(find.text('Add Web Page…'), findsNothing);
@@ -302,7 +302,7 @@ void main() {
       } else {
         expect(add, findsNothing);
       }
-      await tester.tap(find.byKey(const ValueKey('reader-documents')));
+      await openReaderDocumentMenu(tester);
       await tester.pumpAndSettle();
       expect(find.text('Add Web Page…'), available ? findsOneWidget : findsNothing);
       if (available) {
@@ -364,7 +364,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ReaderPane), findsOneWidget);
     controller.revealCard(excerpt.$2.id);
-    expect(container.read(workspaceProvider('demo-1')).reveal!.textAnchors.single.quote, '原文');
+    await tester.pumpAndSettle();
+    expect(referenceState(tester).reveal!.textAnchors.single.quote, '原文');
     await controller.toggleBookmark();
     expect(controller.content.bookmarks.single.position, isA<TextReadingPosition>());
     await controller.toggleBookmark();

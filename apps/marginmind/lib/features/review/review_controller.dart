@@ -79,6 +79,14 @@ class ReviewSession extends Notifier<ReviewSessionState> {
     return c == null ? const ReviewSessionState() : _start(c);
   }
 
+  void startScope({String? mapId, String? branchId, String? tag}) {
+    this.mapId = mapId;
+    this.branchId = branchId;
+    this.tag = tag;
+    final content = ref.read(contentProvider(studySetId)).value;
+    state = content == null ? const ReviewSessionState() : _start(content);
+  }
+
   ReviewSessionState _start(StudySetContent c) {
     final now = ref.read(clockProvider)();
     return ReviewSessionState(

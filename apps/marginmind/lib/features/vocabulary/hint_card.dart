@@ -1,9 +1,10 @@
+import '../workspace/workspace_controller.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
-import '../../app/navigation.dart';
 import '../../app/providers.dart';
 import '../../shared/l10n.dart';
 import 'hint_geometry.dart';
@@ -218,9 +219,7 @@ class _VocabularyHitCardState extends ConsumerState<VocabularyHitCard> {
                         ),
                         onTap: () {
                           Navigator.of(context).pop();
-                          ref
-                              .read(navigationProvider.notifier)
-                              .showVocabulary(studySetId: widget.studySetId, entryId: entry.id);
+                          ref.read(workspaceProvider(widget.studySetId).notifier).openVocabularyReference(entry.id);
                         },
                       ),
                     ),

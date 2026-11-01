@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
-import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/library/library_screen.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_hints.dart';
 import 'package:marginmind/features/workspace/reader_margin.dart';
@@ -229,10 +228,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(organizeNotesCalled, isTrue);
 
-    // Tap "复习": navigates to review route
+    // Tap "复习": activates the workspace review tab
     await tester.tap(find.text('复习'));
     await tester.pumpAndSettle();
-    expect(container.read(navigationProvider), isA<ReviewRoute>());
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.review.id);
   });
 
   testWidgets('iPad and macOS isolation: original toolbar and dropdown menus remain intact', (tester) async {

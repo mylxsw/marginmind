@@ -121,6 +121,7 @@ class WorkspaceLayoutGeometry {
     required Axis axis,
     required double fraction,
     required double minReader,
+    double minMap = MMSizes.mapMinWidth,
     double sidebarExtent = 0,
     double panelExtent = 0,
     Axis panelAxis = Axis.horizontal,
@@ -153,7 +154,7 @@ class WorkspaceLayoutGeometry {
       axis: axis,
       fraction: fraction,
       minPrimary: axis == Axis.vertical ? MMSizes.paneMinHeight : minReader,
-      minSecondary: axis == Axis.vertical ? MMSizes.paneMinHeight : MMSizes.mapMinWidth,
+      minSecondary: axis == Axis.vertical ? MMSizes.paneMinHeight : minMap,
       collapseWhenNarrow: collapseWhenNarrow,
     );
     final both = split.effectiveMode == MMSplitMode.split;

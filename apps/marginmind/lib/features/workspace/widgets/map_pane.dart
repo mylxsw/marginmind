@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import '../../map_generation/widgets/document_map_banner.dart';
 import '../../map_generation/widgets/map_ocr_banner.dart';
 
@@ -12,7 +14,6 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
-import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
@@ -43,7 +44,6 @@ import 'map_selection_bar.dart';
 import 'map_header.dart';
 import 'generate_map_menu.dart';
 import 'workspace_toolbar.dart';
-import 'tag_content_pane.dart';
 import '../workspace_chrome_controller.dart';
 import '../workspace_pane_chrome_controller.dart';
 
@@ -555,12 +555,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           const MMMenuDivider(),
         ],
         if (branchDue || suspendable) ...[
-          if (branchDue)
-            MMMenuItem(
-              l.reviewBranch,
-              () =>
-                  ref.read(navigationProvider.notifier).startReview(widget.studySetId, mapId: mapId, branchId: card.id),
-            ),
+          if (branchDue) MMMenuItem(l.reviewBranch, () => controller.startReview(mapId: mapId, branchId: card.id)),
           if (suspendable)
             MMMenuItem(
               card.suspended ? l.resumeCard : l.suspendCard,
@@ -1188,6 +1183,39 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                     child: WorkspaceToolbar(
                                       label: l.moreTools,
                                       items: [
+                                        if (!phone)
+                                          MMToolbarItem(
+                                            id: 'map-title',
+                                            priority: 100,
+                                            child: Tooltip(
+                                              message: rootTitle,
+                                              child: ConstrainedBox(
+                                                constraints: BoxConstraints(
+                                                  maxWidth: min(180.0, paneConstraints.maxWidth * .42),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(MMIcons.mindMap, size: 16, color: c.accent),
+                                                    const SizedBox(width: MMSpacing.s),
+                                                    Flexible(
+                                                      child: Text(
+                                                        rootTitle,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: context.mmText.headline,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            menuEntry: MMDropdownItem<VoidCallback>(
+                                              enabled: false,
+                                              value: () {},
+                                              child: Text(rootTitle),
+                                            ),
+                                          ),
                                         MMToolbarItem(
                                           id: 'map-view',
                                           priority: 70,
@@ -1564,20 +1592,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
         );
       },
     );
-    final tag = state.tagFilter;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Offstage(
-          offstage: tag != null,
-          child: TickerMode(
-            enabled: tag == null,
-            child: ExcludeFocus(excluding: tag != null, child: mapPane),
-          ),
-        ),
-        if (tag != null) TagContentPane(key: ValueKey(tag), studySetId: widget.studySetId, tag: tag),
-      ],
-    );
+    return mapPane;
   }
 }
 

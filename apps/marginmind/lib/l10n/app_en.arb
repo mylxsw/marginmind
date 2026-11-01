@@ -3000,5 +3000,26 @@
       }
     }
   },
-  "noteProgressPreviewEmpty": "The preview appears as each section is completed"
+  "noteProgressPreviewEmpty": "The preview appears as each section is completed",
+  "workspaceDocumentMapTab": "Documents & Mind Maps",
+  "workspaceReferenceTitle": "Reference",
+  "workspaceReferenceFrom": "From: {title}",
+  "@workspaceReferenceFrom": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceNoTabs": "Open content from the sidebar",
+  "workspaceTagMatches": "{count} matching topics",
+  "@workspaceTagMatches": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceCurrentContent": "Current content: {title}",
+  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}}
 }

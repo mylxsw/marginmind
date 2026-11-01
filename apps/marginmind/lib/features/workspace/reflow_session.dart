@@ -12,7 +12,13 @@ import '../../app/providers.dart';
 import 'reflow_document.dart';
 import 'workspace_controller.dart';
 
-final reflowSessionProvider = Provider.autoDispose.family<ReflowSession, (String, String)>((ref, key) {
+final reflowSessionProvider = Provider.autoDispose.family<ReflowSession, (String, String)>(
+  createReflowSession,
+  dependencies: [workspaceProvider],
+);
+
+/// Each reading surface owns geometry and scroll, even for the same document.
+ReflowSession createReflowSession(Ref ref, (String, String) key) {
   ref.watch(
     workspaceProvider(key.$1).select((state) {
       final document = state.content?.document(key.$2);
@@ -32,7 +38,7 @@ final reflowSessionProvider = Provider.autoDispose.family<ReflowSession, (String
   );
   ref.onDispose(session.dispose);
   return session;
-});
+}
 
 /// Owns one drawable chapter. Paragraphs are released before their image handles;
 /// every settings/navigation request invalidates all older geometry immediately.

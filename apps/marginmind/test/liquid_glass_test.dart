@@ -107,7 +107,7 @@ void main() {
       expect(find.byKey(const ValueKey('phone-reader-page')).hitTestable(), findsOneWidget);
       expect(find.byType(PhoneTabBar), findsNothing);
       expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height - phone.safe.bottom);
-      expect(tester.getRect(find.byKey(const ValueKey('pdf-placeholder-c1'))).top, phone.safe.top);
+      expect(tester.getRect(find.byKey(const ValueKey('pdf-placeholder-c1'))).top, phone.safe.top + 44);
       expect(find.byKey(const ValueKey('reader-page-navigation')), findsNothing);
       expect(find.byType(BackdropFilter), findsWidgets);
       await tester.tap(find.text('Map').first);

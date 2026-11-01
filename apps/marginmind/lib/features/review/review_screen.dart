@@ -20,7 +20,8 @@ import 'review_controller.dart';
 /// Flashcard review of one study set: prompt, "Show Answer", then four
 /// ratings that schedule the card. Space / ↩ shows the answer, 1–4 rate.
 class ReviewScreen extends ConsumerStatefulWidget {
-  const ReviewScreen({super.key, required this.studySetId});
+  const ReviewScreen({super.key, required this.studySetId, this.embedded = false});
+  final bool embedded;
 
   final String studySetId;
 
@@ -46,10 +47,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     super.dispose();
   }
 
-  void _back() => ref.read(navigationProvider.notifier).openStudySet(widget.studySetId);
+  void _back() {
+    if (widget.embedded) {
+      ref.read(workspaceProvider(widget.studySetId).notifier).activateTab(WorkspaceTab.documents);
+    } else {
+      ref.read(navigationProvider.notifier).openStudySet(widget.studySetId);
+    }
+  }
 
   void _revealSource(String cardId) {
-    ref.read(navigationProvider.notifier).openStudySet(widget.studySetId);
+    if (!widget.embedded) ref.read(navigationProvider.notifier).openStudySet(widget.studySetId);
     ref.read(workspaceProvider(widget.studySetId).notifier).revealCard(cardId);
   }
 
@@ -187,28 +194,58 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       focusNode: _focus,
       autofocus: true,
       onKeyEvent: _onKey,
-      child: MMWindowScaffold(
-        sidebarVisible: false,
-        onDragStart: WindowChrome.onDragStart,
-        onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
-        showsWindowButtons: WindowChrome.showsWindowButtons,
-        toolbar: MMToolbar(
-          title: l.reviewTitle,
-          subtitle: phone || session.finished || !session.started
-              ? scopeTitle
-              : '$scopeTitle · ${l.reviewRemaining(session.remaining)}',
-          leading: MMIconButton(
-            icon: MMIcons.chevronLeft,
-            tooltip: l.backToStudySet,
-            size: context.mmToolbarIcon,
-            onPressed: _back,
-          ),
-        ),
-        body: CardImageScope(
-          resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(widget.studySetId, name),
-          child: ColoredBox(color: context.mmColors.windowBackground, child: body),
-        ),
-      ),
+      child: widget.embedded
+          ? CardImageScope(
+              resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(widget.studySetId, name),
+              child: ColoredBox(
+                color: context.mmColors.windowBackground,
+                child: Column(
+                  children: [
+                    MMToolbar.content(
+                      semanticLabel: l.reviewTitle,
+                      height: 44,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            session.finished || !session.started
+                                ? scopeTitle
+                                : '$scopeTitle · ${l.reviewRemaining(session.remaining)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.mmText.callout,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(child: body),
+                  ],
+                ),
+              ),
+            )
+          : MMWindowScaffold(
+              sidebarVisible: false,
+              onDragStart: WindowChrome.onDragStart,
+              onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
+              showsWindowButtons: WindowChrome.showsWindowButtons,
+              toolbar: MMToolbar(
+                title: l.reviewTitle,
+                subtitle: phone || session.finished || !session.started
+                    ? scopeTitle
+                    : '$scopeTitle · ${l.reviewRemaining(session.remaining)}',
+                leading: MMIconButton(
+                  icon: MMIcons.chevronLeft,
+                  tooltip: l.backToStudySet,
+                  size: context.mmToolbarIcon,
+                  onPressed: _back,
+                ),
+              ),
+              body: CardImageScope(
+                resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(widget.studySetId, name),
+                child: ColoredBox(color: context.mmColors.windowBackground, child: body),
+              ),
+            ),
     );
   }
 }
