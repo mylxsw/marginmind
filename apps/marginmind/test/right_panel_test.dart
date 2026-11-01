@@ -9,6 +9,7 @@ import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/card_details.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
+import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/right_panel.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/workspace_layout.dart';
@@ -150,7 +151,9 @@ void main() {
         reason: 'right content never changes the chosen main layout',
       );
       expect(_sidebarShown(tester), isTrue);
-      expect(tester.getSize(_panel).width, 348);
+      // The flat desktop panel fills its column flush with the window edge.
+      expect(tester.getRect(_panel).width, MMSizes.rightPanelNarrowWidth);
+      expect(tester.getRect(_panel).right, 1280);
       expect(_inPanel(find.text(_quote)), findsOneWidget);
       expect(_inPanel(find.text('Excerpt')), findsOneWidget);
       expect(_mapView(tester), view, reason: 'opening the panel leaves the map view alone');
@@ -223,7 +226,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(_sidebarShown(tester), isTrue);
       expect(_state(app.container).sidebarAutoCollapsed, isFalse);
-      expect(tester.getSize(_panel).width, 348);
+      expect(tester.getRect(_panel).width, MMSizes.rightPanelNarrowWidth);
+      expect(tester.getRect(_panel).right, 1000);
+      expect(tester.getRect(find.byType(ReaderPane)).right, lessThanOrEqualTo(tester.getRect(_panel).left));
       app.controller.toggleSidebar();
       await tester.pumpAndSettle();
       expect(_state(app.container).panel, RightPanel.details);

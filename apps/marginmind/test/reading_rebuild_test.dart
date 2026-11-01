@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -7,6 +8,8 @@ import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/features/workspace/translation_schedulers.dart';
+import 'package:marginmind/features/workspace/translation_task_summary.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/workspace_sidebar.dart';
@@ -85,11 +88,15 @@ void main() {
     });
   }
 
-  testWidgets('disk-backed 300-node workspace ignores reading metadata and library summary emissions', (tester) async {
+  testWidgets('disk-backed 300-node workspace ignores reading metadata, library and translation summary emissions', (
+    tester,
+  ) async {
     late Directory dir;
     late FileLibraryStore store;
     late String id;
     late SharedPreferences prefs;
+    // Translation summaries load from disk; a slow machine finishes after reading starts.
+    final translationStoreOpened = Completer<void>();
     await tester.runAsync(() async {
       dir = await Directory.systemTemp.createTemp('marginmind-rebuild-');
       store = FileLibraryStore(dir, clock: () => testNow);
@@ -115,6 +122,10 @@ void main() {
           studySetRepositoryProvider.overrideWithValue(store),
           contentRepositoryProvider.overrideWithValue(store),
           pdfRenderingEnabledProvider.overrideWithValue(false),
+          translationStoreProvider.overrideWith((ref, setId) async {
+            await translationStoreOpened.future;
+            return store.translationStore(setId);
+          }),
         ],
         child: const MarginMindApp(),
       ),
@@ -131,6 +142,8 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(container.read(workspaceProvider(id)).content!.nodes.length, greaterThan(300));
+    final summary = translationTaskSummaryProvider((id, 'c1'));
+    expect(container.read(summary).isLoading, isTrue);
     final builds = <Type, int>{};
     const watched = {WorkspaceScreen, MapPane, ReaderPane, WorkspaceSidebar, AppMenus};
     final old = debugOnRebuildDirtyWidget;
@@ -156,6 +169,12 @@ void main() {
         }
       }
       expect(flushed, isTrue);
+      translationStoreOpened.complete();
+      for (var i = 0; i < 500 && container.read(summary).isLoading; i++) {
+        await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+        await tester.pump();
+      }
+      expect(container.read(summary), const AsyncData<TranslationTaskSummary?>(null));
       await tester.pumpAndSettle();
       expect(container.read(studySetProvider(id))!.lastPosition!.page, 42);
       expect(builds, isEmpty);

@@ -615,7 +615,7 @@ class _DocumentTranslationTrailing extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fullState = ref.watch(translationTaskSummaryProvider((studySetId, document.id))).value;
+    final fullState = ref.watch(translationTaskSummaryProvider((studySetId, document.id)).select((s) => s.value));
     final job = fullState?.job;
     final c = context.mmColors;
 

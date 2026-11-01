@@ -439,7 +439,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final canFullTranslate =
         MMPlatformCapabilities.current.assistant && MMSizeClass.of(context) != MMSizeClass.compact && document != null;
     final fullState = canFullTranslate
-        ? ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id))).value
+        ? ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id)).select((s) => s.value))
         : null;
     final hasActiveFullJob = fullState?.isActive == true;
 
@@ -826,7 +826,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
     final fullState = document == null
         ? null
-        : ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id))).value;
+        : ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id)).select((s) => s.value));
     final targetLang = fullState?.targetLang ?? 'zh';
     final hasActiveFullJob = fullState?.isActive == true;
     final canFullTranslate =

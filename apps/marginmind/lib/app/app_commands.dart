@@ -1220,7 +1220,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           () {
             final doc = workspace.content.document(workspaceState.activeDocumentId!);
             if (doc == null) return null;
-            final fullState = ref.watch(translationTaskSummaryProvider((workspaceId, doc.id))).value;
+            final fullState = ref.watch(translationTaskSummaryProvider((workspaceId, doc.id)).select((s) => s.value));
             final targetLang = fullState?.targetLang ?? 'zh';
             final hasActive = fullState?.isActive == true;
             final pct = fullState?.percent ?? 0;
