@@ -261,9 +261,18 @@ class AssistantHeader extends ConsumerWidget {
     return Container(
       height: context.mmTouchPlatform ? MMSizes.tabletPaneHeaderHeight : MMSizes.desktopWindowTitlebarHeight,
       padding: const EdgeInsets.only(left: MMSpacing.l, right: MMSpacing.s),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: c.separator)),
-      ),
+      decoration: context.mmTouchPlatform
+          ? BoxDecoration(
+              border: Border(bottom: BorderSide(color: c.separator)),
+            )
+          : BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [c.workspaceChrome, c.workspaceChrome, c.windowBackground, c.windowBackground],
+                stops: [0, 1 - 1 / MMSizes.desktopWindowTitlebarHeight, 1 - 1 / MMSizes.desktopWindowTitlebarHeight, 1],
+              ),
+            ),
       child: Row(
         children: [
           // The title takes the free width, so the buttons sit at the right edge.
