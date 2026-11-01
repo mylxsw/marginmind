@@ -721,7 +721,9 @@ void main() {
     final app = await openAssistantApp(tester, size: const Size(1000, 700), prefs: {'settings.appearance': 'dark'});
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byType(AssistantPanel)).width, MMSizes.rightPanelNarrowWidth);
+    final panel = tester.getRect(find.byType(AssistantPanel));
+    expect(panel.width, MMSizes.rightPanelNarrowWidth);
+    expect(panel.right, 1000);
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
     expect(tester.takeException(), isNull);
   });

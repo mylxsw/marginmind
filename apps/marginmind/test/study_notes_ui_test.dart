@@ -361,9 +361,10 @@ void main() {
   });
 
   testWidgets('compact More exposes TOC and layout submenus, changes layouts and exports', (tester) async {
-    final container = await openNote(tester, size: const Size(1240, 820));
+    final container = await openNote(tester, size: const Size(1200, 820));
     container.read(workspaceProvider('demo-1').notifier).showNoteReference(NoteReference.document);
     await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(StudyNoteView)).width, lessThan(MMSizes.noteSetupSheetWidth));
     expect(tester.widget<Icon>(find.byKey(const ValueKey('note-toolbar-icon'))).icon, MMIcons.studyNote);
     expect(find.byKey(const ValueKey('note-export')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('note-more')));
