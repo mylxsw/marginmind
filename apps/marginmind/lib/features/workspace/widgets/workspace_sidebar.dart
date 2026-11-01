@@ -421,46 +421,24 @@ class WorkspaceSidebar extends ConsumerWidget {
     }
 
     return MMSidebar(
-      topTrailing: MMIconButton(
-        icon: MMIcons.sidebar,
-        tooltip: AppShortcuts.tip(l.hideSidebar, AppShortcuts.toggleSidebar),
-        onPressed: controller.toggleSidebar,
-      ),
-      header: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      topTrailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          MMInteractive(
-            onTap: () => ref.read(navigationProvider.notifier).showLibrary(),
+          MMIconButton(
+            key: const ValueKey('workspace-home'),
+            icon: MMIcons.home,
             tooltip: AppShortcuts.tip(l.showLibrary, AppShortcuts.showLibrary),
-            semanticLabel: l.showLibrary,
-            builder: (context, s) => Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: s.hovered ? c.hover : Colors.transparent,
-                borderRadius: BorderRadius.circular(MMRadii.row),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(6)),
-                    child: const Icon(MMIcons.studySet, size: 13, color: Colors.white),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(studyTitle ?? '', style: t.headline, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ),
-                  Icon(MMIcons.library, size: 13, color: c.icon),
-                ],
-              ),
-            ),
+            onPressed: () => ref.read(navigationProvider.notifier).showLibrary(),
           ),
-          const SizedBox(height: 8),
-          MMSearchField(placeholder: l.searchInSet, focusNode: searchFocus, onChanged: controller.setSidebarQuery),
+          MMIconButton(
+            key: const ValueKey('workspace-hide-sidebar'),
+            icon: MMIcons.sidebar,
+            tooltip: AppShortcuts.tip(l.hideSidebar, AppShortcuts.toggleSidebar),
+            onPressed: onDismiss ?? controller.toggleSidebar,
+          ),
         ],
       ),
+      header: MMSearchField(placeholder: l.searchInSet, focusNode: searchFocus, onChanged: controller.setSidebarQuery),
       children: [
         if (empty)
           Padding(

@@ -27,6 +27,7 @@ abstract final class MMIcons {
   static const IconData zoomControl = CupertinoIcons.plus_slash_minus;
   static const IconData crop = CupertinoIcons.crop;
   static const IconData locate = CupertinoIcons.location_circle;
+  static const IconData home = LucideIcons.house;
   static const IconData sidebar = CupertinoIcons.sidebar_left; // sidebar.left
   static const IconData sidebarRight = CupertinoIcons.sidebar_right; // sidebar.right
   static const IconData search = CupertinoIcons.search; // magnifyingglass

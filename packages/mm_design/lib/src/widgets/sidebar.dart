@@ -48,7 +48,8 @@ class MMSidebar extends StatelessWidget {
         borderRadius: radius,
         border: Border.all(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: 0.5),
       ),
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+      // Inset 8 + border .5 + padding 3.5 + half the row aligns at y=26.
+      padding: const EdgeInsets.fromLTRB(10, 3.5, 10, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

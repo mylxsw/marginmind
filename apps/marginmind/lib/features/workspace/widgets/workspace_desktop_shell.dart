@@ -53,7 +53,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final documents = state.tabs.active?.kind == WorkspaceTabKind.documentMap;
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
-      toolbarExtent: touch ? 52 : 40,
+      toolbarExtent: MMSizes.windowTitlebarHeight,
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
@@ -65,19 +65,24 @@ class WorkspaceDesktopShell extends ConsumerWidget {
         children: [
           MMToolbar.content(
             semanticLabel: l.workspaceDocumentMapTab,
-            height: touch ? 52 : 40,
+            height: MMSizes.windowTitlebarHeight,
             child: Container(
               padding: EdgeInsets.only(left: MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0),
               key: const ValueKey('workspace-tab-row'),
-              height: touch ? 52 : 40,
-              decoration: BoxDecoration(
+              height: MMSizes.windowTitlebarHeight,
+              decoration: BoxDecoration(color: Color.lerp(c.windowBackground, c.sidebarOpaque, .35)),
+              foregroundDecoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: c.separator)),
-                color: Color.lerp(c.windowBackground, c.sidebarOpaque, .35),
               ),
               child: Row(
                 children: [
                   if (!sidebarVisible || touch)
-                    MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: onShowSidebar),
+                    MMIconButton(
+                      key: const ValueKey('workspace-show-sidebar'),
+                      icon: MMIcons.sidebar,
+                      tooltip: l.showSidebar,
+                      onPressed: onShowSidebar,
+                    ),
                   Expanded(child: WorkspaceTabStrip(studySetId: studySetId)),
                   if (documents) ...[
                     Container(
@@ -252,7 +257,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;
     final width = box.maxWidth - (hasPanel && box.maxWidth >= 700 ? math.min(360.0, box.maxWidth) : 0);
-    final height = box.maxHeight - (MMInput.of(context).touchPlatform ? 52 : 40);
+    final height = box.maxHeight - MMSizes.windowTitlebarHeight;
     final vertical = context.mmTablet && height > width;
     return MMSplitView.effectiveMode(
       layout,
