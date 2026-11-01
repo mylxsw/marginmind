@@ -44,3 +44,5 @@ export 'src/model_policy/probe.dart';
 
 export 'src/quick_tasks.dart';
 export 'src/model_policy/maintained.dart';
+
+export 'src/document_translation.dart';

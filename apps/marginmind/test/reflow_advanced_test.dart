@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/document_translation_runtime.dart';
+
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -495,7 +497,7 @@ void main() {
       size: const Size(1800, 1100),
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async {
+        documentTranslatorFactoryProvider.overrideWithValue((_, _) async {
           final t = TestTranslator();
           translators.add(t);
           return t;

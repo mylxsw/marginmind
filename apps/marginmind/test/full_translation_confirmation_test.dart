@@ -1,10 +1,11 @@
+import 'package:mm_assistant/mm_assistant.dart';
+import 'package:marginmind/features/workspace/document_translation_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/workspace/full_translation.dart';
 import 'package:marginmind/features/workspace/reader_compare.dart';
-import 'package:marginmind/features/workspace/reader_translation.dart';
 import 'package:marginmind/features/workspace/translation_schedulers.dart';
 import 'package:marginmind/features/workspace/translation_task_summary.dart';
 import 'package:marginmind/features/workspace/widgets/full_translation_sheet.dart';
@@ -46,8 +47,14 @@ void main() {
       content: repo,
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        documentTranslationRouteProvider.overrideWith(
+          (ref, model) async => const RoutingRowState(
+            effective: ModelReference('fixture', 'model'),
+            source: RoutingSource.functionBinding,
+            issue: RoutingIssue.none,
+          ),
+        ),
+        documentTranslatorFactoryProvider.overrideWithValue((_, _) async => translator),
         translationStoreProvider('demo-1').overrideWith((ref) async => store),
       ],
     );
