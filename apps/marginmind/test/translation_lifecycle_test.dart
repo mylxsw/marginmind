@@ -14,6 +14,7 @@ import 'package:marginmind/features/workspace/translation_schedulers.dart';
 import 'package:marginmind/features/workspace/translation_task_summary.dart';
 import 'package:marginmind/features/workspace/widgets/full_translation_notifications.dart';
 import 'package:marginmind/features/workspace/widgets/full_translation_sheet.dart';
+import 'package:marginmind/features/workspace/widgets/full_translation_strip.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
@@ -140,8 +141,99 @@ class DelayedJobStore extends InMemoryTranslationStore {
   }
 }
 
+class RetryStorage extends InMemoryTranslationStore {
+  RetryStorage(this.ledger);
+  final bool ledger;
+  bool fail = true;
+  @override
+  Future<void> saveJob(TranslationJob job) async {
+    if (fail && ledger) throw StateError('disk');
+    await super.saveJob(job);
+  }
+
+  @override
+  Future<void> append(String documentId, String targetLang, TranslationSegment segment) async {
+    if (fail && !ledger) throw StateError('disk');
+    await super.append(documentId, targetLang, segment);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  for (final ledger in [false, true]) {
+    testWidgets('${ledger ? 'initial ledger' : 'paragraph journal'} failures keep UI retry reachable', (tester) async {
+      final store = RetryStorage(ledger);
+      final translator = TestTranslator();
+      final provider = fullTranslationProvider(('demo-1', 'c1', 'zh'));
+      late ProviderContainer container;
+      late ProviderSubscription<FullTranslationState> subscription;
+      await tester.runAsync(() async {
+        container = await containerFor(store: store, translator: translator, loading: Future.value([paragraphs.first]));
+        subscription = container.listen(provider, (_, _) {});
+        await flush();
+      });
+      final registry = container.read(translationSchedulersProvider('demo-1'));
+      try {
+        await tester.pump();
+        await tester.runAsync(flush);
+        await tester.pumpWidget(
+          testHost(
+            const FullTranslationStrip(studySetId: 'demo-1', documentId: 'c1', targetLang: 'zh'),
+            container: container,
+          ),
+        );
+        await tester.runAsync(() async {
+          await container
+              .read(provider.notifier)
+              .startJob(
+                from: 1,
+                to: 1,
+                mode: TranslationMode.all,
+                batchSize: 5,
+                modelName: 'fixture',
+                estimatedTokens: 1000,
+              );
+          await flush();
+        });
+        final calls = translator.calls.length;
+        final usage = container.read(provider).job!.usage;
+        final retry = find.byKey(const Key('full_translation_strip_retry'));
+        for (var attempt = 0; attempt < 3; attempt++) {
+          await tester.pump();
+          expect(container.read(provider).job!.state, TranslationJobState.error);
+          expect(container.read(provider).job!.errorKind, 'storage');
+          expect(retry, findsOneWidget);
+          await tester.runAsync(() async {
+            await tester.tap(retry);
+            await flush();
+          });
+          expect(translator.calls.length, calls);
+        }
+        store.fail = false;
+        await tester.pump();
+        expect(retry, findsOneWidget);
+        await tester.runAsync(() async {
+          await tester.tap(retry);
+          await flush();
+        });
+        await tester.pump();
+        expect(container.read(provider).job!.state, TranslationJobState.done);
+        expect(retry, findsNothing);
+        expect(translator.calls, [0]);
+        expect(container.read(provider).values, isNotEmpty);
+        if (!ledger) {
+          expect(container.read(provider).job!.usage.requests, usage.requests);
+          expect(container.read(provider).job!.usage.totalTokens, usage.totalTokens);
+        }
+        expect(tester.takeException(), isNull);
+      } finally {
+        store.fail = false;
+        await tester.runAsync(registry.close);
+        subscription.close();
+        container.dispose();
+      }
+    });
+  }
   for (final ollama in [false, true]) {
     test(
       'network events ${ollama ? 'leave Ollama running' : 'pause and resume cloud without overriding manual pause'}',

@@ -496,10 +496,15 @@ class TranslationScheduler {
   }
 
   Future<void> _drain() async {
-    for (final entry in _pendingSegments.entries.toList()) {
-      final (segment, version, replace) = entry.value;
-      await _append(segment, editVersion: version, replaceEdited: replace);
-      _pendingSegments.remove(entry.key);
+    try {
+      for (final entry in _pendingSegments.entries.toList()) {
+        final (segment, version, replace) = entry.value;
+        await _append(segment, editVersion: version, replaceEdited: replace);
+        _pendingSegments.remove(entry.key);
+      }
+    } catch (_) {
+      _storageFailed();
+      rethrow;
     }
     if (_candidates().isNotEmpty &&
         !_closed &&
@@ -715,12 +720,7 @@ class TranslationScheduler {
       } catch (error) {
         if (_closed) return;
         if (saving) {
-          _failure = const ResearchFailure(ResearchFailureKind.unavailable, 'storage');
-          _demand = {};
-          if (_job?.isActive == true) {
-            _job = _job!.copyWith(state: TranslationJobState.error, errorKind: 'storage', updatedAt: _now());
-          }
-          _emit();
+          _storageFailed();
           // Never buy a translation again because its journal write failed.
           rethrow;
         }
@@ -890,14 +890,31 @@ class TranslationScheduler {
     }
     _ledgerTimer?.cancel();
     _ledgerTimer = null;
-    _lastSaved = _now();
+    final savedAt = _now();
     final snapshot = _job!;
     final write = _writes.then((_) async {
       await store.saveJob(snapshot);
       if (_translator case final ScheduledParagraphTranslator t) await t.saveJob(snapshot);
     });
     _writes = write.catchError((Object _) {});
-    await write;
+    try {
+      await write;
+      _lastSaved = savedAt;
+    } catch (_) {
+      _storageFailed();
+      rethrow;
+    }
+  }
+
+  // Saving is part of the task lifecycle, including before dispatch and when
+  // retrying a validated result. Publish even if disk cannot persist the error.
+  void _storageFailed() {
+    if (_job != null && _job!.state != TranslationJobState.stopped) {
+      _job = _job!.copyWith(state: TranslationJobState.error, errorKind: 'storage', usage: _usage, updatedAt: _now());
+    }
+    _demand = {};
+    _failure = const ResearchFailure(ResearchFailureKind.unavailable, 'storage');
+    _emit();
   }
 
   Future<void> _refreshConnection() async {
@@ -915,10 +932,7 @@ class TranslationScheduler {
     try {
       await _persist(force: true);
     } catch (_) {
-      if (_job?.isActive == true) _job = _job!.copyWith(state: TranslationJobState.error, errorKind: 'storage');
-      _demand = {};
-      _failure = const ResearchFailure(ResearchFailureKind.unavailable, 'storage');
-      _emit();
+      // _persist has already published the storage failure.
     }
   }
 

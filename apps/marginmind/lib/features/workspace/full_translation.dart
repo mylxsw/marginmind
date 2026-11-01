@@ -411,7 +411,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     unawaited(
       work.catchError((Object error) {
         if (ref.mounted && _scheduler?.job == null) state = state.copyWith(loadError: error);
-        // Scheduler failures already publish their durable error state. Observe
+        // Scheduler failures already publish their retryable error state. Observe
         // the future so storage errors cannot escape into the Flutter zone.
       }),
     );
