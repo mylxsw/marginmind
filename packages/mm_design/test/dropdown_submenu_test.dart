@@ -63,6 +63,8 @@ void main() {
     expect(find.text('Dark'), findsNothing);
     await tester.tap(find.text('Appearance'));
     await tester.pumpAndSettle();
+    expect(find.byIcon(MMIcons.appearance), findsOneWidget, reason: 'The category icon belongs to the parent only');
+    expect(find.byIcon(MMIcons.check), findsOneWidget);
     expect(tester.getRect(find.text('Dark')).left, greaterThan(tester.getRect(find.text('Appearance')).right));
     await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();

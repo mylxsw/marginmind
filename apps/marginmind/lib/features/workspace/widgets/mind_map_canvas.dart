@@ -1992,78 +1992,104 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           ),
         ),
         if (spec.notesExpanded)
-          for (final note in spec.attachedNotes)
-            Padding(
-              key: ValueKey('map-attached-note-${note.id}'),
-              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
-              child: MMContextMenuRegion(
-                onSecondaryTapUp: widget.onContextMenu == null
+          for (final (index, note) in spec.attachedNotes.indexed)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: index == 0
                     ? null
-                    : (details) {
-                        widget.focusNode.requestFocus();
-                        widget.onSelect(note.id);
-                        widget.onContextMenu!(note.id, details.globalPosition);
-                      },
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: _cache.noteRowMinHeight),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: field?.id == note.id
-                            ? fieldEditor(
-                                field!,
-                                style: t.body.copyWith(height: 19 / 13),
-                                kind: CardKind.note,
-                              )
-                            : MMInteractive(
-                                immediateTap: true,
-                                selected: widget.selectedCardIds.contains(id) || id == _selectedNodeId,
-                                onTap: () => _tapNode(id),
-                                onDoubleTap: () => widget.onRename(note.id),
-                                builder: (_, _) => Opacity(
-                                  opacity: note.suspended ? _suspendedOpacity : 1,
-                                  child: Text.rich(
-                                    noteSpan(note.title, note.textFormat, t.body.copyWith(height: 19 / 13)),
-                                  ),
-                                ),
-                              ),
+                    : Border(
+                        top: BorderSide(color: c.separator, width: MMSizes.hairline),
                       ),
-                      if (field?.id != note.id)
-                        SizedBox(
-                          width: _cache.noteActionsWidth,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: MMSpacing.s),
-                            child: Row(
-                              children: [
-                                SizedBox.square(
-                                  dimension: _cache.noteActionSize,
-                                  child: MMIconButton(
-                                    key: ValueKey('map-note-edit-${note.id}'),
-                                    icon: MMIcons.editNote,
-                                    tooltip: l.editNote,
-                                    size: _cache.noteActionSize,
-                                    iconSize: MMTypography.body.fontSize!,
-                                    onPressed: () => widget.onRename(note.id),
+              ),
+              child: Padding(
+                key: ValueKey('map-attached-note-${note.id}'),
+                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+                child: MMContextMenuRegion(
+                  onSecondaryTapUp: widget.onContextMenu == null
+                      ? null
+                      : (details) {
+                          widget.focusNode.requestFocus();
+                          widget.onSelect(note.id);
+                          widget.onContextMenu!(note.id, details.globalPosition);
+                        },
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: _cache.noteRowMinHeight),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: field?.id == note.id
+                              ? fieldEditor(
+                                  field!,
+                                  style: t.body.copyWith(height: 19 / 13),
+                                  kind: CardKind.note,
+                                )
+                              : MMInteractive(
+                                  immediateTap: true,
+                                  selected: widget.selectedCardIds.contains(id) || id == _selectedNodeId,
+                                  onTap: () => _tapNode(id),
+                                  onDoubleTap: () => widget.onRename(note.id),
+                                  builder: (_, _) => Opacity(
+                                    opacity: note.suspended ? _suspendedOpacity : 1,
+                                    child: Text.rich(
+                                      noteSpan(note.title, note.textFormat, t.body.copyWith(height: 19 / 13)),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: MMSpacing.xxs),
-                                SizedBox.square(
-                                  dimension: _cache.noteActionSize,
-                                  child: MMIconButton(
-                                    key: ValueKey('map-note-delete-${note.id}'),
-                                    icon: MMIcons.trash,
-                                    tooltip: l.deleteMapNote,
-                                    size: _cache.noteActionSize,
-                                    iconSize: MMTypography.body.fontSize!,
-                                    onPressed: widget.onDeleteNote == null ? null : () => widget.onDeleteNote!(note.id),
+                        ),
+                        TextFieldTapRegion(
+                          child: SizedBox(
+                            width: _cache.noteActionsWidth,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: MMSpacing.s),
+                              child: Row(
+                                children: [
+                                  SizedBox.square(
+                                    dimension: _cache.noteActionSize,
+                                    child: MMIconButton(
+                                      key: ValueKey(
+                                        field?.id == note.id ? 'map-note-save-${note.id}' : 'map-note-edit-${note.id}',
+                                      ),
+                                      icon: field?.id == note.id ? MMIcons.check : MMIcons.editNote,
+                                      tooltip: field?.id == note.id ? l.save : l.editNote,
+                                      size: _cache.noteActionSize,
+                                      iconSize: MMTypography.body.fontSize!,
+                                      onPressed: () {
+                                        if (field?.id == note.id) {
+                                          endField(field, commit: true, refocus: true);
+                                        } else {
+                                          widget.onRename(note.id);
+                                        }
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: MMSpacing.xxs),
+                                  SizedBox.square(
+                                    dimension: _cache.noteActionSize,
+                                    child: MMIconButton(
+                                      key: ValueKey(
+                                        field?.id == note.id
+                                            ? 'map-note-cancel-${note.id}'
+                                            : 'map-note-delete-${note.id}',
+                                      ),
+                                      icon: field?.id == note.id ? MMIcons.close : MMIcons.trash,
+                                      tooltip: field?.id == note.id ? l.cancel : l.deleteMapNote,
+                                      size: _cache.noteActionSize,
+                                      iconSize: MMTypography.body.fontSize!,
+                                      onPressed: field?.id == note.id
+                                          ? () => endField(field, commit: false, refocus: true)
+                                          : widget.onDeleteNote == null
+                                          ? null
+                                          : () => widget.onDeleteNote!(note.id),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -3298,14 +3324,19 @@ class _NodeView extends StatelessWidget {
         child: Stack(
           children: [
             if (spec.kind == _Kind.research)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 3,
+              Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.horizontal(left: Radius.circular(radius)),
-                  child: ColoredBox(color: c.research),
+                  // Clip against the whole card, so the stripe follows its
+                  // corners instead of rounding a separate narrow rectangle.
+                  borderRadius: BorderRadius.circular(flatRadius),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: 3,
+                      height: double.infinity,
+                      child: ColoredBox(color: c.research),
+                    ),
+                  ),
                 ),
               ),
             Positioned(

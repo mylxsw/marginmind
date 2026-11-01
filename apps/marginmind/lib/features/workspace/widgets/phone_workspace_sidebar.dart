@@ -15,8 +15,6 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
     super.key,
     required this.title,
     required this.mapId,
-    required this.searchFocus,
-    required this.onSearch,
     required this.onDismiss,
     required this.documents,
     required this.maps,
@@ -35,8 +33,6 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
 
   final String title;
   final String? mapId;
-  final FocusNode searchFocus;
-  final ValueChanged<String> onSearch;
   final VoidCallback onDismiss, onAddDocument, onAddMap, onAddNote;
   final VoidCallback? onAddWebPage, onGenerateMap;
   final List<Widget> documents, maps, notes, learning, results;
@@ -214,12 +210,6 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
                           style: context.mmText.title2.copyWith(fontSize: MMPhoneNavigation.titleSize),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: MMSpacing.m),
-                        MMSearchField(
-                          placeholder: l.searchInSet,
-                          focusNode: widget.searchFocus,
-                          onChanged: widget.onSearch,
                         ),
                       ],
                     ),

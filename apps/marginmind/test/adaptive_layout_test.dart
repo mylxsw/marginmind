@@ -324,14 +324,16 @@ void main() {
       expect(find.byKey(const ValueKey('reader-more')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('reader-more')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('reader-zoom-slider')), findsOneWidget);
-      expect(find.text('Fit Width'), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-zoom-control')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-page-fit')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('reader-appearance')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Dark'));
       await tester.pumpAndSettle();
       expect(container.read(settingsProvider).readerStyle, MMReaderStyle.dark);
       await tester.tap(find.byKey(const ValueKey('reader-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('reader-page-fit')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Fit Width'));
       await tester.pumpAndSettle();

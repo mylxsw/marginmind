@@ -138,7 +138,8 @@ class MMSettingsRow extends StatelessWidget {
 }
 
 /// A macOS pop-up button: the chosen value and up-down chevrons; the menu
-/// checks the current choice.
+/// checks the current choice. Value choices use text and a selection mark,
+/// without a repeated command icon.
 class MMPopUpButton<T> extends StatelessWidget {
   const MMPopUpButton({
     super.key,
@@ -175,10 +176,7 @@ class MMPopUpButton<T> extends StatelessWidget {
                 context,
                 position: box.localToGlobal(Offset(0, box.size.height + 2)),
                 minWidth: box.size.width,
-                entries: [
-                  for (final (v, text) in items)
-                    MMMenuItem(text, () => onChanged!(v), icon: MMIcons.settings, checked: v == value),
-                ],
+                entries: [for (final (v, text) in items) MMMenuItem(text, () => onChanged!(v), checked: v == value)],
               );
             }
           : null,

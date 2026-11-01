@@ -1252,12 +1252,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           ref.watch(settingsProvider).readerStyle,
           ref.read(settingsProvider.notifier).setReaderStyle,
         ),
-      // ⌘F finds in the PDF when the keyboard is in the reader, else in the sidebar.
+      // Sidebar search is temporarily hidden; library and document search remain available.
       AppCommand(
         findsInDocument ? l.findInDocument : l.search,
         findsInDocument
             ? workspace.openFind
-            : (inLibrary || inWorkspace)
+            : inLibrary
             ? () => ref.read(focusRequestsProvider.notifier).request(FocusTarget.search)
             : null,
         shortcut: AppShortcuts.find,

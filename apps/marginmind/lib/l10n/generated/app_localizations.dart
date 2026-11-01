@@ -1928,6 +1928,18 @@ abstract class AppLocalizations {
   /// **'Light Green'**
   String get readerStyleGreen;
 
+  /// No description provided for @readerZoomLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get readerZoomLabel;
+
+  /// No description provided for @readerZoomDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the percentage up to zoom in, down to zoom out'**
+  String get readerZoomDragHint;
+
   /// No description provided for @readerZoom.
   ///
   /// In en, this message translates to:

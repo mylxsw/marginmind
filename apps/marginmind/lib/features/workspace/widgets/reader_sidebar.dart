@@ -45,10 +45,13 @@ class ReaderSidebar extends ConsumerWidget {
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
 
     return Container(
-      width: width,
+      width: math.max(0, width - MMSpacing.m * 2),
+      margin: const EdgeInsets.all(MMSpacing.m),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: c.sidebarOpaque,
-        border: Border(right: BorderSide(color: c.separator)),
+        borderRadius: BorderRadius.circular(MMRadii.sidebar),
+        border: Border.all(color: c.border, width: MMSizes.hairline),
       ),
       child: ListenableBuilder(
         listenable: pdf,
@@ -66,21 +69,27 @@ class ReaderSidebar extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (final (value, icon, label, shortcut) in tabs)
-                        MMToolbarButton(
-                          icon: icon,
-                          tooltip: AppShortcuts.tip(label, shortcut),
-                          selected: value == shown,
-                          onPressed: controller.canShowReaderPanel(value)
-                              ? () => controller.setReaderPanelMode(value)
-                              : null,
-                        ),
-                    ],
+                child: LayoutBuilder(
+                  builder: (context, bounds) => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minWidth: bounds.maxWidth),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (final (value, icon, label, shortcut) in tabs)
+                            MMToolbarButton(
+                              icon: icon,
+                              tooltip: AppShortcuts.tip(label, shortcut),
+                              selected: value == shown,
+                              onPressed: controller.canShowReaderPanel(value)
+                                  ? () => controller.setReaderPanelMode(value)
+                                  : null,
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

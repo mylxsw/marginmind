@@ -76,6 +76,9 @@ void main() {
     await tester.pumpAndSettle();
     // Scope the check to the interactive menu item, independent of nested
     // label/badge rows. The other choice must remain unchecked.
+    final menu = find.byType(MMGlass);
+    expect(find.descendant(of: menu, matching: find.byType(Icon)), findsOneWidget);
+    expect(find.descendant(of: menu, matching: find.byIcon(MMIcons.check)), findsOneWidget);
     final beta = find.text('Beta').last;
     expect(
       find.descendant(
