@@ -60,6 +60,19 @@ TaskSpec assistantSpecFor(String? skill, List<ContextItem> contexts) => switch (
   _ => assistantChatSpec,
 };
 
+/// Host controls for the same task owner. Implementations may coordinate a
+/// deterministic workflow, but never construct another Agent loop.
+abstract interface class AssistantTaskControls {
+  RunContext get context;
+  RunStatus get status;
+  bool get saveFailed;
+  int? get completed;
+  int? get total;
+  Future<void> pause();
+  Future<void> resume();
+  Future<void> useModel(ModelReference model);
+}
+
 /// Per-request owner of permissions, evidence and proposal hooks. No model client
 /// lives here: the only executing agent is constructed by SdkAgentRuntime.
 class AssistantTaskOwner implements AssistantRun {
@@ -93,7 +106,90 @@ class AssistantTaskOwner implements AssistantRun {
   final bool online;
   final String? primaryDocumentId;
   AssistantNetwork? network;
+  SearchProvider? _nativeTarget;
+  bool streamDrafts = false;
+  CitationBuffer? _draftBuffer;
+  late final SearchProvider nativeSearch = _OwnerNativeSearch(this);
+  Future<Map<String, dynamic>> Function(String childId)? recoverProviderChild;
+
+  void acceptRuntimeEvent(RunEvent event) {
+    if (_events.isClosed || cancel.isCancelled) return;
+    if (event.kind == RunEventKind.modelStarted) {
+      _draftBuffer = CitationBuffer(citations);
+      _events.add(
+        sdk.StreamingEvent(
+          eventType: sdk.StreamingEventType.fullModelMessage,
+          data: sdk.ModelMessage(model: '', textOutput: '', stopReason: null),
+        ),
+      );
+    } else if (event.kind == RunEventKind.draftDelta && event.draft != null) {
+      _events.add(
+        sdk.StreamingEvent(
+          eventType: sdk.StreamingEventType.modelChunkMessage,
+          data: sdk.ModelMessage(
+            model: '',
+            textOutput: (_draftBuffer ??= CitationBuffer(citations)).add(event.draft!),
+            stopReason: null,
+          ),
+        ),
+      );
+    }
+  }
+
   final Future<RunResult<String>> Function(String text) execute;
+  AssistantTaskControls? controls;
+  Future<void> Function()? saveConversation;
+  Future<void> checkpointConversation() async => saveConversation?.call();
+
+  void restoreEvidence(Map<String, dynamic>? evidence) {
+    if (evidence == null) return;
+    final existing = {for (final c in citations.items) c.marker: c};
+    for (final row in evidence['items'] as List) {
+      final citation = Citation.fromJson(Map<String, dynamic>.from(row));
+      final old = existing[citation.marker];
+      if (old != null && old.evidenceId != citation.evidenceId) {
+        throw const ConfigurationFailure('summaryEvidenceConflict');
+      }
+      existing[citation.marker] = citation;
+    }
+    final current = conversationState.metadata['assistant.evidence.v1'] as Map?;
+    conversationState.metadata['assistant.evidence.v1'] = {
+      'next': (evidence['next'] as int) > (current?['next'] as int? ?? 1) ? evidence['next'] : current?['next'] ?? 1,
+      'items': existing.values.map((c) => c.toJson()).toList(),
+    };
+    citations = CitationRegistry(
+      primaryDocumentId: primaryDocumentId,
+      online: online,
+      persistentState: conversationState.metadata,
+    );
+  }
+
+  void restoreCheckpoint(RunManifest manifest) {
+    final raw = manifest.checkpoint['state'];
+    if (raw is! Map) throw const ConfigurationFailure('assistantCheckpointMissing');
+    _state = sdk.AgentState.fromJson(Map<String, dynamic>.from(jsonDecode(jsonEncode(raw))));
+    citations = CitationRegistry(
+      primaryDocumentId: primaryDocumentId,
+      online: online,
+      persistentState: _state!.metadata,
+    );
+    _restoreProposals(_state!);
+    synchronize();
+  }
+
+  void _restoreProposals(sdk.AgentState state) {
+    proposals = _proposal();
+    final prefix = '$requestId-';
+    for (final row in state.metadata['assistant.proposals'] as List? ?? []) {
+      final proposal = MapEditProposal.fromJson(Map<String, dynamic>.from(row));
+      if (!proposal.id.startsWith(prefix)) continue;
+      if (proposal.studySetId != scope.studySetId || proposal.mapId != mapId || proposal.baseRevision != baseRevision) {
+        throw const ConfigurationFailure('assistantProposalScopeMismatch');
+      }
+      proposals.proposals[proposal.id.substring(prefix.length)] = proposal;
+    }
+  }
+
   @override
   final cancel = CancellationToken();
   @override
@@ -122,7 +218,13 @@ class AssistantTaskOwner implements AssistantRun {
     // Seed only a new run. Recovery retains the runtime's durable state.
     if (!state.metadata.containsKey('assistant.taskOwner.v1')) {
       final saved = sdk.AgentState.fromJson(jsonDecode(jsonEncode(conversationState.toJson())));
-      state.metadata.addAll(saved.metadata);
+      state.metadata.addAll(
+        Map<String, dynamic>.from(saved.metadata)
+          ..remove('assistant.view')
+          ..remove('assistant.taskRecords.v1')
+          ..remove('assistant.taskUsage.v1')
+          ..remove('assistant.nativeRequests.v1'),
+      );
       final identity = jsonEncode([
         context.config.model.toJson(),
         context.config.capabilities.identity.protocol.name,
@@ -152,7 +254,7 @@ class AssistantTaskOwner implements AssistantRun {
     _state = state;
     budget = RunBudget();
     citations = CitationRegistry(primaryDocumentId: primaryDocumentId, online: online, persistentState: state.metadata);
-    proposals = _proposal();
+    _restoreProposals(state);
     state.metadata['assistant.diagnostics'] ??= <String, dynamic>{};
     (state.metadata['assistant.diagnostics'] as Map)[requestId] = {
       'requestId': requestId,
@@ -185,7 +287,8 @@ class AssistantTaskOwner implements AssistantRun {
           allowed: {...tools.map((t) => t.name)},
           budget: budget,
           online: online,
-          toolsEnabled: input['toolsEnabled'] != false,
+          toolsEnabled:
+              input['toolsEnabled'] != false && context.config.capabilities.tools == CapabilitySupport.supported,
           requestId: requestId,
         ),
         if (input['reviewOnly'] == true) _GroundedReviewHook(this),
@@ -205,7 +308,15 @@ class AssistantTaskOwner implements AssistantRun {
     for (final entry in state.metadata.entries) {
       if (state.metadata.containsKey('assistant.summaryStage.v1') && entry.key == 'assistant.taskModel.v1') continue;
       if (entry.key.startsWith('assistant.') &&
-              !{'assistant.view', 'assistant.proposalViews', 'assistant.summaryStage.v1'}.contains(entry.key) ||
+              !{
+                'assistant.view',
+                'assistant.proposalViews',
+                'assistant.summaryStage.v1',
+                'assistant.taskRecords.v1',
+                'assistant.taskUsage.v1',
+                'assistant.nativeRequests.v1',
+                'assistant.summaryCoverage.v1',
+              }.contains(entry.key) ||
           entry.key == 'runtime.history.v1') {
         conversationState.metadata[entry.key] = entry.value;
       }
@@ -273,7 +384,10 @@ void registerAssistantTasks(TaskRegistry registry, AssistantTaskOwner owner) {
             ? ValidationReport()
             : _invalid('question', 'Question required'),
         validator: _AnswerValidator(spec.type, owner),
-        createBindings: owner.bindings,
+        createControlledBindings: (scope) {
+          owner._nativeTarget = scope.nativeSearch;
+          return owner.bindings(scope.context, scope.state, scope.input);
+        },
       ),
     );
   }
@@ -360,7 +474,9 @@ class _AssistantEvents extends sdk.AgentHook {
   sdk.ModelCallHookResult beforeModelCall(sdk.ModelCallHookContext context) {
     owner.agent = context.agent;
     owner.synchronize();
-    owner._events.add(sdk.StreamingEvent(eventType: sdk.StreamingEventType.beforeCallModel, data: null));
+    if (!owner.streamDrafts) {
+      owner._events.add(sdk.StreamingEvent(eventType: sdk.StreamingEventType.beforeCallModel, data: null));
+    }
     return const sdk.ModelCallHookResult.proceed();
   }
 
@@ -460,3 +576,84 @@ List<KnowledgeBundle> assistantTaskKnowledgeBundles() {
 
 VersionedKnowledgeRegistry assistantTaskKnowledgeRegistry() =>
     VersionedKnowledgeRegistry(assistantTaskKnowledgeBundles());
+
+/// The request-to-child slot is saved by Runtime before the provider dispatch.
+/// Recovery resolves that exact child, including a pending save, without buying
+/// the search again. Host authorization still runs outside this port.
+class _OwnerNativeSearch implements SearchProvider {
+  _OwnerNativeSearch(this.owner);
+  final AssistantTaskOwner owner;
+  @override
+  Future<List<SearchHit>> search(SearchRequest request, CancellationToken cancellation) async {
+    cancellation.check();
+    final state = owner._state;
+    final target = owner._nativeTarget;
+    if (state == null || target == null) throw const ConfigurationFailure('nativeSearchOwnerRequired');
+    final requests = state.metadata.putIfAbsent('assistant.nativeRequests.v1', () => <String, dynamic>{}) as Map;
+    final children = state.metadata.putIfAbsent('runtime.providerChildren.v1', () => <dynamic>[]) as List;
+    final key = jsonEncode([request.query, request.limit]);
+    Future<List<SearchHit>> recover(int slot) async {
+      if (slot >= children.length || owner.recoverProviderChild == null) {
+        throw const ConfigurationFailure('nativeSearchReconciliationRequired');
+      }
+      final result = await owner.recoverProviderChild!(children[slot] as String);
+      cancellation.check();
+      if (result['hits'] is! List) throw const ResearchFailure(ResearchFailureKind.protocol);
+      return [
+        for (final hit in result['hits'])
+          SearchHit(url: Uri.parse(hit['url']), title: hit['title'], snippet: hit['snippet']),
+      ];
+    }
+
+    if (requests[key] is int) return recover(requests[key] as int);
+    final slot = children.length;
+    requests[key] = slot;
+    try {
+      return await target.search(request, cancellation);
+    } catch (_) {
+      if (slot >= children.length) rethrow;
+      return recover(slot);
+    }
+  }
+}
+
+/// Parent Runtime usage excludes provider steps. Follow explicit links once;
+/// never sum a workflow aggregate with the stages already included in it.
+Future<RunUsage> loadAssistantTaskUsage(RunStore store, String runId) async {
+  final rows = <RunUsage>[];
+  final seen = <String>{};
+  Future<void> visit(String id) async {
+    if (!seen.add(id)) return;
+    final saved = await store.load(id);
+    if (saved == null) {
+      rows.add(const RunUsage());
+      return;
+    }
+    rows.add(saved.usage);
+    final state = saved.checkpoint['state'] as Map?;
+    final metadata = state?['metadata'] as Map?;
+    for (final child in metadata?['runtime.providerChildren.v1'] as List? ?? []) {
+      await visit(child as String);
+    }
+  }
+
+  await visit(runId);
+  return sumAssistantUsage(rows);
+}
+
+RunUsage sumAssistantUsage(Iterable<RunUsage> rows) {
+  final values = rows.toList();
+  return RunUsage(
+    quality: values.isNotEmpty && values.every((u) => u.quality == UsageQuality.reported)
+        ? UsageQuality.reported
+        : UsageQuality.unknown,
+    modelCalls: values.fold(0, (n, u) => n + u.modelCalls),
+    repairs: values.fold(0, (n, u) => n + u.repairs),
+    inputTokens: values.fold(0, (n, u) => n + u.inputTokens),
+    outputTokens: values.fold(0, (n, u) => n + u.outputTokens),
+    reasoningTokens: values.every((u) => u.reasoningTokens != null)
+        ? values.fold<int>(0, (n, u) => n + u.reasoningTokens!)
+        : null,
+    elapsed: values.fold(Duration.zero, (n, u) => n + u.elapsed),
+  );
+}

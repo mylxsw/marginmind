@@ -190,6 +190,7 @@ class Message {
     List<ReadPermissionView> permissions = const [],
     this.skill,
     this.taskModel,
+    this.toolsEnabled = true,
     this.summaryMessageIds,
     this.noteId,
     this.online = false,
@@ -213,6 +214,7 @@ class Message {
   bool get waitingForPermission => permissions.any((permission) => permission.status == ReadPermissionStatus.pending);
   final String? skill, noteId;
   final ModelReference? taskModel;
+  final bool toolsEnabled;
   final List<String>? summaryMessageIds;
   final bool online;
   final DateTime? startedAt, endedAt;
@@ -269,6 +271,7 @@ class Message {
     permissions: permissions ?? this.permissions,
     skill: skill,
     taskModel: taskModel,
+    toolsEnabled: toolsEnabled,
     summaryMessageIds: summaryMessageIds,
     noteId: noteId ?? this.noteId,
     online: online ?? this.online,
@@ -290,6 +293,7 @@ class Message {
     'permissions': permissions.map((p) => p.toJson()).toList(),
     'skill': skill,
     'taskModel': taskModel?.toJson(),
+    'toolsEnabled': toolsEnabled,
     'summaryMessageIds': summaryMessageIds,
     'noteId': noteId,
     'online': online,
@@ -312,6 +316,7 @@ class Message {
       for (final v in j['permissions'] as List? ?? []) ReadPermissionView.fromJson(Map<String, dynamic>.from(v)),
     ],
     skill: j['skill'],
+    toolsEnabled: j['toolsEnabled'] != false,
     taskModel: j['taskModel'] == null ? null : ModelReference.fromJson(Map<String, dynamic>.from(j['taskModel'])),
     summaryMessageIds: j['summaryMessageIds'] == null ? null : List<String>.from(j['summaryMessageIds']),
     noteId: j['noteId'],

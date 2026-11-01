@@ -1,4 +1,4 @@
-# Assistant domain migration (GUL-650, integration in progress)
+# Assistant domain migration (GUL-650)
 
 Production `assistantDependenciesForProvider.runFactory` calls `createPersistentAssistantRun`.
 It composes `PersistentTaskAssembly` with the real routing/services/SecretStore and
@@ -32,37 +32,58 @@ These checks validate provenance, not the truth of a generated claim.
 Summaries read the selected source range, split by encoded request size derived
 from the frozen capacity, then reduce bounded groups. Every stage validates exact
 assigned coverage IDs. Oversized/nonreducing outputs and unread ranges fail
-explicitly. Sources and intermediate results remain in the runtime checkpoints;
-the final leaf coverage is also retained in the conversation metadata. The
-in-memory final result is not yet a durable aggregate job result (see below).
+explicitly. Sources and intermediate results remain in the runtime checkpoints.
+`PersistentAssistantSummary` owns a separate deterministic parent manifest, stage
+attempt index, leaf coverage and validated pending/final aggregate. A child
+finishing cannot complete the parent. Partial parents resume through immutable
+successors; committed children are verified and reused across restarts. Parent
+CAS claims precede inference. A pending aggregate save retries storage only.
 
-## Public Runtime work required before acceptance
+`AssistantTaskSession` binds pause, resume, model selection and pending-save
+retry to the same owner/Runtime handle. Explicit model changes freeze a new
+configuration phase without raising the original output ceiling. The controller
+is still the only conversation archive writer. Its task record pins the input,
+source scope, images, context and any durable configuration intent. Reopening an
+archive does not call a model; the latest unfinished answer has an explicit
+resume action. A resumed summary uses its stored source snapshot, not newly read
+or changed documents. Existing branch retry, references, confirmation and undo
+remain controller-owned.
 
-This branch is a partial integration, not a completion claim. It needs the parent
-to coordinate these shared contracts, which the domain ownership rules reserve:
+## Runtime ports and network ownership
 
-- A controlled infrastructure/provider substep API for native_search and
-  capability_probe. It must accept a parent-derived context, enforce current
-  identity, policy, cancellation and output limits, record actual usage, and
-  support diagnostic unknown profiles without granting semantic admission.
-  `webSearchProvider` now requires an injected native port; absent that port it
-  fails closed. It no longer constructs an untracked native model request.
-  RoutingCapabilityProbe still uses its existing controlled connection outside
-  AgentRuntime and therefore remains an explicit acceptance gap.
-- A deterministic workflow/aggregate lifecycle: a document summary can have many
-  successful child stages followed by a failed merge. The current public runtime
-  only runs model-backed TaskDefinitions. The root must retain a durable workflow
-  checkpoint and final leaf coverage, expose partial status and recover completed
-  stages without repurchasing them. Current summary stages are recorded, but the
-  first stage is the root; its completed status describes that stage only.
-- Typed multimodal input and SDK event/draft bindings on the existing runtime.
-  The facade currently publishes validated full answers and tool events. Image
-  selections explicitly fail with multimodalRuntimeInputRequired rather than
-  silently dropping image content. No alternate streaming Agent is installed.
-- Run-panel recovery/configuration controls must bind to this same owner, and
-  pending validated results after disk failure need a reachable save retry.
-  Current UI shows lifecycle status and offers the existing stop/retry branch
-  actions; it does not yet expose arbitrary Runtime resume/configuration phases.
+The production factory consumes the merged `docs/runtime-ports.md` contract.
+Authorized local images become `TaskImage` inputs; unknown multimodal capability
+is rejected by Runtime. Chat/review drafts consume `modelStarted` resets and
+`draftDelta` events with citation buffering. Only `handle.result` supplies the
+validated final answer. Structured research/summary JSON is not exposed as prose
+drafts. There is one Runtime/SDK Agent, with no direct-model fallback.
+
+Controlled bindings inject `scope.nativeSearch` through the existing network
+factory and `webSearchProvider`. Network grants, keyword limits, URL safety,
+actual body snapshots and citation checks remain in the existing host/tools.
+Search request slots are claimed in the parent checkpoint before Runtime reserves
+its provider child. Repeated/recovered requests reconcile that same child.
+Pending provider writes use `ProviderSteps.retrySave/recoverSave`; interrupted
+children without a durable result fail explicitly rather than repurchasing an
+unknown outcome. Pending children are reconciled before parent recovery resumes
+inference. Linked provider usage is aggregated once, retaining unknown quality;
+workflow parent totals include their verified stage attempts without double
+counting the parent aggregate. Totals are archived as `assistant.taskUsage.v1`.
+
+`PersistentTaskAssembly.createCapabilityProbe()` is the public durable probe
+entry point; semantic admission remains unchanged. This domain does not alter
+shared provider registration or synthesize capability evidence.
+
+## Targeted verification
+
+Package tests cover exact summary coverage, bounded reduction, deterministic
+parent recovery/CAS, lost child/parent acknowledgements, pending aggregate saves,
+controlled search child reuse, usage aggregation, evidence and review validation.
+App tests exercise all five production task routes plus Quick translation over a
+loopback SDK transport and FileRunStore, inline image/stream drafts, actual
+research search/fetch and review proposal tools, disk reopen without inference,
+same-owner configuration phases, pending Runtime result saves, narrow control UI,
+and existing controller confirmation/undo behavior.
 
 No trusted production profiles are synthesized. No real provider credentials,
 model quality, physical device, native application UI or OS Keychain operation

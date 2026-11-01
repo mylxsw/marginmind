@@ -276,6 +276,7 @@ AssistantNetwork productionAssistantNetwork({
   String searchKey = '',
   String searchAccountId = '',
   ResearchDocumentCache? cache,
+  SearchProvider? nativeSearch,
 }) {
   final http = AssistantNetworkHttp();
   final settings =
@@ -298,6 +299,7 @@ AssistantNetwork productionAssistantNetwork({
         : null,
     model: model,
     modelKey: key,
+    nativeSearch: nativeSearch,
     key: searchKey,
     accountId: searchAccountId,
     httpFactory: (url, local) => AssistantNetworkHttp(

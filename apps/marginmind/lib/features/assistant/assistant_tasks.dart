@@ -8,6 +8,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:path/path.dart' as p;
 
 import 'assistant_routing.dart';
+import 'assistant_task_session.dart';
 import 'assistant_services.dart';
 import 'task_run_store.dart';
 import 'quick_tasks.dart';
@@ -31,7 +32,7 @@ AssistantTaskOwner createPersistentAssistantRun({
   required Map<String, String?> parents,
   AssistantNetwork? network,
   Future<List<sdk.ImagePart>> Function(List<ContextItem>)? images,
-  Future<AssistantNetwork?> Function(AssistantModel)? networkFactory,
+  Future<AssistantNetwork?> Function(AssistantModel, SearchProvider)? networkFactory,
 }) {
   if (!p.isAbsolute(directory)) throw const ConfigurationFailure('persistentStudySetRequired');
   final spec = assistantSpecFor(question.skill, question.contexts);
@@ -44,22 +45,27 @@ AssistantTaskOwner createPersistentAssistantRun({
     profiles: ref.read(assistantCapabilityProfilesProvider),
     knowledge: assistantTaskKnowledgeRegistry(),
   );
+  final archivedRecord = (state.metadata['assistant.taskRecords.v1'] as Map?)?[question.requestId] as Map?;
+  final pinnedDocuments = archivedRecord == null
+      ? documents.map((d) => d.id)
+      : ((archivedRecord['input'] as Map)['documents'] as List).map((d) => d['id'] as String);
   late AssistantTaskOwner owner;
   owner = AssistantTaskOwner(
     conversationState: state,
     reader: reader,
-    scope: scopeFromContexts(conversation.studySetId, question.contexts, documentIds: documents.map((d) => d.id)),
+    scope: scopeFromContexts(conversation.studySetId, question.contexts, documentIds: pinnedDocuments),
     requestId: question.requestId,
-    mapId: mapId,
-    baseRevision: revision,
-    parents: parents,
-    online: conversation.online,
+    mapId: archivedRecord == null
+        ? mapId
+        : (decodeRunContext(Map<String, dynamic>.from(archivedRecord['context'])).inputRange['mapId'] as String),
+    baseRevision: archivedRecord == null
+        ? revision
+        : (decodeRunContext(Map<String, dynamic>.from(archivedRecord['context'])).inputRange['baseRevision'] as int),
+    parents: archivedRecord == null ? parents : Map<String, String?>.from((archivedRecord['input'] as Map)['parents']),
+    online: conversation.online && (archivedRecord == null || (archivedRecord['input'] as Map)['online'] == true),
     network: network,
     primaryDocumentId: question.contexts.map((c) => c.documentId).whereType<String>().firstOrNull,
     execute: (text) async {
-      if ((await images?.call(question.contexts))?.isNotEmpty == true) {
-        throw const ConfigurationFailure('multimodalRuntimeInputRequired');
-      }
       if (question.skill == 'translate') {
         final explicit = question.contexts.where((c) => !c.auto).toList();
         final selected = explicit.isEmpty ? question.contexts : explicit;
@@ -106,6 +112,15 @@ AssistantTaskOwner createPersistentAssistantRun({
         );
       }
 
+      final taskImages = archivedRecord != null
+          ? [
+              for (final i in archivedRecord['images'] as List? ?? [])
+                TaskImage(base64Data: i['base64Data'], mimeType: i['mimeType']),
+            ]
+          : [
+              for (final i in await images?.call(question.contexts) ?? <sdk.ImagePart>[])
+                TaskImage(base64Data: i.base64Data, mimeType: i.mimeType),
+            ];
       final input = <String, dynamic>{
         'question': text,
         if (question.summaryMessageIds != null) 'summaryMessageIds': question.summaryMessageIds,
@@ -115,11 +130,13 @@ AssistantTaskOwner createPersistentAssistantRun({
         ],
         'parents': parents,
         'online': conversation.online,
-        'toolsEnabled': conversation.model.supportsTools,
+        'toolsEnabled': question.toolsEnabled,
         'reviewOnly': spec.type == TaskType.reviewCards,
       };
-      final request = TaskRequest<String>(
+      var request = TaskRequest<String>(
         spec: spec,
+        images: taskImages,
+        streamDrafts: spec.type == TaskType.assistantChat || spec.type == TaskType.reviewCards,
         input: input,
         inputFingerprint: quickInputFingerprint(input),
         modelOverride:
@@ -128,65 +145,76 @@ AssistantTaskOwner createPersistentAssistantRun({
                 ? conversationRoutingOverride(conversation.toJson(), TaskType.assistantChat)
                 : null),
       );
-      final context = await assembly.freeze(
-        request,
-        runId: _runId(),
-        inputRange: {
-          'studySetId': conversation.studySetId,
-          'conversationId': conversation.id,
-          'requestId': question.requestId,
-          if (question.summaryMessageIds != null) 'messageIds': question.summaryMessageIds,
-          'contexts': [for (final c in question.contexts) c.toJson()],
+      var context = archivedRecord == null
+          ? await assembly.freeze(
+              request,
+              runId: _runId(),
+              inputRange: {
+                'studySetId': conversation.studySetId,
+                'conversationId': conversation.id,
+                'requestId': question.requestId,
+                'mapId': mapId,
+                'baseRevision': revision,
+                if (question.summaryMessageIds != null) 'messageIds': question.summaryMessageIds,
+                'contexts': [for (final c in question.contexts) c.toJson()],
+              },
+            )
+          : decodeRunContext(Map<String, dynamic>.from(archivedRecord['context']));
+      owner.cancel.check();
+      final record = (state.metadata['assistant.taskRecords.v1'] as Map?)?[question.requestId] as Map?;
+      if (record != null) {
+        if (record['version'] != 1 || record['type'] != spec.type.key || (record['input'] as Map)['question'] != text) {
+          throw const ConfigurationFailure('assistantTaskRecordMismatch');
+        }
+        request = TaskRequest<String>(
+          spec: spec,
+          input: Map<String, dynamic>.from(record['input']),
+          images: taskImages,
+          streamDrafts: spec.type == TaskType.assistantChat || spec.type == TaskType.reviewCards,
+          inputFingerprint: record['fingerprint'],
+          maxOutputTokens: record['maxOutputTokens'],
+        );
+        if (quickInputFingerprint(request.input) != request.inputFingerprint) {
+          throw const ConfigurationFailure('assistantTaskInputMismatch');
+        }
+        context = decodeRunContext(Map<String, dynamic>.from(record['context']));
+        if (context.inputRange['studySetId'] != conversation.studySetId ||
+            context.inputRange['conversationId'] != conversation.id ||
+            context.inputRange['requestId'] != question.requestId) {
+          throw const ConfigurationFailure('assistantTaskScopeMismatch');
+        }
+      }
+      final activity = ref.read(assistantTaskActivityProvider(conversation.studySetId).notifier);
+      final session = AssistantTaskSession(
+        assembly: assembly,
+        owner: owner,
+        request: request,
+        initialContext: context,
+        queuedPhase: record?['configurationIntent'] == null
+            ? null
+            : decodeRunContext(Map<String, dynamic>.from(record!['configurationIntent'])),
+        changed: (session) => activity.update(session.context, spec.type, session.status, owner: owner),
+        prepareNetwork: (context) async {
+          if (spec.type == TaskType.research && owner.online) {
+            owner.network =
+                network ?? await networkFactory?.call((await assembly.loadModel(context)).model, owner.nativeSearch);
+          }
         },
       );
-      owner.cancel.check();
-      if (spec.type == TaskType.research && conversation.online) {
-        owner.network = network ?? await networkFactory?.call((await assembly.loadModel(context)).model);
-      }
-      state.metadata['assistant.taskRun.v1'] = encodeRunContext(context);
-      final activity = ref.read(assistantTaskActivityProvider(conversation.studySetId).notifier);
-      Future<RunResult<String>> dispatch(TaskRequest<String> request, RunContext stageContext) => _dispatch(
-        assembly,
-        owner,
-        request,
-        stageContext,
-        onStatus: (status) => activity.update(stageContext, spec.type, status),
-      );
-
+      owner.controls = session;
       if (spec.type == TaskType.conversationSummarize || spec.type == TaskType.documentSummarize) {
-        final units = await _summaryUnits(owner, spec.type, conversation, question, documents);
+        final existing = await assembly.runs.load(context.runId);
+        final units = existing == null
+            ? await _summaryUnits(owner, spec.type, conversation, question, documents)
+            : null;
         final capacity = context.config.capabilities.contextTokens;
         final requestCharacters = ((capacity ?? 60000) - (context.config.policy.maxOutputTokens ?? 8192) - 12000).clamp(
           4096,
           24000,
         );
-        final summary = await summarizeAssistantUnits(
-          units: units,
-          requestCharacters: requestCharacters,
-          cancel: owner.cancel,
-          execute: (group, stage) => dispatch(
-            TaskRequest<String>(
-              spec: spec,
-              input: {
-                'question': text,
-                'units': [for (final u in group) u.toJson()],
-              },
-              inputFingerprint: quickInputFingerprint({
-                'units': [for (final u in group) u.toJson()],
-              }),
-            ),
-            stage == 0 ? context : context.child('${context.runId}-$stage'),
-          ),
-        );
-        state.metadata['assistant.summaryCoverage.v1'] = summary.coveredIds;
-        return RunResult<String>(
-          runId: context.runId,
-          status: RunStatus.completed,
-          validation: ValidationReport(),
-          value: summary.text,
-        );
+        return session.runSummary(units: units, capacity: requestCharacters);
       }
-      final result = await dispatch(request, context);
+      final result = await session.runTask();
       if (spec.type == TaskType.research && result.value != null) {
         String rendered;
         try {
@@ -208,38 +236,6 @@ AssistantTaskOwner createPersistentAssistantRun({
   );
   registerAssistantTasks(registry, owner);
   return owner;
-}
-
-Future<RunResult<String>> _dispatch(
-  PersistentTaskAssembly assembly,
-  AssistantTaskOwner owner,
-  TaskRequest<String> request,
-  RunContext context, {
-  void Function(RunStatus)? onStatus,
-}) async {
-  owner.cancel.check();
-  final handle = assembly.runtime.start(request, context);
-  final subscription = handle.events.listen((event) => onStatus?.call(event.status));
-  owner.permissions.onWaitingChanged = (waiting) => onStatus?.call(waiting ? RunStatus.awaitingUser : handle.status);
-  var finished = false;
-  Future<void>? cancelling;
-  unawaited(
-    owner.cancel.whenCancelled.then((_) {
-      if (!finished) {
-        cancelling ??= handle.cancel();
-        cancelling!.ignore();
-      }
-    }),
-  );
-  try {
-    return await owner.cancel.bind(handle.result);
-  } finally {
-    finished = true;
-    owner.permissions.onWaitingChanged = null;
-    await subscription.cancel();
-    if (cancelling != null) await cancelling;
-    owner.synchronize();
-  }
 }
 
 Future<List<SummaryUnit>> _summaryUnits(
@@ -332,10 +328,11 @@ Future<List<SummaryUnit>> _summaryUnits(
 }
 
 class AssistantTaskActivity {
-  const AssistantTaskActivity(this.context, this.type, this.status);
+  const AssistantTaskActivity(this.context, this.type, this.status, this.owner);
   final RunContext context;
   final TaskType type;
   final RunStatus status;
+  final AssistantTaskOwner? owner;
 }
 
 final assistantTaskActivityProvider =
@@ -348,6 +345,6 @@ class AssistantTaskActivityController extends Notifier<AssistantTaskActivity?> {
   final String studySetId;
   @override
   AssistantTaskActivity? build() => null;
-  void update(RunContext context, TaskType type, RunStatus status) =>
-      state = AssistantTaskActivity(context, type, status);
+  void update(RunContext context, TaskType type, RunStatus status, {AssistantTaskOwner? owner}) =>
+      state = AssistantTaskActivity(context, type, status, owner);
 }

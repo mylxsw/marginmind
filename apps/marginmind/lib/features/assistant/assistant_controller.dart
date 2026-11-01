@@ -197,6 +197,7 @@ class AssistantController extends Notifier<Conversation> {
       contexts: contexts,
       skill: skill,
       taskModel: taskModel ?? replacing?.$1.taskModel,
+      toolsEnabled: tools,
       summaryMessageIds: summaryMessageIds ?? replacing?.$1.summaryMessageIds,
     );
     final answer = Message(
@@ -284,6 +285,7 @@ class AssistantController extends Notifier<Conversation> {
         return;
       }
       session.run = run;
+      if (run is AssistantTaskOwner) run.saveConversation = () => _persist(session);
       run.permissions.onRequest = (request) async {
         if (!active()) return false;
         final decision = Completer<bool>();
@@ -445,6 +447,35 @@ class AssistantController extends Notifier<Conversation> {
         await _persist(session);
       }
     }
+  }
+
+  bool get canResumeTask {
+    if (busy || state.readOnly) return false;
+    final last = state.messages.lastOrNull;
+    return last?.role == MessageRole.agent &&
+        last!.status != MessageStatus.done &&
+        (_open.agent.metadata['assistant.taskRecords.v1'] as Map?)?[last.requestId] != null;
+  }
+
+  Future<void> resumeTask() {
+    if (!canResumeTask) throw StateError('No resumable task in this branch');
+    final session = _open;
+    final answer = session.view.messages.last;
+    final question = session.view.messages.firstWhere(
+      (m) => m.role == MessageRole.user && m.requestId == answer.requestId,
+    );
+    _replace(session, answer.copyWith(status: MessageStatus.running));
+    final epoch = ++session.epoch;
+    _busy = session;
+    final future = _send(session, question, answer.id, epoch, tools: question.toolsEnabled);
+    session.running = future;
+    return future.whenComplete(() {
+      if (identical(session.running, future)) session.running = null;
+      if (identical(_busy, session) && session.running == null) {
+        _busy = null;
+        if (!_disposed) _publishBackground();
+      }
+    });
   }
 
   /// Stops the open conversation's answer; one answering out of view goes on.

@@ -25,6 +25,32 @@ class _Disk implements StudySetContentRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _Network implements AssistantNetwork {
+  int searched = 0, fetched = 0;
+  @override
+  Future<List<AssistantSearchResult>> search(String keywords, CancellationToken cancel) async {
+    searched++;
+    return [AssistantSearchResult('Candidate', Uri.parse('https://example.com/article'), 'Discovery only')];
+  }
+
+  @override
+  Future<AssistantSource> fetch(Uri url, CancellationToken cancel) async {
+    fetched++;
+    return AssistantSource(
+      id: 'body',
+      version: 1,
+      kind: 'snapshot',
+      title: 'Body',
+      url: url,
+      paragraphs: {'p1': 'Actual body evidence'},
+      snapshotFile: 'snapshot.md',
+    );
+  }
+
+  @override
+  Future<List<AssistantSource>> papers(String keywords, CancellationToken cancel) async => [];
+}
+
 void main() {
   test('production chat and summaries use independent frozen routes and disk RunStore', () async {
     final dir = await Directory.systemTemp.createTemp('assistant-task-');
@@ -33,16 +59,101 @@ void main() {
     final sub = server.listen((request) async {
       final body = jsonDecode(await utf8.decoder.bind(request).join()) as Map<String, dynamic>;
       bodies.add(body);
-      final content = (body['messages'] as List).last['content'];
+      final messages = body['messages'] as List;
+      final userIndex = messages.lastIndexWhere((m) => m['role'] == 'user');
+      final content = messages[userIndex]['content'];
       final text = content is String ? content : (content as List).map((p) => p['text'] ?? '').join();
       final input = jsonDecode(text) as Map;
-      final response = input['units'] == null
+      var response = input['units'] == null
           ? 'Answer'
           : jsonEncode(
               AssistantSummary('Summary', [for (final u in input['units']) u['id'] as String], ['Decision'], [], [
                 'Open',
               ]).toJson(),
             );
+      final toolCount = messages.skip(userIndex + 1).where((m) => m['role'] == 'tool').length;
+      Map<String, dynamic>? tool;
+      void invoke(String name, Map<String, dynamic> args) {
+        tool = {
+          'id': '$name-$toolCount',
+          'type': 'function',
+          'function': {'name': name, 'arguments': jsonEncode(args)},
+        };
+      }
+
+      if (input['question'] == 'research entry') {
+        if (toolCount == 0) {
+          invoke('web_search', {'query': 'evidence research'});
+        } else if (toolCount == 1) {
+          invoke('fetch_source', {'url': 'https://example.com/article'});
+        } else {
+          response = jsonEncode({
+            'claims': [
+              {
+                'text': 'Body finding [source:1]',
+                'verified': true,
+                'evidence': ['[source:1]'],
+              },
+            ],
+            'conflicts': ['Disagreement'],
+            'unresolved': ['Unknown'],
+          });
+        }
+      } else if (input['question'] == 'review entry') {
+        if (toolCount == 0) {
+          invoke('read_pages', {'documentId': 'doc', 'from': 1, 'to': 1});
+        } else if (toolCount == 1) {
+          invoke('propose_map_edits', {
+            'ops': [
+              {
+                'id': 'card',
+                'kind': 'addReviewCard',
+                'parentId': 'root',
+                'question': 'Question [page:1]',
+                'answer': 'Answer [page:1]',
+              },
+            ],
+          });
+        } else {
+          response = 'Review ready [page:1]';
+        }
+      }
+      final message = tool == null
+          ? {'role': 'assistant', 'content': response}
+          : {
+              'role': 'assistant',
+              'content': null,
+              'tool_calls': [tool!],
+            };
+      final delta = tool == null
+          ? {'content': response}
+          : {
+              'tool_calls': [
+                {'index': 0, ...tool!},
+              ],
+            };
+      final finish = tool == null ? 'stop' : 'tool_calls';
+      if (body['stream'] == true) {
+        request.response.headers.contentType = ContentType('text', 'event-stream');
+        for (final chunk in [
+          {
+            'choices': [
+              {'index': 0, 'delta': delta, 'finish_reason': null},
+            ],
+          },
+          {
+            'choices': [
+              {'index': 0, 'delta': <String, dynamic>{}, 'finish_reason': finish},
+            ],
+            'usage': {'prompt_tokens': 9, 'completion_tokens': 2, 'total_tokens': 11},
+          },
+        ]) {
+          request.response.write('data: ${jsonEncode(chunk)}\n\n');
+        }
+        request.response.write('data: [DONE]\n\n');
+        await request.response.close();
+        return;
+      }
       request.response.headers.contentType = ContentType.json;
       request.response.write(
         jsonEncode({
@@ -50,11 +161,7 @@ void main() {
           'object': 'chat.completion',
           'model': body['model'],
           'choices': [
-            {
-              'index': 0,
-              'message': {'role': 'assistant', 'content': response},
-              'finish_reason': 'stop',
-            },
+            {'index': 0, 'message': message, 'finish_reason': finish},
           ],
           'usage': {'prompt_tokens': 9, 'completion_tokens': 2, 'total_tokens': 11},
         }),
@@ -77,6 +184,8 @@ void main() {
           const ServiceModel(id: 'chat'),
           const ServiceModel(id: 'summary'),
           const ServiceModel(id: 'quick'),
+          const ServiceModel(id: 'research'),
+          const ServiceModel(id: 'review'),
         ],
       );
       await services.save(AssistantServices(services: [service], defaultModel: const ModelReference('local', 'chat')));
@@ -93,6 +202,14 @@ void main() {
             },
             'heavyReasoning': 'off',
             'bindings': {
+              TaskType.research.key: {
+                'mode': 'explicit',
+                'model': {'serviceId': 'local', 'modelId': 'research'},
+              },
+              TaskType.reviewCards.key: {
+                'mode': 'explicit',
+                'model': {'serviceId': 'local', 'modelId': 'review'},
+              },
               for (final type in [TaskType.conversationSummarize, TaskType.documentSummarize])
                 type.key: {
                   'mode': 'explicit',
@@ -110,6 +227,7 @@ void main() {
             identity: serviceCapabilityIdentity(service, model),
             thinking: ThinkingCapability.switchable,
             tools: CapabilitySupport.supported,
+            multimodal: CapabilitySupport.supported,
             historyReplay: CapabilitySupport.supported,
             policies: {ReasoningPolicy.off: ReasoningRecipe.effortNone},
             evidence: CapabilityEvidence(
@@ -137,6 +255,9 @@ void main() {
         studySetId: 'study',
         model: service.configuration(service.models.first),
       );
+      final network = _Network();
+      AssistantTaskOwner? lastOwner;
+      final networkModels = <String>[];
       Future<void> run(Message question) async {
         final provider = Provider(
           (ref) => createPersistentAssistantRun(
@@ -146,13 +267,25 @@ void main() {
             conversation: conversation,
             question: question,
             reader: Reader(),
+            images: (_) async => question.id == 'q1' ? [sdk.ImagePart('AQID', 'image/png')] : [],
+            networkFactory: (model, nativeSearch) async {
+              networkModels.add(model.model);
+              return network;
+            },
             documents: [],
             mapId: 'map',
             revision: 0,
             parents: {'root': null},
           ),
         );
-        await container!.read(provider).run(question.text).toList();
+        final owner = container!.read(provider);
+        lastOwner = owner;
+        owner.permissions.onRequest = (_) async => true;
+        final events = await owner.run(question.text).toList();
+        if (question.id == 'q1') {
+          expect(events.where((e) => e.eventType == sdk.StreamingEventType.modelChunkMessage), isNotEmpty);
+          expect(jsonEncode(bodies.first), contains('data:image/png;base64,AQID'));
+        }
       }
 
       await run(Message(id: 'q1', requestId: 'r1', role: MessageRole.user, text: 'question'));
@@ -204,7 +337,33 @@ void main() {
         ),
       );
       expect(bodies.map((body) => body['model']), ['chat', 'summary', 'summary', 'quick']);
-      expect(bodies.last['reasoning_effort'], 'none');
+      conversation = conversation.copyWith(
+        online: true,
+        model: AssistantModel.fromJson({...conversation.model.toJson(), 'supportsTools': false}),
+      );
+      await run(Message(id: 'q5', requestId: 'r5', role: MessageRole.user, text: 'research entry', skill: 'verify'));
+      expect(networkModels, ['research']);
+      expect(network.searched, 1);
+      expect(network.fetched, 1);
+      expect(lastOwner!.citations.items.any((c) => c.kind == 'snapshot'), true);
+      conversation = conversation.copyWith(online: false);
+      await run(
+        Message(
+          id: 'q6',
+          requestId: 'r6',
+          role: MessageRole.user,
+          text: 'review entry',
+          skill: 'quiz',
+          contexts: [
+            const ContextItem(id: 'sel', kind: ContextKind.document, documentId: 'doc', displayText: 'source'),
+          ],
+        ),
+      );
+      expect(lastOwner!.proposals.proposals, hasLength(1));
+      expect(lastOwner!.proposals.proposals.values.single.operations.single.kind, MapEditKind.addReviewCard);
+      expect(bodies.skip(4).map((b) => b['model']), ['research', 'research', 'research', 'review', 'review']);
+
+      expect(bodies[3]['reasoning_effort'], 'none');
       expect(bodies.take(3).every((body) => body['max_tokens'] == 8192 || body['max_completion_tokens'] == 8192), true);
       expect(await FileRunStore(dir).resumable(), isEmpty);
       expect(state.metadata['assistant.summaryCoverage.v1'], isNotEmpty);

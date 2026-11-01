@@ -16,6 +16,7 @@ Future<AssistantNetwork?> assistantNetworkFor(
   String studySetId,
   Conversation conversation, {
   AssistantModel? model,
+  SearchProvider? nativeSearch,
 }) async {
   if (!conversation.online) return null;
   final repository = ref.read(contentRepositoryProvider);
@@ -40,6 +41,7 @@ Future<AssistantNetwork?> assistantNetworkFor(
     parser: parser,
     model: model,
     key: key ?? '',
+    nativeSearch: nativeSearch,
     searchSettings: settings,
     searchKey: searchKey ?? '',
     searchAccountId: account ?? '',

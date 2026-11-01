@@ -199,25 +199,112 @@ class AssistantConversationRouteControl extends ConsumerWidget {
   }
 }
 
-class AssistantTaskActivityView extends ConsumerWidget {
+class AssistantTaskActivityView extends ConsumerStatefulWidget {
   const AssistantTaskActivityView(this.studySetId, {super.key});
   final String studySetId;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activity = ref.watch(assistantTaskActivityProvider(studySetId));
-    if (activity == null) return const SizedBox.shrink();
+  ConsumerState<AssistantTaskActivityView> createState() => _ActivityState();
+}
+
+class _ActivityState extends ConsumerState<AssistantTaskActivityView> {
+  bool _acting = false;
+  bool _failed = false;
+  Future<void> _act(Future<void> Function() action) async {
+    setState(() {
+      _acting = true;
+      _failed = false;
+    });
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _acting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final conversation = ref.watch(assistantControllerProvider);
+    final controller = ref.read(assistantControllerProvider.notifier);
+    final activity = ref.watch(assistantTaskActivityProvider(widget.studySetId));
+    final current = activity?.context.inputRange['conversationId'] == conversation.id ? activity : null;
+    final controls = conversation.running ? current?.owner?.controls : null;
+    final l = context.l10n;
+    if (controls == null) {
+      if (!controller.canResumeTask) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RoutingIssueLine(
+            text: l.aiTasksRunUnfinished,
+            action: l.fullTranslationActionResume,
+            onAction: _acting ? null : () => _act(controller.resumeTask),
+          ),
+          if (_failed) RoutingIssueLine(text: l.aiTasksIssueConnection),
+        ],
+      );
+    }
     final catalog = ref.watch(assistantServicesProvider).value;
-    final label = catalog == null
-        ? activity.context.modelDisplayName
-        : routeModelLabel(catalog, activity.context.config.model);
+    final snapshot = controls.context;
+    final label = catalog == null ? snapshot.modelDisplayName : routeModelLabel(catalog, snapshot.config.model);
+    final paused = {RunStatus.paused, RunStatus.partial, RunStatus.interrupted}.contains(controls.status);
     return Padding(
       padding: const EdgeInsets.only(bottom: MMSpacing.s),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(label, style: context.mmText.footnote, overflow: TextOverflow.ellipsis),
+          Wrap(
+            spacing: MMSpacing.s,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ModelRoutePicker(
+                label: label,
+                tone: ModelRouteTone.explicit,
+                groups: [
+                  for (final service in catalog?.services ?? <AssistantService>[])
+                    if (service.enabled && (service.protocol != ServiceProtocol.ollama || service.localEnabled))
+                      ModelRouteGroup(service.name, [
+                        for (final model in service.models)
+                          if (model.enabled)
+                            ModelRouteOption(model: ModelReference(service.id, model.id), label: model.displayName),
+                      ]),
+                ],
+                selected: snapshot.config.model,
+                semanticLabel: l.assistantModel,
+                semanticValue: label,
+                onChanged: paused && !controls.saveFailed && !_acting
+                    ? (model) {
+                        if (model != null) _act(() => controls.useModel(model));
+                      }
+                    : null,
+              ),
+              RunStatusCapsule(
+                status: controls.status,
+                done: controls.completed,
+                total: controls.total,
+                unfinished: controls.total == null ? null : controls.total! - (controls.completed ?? 0),
+              ),
+              TextButton(
+                key: const ValueKey('assistant-task-pause-resume'),
+                onPressed: _acting ? null : () => _act(paused ? controls.resume : controls.pause),
+                child: Text(
+                  controls.saveFailed
+                      ? l.save
+                      : paused
+                      ? l.fullTranslationActionResume
+                      : l.fullTranslationActionPause,
+                ),
+              ),
+            ],
           ),
-          RunStatusCapsule(status: activity.status),
+          if (controls.saveFailed)
+            RoutingIssueLine(
+              text: l.aiTasksRunUnfinished,
+              action: l.assistantRetry,
+              onAction: _acting ? null : () => _act(controls.resume),
+            ),
+          if (_failed) RoutingIssueLine(text: l.aiTasksIssueConnection),
         ],
       ),
     );

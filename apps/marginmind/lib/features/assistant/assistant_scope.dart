@@ -106,7 +106,8 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
         revision: assistantMapRevision(snapshot, mapId),
         parents: mapParents(snapshot, mapId),
         network: ref.read(assistantNetworkProvider),
-        networkFactory: (model) => assistantNetworkFor(ref, studySetId, conversation, model: model),
+        networkFactory: (model, nativeSearch) =>
+            assistantNetworkFor(ref, studySetId, conversation, model: model, nativeSearch: nativeSearch),
       );
     },
   );

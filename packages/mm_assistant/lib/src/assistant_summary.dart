@@ -20,6 +20,7 @@ Future<AssistantSummary> summarizeAssistantUnits({
   required int requestCharacters,
   required SummaryStage execute,
   required CancellationToken cancel,
+  void Function(List<String>)? onCoverage,
 }) async {
   if (units.isEmpty || requestCharacters < 2048) throw const ConfigurationFailure('emptySummaryRange');
   if (units.map((u) => u.id).toSet().length != units.length) throw const ConfigurationFailure('duplicateSummaryRange');
@@ -83,6 +84,7 @@ Future<AssistantSummary> summarizeAssistantUnits({
     return output;
   }
 
+  onCoverage?.call(fragments.map((u) => u.id).toList());
   var work = fragments;
   final allIds = fragments.map((u) => u.id).toList();
   // Each intermediate summary carries its complete descendant coverage outside
