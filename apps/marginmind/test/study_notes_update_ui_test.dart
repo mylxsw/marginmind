@@ -1,3 +1,5 @@
+import 'package:marginmind/features/study_notes/note_model_route.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -6,11 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/providers.dart';
-import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/study_notes/note_session.dart';
 import 'package:marginmind/features/study_notes/note_updates.dart';
 import 'package:marginmind/features/study_notes/note_view.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_assistant/mm_assistant.dart' show RoutingRowState, RoutingIssue;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
@@ -121,8 +123,15 @@ Future<(ProviderContainer, PlacementSession)> openAiUpdate(WidgetTester tester, 
     size: const Size(1800, 1100),
     content: InMemoryStudySetContentRepository({'demo-1': updateFixture(ai: true)}),
     overrides: [
-      assistantConfiguredProvider.overrideWith((ref) async => true),
-      noteSessionFactoryProvider.overrideWithValue(() async => session),
+      noteAiAvailableProvider.overrideWith((ref) async => true),
+      noteRoutingRowProvider.overrideWith(
+        (ref, model) async => const RoutingRowState(
+          effective: ModelReference('fixture', 'model'),
+          source: RoutingSource.functionBinding,
+          issue: RoutingIssue.none,
+        ),
+      ),
+      noteSessionFactoryProvider.overrideWithValue(({studySetId, sessionId, modelOverride}) async => session),
     ],
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');
