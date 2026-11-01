@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -12,6 +13,7 @@ void main() {
         Align(
           alignment: Alignment.topRight,
           child: MMDropdownButton<String>(
+            cascading: true,
             tooltip: 'More',
             itemBuilder: (_) => const [
               MMDropdownSubmenu<String>(
@@ -40,6 +42,7 @@ void main() {
     await tester.pumpWidget(
       harness(
         MMDropdownButton<String>(
+          cascading: true,
           tooltip: 'More',
           onSelected: (value) => selected = value,
           itemBuilder: (_) => const [
@@ -105,7 +108,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
-  testWidgets('hovering a sibling submenu closes the previous submenu', (tester) async {
+  testWidgets('hovering switches submenus and Escape closes the complete menu tree', (tester) async {
     await tester.pumpWidget(
       harness(
         MMDropdownMenuButton<String>(
@@ -136,6 +139,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Section'), findsOneWidget);
     expect(find.text('Reading'), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Section'), findsNothing);
+    expect(find.text('Layout'), findsNothing);
     await mouse.removePointer();
   });
 }

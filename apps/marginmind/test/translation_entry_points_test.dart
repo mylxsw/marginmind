@@ -85,6 +85,7 @@ void main() {
     await tester.tap(row, buttons: kSecondaryMouseButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Full Translation… 25%'));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.byType(FullTranslationPanel), findsOneWidget);
     expect(tester.widget<FullTranslationPanel>(find.byType(FullTranslationPanel)).targetLang, 'en');
@@ -94,14 +95,18 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Full Translation… 25%'));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(tester.widget<FullTranslationPanel>(find.byType(FullTranslationPanel)).targetLang, 'en');
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
-    expect(find.text('Full Translation… 25%'), findsNothing);
+    expect(
+      find.descendant(of: find.byKey(const ValueKey('reader-compare')), matching: find.text('Full Translation… 25%')),
+      findsNothing,
+    );
     expect(find.textContaining('AI Translate into'), findsNothing);
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();

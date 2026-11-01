@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../foundation/adaptive.dart';
 import '../icons/mm_icons.dart';
@@ -31,6 +32,8 @@ class MMDropdownButton<T> extends StatefulWidget {
     this.child,
     this.onOpened,
     this.onClosed,
+    this.cascading = false,
+    this.menuController,
   });
 
   final VoidCallback? onOpened, onClosed;
@@ -38,6 +41,8 @@ class MMDropdownButton<T> extends StatefulWidget {
   final PopupMenuItemSelected<T>? onSelected;
   final String? tooltip;
   final bool enabled;
+  final bool cascading;
+  final MenuController? menuController;
   final double width;
   final Widget? icon, child;
 
@@ -65,6 +70,22 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
   Widget build(BuildContext context) {
     _activity = MMPopupActivity.maybeOf(context);
     final c = context.mmColors;
+    if (widget.cascading) {
+      return MMDropdownMenuButton<T>(
+        icon: (widget.icon is Icon ? (widget.icon as Icon).icon : null) ?? MMIcons.more,
+        tooltip: widget.tooltip ?? '',
+        enabled: widget.enabled,
+        width: widget.width,
+        controller: widget.menuController,
+        itemBuilder: widget.itemBuilder,
+        onSelected: widget.onSelected,
+        onOpened: () {
+          _activity?.onChanged(this, true);
+          widget.onOpened?.call();
+        },
+        onClosed: _closed,
+      );
+    }
     // A dock keeps its geometry when input switches between pointer and touch.
     final button = (MMThumbDockScope.of(context) || context.mmTouch || context.mmTouchPlatform)
         ? context.mmToolbarButton
@@ -234,17 +255,34 @@ class MMDropdownMenuButton<T> extends StatefulWidget {
     required this.tooltip,
     required this.itemBuilder,
     this.onSelected,
+    this.onOpened,
+    this.onClosed,
+    this.enabled = true,
+    this.width = MMSizes.dropdownWidth,
+    this.controller,
   });
   final IconData icon;
   final String tooltip;
   final PopupMenuItemBuilder<T> itemBuilder;
   final ValueChanged<T>? onSelected;
+  final VoidCallback? onOpened, onClosed;
+  final bool enabled;
+  final double width;
+  final MenuController? controller;
   @override
   State<MMDropdownMenuButton<T>> createState() => _MMDropdownMenuButtonState<T>();
 }
 
 class _MMDropdownMenuButtonState<T> extends State<MMDropdownMenuButton<T>> {
-  final _controller = MenuController();
+  final _ownedController = MenuController();
+  final _buttonFocus = FocusNode();
+  @override
+  void dispose() {
+    _buttonFocus.dispose();
+    super.dispose();
+  }
+
+  MenuController get _controller => widget.controller ?? _ownedController;
   void _select(T value) {
     _controller.close();
     widget.onSelected?.call(value);
@@ -253,32 +291,32 @@ class _MMDropdownMenuButtonState<T> extends State<MMDropdownMenuButton<T>> {
   @override
   Widget build(BuildContext context) => _MMDropdownMenuScope<T>(
     select: _select,
-    child: MenuAnchor(
-      controller: _controller,
-      style: _dropdownMenuStyle(context),
-      onOpen: () => setState(() {}),
-      onClose: () {
-        if (mounted) setState(() {});
-      },
-      menuChildren: [
-        for (final entry in widget.itemBuilder(context))
-          if (entry is PopupMenuItem<T>)
-            MenuItemButton(
-              key: entry.key,
-              style: _dropdownMenuItemStyle(context),
-              onPressed: entry.enabled && entry.value != null ? () => _select(entry.value as T) : null,
-              child: entry.child,
-            )
-          else if (entry is PopupMenuDivider)
-            const Divider()
-          else
-            entry,
-      ],
-      builder: (_, controller, _) => MMIconButton(
-        icon: widget.icon,
-        tooltip: widget.tooltip,
-        selected: controller.isOpen,
-        onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+    child: CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.escape): _controller.close},
+      child: MenuAnchor(
+        controller: _controller,
+        childFocusNode: _buttonFocus,
+        consumeOutsideTap: true,
+        style: _dropdownMenuStyle(context),
+        onOpen: () {
+          setState(() {});
+          _buttonFocus.requestFocus();
+          widget.onOpened?.call();
+        },
+        onClose: () {
+          if (mounted) setState(() {});
+          widget.onClosed?.call();
+        },
+        menuChildren: _dropdownChildren(context, widget.itemBuilder(context), widget.width, _select),
+        builder: (_, controller, _) => Focus(
+          focusNode: _buttonFocus,
+          child: MMIconButton(
+            icon: widget.icon,
+            tooltip: widget.tooltip,
+            selected: controller.isOpen,
+            onPressed: !widget.enabled ? null : () => controller.isOpen ? controller.close() : controller.open(),
+          ),
+        ),
       ),
     ),
   );
@@ -296,8 +334,9 @@ MenuStyle _dropdownMenuStyle(BuildContext context) {
   return MenuStyle(
     backgroundColor: WidgetStatePropertyAll(c.surface),
     surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-    elevation: const WidgetStatePropertyAll(0),
-    padding: const WidgetStatePropertyAll(EdgeInsets.all(MMSpacing.xs)),
+    shadowColor: WidgetStatePropertyAll(Colors.black.withValues(alpha: .18)),
+    elevation: WidgetStatePropertyAll(MMFlatSurface.of(context) ? 0 : 6),
+    padding: const WidgetStatePropertyAll(EdgeInsets.all(6)),
     shape: WidgetStatePropertyAll(
       RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(MMRadii.dropdown),
@@ -309,19 +348,70 @@ MenuStyle _dropdownMenuStyle(BuildContext context) {
 
 ButtonStyle _dropdownMenuItemStyle(BuildContext context) => ButtonStyle(
   textStyle: WidgetStatePropertyAll(context.mmText.callout),
-  foregroundColor: WidgetStatePropertyAll(context.mmColors.label),
-  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs)),
-  minimumSize: WidgetStatePropertyAll(Size(0, context.mmTouch ? MMSizes.touchTarget : MMSizes.dropdownRowHeight)),
+  foregroundColor: WidgetStateProperty.resolveWith(
+    (states) => states.contains(WidgetState.disabled) ? context.mmColors.secondaryLabel : context.mmColors.label,
+  ),
+  overlayColor: WidgetStateProperty.resolveWith(
+    (states) => states.contains(WidgetState.pressed)
+        ? context.mmColors.pressed
+        : states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)
+        ? context.mmColors.hover
+        : Colors.transparent,
+  ),
+  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+  minimumSize: WidgetStatePropertyAll(Size(0, context.mmTouch ? MMSizes.touchTarget : 32)),
   shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(MMRadii.row))),
 );
 
-/// A cascading entry for anchored or popup dropdowns. Selecting a leaf closes
-/// its submenu and returns through the owning dropdown callback.
+List<Widget> _dropdownChildren<T>(
+  BuildContext context,
+  List<PopupMenuEntry<T>> entries,
+  double width,
+  ValueChanged<T> select,
+) => [
+  for (final entry in entries)
+    SizedBox(
+      width: width - 12,
+      child: switch (entry) {
+        PopupMenuItem<T>(:final child) when child is PopupMenuEntry => child,
+        PopupMenuItem<T>() => MenuItemButton(
+          key: entry.key,
+          style: _dropdownMenuItemStyle(context),
+          onPressed: entry.enabled && entry.value != null ? () => select(entry.value as T) : null,
+          child: entry.child,
+        ),
+        PopupMenuDivider() => Divider(height: 12, thickness: .5, color: context.mmColors.separator),
+        _ => entry,
+      },
+    ),
+];
+
+/// One menu tree owns every level, including focus, hover and edge placement.
 class MMDropdownSubmenu<T> extends PopupMenuEntry<T> {
-  const MMDropdownSubmenu({super.key, required this.label, required this.entries, this.icon});
+  const MMDropdownSubmenu({
+    super.key,
+    required this.label,
+    required this.entries,
+    this.icon,
+    this.width = 200,
+    this.enabled = true,
+    this.selected = false,
+  }) : itemBuilder = null;
+  const MMDropdownSubmenu.items({
+    super.key,
+    required this.label,
+    required this.itemBuilder,
+    this.icon,
+    this.width = 200,
+    this.enabled = true,
+    this.selected = false,
+  }) : entries = const [];
   final String label;
   final IconData? icon;
+  final double width;
+  final bool enabled, selected;
   final List<({T value, String label, bool selected})> entries;
+  final PopupMenuItemBuilder<T>? itemBuilder;
   @override
   double get height => MMSizes.dropdownRowHeight;
   @override
@@ -331,72 +421,41 @@ class MMDropdownSubmenu<T> extends PopupMenuEntry<T> {
 }
 
 class _MMDropdownSubmenuState<T> extends State<MMDropdownSubmenu<T>> {
-  final _controller = MenuController();
-  bool _openLeft = false;
-  double _submenuWidth = MMSizes.dropdownWidth;
-  final _firstLeaf = GlobalKey();
-
-  void _positionPopup() {
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final rect = box.localToGlobal(Offset.zero) & box.size;
-    final spaceRight = MediaQuery.sizeOf(context).width - rect.right;
-    final openLeft = spaceRight < _submenuWidth && rect.left > spaceRight;
-    if (_openLeft != openLeft) setState(() => _openLeft = openLeft);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<_MMDropdownMenuScope<T>>();
-    void select(T value) {
-      _controller.close();
-      if (scope != null) {
-        scope.select(value);
-      } else {
-        Navigator.of(context).pop<T>(value);
-      }
-    }
-
-    return SubmenuButton(
-      controller: _controller,
-      onOpen: scope == null
-          ? () {
-              _positionPopup();
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted || !_controller.isOpen) return;
-                final leaf = _firstLeaf.currentContext?.findRenderObject() as RenderBox?;
-                if (leaf == null || !leaf.hasSize) return;
-                setState(() => _submenuWidth = leaf.size.width + 2 * MMSpacing.xs);
-                _positionPopup();
-              });
-            }
-          : null,
-      alignmentOffset: scope == null && _openLeft ? Offset(-_submenuWidth, 0) : null,
-      trailingIcon: scope == null
-          ? Icon(_openLeft ? MMIcons.chevronLeft : MMIcons.chevronRight, size: MMSizes.dropdownIcon)
-          : null,
-      leadingIcon: widget.icon == null ? null : Icon(widget.icon, size: MMSizes.dropdownIcon),
-      style: _dropdownMenuItemStyle(context),
-      menuStyle: scope == null
-          ? _dropdownMenuStyle(context).copyWith(alignment: _openLeft ? Alignment.topLeft : Alignment.topRight)
-          : _dropdownMenuStyle(context),
-      submenuIcon: const WidgetStatePropertyAll(Icon(MMIcons.chevronRight, size: MMSizes.dropdownIcon)),
-      menuChildren: [
-        for (final (index, entry) in widget.entries.indexed)
-          MenuItemButton(
-            key: index == 0 ? _firstLeaf : null,
-            style: _dropdownMenuItemStyle(context),
-            leadingIcon: SizedBox.square(
-              dimension: MMSizes.dropdownIcon,
-              child: entry.selected
-                  ? Icon(MMIcons.check, size: MMSizes.dropdownIcon, color: context.mmColors.accent)
-                  : null,
+    final scope = context.dependOnInheritedWidgetOfExactType<_MMDropdownMenuScope<T>>()!;
+    final entries =
+        widget.itemBuilder?.call(context) ??
+        [
+          for (final entry in widget.entries)
+            MMDropdownItem<T>(
+              value: entry.value,
+              child: Row(
+                children: [
+                  Expanded(child: Text(entry.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 16,
+                    child: entry.selected ? Icon(MMIcons.check, size: 14, color: context.mmColors.accent) : null,
+                  ),
+                ],
+              ),
             ),
-            onPressed: () => select(entry.value),
-            child: Text(entry.label),
-          ),
-      ],
-      child: Text(widget.label),
+        ];
+    return SubmenuButton(
+      style: _dropdownMenuItemStyle(context),
+      menuStyle: _dropdownMenuStyle(context),
+      submenuIcon: const WidgetStatePropertyAll(Icon(MMIcons.chevronRight, size: 12)),
+      menuChildren: widget.enabled ? _dropdownChildren(context, entries, widget.width, scope.select) : const [],
+      child: Row(
+        children: [
+          if (widget.icon != null) ...[
+            Icon(widget.icon, size: MMSizes.dropdownIcon, color: widget.selected ? context.mmColors.accent : null),
+            const SizedBox(width: 8),
+          ],
+          Expanded(child: Text(widget.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+        ],
+      ),
     );
   }
 }

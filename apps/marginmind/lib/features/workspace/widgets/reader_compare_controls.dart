@@ -19,7 +19,28 @@ import 'reading_settings.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
-class ReaderCompareMenu extends ConsumerWidget {
+class ReaderCompareSubmenu<T> extends PopupMenuEntry<T> {
+  const ReaderCompareSubmenu({super.key, required this.studySetId, this.enabled = true});
+  final String studySetId;
+  final bool enabled;
+  @override
+  double get height => MMSizes.dropdownRowHeight;
+  @override
+  bool represents(T? value) => false;
+  @override
+  State<ReaderCompareSubmenu<T>> createState() => _ReaderCompareSubmenuState<T>();
+}
+
+class _ReaderCompareSubmenuState<T> extends State<ReaderCompareSubmenu<T>> {
+  @override
+  Widget build(BuildContext context) => ReaderCompareMenu<T>(
+    studySetId: widget.studySetId,
+    enabled: widget.enabled,
+    menuLabel: context.l10n.compareReading,
+  );
+}
+
+class ReaderCompareMenu<T> extends ConsumerWidget {
   const ReaderCompareMenu({
     super.key,
     required this.studySetId,
@@ -40,6 +61,9 @@ class ReaderCompareMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n, c = context.mmColors;
+    final container = ProviderScope.containerOf(context);
+    final actionContext = Navigator.of(context).context;
+    final readerWidth = ReaderCompareWidth.of(context);
     final buttonSize = context.mmTouch ? context.mmToolbarButton : MMSizes.readerToolbarButton;
     final pair = ref.watch(readerCompareProvider(studySetId));
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
@@ -56,12 +80,14 @@ class ReaderCompareMenu extends ConsumerWidget {
     final tooNarrow = MMSizeClass.of(context) == MMSizeClass.medium && MediaQuery.sizeOf(context).width < 874;
     Future<void> select(String id) async {
       try {
-        final hidden = await ref
+        final hidden = await container
             .read(readerCompareProvider(studySetId).notifier)
-            .select(id, left: left, readerWidth: ReaderCompareWidth.of(context));
-        if (hidden && context.mounted) MMHud.show(context, l.compareMapHiddenHud(describeShortcut(AppShortcuts.view2)));
+            .select(id, left: left, readerWidth: readerWidth);
+        if (hidden && actionContext.mounted) {
+          MMHud.show(actionContext, l.compareMapHiddenHud(describeShortcut(AppShortcuts.view2)));
+        }
       } catch (_) {
-        if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+        if (actionContext.mounted) MMHud.show(actionContext, l.somethingWentWrong);
       }
     }
 
@@ -71,6 +97,109 @@ class ReaderCompareMenu extends ConsumerWidget {
             PdfCompareTarget(:final documentId) => documentId,
             _ => null,
           };
+    Future<void> invoke(String value) async {
+      try {
+        if (value == 'exit') {
+          container.read(readerCompareProvider(studySetId).notifier).exit();
+        } else if (value == 'import') {
+          final files = await container.read(pdfPickerProvider)(l.documentFiles);
+          if (files.isEmpty || !actionContext.mounted) return;
+          final before = workspace.content.documents.map((d) => d.id).toSet();
+          final notice = await workspace.importDocuments(files, open: false);
+          final imported = workspace.content.documents.where((d) => !before.contains(d.id)).lastOrNull;
+          if (!actionContext.mounted) return;
+          if (notice.failed.isNotEmpty) showNotice(actionContext, notice, rootTitle: '');
+          if (imported != null && !tooNarrow) await select(imported.id);
+        } else {
+          await select(value);
+        }
+      } finally {
+        if (actionContext.mounted) onInvoked?.call();
+      }
+    }
+
+    List<PopupMenuEntry<String>> items(BuildContext context) => [
+      if (tooNarrow)
+        MMDropdownItem<String>(
+          enabled: false,
+          height: 26,
+          child: Text(l.compareTooNarrow, style: context.mmText.footnote),
+        ),
+      for (final doc in ordered)
+        MMDropdownItem<String>(
+          key: ValueKey('compare-document-${doc.id}'),
+          value: doc.id,
+          enabled: !tooNarrow,
+          child: Semantics(
+            selected: doc.id == selectedId,
+            child: Row(
+              children: [
+                Icon(documentIcon(doc), size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Tooltip(
+                    message: doc.title,
+                    child: Text(doc.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.callout),
+                  ),
+                ),
+                if (!left && recommended(doc)) ...[const SizedBox(width: 6), MMPill(l.compareRecommended)],
+                if (docLanguage(doc) case final lang?) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    lang == 'zh' ? l.languageCodeZh : l.languageCodeEn,
+                    style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                  ),
+                ],
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 16,
+                  child: doc.id == selectedId ? Icon(MMIcons.check, size: 14, color: c.accent) : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      if (!left) ...[
+        if (ordered.isNotEmpty) const PopupMenuDivider(),
+        MMDropdownItem<String>(value: 'import', child: _menuRow(context, MMIcons.add, l.importDocument)),
+        if (pair != null) ...[
+          const PopupMenuDivider(),
+          MMDropdownItem<String>(
+            value: 'exit',
+            child: Row(
+              children: [
+                const Icon(MMIcons.close, size: 14),
+                const SizedBox(width: 8),
+                Expanded(child: Text(l.compareExit, style: context.mmText.callout)),
+                Text('Esc', style: context.mmText.footnote),
+              ],
+            ),
+          ),
+        ],
+      ],
+    ];
+    if (menuLabel != null) {
+      return MMDropdownSubmenu<T>.items(
+        key: const ValueKey('reader-compare'),
+        label: menuLabel!,
+        icon: MMIcons.compare,
+        width: MMSizes.dropdownWideWidth,
+        enabled: enabled,
+        selected: pair != null,
+        itemBuilder: (context) => [
+          for (final item in items(context))
+            if (item is PopupMenuItem<String>)
+              MMDropdownItem<T>(
+                key: item.key,
+                enabled: item.enabled && item.value != null,
+                value: item.value == null ? null : (() => unawaited(invoke(item.value!))) as T,
+                child: item.child,
+              )
+            else if (item is PopupMenuDivider)
+              const PopupMenuDivider(),
+        ],
+      );
+    }
     return MMDropdownButton<String>(
       key: document == null
           ? const ValueKey('reader-compare')
@@ -78,85 +207,9 @@ class ReaderCompareMenu extends ConsumerWidget {
       enabled: enabled,
       tooltip: document == null ? l.compareReading : l.switchDocument,
       width: MMSizes.dropdownWideWidth,
-      onSelected: (value) async {
-        try {
-          if (value == 'exit') {
-            ref.read(readerCompareProvider(studySetId).notifier).exit();
-          } else if (value == 'import') {
-            final files = await ref.read(pdfPickerProvider)(l.documentFiles);
-            if (files.isEmpty || !context.mounted) return;
-            final before = workspace.content.documents.map((d) => d.id).toSet();
-            final notice = await workspace.importDocuments(files, open: false);
-            final imported = workspace.content.documents.where((d) => !before.contains(d.id)).lastOrNull;
-            if (!context.mounted) return;
-            if (notice.failed.isNotEmpty) showNotice(context, notice, rootTitle: '');
-            if (imported != null && !tooNarrow) await select(imported.id);
-          } else {
-            await select(value);
-          }
-        } finally {
-          if (context.mounted) onInvoked?.call();
-        }
-      },
-      itemBuilder: (_) => [
-        if (tooNarrow)
-          MMDropdownItem<String>(
-            enabled: false,
-            height: 26,
-            child: Text(l.compareTooNarrow, style: context.mmText.footnote),
-          ),
-        for (final doc in ordered)
-          MMDropdownItem<String>(
-            value: doc.id,
-            enabled: !tooNarrow,
-            child: Semantics(
-              selected: doc.id == selectedId,
-              child: Row(
-                children: [
-                  Icon(doc.id == selectedId ? MMIcons.check : documentIcon(doc), size: 14),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(doc.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.callout),
-                  ),
-                  if (!left && recommended(doc)) ...[const SizedBox(width: 6), MMPill(l.compareRecommended)],
-                  if (docLanguage(doc) case final lang?) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      lang == 'zh' ? l.languageCodeZh : l.languageCodeEn,
-                      style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        if (!left) ...[
-          MMDropdownItem<String>(value: 'import', child: _menuRow(context, MMIcons.add, l.importDocument)),
-          if (pair != null) ...[
-            const PopupMenuDivider(),
-            MMDropdownItem<String>(
-              value: 'exit',
-              child: Row(
-                children: [
-                  const Icon(MMIcons.close, size: 14),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(l.compareExit, style: context.mmText.callout)),
-                  Text('Esc', style: context.mmText.footnote),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ],
-      child: menuLabel != null
-          ? Row(
-              children: [
-                const Icon(MMIcons.compare, size: MMSizes.dropdownIcon),
-                const SizedBox(width: MMSpacing.s),
-                Text(menuLabel!),
-              ],
-            )
-          : document == null
+      onSelected: invoke,
+      itemBuilder: items,
+      child: document == null
           ? Semantics(
               button: true,
               enabled: enabled,

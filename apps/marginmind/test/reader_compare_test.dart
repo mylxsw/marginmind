@@ -144,7 +144,7 @@ void main() {
     expect(left.isReady && right.isReady, true);
     await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
-    expect(tester.widget<PopupMenuItem<VoidCallback>>(find.byKey(const ValueKey('reader-margin'))).enabled, isFalse);
+    expect(tester.widget<MenuItemButton>(find.byKey(const ValueKey('reader-margin'))).onPressed, isNull);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('compare-sync')));
@@ -514,7 +514,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('AI Translate into'), findsNothing);
     expect(find.text('Suggested'), findsNothing);
-    final importItem = find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'import');
+    final importItem = find.text('Import Document…');
     await tester.tap(importItem);
     await tester.pumpAndSettle();
     expect(container.read(readerCompareProvider('demo-1')), isNull);
@@ -552,10 +552,8 @@ void main() {
     await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('Window too narrow'), findsOneWidget);
-    final item = tester.widget<PopupMenuItem<String>>(
-      find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'c2'),
-    );
-    expect(item.enabled, false);
+    final item = tester.widget<MenuItemButton>(find.byKey(const ValueKey('compare-document-c2')));
+    expect(item.onPressed, isNull);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     tester.view.physicalSize = const Size(390, 844);

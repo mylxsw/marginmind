@@ -107,6 +107,7 @@ class WorkspaceToolbar extends StatelessWidget {
                       ? MMSpacing.m
                       : MMToolbarSpacing.group,
                   menuIcon: menuIcon,
+                  cascadingMenu: menuIcon != null,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                   trailingIds: {
                     if (menuIcon != null && !portraitTablet) ...{'compare', 'documents'},

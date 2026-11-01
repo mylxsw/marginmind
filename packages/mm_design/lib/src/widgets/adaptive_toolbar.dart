@@ -33,6 +33,7 @@ class MMAdaptiveToolbar extends StatefulWidget {
     required this.items,
     required this.menuLabel,
     this.menuIcon,
+    this.cascadingMenu = false,
     this.menuKey,
     this.overflowLabel,
     this.menuBeforeId,
@@ -45,6 +46,7 @@ class MMAdaptiveToolbar extends StatefulWidget {
   final List<MMToolbarItem> items;
   final String menuLabel;
   final Widget? menuIcon;
+  final bool cascadingMenu;
   final Key? menuKey;
   final String? overflowLabel;
   final String? menuBeforeId;
@@ -66,10 +68,11 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
   double? _width;
   bool _open = false;
   final _menuFocus = FocusNode();
+  final _menuController = MenuController();
   NavigatorState? _navigator;
   @override
   void dispose() {
-    if (_open) {
+    if (_open && !widget.cascadingMenu) {
       final navigator = _navigator;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (navigator?.mounted == true) navigator!.popUntil((route) => route.settings.name != 'mm-dropdown');
@@ -118,7 +121,11 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
       if (_width != null && _width != constraints.maxWidth && _open) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _open) {
-            Navigator.of(context).popUntil((route) => route.settings.name != 'mm-dropdown');
+            if (widget.cascadingMenu) {
+              _menuController.close();
+            } else {
+              Navigator.of(context).popUntil((route) => route.settings.name != 'mm-dropdown');
+            }
             _restoreMenuFocus();
           }
         });
@@ -165,6 +172,8 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
               skipTraversal: true,
               child: MMDropdownButton<VoidCallback>(
                 key: widget.menuKey,
+                cascading: widget.cascadingMenu,
+                menuController: _menuController,
                 onOpened: () => _open = true,
                 onClosed: () => _open = false,
                 tooltip: widget.menuLabel,

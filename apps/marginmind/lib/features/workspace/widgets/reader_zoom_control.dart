@@ -49,34 +49,41 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
     height: widget.height,
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xs),
-      child: Row(
-        children: [
-          Icon(MMReaderIcons.zoomOut, size: MMSpacing.l, semanticLabel: context.l10n.zoomOut),
-          Expanded(
-            child: Slider(
-              key: const ValueKey('reader-zoom-slider'),
-              value: _value,
-              min: -2,
-              max: 2,
-              secondaryTrackValue: 0,
-              semanticFormatterCallback: (value) => '${(math.pow(2, value) * 100).round()}%',
-              onChanged: !widget.enabled || !(widget.ready?.call() ?? widget.pdf!.isReady)
-                  ? null
-                  : (value) {
-                      // A small center detent makes width fitting easy to recover.
-                      final next = value.abs() < .06 ? 0.0 : value;
-                      setState(() => _value = next);
-                      final ratio = math.pow(2, next).toDouble();
-                      if (widget.onZoom != null) {
-                        widget.onZoom!(ratio);
-                      } else {
-                        widget.pdf!.setWidthZoom(ratio);
-                      }
-                    },
+      child: SliderTheme(
+        data: SliderTheme.of(context).copyWith(
+          trackHeight: 2,
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+        ),
+        child: Row(
+          children: [
+            Icon(MMReaderIcons.zoomOut, size: MMSpacing.l, semanticLabel: context.l10n.zoomOut),
+            Expanded(
+              child: Slider(
+                key: const ValueKey('reader-zoom-slider'),
+                value: _value,
+                min: -2,
+                max: 2,
+                secondaryTrackValue: 0,
+                semanticFormatterCallback: (value) => '${(math.pow(2, value) * 100).round()}%',
+                onChanged: !widget.enabled || !(widget.ready?.call() ?? widget.pdf!.isReady)
+                    ? null
+                    : (value) {
+                        // A small center detent makes width fitting easy to recover.
+                        final next = value.abs() < .06 ? 0.0 : value;
+                        setState(() => _value = next);
+                        final ratio = math.pow(2, next).toDouble();
+                        if (widget.onZoom != null) {
+                          widget.onZoom!(ratio);
+                        } else {
+                          widget.pdf!.setWidthZoom(ratio);
+                        }
+                      },
+              ),
             ),
-          ),
-          Icon(MMReaderIcons.zoomIn, size: MMSpacing.l, semanticLabel: context.l10n.zoomIn),
-        ],
+            Icon(MMReaderIcons.zoomIn, size: MMSpacing.l, semanticLabel: context.l10n.zoomIn),
+          ],
+        ),
       ),
     ),
   );
