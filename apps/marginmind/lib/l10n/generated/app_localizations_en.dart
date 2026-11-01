@@ -5773,4 +5773,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsEnableBetaFeatures => 'Enable Beta Features';
+
+  @override
+  String get assistantIconTitle => 'AI assistant icon';
+
+  @override
+  String get assistantIconIris => 'Blue purple';
+
+  @override
+  String get assistantIconJade => 'Teal';
+
+  @override
+  String get assistantIconApricot => 'Apricot';
 }

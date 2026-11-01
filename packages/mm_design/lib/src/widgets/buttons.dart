@@ -120,16 +120,18 @@ class MMButton extends StatelessWidget {
 class MMIconButton extends StatelessWidget {
   const MMIconButton({
     super.key,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.onPressed,
     required this.tooltip,
     this.size = 28,
     this.iconSize = 16,
     this.color,
     this.selected = false,
-  });
+  }) : assert(icon != null || iconWidget != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final VoidCallback? onPressed;
   final String tooltip;
   final double size;
@@ -154,13 +156,26 @@ class MMIconButton extends StatelessWidget {
             color: s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent),
             borderRadius: BorderRadius.circular(context.mmTouchPlatform ? MMRadii.row : size / 3.5),
           ),
-          child: Icon(
-            icon,
-            size: context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
-                ? MMSizes.tabletToolbarIcon
-                : iconSize,
-            color: s.enabled ? (color ?? (selected ? c.accent : c.icon)) : c.icon.withValues(alpha: 0.3),
-          ),
+          child: iconWidget == null
+              ? Icon(
+                  icon,
+                  size: context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
+                      ? MMSizes.tabletToolbarIcon
+                      : iconSize,
+                  color: s.enabled ? (color ?? (selected ? c.accent : c.icon)) : c.icon.withValues(alpha: 0.3),
+                )
+              : Center(
+                  child: IconTheme.merge(
+                    data: IconThemeData(
+                      size: context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
+                          ? MMSizes.tabletToolbarIcon
+                          : iconSize,
+                      color: color ?? (selected ? c.accent : c.icon),
+                      opacity: s.enabled ? 1 : 0.3,
+                    ),
+                    child: iconWidget!,
+                  ),
+                ),
         ),
       ),
     );

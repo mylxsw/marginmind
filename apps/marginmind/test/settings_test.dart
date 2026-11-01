@@ -22,6 +22,7 @@ void main() {
     final settings = container.read(settingsProvider);
     expect(settings.themeMode, ThemeMode.dark);
     expect(settings.locale, isNull);
+    expect(settings.assistantIcon, MMAssistantPalette.iris);
 
     await container.read(settingsProvider.notifier).setLanguage(LanguagePreference.zh);
     await container.read(settingsProvider.notifier).setAppearance(AppearancePreference.system);
@@ -34,13 +35,31 @@ void main() {
     expect(container.read(settingsProvider).readerStyle, MMReaderStyle.paper);
   });
 
+  test('all assistant palettes persist and restore after settings reload', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
+    addTearDown(container.dispose);
+    for (final palette in MMAssistantPalette.values) {
+      await container.read(settingsProvider.notifier).setAssistantIcon(palette);
+      expect(prefs.getString(SettingsController.assistantIconKey), palette.name);
+      container.invalidate(settingsProvider);
+      expect(container.read(settingsProvider).assistantIcon, palette);
+    }
+  });
+
   test('unknown stored values fall back to defaults', () async {
-    SharedPreferences.setMockInitialValues({'settings.appearance': 'sepia', 'settings.language': 'fr'});
+    SharedPreferences.setMockInitialValues({
+      'settings.appearance': 'sepia',
+      'settings.language': 'fr',
+      SettingsController.assistantIconKey: 'unknown',
+    });
     final prefs = await SharedPreferences.getInstance();
     final container = ProviderContainer(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
     addTearDown(container.dispose);
     expect(container.read(settingsProvider).appearance, AppearancePreference.system);
     expect(container.read(settingsProvider).language, LanguagePreference.system);
+    expect(container.read(settingsProvider).assistantIcon, MMAssistantPalette.iris);
   });
 
   group('settings window', () {
@@ -51,6 +70,19 @@ void main() {
       await tester.pumpAndSettle();
       return container;
     }
+
+    testWidgets('assistant icon picker exposes all three colours and updates the active icon', (tester) async {
+      final container = await openSettings(tester);
+      final picker = find.byKey(const ValueKey('settings-assistant-icon'));
+      expect(find.descendant(of: picker, matching: find.byType(MMAssistantIcon)), findsNWidgets(3));
+      expect(tester.widget<MMSegmentedControl<MMAssistantPalette>>(picker).value, MMAssistantPalette.iris);
+      for (final palette in MMAssistantPalette.values) {
+        await tester.tap(find.byKey(ValueKey('assistant-icon-${palette.name}')));
+        await tester.pumpAndSettle();
+        expect(container.read(settingsProvider).assistantIcon, palette);
+        expect(tester.widget<MMSegmentedControl<MMAssistantPalette>>(picker).value, palette);
+      }
+    });
 
     testWidgets('settings have no gallery entry; Esc closes', (tester) async {
       await openSettings(tester);

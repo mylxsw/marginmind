@@ -447,7 +447,7 @@ void main() {
         final icon = tester.widget<Icon>(find.descendant(of: button, matching: find.byType(Icon)));
         expect(icon.color, tester.element(button).mmColors.icon);
       }
-      expect(find.descendant(of: find.byType(AssistantHeader), matching: find.byIcon(MMIcons.ai)), findsOneWidget);
+      expect(find.descendant(of: find.byType(AssistantHeader), matching: find.byType(MMAssistantIcon)), findsOneWidget);
       // The collapsed reference summary keeps the page visible; expand for its document title.
       expect(find.textContaining('第 '), findsWidgets);
       await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));

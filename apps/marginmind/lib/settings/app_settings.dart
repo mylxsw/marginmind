@@ -66,6 +66,7 @@ class AppSettings {
     this.appearance = AppearancePreference.system,
     this.language = LanguagePreference.system,
     this.appIcon = AppIconPreference.paperArc,
+    this.assistantIcon = MMAssistantPalette.iris,
     this.annotationTool = AnnotationTool.select,
     this.readerStyle = MMReaderStyle.white,
     this.underlineColor = MMAnnotationColor.blue,
@@ -81,6 +82,7 @@ class AppSettings {
   final AppearancePreference appearance;
   final LanguagePreference language;
   final AppIconPreference appIcon;
+  final MMAssistantPalette assistantIcon;
   final AnnotationTool annotationTool;
   final MMAnnotationColor underlineColor;
   final AnnotationLineStyle underlineStyle;
@@ -109,6 +111,7 @@ class AppSettings {
     AppearancePreference? appearance,
     LanguagePreference? language,
     AppIconPreference? appIcon,
+    MMAssistantPalette? assistantIcon,
     AnnotationTool? annotationTool,
     MMAnnotationColor? underlineColor,
     AnnotationLineStyle? underlineStyle,
@@ -123,6 +126,7 @@ class AppSettings {
     appearance: appearance ?? this.appearance,
     language: language ?? this.language,
     appIcon: appIcon ?? this.appIcon,
+    assistantIcon: assistantIcon ?? this.assistantIcon,
     annotationTool: annotationTool ?? this.annotationTool,
     underlineColor: underlineColor ?? this.underlineColor,
     underlineStyle: underlineStyle ?? this.underlineStyle,
@@ -139,6 +143,7 @@ class SettingsController extends Notifier<AppSettings> {
   static const _appearanceKey = 'settings.appearance';
   static const _languageKey = 'settings.language';
   static const _annotationToolKey = 'settings.annotationTool';
+  static const assistantIconKey = 'settings.assistantIcon';
 
   @override
   AppSettings build() {
@@ -187,6 +192,7 @@ class SettingsController extends Notifier<AppSettings> {
       appearance: _parse(AppearancePreference.values, prefs.getString(_appearanceKey), AppearancePreference.system),
       language: _parse(LanguagePreference.values, prefs.getString(_languageKey), LanguagePreference.system),
       appIcon: AppIconPreference.parse(prefs.getString(appIconPreferenceKey)),
+      assistantIcon: _parse(MMAssistantPalette.values, prefs.getString(assistantIconKey), MMAssistantPalette.iris),
     );
   }
 
@@ -246,6 +252,11 @@ class SettingsController extends Notifier<AppSettings> {
   Future<void> setAppearance(AppearancePreference value) async {
     state = state.copyWith(appearance: value);
     await ref.read(sharedPreferencesProvider).setString(_appearanceKey, value.name);
+  }
+
+  Future<void> setAssistantIcon(MMAssistantPalette value) async {
+    state = state.copyWith(assistantIcon: value);
+    await ref.read(sharedPreferencesProvider).setString(assistantIconKey, value.name);
   }
 
   Future<void> setLanguage(LanguagePreference value) async {

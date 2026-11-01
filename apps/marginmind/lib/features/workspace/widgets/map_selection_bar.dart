@@ -1,3 +1,5 @@
+import '../../../shared/assistant_icon.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -316,6 +318,7 @@ class _MapAction extends StatelessWidget {
     required this.onPressed,
     this.shortcut,
     this.icon,
+    this.iconWidget,
     this.nodeIcon,
     this.reason,
     this.tint,
@@ -324,6 +327,7 @@ class _MapAction extends StatelessWidget {
   final String id, label;
   final String? shortcut, reason;
   final IconData? icon;
+  final Widget? iconWidget;
   final MMNodeAction? nodeIcon;
   final Color? tint;
   final VoidCallback? onPressed;
@@ -336,7 +340,14 @@ class _MapAction extends StatelessWidget {
     void invoke() => reason == null ? onPressed?.call() : MMHud.show(context, reason!, icon: MMIcons.info);
     final key = ValueKey('$keyPrefix-$id');
     final button = nodeIcon == null
-        ? MMToolbarButton(key: key, icon: icon, tooltip: hint, onPressed: onPressed == null ? null : invoke, tint: tint)
+        ? MMToolbarButton(
+            key: key,
+            icon: icon,
+            iconWidget: iconWidget,
+            tooltip: hint,
+            onPressed: onPressed == null ? null : invoke,
+            tint: tint,
+          )
         : MMToolbarPreviewButton(
             key: key,
             tooltip: hint,
@@ -356,7 +367,7 @@ class _AssistantAction extends StatelessWidget {
     id: 'assistant',
     label: context.l10n.askAssistant,
     shortcut: describeShortcut(AppShortcuts.askAssistant),
-    icon: MMIcons.ai,
+    iconWidget: const AssistantIcon(),
     tint: context.mmColors.research,
     onPressed: () {
       final box = context.findRenderObject()! as RenderBox;

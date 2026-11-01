@@ -1,3 +1,5 @@
+import '../../../shared/assistant_icon.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -470,7 +472,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                           tooltip: l.back,
                           onPressed: running ? null : () => setState(() => _menu = true),
                         ),
-                      Icon(MMIcons.ai, size: 17, color: c.research),
+                      const AssistantIcon(size: 17),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

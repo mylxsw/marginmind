@@ -1,3 +1,5 @@
+import '../../../shared/assistant_icon.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -500,7 +502,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     const MMToolbarDivider(),
                     MMToolbarButton(
                       key: const ValueKey('selection-assistant'),
-                      icon: MMIcons.ai,
+                      iconWidget: const AssistantIcon(),
                       tint: c.research,
                       selected: _quickOpen,
                       tooltip: '${l.askAssistant}（A · ${describeShortcut(AppShortcuts.askAssistant)}）',

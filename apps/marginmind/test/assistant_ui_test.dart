@@ -15,6 +15,7 @@ import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_markdown.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/settings/app_settings.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -121,12 +122,21 @@ void main() {
   testWidgets('macOS toolbar opens and closes the assistant on release', (tester) async {
     final app = await openAssistantApp(tester);
     final button = find.byKey(const ValueKey('toolbar-assistant'));
+    final mark = find.descendant(of: button, matching: find.byType(MMAssistantIcon));
+    expect(tester.widget<MMAssistantIcon>(mark).palette, MMAssistantPalette.iris);
     await tester.tap(button, kind: PointerDeviceKind.mouse);
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
     await tester.pump();
     expect(find.byType(AssistantHeader), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
+    for (final palette in MMAssistantPalette.values) {
+      await app.container.read(settingsProvider.notifier).setAssistantIcon(palette);
+      await tester.pump();
+      expect(tester.widget<MMAssistantIcon>(mark).palette, palette);
+      final header = find.descendant(of: find.byType(AssistantHeader), matching: find.byType(MMAssistantIcon));
+      expect(tester.widget<MMAssistantIcon>(header).palette, palette);
+    }
     await tester.tap(button, kind: PointerDeviceKind.mouse);
     expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
     await tester.pumpAndSettle();

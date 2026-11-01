@@ -5548,4 +5548,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsEnableBetaFeatures => '启用 Beta 功能';
+
+  @override
+  String get assistantIconTitle => 'AI 助手图标';
+
+  @override
+  String get assistantIconIris => '蓝紫';
+
+  @override
+  String get assistantIconJade => '湖绿';
+
+  @override
+  String get assistantIconApricot => '杏橙';
 }

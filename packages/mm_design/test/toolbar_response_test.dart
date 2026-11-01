@@ -58,7 +58,13 @@ void main() {
             leading: MMIconButton(icon: MMIcons.sidebar, tooltip: 'Sidebar', onPressed: () => leadingClicks++),
             actions: [
               MMToolbarGroup(
-                children: [MMToolbarButton(icon: MMIcons.ai, tooltip: 'Assistant', onPressed: () => opened = true)],
+                children: [
+                  MMToolbarButton(
+                    iconWidget: const MMAssistantIcon(),
+                    tooltip: 'Assistant',
+                    onPressed: () => opened = true,
+                  ),
+                ],
               ),
             ],
           ),

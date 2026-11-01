@@ -1,3 +1,4 @@
+import '../../../shared/assistant_icon.dart';
 import '../../workspace/workspace_content_host.dart';
 
 import 'dart:async';
@@ -300,11 +301,7 @@ class AssistantHeader extends ConsumerWidget {
                     color: c.research.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    MMIcons.ai,
-                    size: context.mmTouchPlatform ? 16 : context.mmToolbarIcon,
-                    color: c.research,
-                  ),
+                  child: Center(child: AssistantIcon(size: context.mmTouchPlatform ? 20 : context.mmToolbarIcon)),
                 ),
                 const SizedBox(width: MMSpacing.s),
                 Expanded(
@@ -507,7 +504,7 @@ class ModelSetupCard extends ConsumerWidget {
           : Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(MMIcons.ai, size: 28, color: c.secondaryLabel),
+                const AssistantIcon(size: 28),
                 const SizedBox(height: MMSpacing.m),
                 Text(
                   title,

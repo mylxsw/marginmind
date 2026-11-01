@@ -10153,6 +10153,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable Beta Features'**
   String get settingsEnableBetaFeatures;
+
+  /// No description provided for @assistantIconTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant icon'**
+  String get assistantIconTitle;
+
+  /// No description provided for @assistantIconIris.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue purple'**
+  String get assistantIconIris;
+
+  /// No description provided for @assistantIconJade.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get assistantIconJade;
+
+  /// No description provided for @assistantIconApricot.
+  ///
+  /// In en, this message translates to:
+  /// **'Apricot'**
+  String get assistantIconApricot;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

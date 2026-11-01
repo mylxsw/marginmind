@@ -2326,5 +2326,9 @@
   "workspaceCurrentContent": "当前内容：{title}",
   "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}},
   "settingsAdvancedGroup": "高级",
-  "settingsEnableBetaFeatures": "启用 Beta 功能"
+  "settingsEnableBetaFeatures": "启用 Beta 功能",
+  "assistantIconTitle": "AI 助手图标",
+  "assistantIconIris": "蓝紫",
+  "assistantIconJade": "湖绿",
+  "assistantIconApricot": "杏橙"
 }

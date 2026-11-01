@@ -1,3 +1,4 @@
+import '../../shared/assistant_icon.dart';
 import 'widgets/workspace_desktop_shell.dart';
 import 'widgets/workspace_tabbed_content.dart';
 import 'widgets/workspace_tab_strip.dart';
@@ -387,6 +388,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       child: MMToolbarButton(
         key: ValueKey('toolbar-$id'),
         icon: icon,
+        iconWidget: id == 'assistant' ? const AssistantIcon() : null,
         tooltip: label,
         selected: selected,
         tint: tint,
@@ -397,18 +399,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         value: invoke,
         child: Row(
           children: [
-            Icon(switch (id) {
-              'layout-reader' => MMReaderIcons.layoutReader,
-              'layout-split' => MMIcons.compare,
-              'assistant' => MMReaderIcons.assistant,
-              _ => icon,
-            }, size: MMSizes.dropdownIcon),
+            if (id == 'assistant')
+              const AssistantIcon(size: MMSizes.dropdownIcon)
+            else
+              Icon(switch (id) {
+                'layout-reader' => MMReaderIcons.layoutReader,
+                'layout-split' => MMIcons.compare,
+                _ => icon,
+              }, size: MMSizes.dropdownIcon),
             const SizedBox(width: MMSpacing.s),
             Expanded(child: Text(label)),
-            if (badge != null) ...[
-              const SizedBox(width: MMSpacing.xs),
-              badge,
-            ],
+            if (badge != null) ...[const SizedBox(width: MMSpacing.xs), badge],
             if (selected) const Icon(MMIcons.check, size: MMSizes.dropdownIcon),
           ],
         ),
@@ -575,7 +576,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         if (MMPlatformCapabilities.current.assistant)
           MMToolbarButton(
             key: const ValueKey('toolbar-assistant'),
-            icon: MMIcons.ai,
+            iconWidget: const AssistantIcon(),
             tint: context.mmColors.research,
             tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
             selected: state.panel == RightPanel.assistant,
@@ -753,7 +754,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                       dimension: MMSizes.phoneTopControl,
                                       child: MMToolbarButton(
                                         key: const ValueKey('toolbar-assistant'),
-                                        icon: MMIcons.ai,
+                                        iconWidget: const AssistantIcon(),
                                         tooltip: l.assistant,
                                         tint: context.mmColors.research,
                                         onPressed: () => toggleAssistant(ref, widget.studySetId),
@@ -829,7 +830,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                       if (MMPlatformCapabilities.current.assistant)
                                         MMToolbarButton(
                                           key: const ValueKey('toolbar-assistant'),
-                                          icon: MMIcons.ai,
+                                          iconWidget: const AssistantIcon(),
                                           tooltip: l.assistant,
                                           tint: context.mmColors.research,
                                           onPressed: () => toggleAssistant(ref, widget.studySetId),

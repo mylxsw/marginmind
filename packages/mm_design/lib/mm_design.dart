@@ -12,6 +12,7 @@ export 'src/foundation/back_handler.dart';
 export 'src/foundation/floating_placement.dart';
 export 'src/foundation/interactive.dart';
 export 'src/icons/mm_icons.dart';
+export 'src/icons/assistant_icon.dart';
 export 'src/icons/node_action_icon.dart';
 export 'src/theme/mm_theme.dart';
 export 'src/tokens/annotation_colors.dart';

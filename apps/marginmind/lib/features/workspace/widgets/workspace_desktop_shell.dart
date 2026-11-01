@@ -1,3 +1,4 @@
+import '../../../shared/assistant_icon.dart';
 import '../../../shared/pdf_drop.dart';
 import '../workspace_layout.dart';
 import 'notices.dart';
@@ -116,7 +117,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   if (MMPlatformCapabilities.current.assistant)
                     MMIconButton(
                       key: const ValueKey('toolbar-assistant'),
-                      icon: MMIcons.ai,
+                      iconWidget: const AssistantIcon(),
                       iconSize: 18,
                       tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
                       selected: state.panel == RightPanel.assistant,

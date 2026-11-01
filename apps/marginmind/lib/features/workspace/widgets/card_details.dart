@@ -1,3 +1,5 @@
+import '../../../shared/assistant_icon.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Card;
@@ -52,7 +54,7 @@ class CardDetails extends ConsumerWidget {
         : [
             MMIconButton(
               key: const ValueKey('details-ask-assistant'),
-              icon: MMIcons.ai,
+              iconWidget: const AssistantIcon(),
               iconSize: 14,
               color: context.mmColors.research,
               tooltip: l.askAssistant,

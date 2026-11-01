@@ -205,7 +205,18 @@ class MMToolbarButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (iconWidget != null)
-                  iconWidget!
+                  IconTheme.merge(
+                    data: IconThemeData(
+                      size: dock
+                          ? 20
+                          : context.mmTouchPlatform
+                          ? MMSizes.tabletToolbarIcon
+                          : 16,
+                      color: fg,
+                      opacity: s.enabled ? 1 : 0.3,
+                    ),
+                    child: iconWidget!,
+                  )
                 else if (icon != null)
                   Icon(
                     icon,

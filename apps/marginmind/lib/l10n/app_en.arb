@@ -3025,5 +3025,9 @@
   "workspaceCurrentContent": "Current content: {title}",
   "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}},
   "settingsAdvancedGroup": "Advanced",
-  "settingsEnableBetaFeatures": "Enable Beta Features"
+  "settingsEnableBetaFeatures": "Enable Beta Features",
+  "assistantIconTitle": "AI assistant icon",
+  "assistantIconIris": "Blue purple",
+  "assistantIconJade": "Teal",
+  "assistantIconApricot": "Apricot"
 }
