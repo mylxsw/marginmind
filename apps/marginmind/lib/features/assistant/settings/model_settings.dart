@@ -581,13 +581,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     final enabled = s.models.where((m) => m.enabled).length;
     final Widget status = _checking
         ? const SizedBox(width: 10, height: 10, child: CupertinoActivityIndicator(radius: 5))
-        : !s.enabled
-        ? Text(
-            l.settingsServiceOff,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: t.footnote.copyWith(color: c.secondaryLabel),
-          )
         : _failure != null
         ? Row(
             key: const ValueKey('service-failure'),
@@ -604,6 +597,16 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
                 ),
               ),
             ],
+          )
+        // A failed credential save leaves the service off (its data fence);
+        // the reason above is shown first, the switch already says it is off.
+        : !s.enabled
+        ? Text(
+            l.settingsServiceOff,
+            key: const ValueKey('service-off'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: t.footnote.copyWith(color: c.secondaryLabel),
           )
         : Text(
             s.models.isEmpty ? l.settingsServiceNoModels : l.settingsServiceModels(enabled),
