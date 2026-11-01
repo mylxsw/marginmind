@@ -315,7 +315,7 @@ abstract final class MMNoteLayout {
   static const double aiRule = 2;
   static const double quoteBar = 3;
   static const double quoteIndent = 16;
-  static const double tocWidth = 150;
+  static const double tocWidth = 224;
   static const double tocMinWidth = 1000;
   static const double exportLabelMinWidth = 720;
   static const double barHeight = 44;
