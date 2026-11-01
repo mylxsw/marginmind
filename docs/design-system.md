@@ -12,7 +12,7 @@
 | `MMInkColor` / `MMInkWidth` | 画笔的六色（红/橙/黄/绿/蓝/墨黑，`stroke` 为 90% 不透明）与三档粗细（1.5 / 2.5 / 4，单位 PDF 点，随页面缩放）。数据只存颜色索引和点数。 |
 | `MMTypography` / `MMTextStyles` | macOS 文本样式：title3 15、headline 13 semibold、body 13、callout 12、subheadline 11 semibold、footnote 11；阅读用宋体 16.5/32，摘录 13/20。 |
 | `MMSpacing` / `MMRadii` / `MMSizes` | 4pt 间距；同心圆角（窗口 24 → 侧栏 16 → 行 8；胶囊 18 → 按钮 15；卡片 12 → 摘录块 6）；工具栏 56、侧栏 236、行高 28、浮动工具条颜色点 14（热区 26）、右侧面板 400（窄窗口 360）等尺寸。 |
-| `MMMotion` | popup 0ms（菜单、色板、锚定弹窗首帧完整显示）；quick 150ms、standard 200ms、layout 320ms、flash 1600ms、hud 2400ms；AI 扩展的目标脉冲 pulse 1400ms、占位闪烁 shimmer 1100ms。 |
+| `MMMotion` | popup 0ms（菜单、色板、锚定弹窗首帧完整显示）；hoverExit 500ms（从标记移入悬停卡片的关闭缓冲）；quick 150ms、standard 200ms、layout 320ms、flash 1600ms、hud 2400ms；AI 扩展的目标脉冲 pulse 1400ms、占位闪烁 shimmer 1100ms。 |
 
 锚定下拉菜单一次完整显示，不使用尺寸展开或逐项淡入。窗口工具栏的拖动、双击缩放只监听背景区域，按钮点击松开即执行，不能等待双击判定。
 
@@ -213,3 +213,5 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 ### 脑图生成起始页（方案 3）
 
 空脑图以“从资料生成脑图”作为标题，真实资料标题独立显示为系统强调色描边主题节点，来源显示保存的网页域名或文件格式。节点右侧的＋与底部“新建空白主题”共用手动新建行为。`MMSizes.mapEmptyStateWidth` 为620pt；来源节点最大320pt、最小224×76pt，长标题两行省略并保留全文提示。补充要求表单标明选填，底部分隔出设置与生成按钮，下面是三条可切换的要求建议。窄窗使用较短间距并可纵向滚动；触控标签至少44pt。AI实心按钮使用research/onResearch配色。设计及实际渲染对照见 `docs/evidence/map-empty-canvas/design-qa.md`。
+
+研究笔记的 PDF 页边图标：桌面鼠标进入即显示已有笔记，不抢焦点；移出 500ms 后关闭，移入卡片取消关闭。点击固定弹窗，触屏保留点击/长按与页面滑动。滚动、切换文档、Esc 或点击外部关闭预览。

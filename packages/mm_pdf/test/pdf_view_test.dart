@@ -937,6 +937,82 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
   });
+  testWidgets('desktop margin marker clicks fire before the double-tap timeout; hover uses source bounds', (
+    tester,
+  ) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    var taps = 0;
+    final hovers = <(String, Rect, bool)>[];
+    const rect = PageRect(30, 700, 150, 680);
+    Future<void> mount({bool touch = false}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(
+            filePath: 'note-marker.pdf',
+            controller: controller,
+            useTouchSelectionHandles: touch,
+            highlights: const [
+              MMPdfHighlight(id: 'note:one', page: 1, rects: [rect], color: Colors.transparent, marker: Colors.blue),
+            ],
+            onHighlightTap: (_, _) => taps++,
+            onMarkerHover: (id, bounds, hovering) => hovers.add((id, bounds, hovering)),
+          ),
+        ),
+      );
+      await _waitReady(tester, controller);
+      await tester.pumpAndSettle();
+    }
+
+    await mount();
+    final marker = find.byKey(const ValueKey('pdf-marker-note:one'));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: const Offset(1, 1));
+    await mouse.down(tester.getCenter(marker));
+    await mouse.up();
+    await tester.pump();
+    expect(taps, 1, reason: 'the button must respond in the first frame after pointer up');
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(taps, 1, reason: 'no second dispatch through the PDF gesture recognizer');
+    await mouse.moveTo(const Offset(1, 1));
+    await mouse.moveTo(tester.getCenter(marker));
+    await tester.pump();
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    final bounds = pdf.calcRectForRectInsidePage(pageNumber: 1, rect: const PdfRect(30, 700, 150, 680));
+    expect(hovers.last, (
+      'note:one',
+      Rect.fromPoints(pdf.documentToLocal(bounds.topLeft), pdf.documentToLocal(bounds.bottomRight)),
+      true,
+    ));
+    await mouse.moveTo(const Offset(1, 1));
+    await tester.pump();
+    expect(hovers.last.$3, isFalse);
+    await mouse.removePointer();
+    final beforeScroll = controller.readingPosition!;
+    tester.binding.handlePointerEvent(
+      PointerScrollEvent(
+        position: tester.getCenter(marker),
+        scrollDelta: const Offset(0, 40),
+        kind: PointerDeviceKind.mouse,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      controller.readingPosition!.y,
+      closeTo(beforeScroll.y - 40, .01),
+      reason: 'the icon must not swallow wheel scrolling',
+    );
+    // Touch continues to reach the PDF recognizer through the MouseRegion.
+    await mount(touch: true);
+    hovers.clear();
+    await tester.tap(marker);
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(taps, 2);
+    expect(hovers, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 350));
+  });
+
   testWidgets('highlight tap reports union bounds after zoom and scroll', (tester) async {
     final controller = MMPdfViewController();
     String? tapped;

@@ -337,6 +337,7 @@ class Component extends DCLogic {
       ],
       motion: [
         { token: 'popup', value: '0ms · 即时完整显示', use: '菜单、色板、锚定弹窗：无尺寸展开、无淡入；工具栏与侧栏按钮不等待标题栏双击判定' },
+        { token: 'hoverExit', value: '500ms', use: '研究笔记页边图标移出后的关闭缓冲；移入卡片取消关闭，悬停进入即时显示' },
         { token: 'spring.default', value: 'response .35 · damping .85', use: '布局切换、侧栏收起、节点插入' },
         { token: 'ease.quick', value: '150ms easeOut', use: '悬停、按下、颜色变化' },
         { token: 'ease.standard', value: '200ms easeInOut', use: '折叠展开、选中环、分段控件滑块' },

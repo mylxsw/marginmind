@@ -9,6 +9,9 @@ abstract final class MMMotion {
   /// Menus and anchored popovers appear fully visible in their first frame.
   static const popup = Duration.zero;
 
+  /// Grace period for moving from a source marker into its hover card.
+  static const hoverExit = Duration(milliseconds: 500);
+
   /// Hover, press, color changes.
   static const quick = Duration(milliseconds: 150);
 

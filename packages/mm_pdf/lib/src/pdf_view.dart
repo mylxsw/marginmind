@@ -817,6 +817,7 @@ class MMPdfView extends StatefulWidget {
     this.useTouchSelectionHandles = false,
     this.selectionHandleTapGroup,
     this.onHighlightTap,
+    this.onMarkerHover,
     this.onViewportChanged,
     this.onUserScroll,
     this.scrollProfile,
@@ -881,6 +882,9 @@ class MMPdfView extends StatefulWidget {
 
   /// Highlight bounds are in viewport coordinates, matching selection bounds.
   final void Function(String id, Rect viewportRect)? onHighlightTap;
+
+  /// Mouse entering/leaving a margin marker; bounds anchor to its source text.
+  final void Function(String id, Rect viewportRect, bool hovering)? onMarkerHover;
   final VoidCallback? onViewportChanged;
 
   /// Actual one-finger scrolling; excludes programmatic moves and pinch zoom.
@@ -1847,12 +1851,26 @@ class _MMPdfViewState extends State<MMPdfView> {
   bool _tapHighlight(MMPdfHighlight h) {
     if (widget.ink != null || widget.cropEditorBuilder != null || widget.areaSelecting) return false;
     _selectionEpoch++;
-    final bounds = h.rects.map((r) => _originalRect(h.page, r)).reduce((a, b) => a.expandToInclude(b));
-    widget.onHighlightTap?.call(
-      h.id,
-      Rect.fromPoints(_controller.documentToLocal(bounds.topLeft), _controller.documentToLocal(bounds.bottomRight)),
-    );
+    widget.onHighlightTap?.call(h.id, _highlightViewportRect(h));
     return true;
+  }
+
+  Rect _highlightViewportRect(MMPdfHighlight h) {
+    final bounds = h.rects.map((r) => _originalRect(h.page, r)).reduce((a, b) => a.expandToInclude(b));
+    return Rect.fromPoints(
+      _controller.documentToLocal(bounds.topLeft),
+      _controller.documentToLocal(bounds.bottomRight),
+    );
+  }
+
+  void _markerHover(MMPdfHighlight h, PointerEvent event, bool hovering) {
+    if (event.kind != PointerDeviceKind.mouse ||
+        widget.ink != null ||
+        widget.cropEditorBuilder != null ||
+        widget.areaSelecting) {
+      return;
+    }
+    widget.onMarkerHover?.call(h.id, _highlightViewportRect(h), hovering);
   }
 
   bool _tapNearbyHighlight(Offset point) {
@@ -1977,14 +1995,43 @@ class _MMPdfViewState extends State<MMPdfView> {
                 top: rect.center.dy - size / 2,
                 width: size,
                 height: size,
-                child: PdfOverlayInteractionRegion(
-                  onTap: (_) => _tapHighlight(h),
-                  onLongPress: (_) => _tapHighlight(h),
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(color: h.marker, shape: BoxShape.circle),
-                      child: Icon(h.markerIcon ?? Icons.sticky_note_2_outlined, size: size * 0.62, color: Colors.white),
-                    ),
+                child: MouseRegion(
+                  opaque: !widget.useTouchSelectionHandles,
+                  hitTestBehavior: HitTestBehavior.translucent,
+                  cursor: SystemMouseCursors.click,
+                  onEnter: (event) => _markerHover(h, event, true),
+                  onExit: (event) => _markerHover(h, event, false),
+                  child: Builder(
+                    builder: (context) {
+                      final icon = IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(color: h.marker, shape: BoxShape.circle),
+                          child: Icon(
+                            h.markerIcon ?? Icons.sticky_note_2_outlined,
+                            size: size * 0.62,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                      // A desktop icon is a button: bypass the viewer's double-tap
+                      // recognizer. Touch keeps the shared pan/pinch gesture path.
+                      if (widget.useTouchSelectionHandles) {
+                        return PdfOverlayInteractionRegion(
+                          onTap: (_) => _tapHighlight(h),
+                          onLongPress: (_) => _tapHighlight(h),
+                          child: icon,
+                        );
+                      }
+                      return Listener(
+                        onPointerSignal: _controller.handlePointerSignalEvent,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _tapHighlight(h),
+                          onLongPress: () => _tapHighlight(h),
+                          child: icon,
+                        ),
+                      );
+                    },
                   ),
                 ),
               );
