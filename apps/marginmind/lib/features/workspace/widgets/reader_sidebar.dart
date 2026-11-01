@@ -45,8 +45,8 @@ class ReaderSidebar extends ConsumerWidget {
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
 
     return Container(
-      width: math.max(0, width - MMSpacing.m * 2),
-      margin: const EdgeInsets.all(MMSpacing.m),
+      width: math.max(0, width - MMSpacing.m),
+      margin: const EdgeInsets.all(MMSpacing.m / 2),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: c.sidebarOpaque,
@@ -375,6 +375,7 @@ class _Annotations extends ConsumerWidget {
     final popup = ref.watch(readerMarginProvider(studySetId).select((s) => s.popup));
     return Column(
       children: [
+        const SizedBox(height: MMSpacing.s),
         Wrap(
           alignment: WrapAlignment.end,
           crossAxisAlignment: WrapCrossAlignment.center,
