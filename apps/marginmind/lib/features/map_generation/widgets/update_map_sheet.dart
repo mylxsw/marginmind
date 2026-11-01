@@ -27,6 +27,8 @@ class UpdateMapSheet extends ConsumerStatefulWidget {
 class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
   late final TextEditingController _instructions;
   late final Set<String> _documents;
+  final _sourceScroll = ScrollController();
+  final _bodyScroll = ScrollController();
   bool _onlyNew = true, _needsSetup = false, _starting = false;
 
   @override
@@ -34,12 +36,15 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
     super.initState();
     final g = ref.read(workspaceProvider(widget.studySetId).notifier).content.map(widget.mapId)!.generation!;
     _instructions = TextEditingController(text: g.instructions);
-    _documents = g.sources.map((s) => s.documentId).toSet();
+    final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
+    _documents = g.sources.where((s) => content.document(s.documentId) != null).map((s) => s.documentId).toSet();
   }
 
   @override
   void dispose() {
     _instructions.dispose();
+    _sourceScroll.dispose();
+    _bodyScroll.dispose();
     super.dispose();
   }
 
@@ -53,6 +58,7 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
         _needsSetup = true;
         _starting = false;
       });
+      if (_bodyScroll.hasClients) _bodyScroll.jumpTo(0);
       return;
     }
     final c = ref.read(workspaceProvider(widget.studySetId).notifier).content;
@@ -100,77 +106,243 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
     final notes = c.marginNotes
         .where((n) => _documents.contains(n.documentId) && n.createdAt.isAfter(g.generatedAt))
         .length;
+    final colors = context.mmColors, text = context.mmText;
+    void close() => Navigator.of(context).pop();
     return CallbackShortcuts(
-      bindings: {primaryShortcut(LogicalKeyboardKey.enter): _start},
-      child: Material(
-        color: context.mmColors.windowBackground,
-        child: Padding(
-          padding: const EdgeInsets.all(MMSpacing.l),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(l.mapUpdateTitle, style: context.mmText.headline),
-                const SizedBox(height: MMSpacing.m),
-                Text(l.mapUpdateSources, style: context.mmText.subheadline),
-                for (final doc in c.documents)
-                  Row(
-                    children: [
-                      MMCheckbox(
-                        value: _documents.contains(doc.id),
-                        onChanged: _starting
-                            ? null
-                            : (v) => setState(() {
-                                if (v) {
-                                  _documents.add(doc.id);
-                                } else {
-                                  _documents.remove(doc.id);
-                                }
-                              }),
-                      ),
-                      const SizedBox(width: MMSpacing.s),
-                      Expanded(child: Text(doc.title, style: context.mmText.body)),
-                    ],
-                  ),
-                const SizedBox(height: MMSpacing.m),
-                Text(l.mapUpdateSince, style: context.mmText.subheadline),
-                Text('${l.mapUpdateNewHighlights}  $highlights', style: context.mmText.body),
-                Text('${l.mapUpdateNewNotes}  $notes', style: context.mmText.body),
-                for (final source in g.sources)
-                  if (c.document(source.documentId) case final doc?)
-                    Text(
-                      '${l.mapUpdateReadTo}  ${l.mapUpdateReadRange(source.readThrough, doc.lastPage)}',
-                      style: context.mmText.body,
+      bindings: {
+        primaryShortcut(LogicalKeyboardKey.enter): _start,
+        const SingleActivator(LogicalKeyboardKey.escape): close,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Material(
+          color: colors.windowBackground,
+          borderRadius: BorderRadius.circular(MMRadii.sheet),
+          clipBehavior: Clip.antiAlias,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: constraints.maxHeight.clamp(0.0, 700.0)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 16, 12, 16),
+                    child: Row(
+                      children: [
+                        Icon(MMIcons.generateMap, size: 20, color: colors.research),
+                        const SizedBox(width: MMSpacing.m),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Semantics(header: true, child: Text(l.mapUpdateTitle, style: text.title3)),
+                              const SizedBox(height: MMSpacing.xs),
+                              Text(
+                                c.map(widget.mapId)!.title.trim().isEmpty ? l.mainMap : c.map(widget.mapId)!.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: text.footnote.copyWith(color: colors.secondaryLabel),
+                              ),
+                            ],
+                          ),
+                        ),
+                        MMIconButton(
+                          key: const ValueKey('map-update-close'),
+                          icon: MMIcons.close,
+                          tooltip: l.closePanel,
+                          onPressed: close,
+                        ),
+                      ],
                     ),
-                const SizedBox(height: MMSpacing.m),
-                Text(l.mapUpdateScope, style: context.mmText.subheadline),
-                MMDropdownButton<bool>(
-                  child: Text(_onlyNew ? l.mapUpdateScopeNew : l.mapUpdateScopeAll),
-                  onSelected: (v) => setState(() => _onlyNew = v),
-                  itemBuilder: (_) => [
-                    MMDropdownItem(value: true, child: Text(l.mapUpdateScopeNew)),
-                    MMDropdownItem(value: false, child: Text(l.mapUpdateScopeAll)),
-                  ],
-                ),
-                const SizedBox(height: MMSpacing.m),
-                MMTextField(controller: _instructions, placeholder: l.mapIdeaHint, maxLines: 3),
-                const SizedBox(height: MMSpacing.m),
-                Text(l.mapUpdateProtected(protected), style: context.mmText.footnote),
-                if (_needsSetup) const ModelSetupCard(inline: true),
-                const SizedBox(height: MMSpacing.m),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: MMButton(
-                    label: l.mapUpdatePreview,
-                    variant: MMButtonVariant.primary,
-                    onPressed: _starting || _documents.isEmpty ? null : _start,
                   ),
-                ),
-              ],
+                  Divider(height: 1, thickness: MMSizes.hairline, color: colors.separator),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      key: const ValueKey('map-update-body'),
+                      controller: _bodyScroll,
+                      padding: const EdgeInsets.all(22),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (_needsSetup) ...[const ModelSetupCard(inline: true), const SizedBox(height: MMSpacing.m)],
+                          Text(l.mapUpdateDescription, style: text.callout.copyWith(color: colors.secondaryLabel)),
+                          const SizedBox(height: MMSpacing.l),
+                          _heading(l.mapUpdateSources),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              border: Border.all(color: colors.separator, width: MMSizes.hairline),
+                              borderRadius: BorderRadius.circular(MMRadii.row),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 192),
+                              child: Scrollbar(
+                                controller: _sourceScroll,
+                                child: SingleChildScrollView(
+                                  controller: _sourceScroll,
+                                  child: Column(
+                                    children: [
+                                      for (var i = 0; i < c.documents.length; i++) ...[
+                                        if (i > 0)
+                                          Divider(height: 1, thickness: MMSizes.hairline, color: colors.separator),
+                                        _document(c.documents[i], g),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: MMSpacing.l),
+                          _heading(l.mapUpdateSince),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: BorderRadius.circular(MMRadii.row),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(child: _stat(l.mapUpdateNewHighlights, highlights, MMIcons.highlight)),
+                                const SizedBox(width: MMSpacing.m),
+                                Expanded(child: _stat(l.mapUpdateNewNotes, notes, MMIcons.organizeNote)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: MMSpacing.l),
+                          _heading(l.mapUpdateScope),
+                          MMDropdownButton<bool>(
+                            key: const ValueKey('map-update-scope'),
+                            enabled: !_starting,
+                            tooltip: l.mapUpdateScope,
+                            onSelected: (v) => setState(() => _onlyNew = v),
+                            itemBuilder: (_) => [
+                              MMDropdownItem(value: true, child: Text(l.mapUpdateScopeNew)),
+                              MMDropdownItem(value: false, child: Text(l.mapUpdateScopeAll)),
+                            ],
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: colors.surface,
+                                border: Border.all(color: colors.separator, width: MMSizes.hairline),
+                                borderRadius: BorderRadius.circular(MMRadii.row),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(_onlyNew ? l.mapUpdateScopeNew : l.mapUpdateScopeAll, style: text.body),
+                                  ),
+                                  const Icon(MMIcons.chevronDown, size: 12),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: MMSpacing.l),
+                          _heading(l.mapGenerateInstructions),
+                          MMTextField(
+                            controller: _instructions,
+                            placeholder: l.mapGenerateInstructionsHint,
+                            maxLines: 3,
+                          ),
+                          const SizedBox(height: MMSpacing.m),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(MMIcons.shield, size: 14, color: colors.secondaryLabel),
+                              const SizedBox(width: MMSpacing.s),
+                              Expanded(
+                                child: Text(
+                                  l.mapUpdateProtected(protected),
+                                  style: text.footnote.copyWith(color: colors.secondaryLabel),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Divider(height: 1, thickness: MMSizes.hairline, color: colors.separator),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        MMButton(key: const ValueKey('map-update-cancel'), label: l.cancel, onPressed: close),
+                        const SizedBox(width: MMSpacing.s),
+                        MMButton(
+                          key: const ValueKey('map-update-preview'),
+                          label: l.mapUpdatePreview,
+                          variant: MMButtonVariant.primary,
+                          onPressed: _starting || _documents.isEmpty ? null : _start,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _heading(String label) => Padding(
+    padding: const EdgeInsets.only(bottom: MMSpacing.s),
+    child: Text(label, style: context.mmText.headline),
+  );
+
+  Widget _stat(String label, int value, IconData icon) => Row(
+    children: [
+      Icon(icon, size: 16, color: context.mmColors.secondaryLabel),
+      const SizedBox(width: MMSpacing.s),
+      Expanded(child: Text(label, style: context.mmText.callout)),
+      const SizedBox(width: MMSpacing.xs),
+      Text('$value', style: context.mmText.headline),
+    ],
+  );
+
+  Widget _document(Document doc, MapGeneration generation) {
+    final source = generation.sources.where((s) => s.documentId == doc.id).firstOrNull;
+    final selected = _documents.contains(doc.id);
+    final l = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: MMCheckbox(
+              value: selected,
+              label: doc.title,
+              onChanged: _starting
+                  ? null
+                  : (value) => setState(() {
+                      if (value) {
+                        _documents.add(doc.id);
+                      } else {
+                        _documents.remove(doc.id);
+                      }
+                    }),
+            ),
+          ),
+          if (selected && source != null) ...[
+            const SizedBox(height: MMSpacing.xs),
+            Padding(
+              padding: const EdgeInsets.only(left: 23),
+              child: Text(
+                doc.lastPage > source.readThrough
+                    ? '${l.mapUpdateReadTo}  ${l.mapUpdateReadRange(source.readThrough, doc.lastPage)}'
+                    : l.mapUpdateReadBaseline(source.readThrough),
+                style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

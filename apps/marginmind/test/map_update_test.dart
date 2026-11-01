@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/map_generation/map_generation_controller.dart';
 import 'package:marginmind/features/map_generation/map_updates.dart';
 import 'package:marginmind/features/map_generation/widgets/map_diff_panel.dart';
@@ -123,13 +124,16 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('map-more')));
     await tester.pumpAndSettle();
+    expect(find.text('更新脑图'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
     await tester.pumpAndSettle();
     expect(find.byType(UpdateMapSheet), findsOneWidget);
     expect(find.text('只处理新内容'), findsOneWidget);
     expect(find.text('你改过、添加的 1 个节点保持不变'), findsOneWidget);
-    Navigator.of(tester.element(find.byType(UpdateMapSheet))).pop();
+    await tester.tap(find.byKey(const ValueKey('map-update-close')));
     await tester.pumpAndSettle();
+    expect(find.byType(UpdateMapSheet), findsNothing);
+    expect(container.read(mapGenerationControllerProvider('demo-1')), isNull);
     final ctl = container.read(mapGenerationControllerProvider('demo-1').notifier);
     await runGeneration(
       tester,
@@ -149,6 +153,89 @@ void main() {
       container.read(workspaceProvider('demo-1').notifier).content.map(before.maps.first.id)!.generation!.toJson(),
       before.maps.first.generation!.toJson(),
     );
+  });
+
+  for (final size in [const Size(320, 640), const Size(402, 874), const Size(900, 390)]) {
+    testWidgets('update sheet keeps close and actions visible with long sources at $size', (tester) async {
+      final base = updateFixture();
+      final content = base.copyWith(
+        documents: [
+          for (final doc in base.documents) doc.copyWith(title: '${doc.title}：阅读与学习方法的完整研究资料，以及跨章节的补充说明'),
+          for (var i = 0; i < 10; i++)
+            Document(
+              id: 'extra-$i',
+              title: '补充资料 $i：关于遗忘曲线与主动提取的研究',
+              fileName: 'extra-$i.pdf',
+              pageCount: 20,
+              importedAt: testNow,
+            ),
+        ],
+      );
+      final container = await openWorkspace(
+        tester,
+        content: InMemoryStudySetContentRepository({'demo-1': content}),
+        overrides: [touchPlatformProvider.overrideWithValue(size.width < 600)],
+      );
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      showUpdateMapSheet(tester.element(find.byType(Navigator).first), 'demo-1', content.maps.first.id);
+      await tester.pumpAndSettle();
+      final close = find.byKey(const ValueKey('map-update-close'));
+      final preview = find.byKey(const ValueKey('map-update-preview'));
+      expect(close.hitTestable(), findsOneWidget);
+      expect(preview.hitTestable(), findsOneWidget);
+      expect(tester.getRect(preview).bottom, lessThanOrEqualTo(size.height));
+      expect(tester.takeException(), isNull);
+      final input = find.descendant(of: find.byType(UpdateMapSheet), matching: find.byType(TextField));
+      await tester.ensureVisible(input);
+      await tester.enterText(input, '保留现有结构');
+      await tester.pumpAndSettle();
+      expect(close.hitTestable(), findsOneWidget);
+      expect(preview.hitTestable(), findsOneWidget);
+      if (size.width == 402) {
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(preview).bottom, lessThanOrEqualTo(size.height - 300));
+        expect(close.hitTestable(), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.byKey(const ValueKey('map-update-cancel')));
+      await tester.pumpAndSettle();
+      expect(find.byType(UpdateMapSheet), findsNothing);
+      expect(container.read(mapGenerationControllerProvider('demo-1')), isNull);
+      expect(container.read(workspaceProvider('demo-1').notifier).content.toJson(), content.toJson());
+    });
+  }
+
+  testWidgets('returning to an earlier page shows the previous reading position without a backwards range', (
+    tester,
+  ) async {
+    final base = updateFixture();
+    final g = base.maps.first.generation!;
+    final content = base.copyWith(
+      maps: [
+        for (final map in base.maps)
+          map.copyWith(
+            generation: MapGeneration(
+              sources: [MapSource(documentId: 'c1', fingerprint: 'old', readThrough: 2)],
+              organization: g.organization,
+              depth: g.depth,
+              generatedAt: g.generatedAt,
+            ),
+          ),
+      ],
+    );
+    await openWorkspace(tester, content: InMemoryStudySetContentRepository({'demo-1': content}));
+    await tester.tap(find.byKey(const ValueKey('map-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
+    await tester.pumpAndSettle();
+    expect(find.text('上次更新至第 2 页'), findsOneWidget);
+    expect(find.textContaining('p.2 → p.1'), findsNothing);
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(find.byType(UpdateMapSheet), findsNothing);
   });
 
   testWidgets('current source fingerprint is shared and detects text and reading changes', (tester) async {
@@ -276,7 +363,7 @@ void main() {
     expect(find.byType(ModelSetupCard), findsNothing);
     await tester.tap(find.text('预览更改'));
     await tester.pumpAndSettle();
-    expect(find.byType(ModelSetupCard), findsOneWidget);
+    expect(find.byType(ModelSetupCard).hitTestable(), findsOneWidget);
   });
   testWidgets('phone review leaves canvas visible above a bottom panel', (tester) async {
     final before = updateFixture();

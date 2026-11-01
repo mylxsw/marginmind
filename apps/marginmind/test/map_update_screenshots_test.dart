@@ -5,8 +5,10 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/map_generation/map_generation_controller.dart';
 import 'package:marginmind/features/map_generation/widgets/update_map_sheet.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -74,6 +76,58 @@ void main() {
     if (!_skip) await _loadFonts();
   });
   for (final dark in [false, true]) {
+    for (final phone in [false, true]) {
+      testWidgets('Update dialog with long sources dark=$dark phone=$phone', skip: _skip, (tester) async {
+        var before = updateFixture();
+        before = before.copyWith(
+          documents: [
+            before.documents.first.copyWith(title: 'Sample chapter: The forgetting curve'),
+            before.documents.last.copyWith(title: '华为数字化转型：企业持续有效增长的新引擎'),
+            for (final (i, title) in [
+              (1, '7人团队敏捷管理手册'),
+              (2, '158-爱上跑步'),
+              (3, '突发：币安遭黑客攻击，数十亿美元资产流出，或成历史金额最大被盗事件 - 吴说区块链'),
+            ])
+              Document(
+                id: 'extra-$i',
+                title: title,
+                fileName: 'extra-$i.pdf',
+                pageCount: 20,
+                importedAt: before.documents.first.importedAt,
+              ),
+          ],
+        );
+        await openWorkspace(
+          tester,
+          content: InMemoryStudySetContentRepository({'demo-1': before}),
+          prefs: {'settings.appearance': dark ? 'dark' : 'light'},
+          overrides: [touchPlatformProvider.overrideWithValue(phone)],
+        );
+        if (phone) {
+          tester.view.physicalSize = const Size(402, 874);
+          await tester.pumpAndSettle();
+        }
+        showUpdateMapSheet(tester.element(find.byType(Navigator).first), 'demo-1', before.maps.first.id);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await _save(tester, 'update_${phone ? 'phone' : 'desktop'}_${dark ? 'dark' : 'light'}');
+        if (phone) {
+          final input = find.descendant(of: find.byType(UpdateMapSheet), matching: find.byType(TextField));
+          await tester.ensureVisible(input);
+          await tester.tap(input);
+          tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+          await tester.pumpAndSettle();
+          expect(find.byKey(const ValueKey('map-update-close')).hitTestable(), findsOneWidget);
+          expect(find.byKey(const ValueKey('map-update-preview')).hitTestable(), findsOneWidget);
+          await _save(tester, 'update_phone_keyboard_${dark ? 'dark' : 'light'}');
+          tester.view.resetViewInsets();
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(find.byKey(const ValueKey('map-update-close')));
+        await tester.pumpAndSettle();
+        expect(find.byType(UpdateMapSheet), findsNothing);
+      });
+    }
     testWidgets('Scenes 11 and 12 ${dark ? 'dark' : 'light'}', skip: _skip, (tester) async {
       final before = updateFixture();
       final container = await openWorkspace(

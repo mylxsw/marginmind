@@ -4052,7 +4052,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapGenerateDocumentMenu => 'Generate Map…';
 
   @override
-  String get mapGenerateUpdate => 'Update';
+  String get mapGenerateUpdate => 'Update Map';
 
   @override
   String get mapGenerateRunning => 'Generating';
@@ -4281,6 +4281,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String mapFollowSwitched(String title) {
     return 'Switched to “$title”';
+  }
+
+  @override
+  String get mapUpdateDescription =>
+      'Choose sources, then preview and confirm changes before applying them to your map.';
+
+  @override
+  String mapUpdateReadBaseline(int page) {
+    return 'Previously updated through page $page';
   }
 
   @override

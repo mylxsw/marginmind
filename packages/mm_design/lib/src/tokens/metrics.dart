@@ -268,7 +268,7 @@ abstract final class MMSizes {
   static const double mapDocumentBannerCompactWidth = 480;
   static const double mapFollowNotice = 34;
   static const double mapDocumentLegendLabelWidth = 96;
-  static const double mapUpdatePopoverWidth = 360;
+  static const double mapUpdatePopoverWidth = 560;
   static const double mapDiffPanelWidth = 340;
   static const double mapSourceChip = 18;
   static const double mapSourceDot = 6;

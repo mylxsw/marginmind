@@ -7265,7 +7265,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapGenerateUpdate.
   ///
   /// In en, this message translates to:
-  /// **'Update'**
+  /// **'Update Map'**
   String get mapGenerateUpdate;
 
   /// No description provided for @mapGenerateRunning.
@@ -7627,6 +7627,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switched to “{title}”'**
   String mapFollowSwitched(String title);
+
+  /// No description provided for @mapUpdateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose sources, then preview and confirm changes before applying them to your map.'**
+  String get mapUpdateDescription;
+
+  /// No description provided for @mapUpdateReadBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'Previously updated through page {page}'**
+  String mapUpdateReadBaseline(int page);
 
   /// No description provided for @mapUpdateTitle.
   ///

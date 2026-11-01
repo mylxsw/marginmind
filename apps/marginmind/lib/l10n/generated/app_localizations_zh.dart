@@ -3880,7 +3880,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapGenerateDocumentMenu => '生成脑图…';
 
   @override
-  String get mapGenerateUpdate => '更新';
+  String get mapGenerateUpdate => '更新脑图';
 
   @override
   String get mapGenerateRunning => '生成中';
@@ -4097,10 +4097,18 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get mapUpdateDescription => '选择更新依据，预览并确认改动后再应用到脑图。';
+
+  @override
+  String mapUpdateReadBaseline(int page) {
+    return '上次更新至第 $page 页';
+  }
+
+  @override
   String get mapUpdateTitle => '更新脑图';
 
   @override
-  String get mapUpdateSources => '依据';
+  String get mapUpdateSources => '更新依据';
 
   @override
   String get mapUpdateAddDocument => '添加文档';
@@ -4123,7 +4131,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get mapUpdateScope => '范围';
+  String get mapUpdateScope => '更新范围';
 
   @override
   String get mapUpdateScopeNew => '只处理新内容';
