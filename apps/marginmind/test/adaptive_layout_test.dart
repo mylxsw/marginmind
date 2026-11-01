@@ -473,10 +473,10 @@ void main() {
       expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), const Size.square(28));
     });
 
-    testWidgets('a wide desktop window is unchanged', (tester) async {
+    testWidgets('a wide desktop window aligns content with the flat sidebar', (tester) async {
       await openWorkspace(tester, desktop);
       final reader = rectOf(tester, ReaderPane);
-      expect(reader.left, MMSizes.sidebarWidth + MMSizes.sidebarInset);
+      expect(reader.left, MMSizes.sidebarWidth);
       expect(reader.right, lessThanOrEqualTo(rectOf(tester, MapPane).left));
       expect(tester.getRect(find.byType(MMToolbar).first).top, 0);
     });

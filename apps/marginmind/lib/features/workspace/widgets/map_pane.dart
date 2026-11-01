@@ -1514,19 +1514,26 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                   alignment: Alignment.centerLeft,
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(maxWidth: paneConstraints.maxWidth * .45),
-                                    child: Row(
-                                      children: [
-                                        Icon(MMIcons.syncToMap, size: 12, color: c.secondaryLabel),
-                                        const SizedBox(width: MMSpacing.xs),
-                                        Flexible(
-                                          child: _ExcerptTargetLabel(
-                                            title: excerptTargetId == rootNodeId
-                                                ? rootTitle
-                                                : content.card(excerptTargetId)?.title ?? '',
-                                            style: t.footnote,
-                                          ),
-                                        ),
-                                      ],
+                                    child: LayoutBuilder(
+                                      builder: (context, labelBounds) {
+                                        // View controls take priority when the pane cannot
+                                        // even fit the excerpt icon and its label gap.
+                                        if (labelBounds.maxWidth < 12 + MMSpacing.xs) return const SizedBox.shrink();
+                                        return Row(
+                                          children: [
+                                            Icon(MMIcons.syncToMap, size: 12, color: c.secondaryLabel),
+                                            const SizedBox(width: MMSpacing.xs),
+                                            Flexible(
+                                              child: _ExcerptTargetLabel(
+                                                title: excerptTargetId == rootNodeId
+                                                    ? rootTitle
+                                                    : content.card(excerptTargetId)?.title ?? '',
+                                                style: t.footnote,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),
