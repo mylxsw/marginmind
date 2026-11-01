@@ -7,6 +7,7 @@ import '../tokens/colors.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/motion.dart';
 import 'control_frame.dart';
+import 'dialog_scope.dart';
 
 enum MMButtonVariant {
   /// System accent fill with contrasting text. At most one per view.
@@ -55,6 +56,8 @@ class MMButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
+    final dialog = MMDialogScope.contains(context);
+    final radius = dialog ? 8.0 : (context.mmTouchPlatform ? MMSizes.tabletControlVisual / 2 : 15.0);
     return MMInteractive(
       onTap: onPressed,
       autofocus: autofocus,
@@ -74,17 +77,18 @@ class MMButton extends StatelessWidget {
             duration: MMMotion.quick,
             opacity: s.enabled ? 1 : 0.4,
             child: Container(
-              height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : 30,
+              height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : (dialog ? 32 : 30),
+              constraints: dialog ? const BoxConstraints(minWidth: 72) : null,
               padding: EdgeInsets.symmetric(horizontal: variant == MMButtonVariant.plain ? 12 : 16),
               foregroundDecoration: c.flat && s.focused
                   ? BoxDecoration(
                       border: Border.all(color: c.accent, width: 2, strokeAlign: BorderSide.strokeAlignOutside),
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(radius),
                     )
                   : null,
               decoration: BoxDecoration(
                 color: Color.alphaBlend(pressedOverlay, bg),
-                borderRadius: BorderRadius.circular(context.mmTouchPlatform ? MMSizes.tabletControlVisual / 2 : 15),
+                borderRadius: BorderRadius.circular(radius),
                 boxShadow: c.flat
                     ? null
                     : s.focused
@@ -92,6 +96,7 @@ class MMButton extends StatelessWidget {
                     : null,
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[

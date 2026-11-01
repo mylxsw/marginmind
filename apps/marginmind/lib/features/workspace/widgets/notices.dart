@@ -144,7 +144,12 @@ Future<void> pickAndImportDocuments(BuildContext context, WidgetRef ref, String 
 
 Future<void> showNewMapSheet(BuildContext context, WidgetRef ref, String studySetId) async {
   final controller = ref.read(workspaceProvider(studySetId).notifier);
-  final title = await showRenameSheet(context, title: context.l10n.newMap, initial: context.l10n.newMapName);
+  final title = await showRenameSheet(
+    context,
+    title: context.l10n.newMap,
+    initial: context.l10n.newMapName,
+    actionLabel: context.l10n.create,
+  );
   if (title != null && context.mounted) await controller.addMap(title);
 }
 
@@ -193,17 +198,19 @@ Future<String?> showRenameSheet(
   required String title,
   required String initial,
   String? fieldLabel,
+  String? actionLabel,
 }) => showMMSheet<String>(
   context: context,
-  builder: (_) => _RenameSheet(title: title, initial: initial, fieldLabel: fieldLabel),
+  builder: (_) => _RenameSheet(title: title, initial: initial, fieldLabel: fieldLabel, actionLabel: actionLabel),
 );
 
 class _RenameSheet extends StatefulWidget {
-  const _RenameSheet({required this.title, required this.initial, this.fieldLabel});
+  const _RenameSheet({required this.title, required this.initial, this.fieldLabel, this.actionLabel});
 
   final String title;
   final String initial;
   final String? fieldLabel;
+  final String? actionLabel;
 
   @override
   State<_RenameSheet> createState() => _RenameSheetState();
@@ -226,14 +233,19 @@ class _RenameSheetState extends State<_RenameSheet> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return MMSheet(
-      title: widget.title,
+      title: widget.title.replaceFirst(RegExp(r'(…|\.{3})$'), ''),
       actions: [
         MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
-        MMButton(label: l.save, variant: MMButtonVariant.primary, onPressed: _save),
+        MMButton(label: widget.actionLabel ?? l.save, variant: MMButtonVariant.primary, onPressed: _save),
       ],
       child: MMFormRow(
         label: widget.fieldLabel ?? l.sheetName,
-        child: MMTextField(controller: _controller, autofocus: true, onSubmitted: (_) => _save()),
+        child: MMTextField(
+          controller: _controller,
+          semanticLabel: widget.fieldLabel ?? l.sheetName,
+          autofocus: true,
+          onSubmitted: (_) => _save(),
+        ),
       ),
     );
   }

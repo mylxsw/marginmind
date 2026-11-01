@@ -10,16 +10,6 @@ import '../workspace/workspace_controller.dart';
 import 'note_session.dart';
 import 'note_organization_progress.dart';
 
-/// Compact sheets retain full action labels without overflowing the footer.
-List<Widget> noteSheetActions(BuildContext context, List<Widget> actions) =>
-    MediaQuery.sizeOf(context).width < MMSizeClass.compactMaxWidth
-    ? [
-        Flexible(
-          child: Wrap(alignment: WrapAlignment.end, spacing: MMSpacing.s, runSpacing: MMSpacing.s, children: actions),
-        ),
-      ]
-    : actions;
-
 Future<void> resumeNoteOrganization(BuildContext context, NoteContinuation saved) => showMMSheet<void>(
   context: context,
   width: MMSizes.noteProgressSheetWidth,
@@ -432,7 +422,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
                 : _settings.depth == NoteDepth.none
                 ? l.noteProgressLayoutTitle
                 : l.noteProgressTitle,
-            actions: noteSheetActions(context, [
+            actions: [
               if (!_busy) MMButton(label: l.cancel, onPressed: _saving ? null : () => Navigator.of(context).pop()),
               if (_editing)
                 MMButton(
@@ -461,7 +451,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
                   onPressed: _saving ? null : () => _start(),
                 ),
               ],
-            ]),
+            ],
             child: !_editing
                 ? NoteOrganizationProgress(
                     phase: _phase,
