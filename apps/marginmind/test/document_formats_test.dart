@@ -141,15 +141,15 @@ void main() {
     );
   });
 
-  test('image-heavy Kindle imports above 64 MiB share the reader and parser budget', () async {
+  test('image-heavy Kindle imports above 256 MiB share the 500 MiB reader and parser budget', () async {
     final directory = await Directory.systemTemp.createTemp('mm_large_mobi');
     addTearDown(() => directory.delete(recursive: true));
     final source = File('${directory.path}/large.mobi');
     await source.writeAsBytes(fixtures.mobi('<p>Large Kindle book</p>', tail: [Uint8List(1)]));
     final handle = await source.open(mode: FileMode.append);
-    await handle.truncate(64 * 1024 * 1024 + 1);
+    await handle.truncate(256 * 1024 * 1024 + 1);
     await handle.close();
-    for (final name in ['large.mobi', 'large.azw3']) {
+    for (final name in ['large.mobi', 'large.azw', 'large.azw3']) {
       final package = await const DocumentImporter().prepare(
         (path: source.path, name: name),
         id: 'large',
@@ -158,10 +158,10 @@ void main() {
       final manifest = jsonDecode(utf8.decode(package.files[package.document.fileName]!));
       final chapter = jsonDecode(utf8.decode(package.files[manifest['spine'][0]['path']]!));
       expect(chapter['canonicalText'], 'Large Kindle book');
-      expect(package.files[package.document.sourceFileName]!.length, 64 * 1024 * 1024 + 1);
+      expect(package.files[package.document.sourceFileName]!.length, 256 * 1024 * 1024 + 1);
     }
     final oversized = await source.open(mode: FileMode.append);
-    await oversized.truncate(256 * 1024 * 1024 + 1);
+    await oversized.truncate(500 * 1024 * 1024 + 1);
     await oversized.close();
     await expectLater(
       const DocumentImporter().prepare((path: source.path, name: 'large.mobi'), id: 'large', now: testNow),

@@ -29,7 +29,8 @@ class DocumentImporter {
     // Image-heavy Kindle books can exceed 64 MiB even with very little text.
     // Keep the file reader and parser on the same bounded import budget.
     final maxBytes = switch (format) {
-      DocumentFormat.pdf || DocumentFormat.mobi || DocumentFormat.azw3 => 256 * 1024 * 1024,
+      DocumentFormat.mobi || DocumentFormat.azw3 => 500 * 1024 * 1024,
+      DocumentFormat.pdf => 256 * 1024 * 1024,
       _ => 64 * 1024 * 1024,
     };
     final bytes = await MMDocumentFiles.read(file.path, maxBytes: maxBytes);

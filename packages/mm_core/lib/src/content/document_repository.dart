@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'models.dart';
+import 'document_format.dart';
 import 'study_set_content.dart';
 
 /// One immutable version, fully prepared before any references are published.
@@ -15,7 +16,13 @@ class DocumentPackage {
   }) : files = Map.unmodifiable(
          files.map((key, bytes) => MapEntry(key, Uint8List.fromList(bytes).asUnmodifiableView())),
        ) {
-    if (files.isEmpty || files.values.fold<int>(0, (sum, b) => sum + b.length) > 256 * 1024 * 1024) {
+    // Kindle packages contain both the original (up to 500 MiB) and the
+    // extracted images/content. Reserve room for both and the JSON manifest.
+    final maxBytes = switch (document.format) {
+      DocumentFormat.mobi || DocumentFormat.azw3 => 1024 * 1024 * 1024,
+      _ => 256 * 1024 * 1024,
+    };
+    if (files.isEmpty || files.values.fold<int>(0, (sum, b) => sum + b.length) > maxBytes) {
       throw ArgumentError('Invalid document package size');
     }
     for (final key in files.keys) {

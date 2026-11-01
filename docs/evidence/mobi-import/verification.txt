@@ -31,3 +31,12 @@ Final checks:
 - flutter analyze --no-pub (workspace): no issues found.
 - flutter build macos --release --no-pub: succeeded, Foliarc.app (93.7 MB).
 - Release build was not launched or installed over the running Debug app.
+
+Follow-up — raise Kindle import limit to 500 MiB:
+- MOBI/AZW/AZW3 reader and parser budgets: 500 * 1024 * 1024 bytes.
+- Kindle package budget: 1 GiB for original + extracted content + metadata.
+- MOBI, AZW and AZW3 inputs of 256 MiB + 1 byte import successfully;
+  a 500 MiB + 1 byte input is rejected with the explicit limit error.
+- document_formats_test.dart: 14 passed; mm_core document_format_test.dart:
+  8 passed; mm_data document_package_test.dart: 7 passed.
+- Static analysis of the changed Dart files: no issues found.
