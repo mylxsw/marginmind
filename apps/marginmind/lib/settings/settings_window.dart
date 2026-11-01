@@ -138,7 +138,6 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
               onPressed: () => Navigator.of(context).pop(true),
             ),
           ],
-          child: const SizedBox.shrink(),
         ),
       );
       if (save == null || !mounted) return;
@@ -199,7 +198,10 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
           child: Focus(
             focusNode: _windowFocus,
             autofocus: true,
-            child: Builder(builder: _build),
+            child: MMButtonTheme(
+              radius: MMRadii.field,
+              child: Builder(builder: _build),
+            ),
           ),
         ),
       ),
@@ -501,7 +503,6 @@ class _GeneralPage extends ConsumerWidget {
                             onPressed: () => Navigator.of(context).pop(true),
                           ),
                         ],
-                        child: const SizedBox.shrink(),
                       ),
                     );
                     if (confirmed != true || !context.mounted) return;

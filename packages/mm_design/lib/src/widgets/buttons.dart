@@ -20,6 +20,21 @@ enum MMButtonVariant {
   plain,
 }
 
+/// Overrides push-button corners within a surface without changing its sizing.
+class MMButtonTheme extends InheritedTheme {
+  const MMButtonTheme({super.key, required this.radius, required super.child});
+
+  final double radius;
+
+  static double? radiusOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MMButtonTheme>()?.radius;
+
+  @override
+  bool updateShouldNotify(MMButtonTheme oldWidget) => radius != oldWidget.radius;
+
+  @override
+  Widget wrap(BuildContext context, Widget child) => MMButtonTheme(radius: radius, child: child);
+}
+
 /// Capsule push button (height 30, radius 15).
 class MMButton extends StatelessWidget {
   const MMButton({
@@ -57,7 +72,9 @@ class MMButton extends StatelessWidget {
     final c = context.mmColors;
     final t = context.mmText;
     final dialog = MMDialogScope.contains(context);
-    final radius = dialog ? 8.0 : (context.mmTouchPlatform ? MMSizes.tabletControlVisual / 2 : 15.0);
+    final radius = dialog
+        ? MMRadii.field
+        : (context.mmTouchPlatform ? MMSizes.tabletControlVisual / 2 : (MMButtonTheme.radiusOf(context) ?? 15.0));
     return MMInteractive(
       onTap: onPressed,
       autofocus: autofocus,

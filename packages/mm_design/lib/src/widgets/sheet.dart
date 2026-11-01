@@ -97,7 +97,7 @@ class MMSheet extends StatelessWidget {
   const MMSheet({
     super.key,
     required this.title,
-    required this.child,
+    this.child,
     this.actions = const [],
     this.titleTrailing,
     this.titleLeading,
@@ -108,7 +108,9 @@ class MMSheet extends StatelessWidget {
   });
 
   final String title;
-  final Widget child;
+
+  /// Omit for a title-only confirmation, so no empty body space is reserved.
+  final Widget? child;
   final Widget? titleTrailing;
   final Widget? titleLeading;
   final TextStyle? titleStyle;
@@ -170,9 +172,11 @@ class MMSheet extends StatelessWidget {
             ?titleTrailing,
           ],
         ),
-        const SizedBox(height: 20),
-        // Keep actions visible when the window or keyboard limits the height.
-        Flexible(child: SingleChildScrollView(child: child)),
+        if (child != null) ...[
+          const SizedBox(height: 20),
+          // Keep actions visible when the window or keyboard limits the height.
+          Flexible(child: SingleChildScrollView(child: child!)),
+        ],
         if (actions.isNotEmpty) ...[
           const SizedBox(height: 20),
           Row(
@@ -199,7 +203,7 @@ class MMSheet extends StatelessWidget {
     return Material(
       type: MaterialType.transparency,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+        padding: EdgeInsets.fromLTRB(24, child == null ? 20 : 24, 24, child == null ? 16 : 18),
         decoration: BoxDecoration(
           color: c.card,
           borderRadius: BorderRadius.circular(16),
