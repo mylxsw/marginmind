@@ -1,5 +1,3 @@
-import 'dart:math' show min;
-
 import '../../map_generation/widgets/document_map_banner.dart';
 import '../../map_generation/widgets/map_ocr_banner.dart';
 
@@ -1229,32 +1227,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                   TapRegion(
                                     groupId: _styleRegion,
                                     child: WorkspaceToolbar(
+                                      leadingPadding: phone ? null : MMSpacing.l,
                                       label: l.moreTools,
                                       items: [
-                                        if (!phone)
-                                          MMToolbarItem(
-                                            id: 'map-title',
-                                            priority: 100,
-                                            child: Tooltip(
-                                              message: rootTitle,
-                                              child: ConstrainedBox(
-                                                constraints: BoxConstraints(
-                                                  maxWidth: min(180.0, paneConstraints.maxWidth * .42),
-                                                ),
-                                                child: Text(
-                                                  rootTitle,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: context.mmText.headline,
-                                                ),
-                                              ),
-                                            ),
-                                            menuEntry: MMDropdownItem<VoidCallback>(
-                                              enabled: false,
-                                              value: () {},
-                                              child: Text(rootTitle),
-                                            ),
-                                          ),
                                         MMToolbarItem(
                                           id: 'map-view',
                                           priority: 70,

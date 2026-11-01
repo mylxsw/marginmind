@@ -40,6 +40,7 @@ class WorkspaceToolbar extends StatelessWidget {
     required this.label,
     this.menuIcon,
     this.overflowLabel,
+    this.leadingPadding,
   });
   final List<MMToolbarItem> items;
   final List<MMToolbarItem> trailingItems;
@@ -48,6 +49,7 @@ class WorkspaceToolbar extends StatelessWidget {
   final String label;
   final Widget? menuIcon;
   final String? overflowLabel;
+  final double? leadingPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -89,11 +91,12 @@ class WorkspaceToolbar extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.only(
               left:
-                  (phone
-                      ? 6
-                      : context.mmTablet
-                      ? 16
-                      : 6) +
+                  (leadingPadding ??
+                      (phone
+                          ? 6
+                          : context.mmTablet
+                          ? 16
+                          : 6)) +
                   inset,
               right: phone
                   ? 6

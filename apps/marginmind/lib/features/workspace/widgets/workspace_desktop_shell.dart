@@ -78,11 +78,11 @@ class WorkspaceDesktopShell extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: touch ? Color.lerp(c.windowBackground, c.sidebarOpaque, .35) : c.windowBackground,
               ),
-              foregroundDecoration: touch
-                  ? BoxDecoration(
-                      border: Border(bottom: BorderSide(color: c.separator)),
-                    )
-                  : null,
+              foregroundDecoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: c.separator, width: MMSizes.hairline),
+                ),
+              ),
               child: Row(
                 children: [
                   if (!sidebarVisible || touch)
