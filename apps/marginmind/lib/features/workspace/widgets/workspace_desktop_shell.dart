@@ -349,11 +349,9 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     );
   }
 
-  // AppKit's unified toolbar and the expanded sidebar both center controls
-  // at y=26. The collapsed button must use that same 52-point title row.
-  double _titlebarHeight(BuildContext context) => context.mmTouchPlatform || WindowChrome.showsWindowButtons
-      ? MMSizes.windowTitlebarHeight
-      : MMSizes.desktopWindowTitlebarHeight;
+  // Desktop tabs use the compact title row; touch keeps room for 44pt targets.
+  double _titlebarHeight(BuildContext context) =>
+      context.mmTouchPlatform ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight;
 
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;

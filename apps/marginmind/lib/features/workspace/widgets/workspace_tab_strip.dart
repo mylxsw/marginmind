@@ -126,7 +126,10 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
           itemBuilder: (context, i) => Padding(
             key: ValueKey('workspace-tab-item-${state.tabs.open[i].id}'),
             padding: EdgeInsets.only(
-              top: math.min(6, math.max(0, bounds.maxHeight - (context.mmTouchPlatform ? 44 : 30))),
+              top: math.min(
+                context.mmTouchPlatform ? 6 : 8,
+                math.max(0, bounds.maxHeight - (context.mmTouchPlatform ? 44 : 30)),
+              ),
             ),
             child: Align(
               alignment: Alignment.bottomCenter,
