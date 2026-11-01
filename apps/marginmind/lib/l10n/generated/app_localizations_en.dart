@@ -4776,7 +4776,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteStepContext => 'Gather context';
 
   @override
-  String get noteStepCompose => 'Write';
+  String get noteStepCompose => 'Write note';
 
   @override
   String get noteStepVerify => 'Check references';
@@ -5710,4 +5710,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String mapGenerateStructureDepth(int count) {
     return '$count levels';
   }
+
+  @override
+  String get noteProgressTitle => 'Organizing note';
+
+  @override
+  String get noteProgressLayoutTitle => 'Formatting note';
+
+  @override
+  String get noteStepLayout => 'Format sections';
+
+  @override
+  String noteProgressCompleted(int done, int total) {
+    return 'Completed $done / $total sections';
+  }
+
+  @override
+  String noteProgressWriting(int index) {
+    return 'Writing section $index';
+  }
+
+  @override
+  String noteProgressLayoutSection(int index) {
+    return 'Formatting section $index';
+  }
+
+  @override
+  String get noteProgressPreviewEmpty => 'The preview appears as each section is completed';
 }

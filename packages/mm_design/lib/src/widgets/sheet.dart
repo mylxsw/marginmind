@@ -99,6 +99,8 @@ class MMSheet extends StatelessWidget {
     required this.child,
     this.actions = const [],
     this.titleTrailing,
+    this.titleLeading,
+    this.titleStyle,
     this.icon,
     this.subtitle,
     this.footer,
@@ -107,6 +109,8 @@ class MMSheet extends StatelessWidget {
   final String title;
   final Widget child;
   final Widget? titleTrailing;
+  final Widget? titleLeading;
+  final TextStyle? titleStyle;
 
   /// Shown in a 30pt accent tile before the title.
   final IconData? icon;
@@ -130,6 +134,7 @@ class MMSheet extends StatelessWidget {
       children: [
         Row(
           children: [
+            if (titleLeading != null) ...[titleLeading!, const SizedBox(width: 12)],
             if (icon != null) ...[
               Container(
                 width: 30,
@@ -146,7 +151,10 @@ class MMSheet extends StatelessWidget {
                 children: [
                   Semantics(
                     header: true,
-                    child: Text(title, style: context.mmText.title3.copyWith(fontWeight: FontWeight.w700)),
+                    child: Text(
+                      title,
+                      style: titleStyle ?? context.mmText.title3.copyWith(fontWeight: FontWeight.w700),
+                    ),
                   ),
                   if (subtitle != null)
                     Text(

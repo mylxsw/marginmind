@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -143,7 +144,13 @@ Future<ProviderContainer> openAi(
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');
   await tester.pumpAndSettle();
-  await tapWorkspaceCommand(tester, 'organize-note');
+  if (size.width < 600) {
+    await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('phone-row-organize-notes')));
+  } else {
+    await tapWorkspaceCommand(tester, 'organize-note');
+  }
   await tester.pumpAndSettle();
   await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
   await tester.pumpAndSettle();
@@ -152,12 +159,21 @@ Future<ProviderContainer> openAi(
 
 Future<void> generate(WidgetTester tester, {bool preview = false}) async {
   if (preview) {
+    await tester.ensureVisible(find.byKey(const ValueKey('note-advanced')));
     await tester.tap(find.byKey(const ValueKey('note-advanced')));
     await tester.pumpAndSettle();
   }
-  await tester.tap(find.byKey(ValueKey(preview ? 'note-preview-outline' : 'note-generate')));
+  final action = find.byKey(ValueKey(preview ? 'note-preview-outline' : 'note-generate'));
+  await tester.ensureVisible(action);
+  await tester.tap(action);
   await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
-  await tester.pumpAndSettle();
+  // A running request has a continuously animated activity indicator.
+  await tester.pump();
+  if (find.byKey(const ValueKey('note-stop')).evaluate().isNotEmpty) {
+    await tester.pump(const Duration(milliseconds: 300));
+  } else {
+    await tester.pumpAndSettle();
+  }
 }
 
 void main() {
@@ -280,6 +296,9 @@ void main() {
     );
     await generate(tester);
     expect(find.text('Summary Theme 1'), findsWidgets);
+    expect(find.text('Completed 1 / 2 sections'), findsOneWidget);
+    expect(find.text('Writing section 2'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('note-stop')));
     await tester.pumpAndSettle();
     final owner = c.read(workspaceProvider('demo-1').notifier);
@@ -293,6 +312,25 @@ void main() {
     expect(owner.content.studyNotes, hasLength(1));
     expect(owner.content.studyNotes.single.sections, hasLength(2));
     expect(sessions.every((s) => s.closed), isTrue);
+    await settleHud(tester);
+  });
+
+  testWidgets('Escape stops once, preserves completed work and ignores a late section', (tester) async {
+    final fake = FakeNoteOrganizer();
+    final gate = Completer<void>();
+    final session = StreamingNoteSession(fake, gate);
+    final c = await openAi(tester, fake, factory: () async => session);
+    await generate(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(session.closed, isTrue);
+    expect(find.byKey(const ValueKey('note-stop')), findsNothing);
+    final owner = c.read(workspaceProvider('demo-1').notifier);
+    expect(owner.content.studyNotes.single.sections, hasLength(1));
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(owner.content.studyNotes.single.sections, hasLength(1));
     await settleHud(tester);
   });
 

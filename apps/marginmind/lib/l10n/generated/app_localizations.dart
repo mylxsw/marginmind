@@ -8477,7 +8477,7 @@ abstract class AppLocalizations {
   /// No description provided for @noteStepCompose.
   ///
   /// In en, this message translates to:
-  /// **'Write'**
+  /// **'Write note'**
   String get noteStepCompose;
 
   /// No description provided for @noteStepVerify.
@@ -10051,6 +10051,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} levels'**
   String mapGenerateStructureDepth(int count);
+
+  /// No description provided for @noteProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizing note'**
+  String get noteProgressTitle;
+
+  /// No description provided for @noteProgressLayoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatting note'**
+  String get noteProgressLayoutTitle;
+
+  /// No description provided for @noteStepLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Format sections'**
+  String get noteStepLayout;
+
+  /// No description provided for @noteProgressCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed {done} / {total} sections'**
+  String noteProgressCompleted(int done, int total);
+
+  /// No description provided for @noteProgressWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing section {index}'**
+  String noteProgressWriting(int index);
+
+  /// No description provided for @noteProgressLayoutSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatting section {index}'**
+  String noteProgressLayoutSection(int index);
+
+  /// No description provided for @noteProgressPreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The preview appears as each section is completed'**
+  String get noteProgressPreviewEmpty;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

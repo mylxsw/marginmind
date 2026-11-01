@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_assistant/mm_assistant.dart';
@@ -7,6 +8,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../shared/l10n.dart';
 import '../workspace/workspace_controller.dart';
 import 'note_session.dart';
+import 'note_organization_progress.dart';
 
 /// Compact sheets retain full action labels without overflowing the footer.
 List<Widget> noteSheetActions(BuildContext context, List<Widget> actions) =>
@@ -92,6 +94,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
   Object? _error;
   int _generation = 0;
   bool _busy = true, _editing = false, _failed = false, _saving = false, _fallback = false;
+  NoteOrganizationPhase _phase = NoteOrganizationPhase.outline;
 
   @override
   void initState() {
@@ -119,6 +122,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
       _failed = false;
       _error = null;
       _editing = false;
+      _phase = _sections.isEmpty ? NoteOrganizationPhase.outline : NoteOrganizationPhase.write;
     });
     NoteSession? session;
     try {
@@ -168,7 +172,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
           return;
         }
       }
-      setState(() {});
+      setState(() => _phase = NoteOrganizationPhase.write);
       final outline = NoteOutline(_sections.where((s) => s.refs.isNotEmpty).toList());
       await for (final section in session.write(widget.materials, outline, _settings, _draft.length)) {
         if (!mounted || generation != _generation) return;
@@ -178,6 +182,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
       }
       if (!mounted || generation != _generation) return;
       _fallback = session.usedFallback;
+      setState(() => _phase = NoteOrganizationPhase.verify);
       await _persist();
       if (!mounted || generation != _generation) return;
       if (_savedId == null) throw StateError('Source changed');
@@ -230,6 +235,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
   }
 
   Future<void> _stop() async {
+    if (!_busy || _saving) return;
     ++_generation;
     _session?.close();
     setState(() => _busy = false);
@@ -343,146 +349,173 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final content = ref.read(workspaceProvider(widget.setId).notifier).content;
     final assigned = _sections.expand((s) => s.refs).toSet();
     return PopScope(
       canPop: !_busy && !_saving,
-      child: MMSheet(
-        title: _editing ? l.noteOutlineTitle : l.noteGenerating,
-        actions: noteSheetActions(context, [
-          MMButton(label: l.cancel, onPressed: _busy || _saving ? null : () => Navigator.of(context).pop()),
-          if (_editing)
-            MMButton(
-              key: const ValueKey('outline-generate'),
-              label: l.noteGenerate,
-              variant: MMButtonVariant.primary,
-              onPressed: assigned.isEmpty ? null : () => _start(),
-            ),
-          if (_busy) MMButton(key: const ValueKey('note-stop'), label: l.noteStop, onPressed: _saving ? null : _stop),
-          if (!_editing && !_busy) ...[
-            MMButton(
-              key: const ValueKey('note-fallback'),
-              label: l.noteLayoutOnly,
-              onPressed: _saving ? null : () => _start(local: true),
-            ),
-            MMButton(
-              key: const ValueKey('note-continue'),
-              label: l.noteContinue,
-              variant: MMButtonVariant.primary,
-              onPressed: _saving ? null : () => _start(),
-            ),
-          ],
-        ]),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .6),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_editing) ...[
-                  ReorderableListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    buildDefaultDragHandles: false,
-                    itemCount: _sections.length,
-                    onReorderItem: (old, next) => setState(() {
-                      _sections.insert(next, _sections.removeAt(old));
-                    }),
-                    itemBuilder: (context, i) {
-                      final s = _sections[i];
-                      return Padding(
-                        key: ObjectKey(s),
-                        padding: const EdgeInsets.only(bottom: MMSpacing.s),
-                        child: _target(
-                          i,
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  ReorderableDragStartListener(
-                                    index: i,
-                                    child: Icon(MMIcons.grip, color: context.mmColors.secondaryLabel),
-                                  ),
-                                  Expanded(
-                                    child: TextFormField(
-                                      initialValue: s.title,
-                                      decoration: const InputDecoration(border: InputBorder.none),
-                                      onChanged: (v) => _sections[i] = NoteOutlineSection(
-                                        title: v.trim().isEmpty ? s.title : v,
-                                        refs: _sections[i].refs,
-                                        why: s.why,
-                                      ),
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            if (_busy) {
+              _stop();
+            } else if (!_saving) {
+              Navigator.of(context).maybePop();
+            }
+          },
+        },
+        child: Focus(
+          autofocus: true,
+          child: MMSheet(
+            titleStyle: _editing ? null : context.mmText.title2,
+            titleLeading: _editing
+                ? null
+                : Icon(
+                    _settings.depth == NoteDepth.none ? MMIcons.studyNote : MMIcons.ai,
+                    color: context.mmColors.research,
+                    size: 24,
+                  ),
+            title: _editing
+                ? l.noteOutlineTitle
+                : _settings.depth == NoteDepth.none
+                ? l.noteProgressLayoutTitle
+                : l.noteProgressTitle,
+            actions: noteSheetActions(context, [
+              if (!_busy) MMButton(label: l.cancel, onPressed: _saving ? null : () => Navigator.of(context).pop()),
+              if (_editing)
+                MMButton(
+                  key: const ValueKey('outline-generate'),
+                  label: l.noteGenerate,
+                  variant: MMButtonVariant.primary,
+                  onPressed: assigned.isEmpty ? null : () => _start(),
+                ),
+              if (_busy)
+                MMButton(
+                  key: const ValueKey('note-stop'),
+                  label: l.noteStop,
+                  icon: MMIcons.stop,
+                  onPressed: _saving ? null : _stop,
+                ),
+              if (!_editing && !_busy) ...[
+                MMButton(
+                  key: const ValueKey('note-fallback'),
+                  label: l.noteLayoutOnly,
+                  onPressed: _saving ? null : () => _start(local: true),
+                ),
+                MMButton(
+                  key: const ValueKey('note-continue'),
+                  label: l.noteContinue,
+                  variant: MMButtonVariant.primary,
+                  onPressed: _saving ? null : () => _start(),
+                ),
+              ],
+            ]),
+            child: !_editing
+                ? NoteOrganizationProgress(
+                    phase: _phase,
+                    materials: widget.materials,
+                    sections: _sections.where((s) => s.refs.isNotEmpty).toList(),
+                    draft: List.of(_draft),
+                    local: _settings.depth == NoteDepth.none,
+                    busy: _busy,
+                    error: _failed ? _failureMessage(context) : null,
+                    sources: {
+                      for (final material in widget.materials.items)
+                        if (content.annotation(material.sourceId) case final annotation?)
+                          material.ref: annotation.isText
+                              ? material.groupTitle
+                              : l.noteSourcePage(
+                                  content.document(annotation.documentId)?.title ?? material.groupTitle,
+                                  annotation.page,
+                                ),
+                    },
+                    quoteColors: {
+                      for (final material in widget.materials.highlights)
+                        if (content.annotation(material.sourceId) case final annotation?)
+                          material.ref: MMAnnotationColor.fromIndex(annotation.colorIndex).color,
+                    },
+                  )
+                : ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .6),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (_editing) ...[
+                            ReorderableListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              buildDefaultDragHandles: false,
+                              itemCount: _sections.length,
+                              onReorderItem: (old, next) => setState(() {
+                                _sections.insert(next, _sections.removeAt(old));
+                              }),
+                              itemBuilder: (context, i) {
+                                final s = _sections[i];
+                                return Padding(
+                                  key: ObjectKey(s),
+                                  padding: const EdgeInsets.only(bottom: MMSpacing.s),
+                                  child: _target(
+                                    i,
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            ReorderableDragStartListener(
+                                              index: i,
+                                              child: Icon(MMIcons.grip, color: context.mmColors.secondaryLabel),
+                                            ),
+                                            Expanded(
+                                              child: TextFormField(
+                                                initialValue: s.title,
+                                                decoration: const InputDecoration(border: InputBorder.none),
+                                                onChanged: (v) => _sections[i] = NoteOutlineSection(
+                                                  title: v.trim().isEmpty ? s.title : v,
+                                                  refs: _sections[i].refs,
+                                                  why: s.why,
+                                                ),
+                                              ),
+                                            ),
+                                            MMIconButton(
+                                              key: ValueKey('outline-delete-$i'),
+                                              icon: MMIcons.trash,
+                                              tooltip: l.delete,
+                                              onPressed: () => setState(() => _sections.removeAt(i)),
+                                            ),
+                                          ],
+                                        ),
+                                        if (s.why != null) Text(s.why!, style: context.mmText.footnote),
+                                        for (final r in s.refs)
+                                          if (widget.materials[r]?.isHighlight == true) _quote(r),
+                                      ],
                                     ),
                                   ),
-                                  MMIconButton(
-                                    key: ValueKey('outline-delete-$i'),
-                                    icon: MMIcons.trash,
-                                    tooltip: l.delete,
-                                    onPressed: () => setState(() => _sections.removeAt(i)),
-                                  ),
+                                );
+                              },
+                            ),
+                            MMButton(
+                              key: const ValueKey('outline-add'),
+                              label: l.noteAddSection,
+                              onPressed: () =>
+                                  setState(() => _sections.add(NoteOutlineSection(title: l.noteNewSection, refs: []))),
+                            ),
+                            _target(
+                              null,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(l.noteUnassigned, style: context.mmText.headline),
+                                  for (final m in widget.materials.highlights)
+                                    if (!assigned.contains(m.ref)) _quote(m.ref),
                                 ],
                               ),
-                              if (s.why != null) Text(s.why!, style: context.mmText.footnote),
-                              for (final r in s.refs)
-                                if (widget.materials[r]?.isHighlight == true) _quote(r),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  MMButton(
-                    key: const ValueKey('outline-add'),
-                    label: l.noteAddSection,
-                    onPressed: () =>
-                        setState(() => _sections.add(NoteOutlineSection(title: l.noteNewSection, refs: []))),
-                  ),
-                  _target(
-                    null,
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(l.noteUnassigned, style: context.mmText.headline),
-                        for (final m in widget.materials.highlights)
-                          if (!assigned.contains(m.ref)) _quote(m.ref),
-                      ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                ] else ...[
-                  if (_busy)
-                    LinearProgressIndicator(
-                      value: _sections.isEmpty
-                          ? null
-                          : _draft.length / _sections.where((s) => s.refs.isNotEmpty).length.clamp(1, 100000),
-                    ),
-                  const SizedBox(height: MMSpacing.m),
-                  Text(
-                    _sections.isEmpty
-                        ? l.noteStepOutline
-                        : l.noteStepWrite(_draft.length, _sections.where((s) => s.refs.isNotEmpty).length),
-                    style: context.mmText.headline,
-                  ),
-                  if (_failed)
-                    Text(
-                      _failureMessage(context),
-                      style: context.mmText.body.copyWith(color: context.mmColors.critical),
-                    ),
-                  for (final s in _draft) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: MMSpacing.m),
-                      child: Text(s.title, style: MMNoteTypography.heading),
-                    ),
-                    for (final b in s.blocks)
-                      Text(switch (b.type) {
-                        'quote' || 'own' => widget.materials[b.ref!]?.text ?? '',
-                        'points' => b.items.join('\n'),
-                        _ => b.text ?? '',
-                      }, style: b.type == 'quote' ? MMNoteTypography.quote : MMNoteTypography.body),
-                  ],
-                ],
-              ],
-            ),
           ),
         ),
       ),

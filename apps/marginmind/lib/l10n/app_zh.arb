@@ -1698,7 +1698,7 @@
   },
   "noteStepCollect": "收集素材",
   "noteStepContext": "补全上下文",
-  "noteStepCompose": "撰写",
+  "noteStepCompose": "撰写笔记",
   "noteStepVerify": "核对引用",
   "noteStopped": "已停止",
   "noteLocked": "更新时保留",
@@ -2270,5 +2270,36 @@
         "type": "int"
       }
     }
-  }
+  },
+  "noteProgressTitle": "正在整理笔记",
+  "noteProgressLayoutTitle": "正在排版笔记",
+  "noteStepLayout": "分组排版",
+  "noteProgressCompleted": "已完成 {done} / {total} 节",
+  "@noteProgressCompleted": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noteProgressWriting": "正在撰写第 {index} 节",
+  "@noteProgressWriting": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "noteProgressLayoutSection": "正在排版第 {index} 节",
+  "@noteProgressLayoutSection": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "noteProgressPreviewEmpty": "每完成一节，正文会显示在这里"
 }

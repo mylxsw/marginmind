@@ -4570,7 +4570,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noteStepContext => '补全上下文';
 
   @override
-  String get noteStepCompose => '撰写';
+  String get noteStepCompose => '撰写笔记';
 
   @override
   String get noteStepVerify => '核对引用';
@@ -5485,4 +5485,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String mapGenerateStructureDepth(int count) {
     return '$count 层结构';
   }
+
+  @override
+  String get noteProgressTitle => '正在整理笔记';
+
+  @override
+  String get noteProgressLayoutTitle => '正在排版笔记';
+
+  @override
+  String get noteStepLayout => '分组排版';
+
+  @override
+  String noteProgressCompleted(int done, int total) {
+    return '已完成 $done / $total 节';
+  }
+
+  @override
+  String noteProgressWriting(int index) {
+    return '正在撰写第 $index 节';
+  }
+
+  @override
+  String noteProgressLayoutSection(int index) {
+    return '正在排版第 $index 节';
+  }
+
+  @override
+  String get noteProgressPreviewEmpty => '每完成一节，正文会显示在这里';
 }

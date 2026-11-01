@@ -2375,7 +2375,7 @@
   },
   "noteStepCollect": "Collect materials",
   "noteStepContext": "Gather context",
-  "noteStepCompose": "Write",
+  "noteStepCompose": "Write note",
   "noteStepVerify": "Check references",
   "noteStopped": "Stopped",
   "noteLocked": "Keep when updating",
@@ -2969,5 +2969,36 @@
         "type": "int"
       }
     }
-  }
+  },
+  "noteProgressTitle": "Organizing note",
+  "noteProgressLayoutTitle": "Formatting note",
+  "noteStepLayout": "Format sections",
+  "noteProgressCompleted": "Completed {done} / {total} sections",
+  "@noteProgressCompleted": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noteProgressWriting": "Writing section {index}",
+  "@noteProgressWriting": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "noteProgressLayoutSection": "Formatting section {index}",
+  "@noteProgressLayoutSection": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "noteProgressPreviewEmpty": "The preview appears as each section is completed"
 }
