@@ -107,10 +107,9 @@ void main() {
         MMIcons.underline,
         MMIcons.copy,
         MMIcons.quoteBubble,
-        MMIcons.network,
+        MMIcons.mindMap,
         MMIcons.translate,
-        // The assistant button draws the app's AssistantIcon instead of a glyph.
-        null,
+        null, // Assistant uses a custom icon widget.
       ]);
       expect(
         find.descendant(of: find.byKey(const ValueKey('selection-assistant')), matching: find.byType(AssistantIcon)),

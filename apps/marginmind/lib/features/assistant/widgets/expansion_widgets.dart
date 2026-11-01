@@ -270,7 +270,7 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
                       )
                     else
                       Icon(
-                        widget.targetId == widget.mapId ? MMIcons.network : MMIcons.expandIdeas,
+                        widget.targetId == widget.mapId ? MMIcons.mindMap : MMIcons.expandIdeas,
                         size: 16,
                         color: c.research,
                       ),
@@ -910,7 +910,7 @@ class ExpansionPlanSheet extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(MMIcons.network, size: 16, color: c.research),
+                          Icon(MMIcons.mindMap, size: 16, color: c.research),
                           const SizedBox(width: 8),
                           Expanded(child: Text(l.mapIdeaWholeMap, style: context.mmText.headline)),
                           MMIconButton(icon: MMIcons.close, tooltip: l.cancel, onPressed: controller.discard),

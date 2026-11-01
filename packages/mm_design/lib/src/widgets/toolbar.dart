@@ -123,6 +123,16 @@ class MMToolbarGroup extends StatelessWidget {
   }
 }
 
+/// Compact desktop controls for pane toolbars; touch metrics stay unchanged.
+class MMCompactToolbarScope extends InheritedWidget {
+  const MMCompactToolbarScope({super.key, required super.child});
+
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MMCompactToolbarScope>() != null;
+
+  @override
+  bool updateShouldNotify(MMCompactToolbarScope oldWidget) => false;
+}
+
 /// Toolbar button (34×30, radius 15; 44×44 under touch). Selected uses the accent tint, never a
 /// solid fill.
 class MMToolbarButton extends StatelessWidget {
@@ -166,8 +176,11 @@ class MMToolbarButton extends StatelessWidget {
     final c = context.mmColors;
     final t = context.mmText;
     final dock = MMThumbDockScope.of(context);
+    final dense = MMCompactToolbarScope.of(context);
     final size = compact && !dock && !context.mmTouch && !context.mmTouchPlatform
         ? const Size(30, 26)
+        : dense && !dock && !context.mmTouch && !context.mmTouchPlatform
+        ? const Size(32, 28)
         : context.mmToolbarButton;
     return MMInteractive(
       onTap: onPressed,
@@ -211,6 +224,8 @@ class MMToolbarButton extends StatelessWidget {
                           ? 20
                           : context.mmTouchPlatform
                           ? MMSizes.tabletToolbarIcon
+                          : dense
+                          ? 15
                           : 16,
                       color: fg,
                       opacity: s.enabled ? 1 : 0.3,
@@ -224,6 +239,8 @@ class MMToolbarButton extends StatelessWidget {
                         ? 20
                         : context.mmTouchPlatform
                         ? MMSizes.tabletToolbarIcon
+                        : dense
+                        ? 15
                         : 16,
                     color: fg,
                   ),

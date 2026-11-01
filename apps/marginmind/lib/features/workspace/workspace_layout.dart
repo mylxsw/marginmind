@@ -106,14 +106,15 @@ class WorkspaceLayoutGeometry {
     required this.readerRect,
     required this.mapRect,
     required this.split,
+    this.headerHeight = MMSizes.paneHeaderHeight,
   });
   final double sidebarExtent;
+  final double headerHeight;
   final Rect contentRect, panelRect, readerRect, mapRect;
   final MMSplitGeometry split;
-  Rect get readerHeaderRect =>
-      Rect.fromLTWH(readerRect.left, readerRect.top, readerRect.width, MMSizes.paneHeaderHeight);
+  Rect get readerHeaderRect => Rect.fromLTWH(readerRect.left, readerRect.top, readerRect.width, headerHeight);
   Rect get mapHeaderRect =>
-      mapRect.isEmpty ? Rect.zero : Rect.fromLTWH(mapRect.left, mapRect.top, mapRect.width, MMSizes.paneHeaderHeight);
+      mapRect.isEmpty ? Rect.zero : Rect.fromLTWH(mapRect.left, mapRect.top, mapRect.width, headerHeight);
 
   factory WorkspaceLayoutGeometry.resolve({
     required Size size,
@@ -179,6 +180,7 @@ class WorkspaceLayoutGeometry {
       readerRect: reader,
       mapRect: map,
       split: split,
+      headerHeight: tablet ? MMSizes.tabletPaneHeaderHeight : MMSizes.paneHeaderHeight,
     );
   }
 }

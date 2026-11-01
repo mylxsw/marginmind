@@ -80,8 +80,8 @@ void main() {
         expect(headers, findsNWidgets(2));
         final reader = tester.getRect(find.byType(ReaderToolbar));
         final map = tester.getRect(headers.last);
-        expect(reader.height, 52);
-        expect(map.height, 52);
+        expect(reader.height, touch ? 52 : 44);
+        expect(map.height, touch ? 52 : 44);
         if (size.width > size.height) {
           expect(reader.top, map.top);
           expect(reader.right + 1, closeTo(map.left, .01));
