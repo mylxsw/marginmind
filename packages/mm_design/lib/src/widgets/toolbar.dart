@@ -49,11 +49,7 @@ class MMToolbar extends StatelessWidget {
         children: [
           // A background sibling cannot compete with button gestures. An
           // ancestor double-tap recognizer holds their taps for 300ms.
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
-            onDoubleTap: chrome?.onTitleDoubleTap,
-          ),
+          const MMWindowDragRegion(),
           if (child != null)
             Semantics(label: semanticLabel, container: true, child: child!)
           else
@@ -87,6 +83,22 @@ class MMToolbar extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Explicit empty title-bar space. Keep this beside controls, rather than
+/// around them, so drag and double-click gestures cannot delay their actions.
+class MMWindowDragRegion extends StatelessWidget {
+  const MMWindowDragRegion({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final chrome = MMWindowChrome.maybeOf(context);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
+      onDoubleTap: chrome?.onTitleDoubleTap,
     );
   }
 }

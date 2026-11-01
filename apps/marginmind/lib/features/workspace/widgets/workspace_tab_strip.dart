@@ -65,32 +65,38 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
             }
           });
         }
-        return Row(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                key: const ValueKey('workspace-main-tabs'),
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    for (var i = 0; i < count; i++) ...[
-                      if (i > 0) const SizedBox(width: 4),
-                      _WorkspaceTab(
-                        key: ValueKey('workspace-tab-${state.tabs.open[i].id}'),
-                        anchor: _keys[state.tabs.open[i].id]!,
-                        tab: state.tabs.open[i],
-                        title: workspaceTabTitle(context, state, state.tabs.open[i]),
-                        selected: state.tabs.open[i].id == state.tabs.activeId,
-                        width: width,
-                        onSelect: () => owner.activateTab(state.tabs.open[i]),
-                        onClose: () => owner.closeTab(state.tabs.open[i].id),
-                      ),
-                    ],
-                  ],
+        final tabs = SingleChildScrollView(
+          key: const ValueKey('workspace-main-tabs'),
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              for (var i = 0; i < count; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
+                _WorkspaceTab(
+                  key: ValueKey('workspace-tab-${state.tabs.open[i].id}'),
+                  anchor: _keys[state.tabs.open[i].id]!,
+                  tab: state.tabs.open[i],
+                  title: workspaceTabTitle(context, state, state.tabs.open[i]),
+                  selected: state.tabs.open[i].id == state.tabs.activeId,
+                  width: width,
+                  onSelect: () => owner.activateTab(state.tabs.open[i]),
+                  onClose: () => owner.closeTab(state.tabs.open[i].id),
                 ),
-              ),
-            ),
+              ],
+            ],
+          ),
+        );
+        final tabsWidth = count == 0 ? 0.0 : count * width + math.max(0, count - 1) * 4 + 24;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (overflow)
+              Expanded(child: tabs)
+            else ...[
+              SizedBox(width: tabsWidth, child: tabs),
+              const Expanded(child: MMWindowDragRegion(key: ValueKey('workspace-tab-drag-area'))),
+            ],
             if (overflow)
               MMDropdownButton<WorkspaceTab>(
                 key: const ValueKey('workspace-tab-overflow'),

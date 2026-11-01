@@ -129,112 +129,118 @@ class WorkspaceDesktopShell extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, box) {
-                final narrow = box.maxWidth < 700;
-                final hasPanel = state.panel != null;
-                final panelWidth = math.min(360.0, box.maxWidth);
-                final documentMap = LayoutBuilder(
-                  builder: (context, panes) {
-                    final axis = context.mmTablet && panes.maxHeight > panes.maxWidth ? Axis.vertical : Axis.horizontal;
-                    final minReader =
-                        (hasPanel ? 300.0 : 420.0) +
-                        (state.readerPanelVisible ? MMSizes.readerSidebarMinWidth + MMSizes.dividerHitWidth : 0);
-                    final minMap = hasPanel ? 280.0 : 360.0;
-                    Widget pane(Widget child, {required bool primary}) => WorkspaceToolbarScope(
-                      actions: const [],
-                      leading: null,
-                      ownsActions: true,
-                      ownsLeading: false,
-                      useGeometry: false,
-                      primary: primary,
-                      menuEntries: workspaceMenuEntries(context, ref, studySetId),
-                      child: child,
-                    );
-                    return WorkspaceLayoutGeometryScope(
-                      geometry: WorkspaceLayoutGeometry.resolve(
-                        size: panes.biggest,
-                        mode: layout,
-                        axis: axis,
-                        fraction: state.splitFraction,
-                        minReader: minReader,
-                        minMap: minMap,
-                        collapseWhenNarrow: true,
-                      ),
-                      child: ExcerptViewScope(
-                        showInMap: owner.showCardInMap,
-                        child: MMSplitView(
+            // Only the top tab row and sidebar header are window chrome.
+            // Content headers must not inherit window drag/zoom callbacks.
+            child: MMWindowChrome(
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  final narrow = box.maxWidth < 700;
+                  final hasPanel = state.panel != null;
+                  final panelWidth = math.min(360.0, box.maxWidth);
+                  final documentMap = LayoutBuilder(
+                    builder: (context, panes) {
+                      final axis = context.mmTablet && panes.maxHeight > panes.maxWidth
+                          ? Axis.vertical
+                          : Axis.horizontal;
+                      final minReader =
+                          (hasPanel ? 300.0 : 420.0) +
+                          (state.readerPanelVisible ? MMSizes.readerSidebarMinWidth + MMSizes.dividerHitWidth : 0);
+                      final minMap = hasPanel ? 280.0 : 360.0;
+                      Widget pane(Widget child, {required bool primary}) => WorkspaceToolbarScope(
+                        actions: const [],
+                        leading: null,
+                        ownsActions: true,
+                        ownsLeading: false,
+                        useGeometry: false,
+                        primary: primary,
+                        menuEntries: workspaceMenuEntries(context, ref, studySetId),
+                        child: child,
+                      );
+                      return WorkspaceLayoutGeometryScope(
+                        geometry: WorkspaceLayoutGeometry.resolve(
+                          size: panes.biggest,
                           mode: layout,
-                          showModeButtons: false,
-                          collapseWhenNarrow: true,
-                          onModeChanged: owner.setLayout,
-                          primaryLabel: l.layoutReader,
-                          secondaryLabel: l.layoutMap,
-                          splitLabel: l.layoutSplit,
-                          fraction: state.splitFraction,
                           axis: axis,
-                          minPrimaryWidth: axis == Axis.vertical ? MMSizes.paneMinHeight : minReader,
-                          minSecondaryWidth: axis == Axis.vertical ? MMSizes.paneMinHeight : minMap,
-                          onFractionChanged: owner.setSplitFraction,
-                          primary: PdfDropTarget(
-                            label: l.dropToImport,
-                            onDrop: (files) async {
-                              final notice = await owner.importDocuments(files);
-                              if (context.mounted) showNotice(context, notice, rootTitle: '');
-                            },
-                            child: pane(ReaderPane(studySetId: studySetId, showDocumentTitle: false), primary: true),
-                          ),
-                          secondary: PdfDropTarget(
-                            label: l.dropImage,
-                            onDrop: (files) async {
-                              final notice = await owner.importDocuments(files);
-                              if (context.mounted) showNotice(context, notice, rootTitle: '');
-                            },
-                            onImageDrop: (files) =>
-                                insertImageFiles(context, ref, studySetId, [for (final file in files) file.path]),
-                            child: pane(MapPane(studySetId: studySetId), primary: false),
+                          fraction: state.splitFraction,
+                          minReader: minReader,
+                          minMap: minMap,
+                          collapseWhenNarrow: true,
+                        ),
+                        child: ExcerptViewScope(
+                          showInMap: owner.showCardInMap,
+                          child: MMSplitView(
+                            mode: layout,
+                            showModeButtons: false,
+                            collapseWhenNarrow: true,
+                            onModeChanged: owner.setLayout,
+                            primaryLabel: l.layoutReader,
+                            secondaryLabel: l.layoutMap,
+                            splitLabel: l.layoutSplit,
+                            fraction: state.splitFraction,
+                            axis: axis,
+                            minPrimaryWidth: axis == Axis.vertical ? MMSizes.paneMinHeight : minReader,
+                            minSecondaryWidth: axis == Axis.vertical ? MMSizes.paneMinHeight : minMap,
+                            onFractionChanged: owner.setSplitFraction,
+                            primary: PdfDropTarget(
+                              label: l.dropToImport,
+                              onDrop: (files) async {
+                                final notice = await owner.importDocuments(files);
+                                if (context.mounted) showNotice(context, notice, rootTitle: '');
+                              },
+                              child: pane(ReaderPane(studySetId: studySetId, showDocumentTitle: false), primary: true),
+                            ),
+                            secondary: PdfDropTarget(
+                              label: l.dropImage,
+                              onDrop: (files) async {
+                                final notice = await owner.importDocuments(files);
+                                if (context.mounted) showNotice(context, notice, rootTitle: '');
+                              },
+                              onImageDrop: (files) =>
+                                  insertImageFiles(context, ref, studySetId, [for (final file in files) file.path]),
+                              child: pane(MapPane(studySetId: studySetId), primary: false),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                );
-                final body = WorkspaceTabbedContent(studySetId: studySetId, documentMap: documentMap);
-                final panel = Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                  child: ClipRRect(
-                    key: const ValueKey('workspace-right-sidebar'),
-                    borderRadius: BorderRadius.circular(MMRadii.sidebar),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: c.sidebarOpaque,
-                        border: Border.all(color: c.separator),
-                        borderRadius: BorderRadius.circular(MMRadii.sidebar),
-                      ),
-                      child: RightPanelView(studySetId: studySetId),
-                    ),
-                  ),
-                );
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Row(
-                        children: [
-                          Expanded(child: body),
-                          SizedBox(width: hasPanel && !narrow ? panelWidth : 0),
-                        ],
+                      );
+                    },
+                  );
+                  final body = WorkspaceTabbedContent(studySetId: studySetId, documentMap: documentMap);
+                  final panel = Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                    child: ClipRRect(
+                      key: const ValueKey('workspace-right-sidebar'),
+                      borderRadius: BorderRadius.circular(MMRadii.sidebar),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: c.sidebarOpaque,
+                          border: Border.all(color: c.separator),
+                          borderRadius: BorderRadius.circular(MMRadii.sidebar),
+                        ),
+                        child: RightPanelView(studySetId: studySetId),
                       ),
                     ),
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      right: 0,
-                      width: panelWidth,
-                      child: Offstage(offstage: !hasPanel, child: panel),
-                    ),
-                  ],
-                );
-              },
+                  );
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Row(
+                          children: [
+                            Expanded(child: body),
+                            SizedBox(width: hasPanel && !narrow ? panelWidth : 0),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        bottom: 0,
+                        right: 0,
+                        width: panelWidth,
+                        child: Offstage(offstage: !hasPanel, child: panel),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],
