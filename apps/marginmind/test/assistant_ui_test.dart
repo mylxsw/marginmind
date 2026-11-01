@@ -689,7 +689,7 @@ void main() {
       expect(tester.widget<EditableText>(find.byType(EditableText).last).controller.text, '还没发送的草稿');
 
       // A manual hide survives closing and reopening the conversation panel.
-      await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
+      await tester.tap(find.byIcon(MMIcons.sidebarClose).hitTestable().first);
       await tester.pumpAndSettle();
       expect(sidebarShown(), isFalse);
       await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));

@@ -224,7 +224,7 @@ void main() {
 
     testWidgets('hiding the sidebar restores split without changing layout preference', (tester) async {
       final container = await openSet(tester, size: const Size(1000, 820));
-      await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
+      await tester.tap(find.byIcon(MMIcons.sidebarClose).hitTestable().first);
       await tester.pumpAndSettle();
       expect(container.read(provider).layout, MMSplitMode.split);
       expect(find.text('Mind Maps').hitTestable(), findsNothing);
