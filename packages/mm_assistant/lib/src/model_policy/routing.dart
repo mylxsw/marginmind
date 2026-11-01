@@ -251,6 +251,23 @@ abstract interface class RoutingUsageIndex {
   Future<List<RoutingUse>> listModelUses();
 }
 
+/// Conservative model-usage predicate for archive/RunStore composition. Partial
+/// runs can retry missing work; failed runs with checkpoints may replay through
+/// their adapter. This is an impact query, not authorization to execute a run.
+bool routingRunMayResume(RunManifest run) => switch (run.status) {
+  RunStatus.created ||
+  RunStatus.validating ||
+  RunStatus.running ||
+  RunStatus.awaitingUser ||
+  RunStatus.paused ||
+  RunStatus.interrupted ||
+  RunStatus.partial => true,
+  // Checkpoints are adapter-owned. Keep failed tasks with saved progress in the
+  // deletion impact list conservatively; the adapter validates actual replay.
+  RunStatus.failed => run.checkpoint.isNotEmpty,
+  RunStatus.completed || RunStatus.cancelled => false,
+};
+
 /// Reads archive JSON and run manifests through indexes, without importing SDK
 /// storage or the Runtime. Corrupt/unknown archives fail the query rather than
 /// telling a deletion dialog that nothing uses the model.
@@ -266,14 +283,7 @@ class ArchiveRoutingUsageIndex implements RoutingUsageIndex {
       if (model != null) uses.add(RoutingUse(RoutingUsageKind.conversationOverride, entry.key, model));
     }
     for (final run in await runs()) {
-      if ({
-        RunStatus.created,
-        RunStatus.validating,
-        RunStatus.running,
-        RunStatus.awaitingUser,
-        RunStatus.paused,
-        RunStatus.interrupted,
-      }.contains(run.status)) {
+      if (routingRunMayResume(run)) {
         uses.add(RoutingUse(RoutingUsageKind.recoverableRun, run.context.runId, run.context.config.model));
       }
     }

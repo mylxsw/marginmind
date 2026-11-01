@@ -30,7 +30,7 @@ Selection is request override → explicit function binding → class default �
 
 Model maps in defaults/bindings store `serviceLabel` and `modelLabel`. Live labels refresh on save; absent services/models retain their old snapshots. Older references without labels display IDs. Routing data remains present if all services/models are removed or disabled; settings must use routing presence rather than enabled-model count to decide whether to show existing settings.
 
-`AssistantServices` now owns a monotonic catalog revision. Configuration/model metadata edits and credential updates increase the service revision; no-op upserts keep it. Deletion advances the catalog clock so reusing an ID cannot reuse an old profile. Endpoints, protocols, adapter versions and service revisions participate in exact capability identity. Directly constructing/saving replacement catalogs is intended for migration/tests; production edits use the serialized services controller.
+`AssistantServices` now owns a monotonic catalog revision. Configuration/model metadata edits and credential updates increase the service revision; no-op upserts keep it. Before changing/deleting credentials, the controller durably disables the service with a newer revision. Success restores its previous enabled/default selection; a Keychain or final catalog-write failure leaves the newer disabled record in place. Retry the credential operation and explicitly enable the service to recover. The preferences cache and controller reload durable state after save failures. No credential rollback or diagnostic copy is used. Deletion advances the catalog clock so reusing an ID cannot reuse an old profile. Endpoints, protocols, adapter versions and service revisions participate in exact capability identity. Directly constructing/saving replacement catalogs is intended for migration/tests; production edits use the serialized services controller.
 
 ## Capability probing
 
@@ -56,7 +56,7 @@ The infrastructure probe uses one controlled SDK request through `connectAssista
 `ArchiveRoutingUsageIndex` is a concrete read-only adapter accepting two callbacks:
 
 - `conversations`: all archived/live conversation views, keyed by stable conversation ID.
-- `runs`: run manifests from the RunStore index. Only created/validating/running/awaitingUser/paused/interrupted runs are listed as recoverable.
+- `runs`: run manifests from the RunStore index. `routingRunMayResume` includes created/validating/running/awaitingUser/paused/interrupted/partial, plus failed runs with nonempty adapter-owned checkpoints. Completed and cancelled runs are excluded even when they retain checkpoints. This shared query predicate conservatively lists potential model users; the S2 adapter still validates whether a particular checkpoint can actually resume. Empty-checkpoint failed runs are excluded.
 
 Compose it where both indexes are available, then use `ref.read(assistantRoutingUsageProvider(index)).of(serviceId: id)` or `.of(model: reference)`. `RoutingUsage` adds quick/heavy defaults and explicit function bindings, including future task keys. The adapter never imports or constructs Runtime. Index read/corruption failures propagate; deletion UI must not treat a failed query as an empty list. S2 must supply its real archive/run index callbacks; no empty or throwing production fallback is installed here.
 
@@ -70,7 +70,7 @@ On macOS arm64, Flutter 3.47.2 / Dart 3.13.2, run only these named tests:
 # packages/mm_assistant
  dart test test/task_routing_test.dart test/capability_probe_test.dart test/services_test.dart test/titles_test.dart test/model_policy_test.dart --reporter expanded
 # apps/marginmind
- flutter test --no-pub test/assistant_routing_test.dart test/assistant_services_test.dart --reporter expanded
+ flutter test --no-pub test/assistant_routing_test.dart test/assistant_services_test.dart test/routing_review_failure_test.dart --reporter expanded
 ```
 
 The protocol fixtures require the package working directory. Tests use synthetic profiles/transports and mock preferences. No real credentials/model calls, device UI validation, full-suite tests or coverage runs are included.

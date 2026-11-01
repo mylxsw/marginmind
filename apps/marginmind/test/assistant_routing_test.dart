@@ -183,7 +183,88 @@ void main() {
     expect(container.read(assistantRoutingProvider).value!.revision, 1);
     await container.read(assistantServicesProvider.future);
     await container.read(assistantServicesProvider.notifier).saveKey('s', 'fixture-key');
-    expect((await services.load()).services.single.revision, 1);
+    expect((await services.load()).services.single.revision, 2);
     expect(prefs.getString(AssistantRoutingStore.settingsKey), isNot(contains('fixture-key')));
+  });
+  test('clearing owned binding fields retains unknown fields and inherits reasoning', () async {
+    final initial = await store.load();
+    final first = await store.save(
+      RoutingConfig(
+        document: {
+          ...initial.document,
+          'heavyReasoning': 'standard',
+          'bindings': {
+            'assistant_chat': const TaskModelBinding.explicit(
+              ModelReference('s', 'm'),
+              reasoning: ReasoningPolicy.deep,
+            ).toJson()..['futureField'] = {'retained': true},
+          },
+        },
+      ),
+      expectedRevision: initial.revision,
+    );
+    final cleared = await store.save(
+      RoutingConfig(
+        document: {
+          ...first.document,
+          'bindings': {'assistant_chat': const TaskModelBinding.explicit(ModelReference('s', 'm')).toJson()},
+        },
+      ),
+      expectedRevision: first.revision,
+    );
+    expect(cleared.binding(TaskType.assistantChat).reasoning, isNull);
+    expect((cleared.document['bindings'] as Map)['assistant_chat']['futureField'], {'retained': true});
+    final catalog = await services.load();
+    final identity = serviceCapabilityIdentity(catalog.services.single, catalog.services.single.models.single);
+    final profiles = CapabilityProfiles()
+      ..put(
+        ModelCapabilityProfile(
+          identity: identity,
+          thinking: ThinkingCapability.switchable,
+          policies: {ReasoningPolicy.standard: ReasoningRecipe.effortMedium},
+          evidence: CapabilityEvidence(
+            source: CapabilityEvidenceSource.maintainedProfile,
+            reference: 'fixture',
+            semanticBasis: 'Synthetic fixture only',
+            wireVerified: true,
+            verifiedAt: DateTime.utc(2026),
+          ),
+        ),
+      );
+    final request = TaskRequest<String>(
+      spec: TaskSpec(
+        type: TaskType.assistantChat,
+        inputSchema: 'i',
+        resultSchema: 'o',
+        promptVersion: '1',
+        schemaVersion: '1',
+        completionRule: 'ok',
+      ),
+      input: {},
+      inputFingerprint: 'fixture',
+    );
+    final resolved = await TaskModelResolver(catalog: services.load, profiles: profiles).resolve(request, cleared);
+    expect(resolved.policy.effective, ReasoningPolicy.standard);
+    final inherited = await store.save(
+      RoutingConfig(
+        document: {
+          ...cleared.document,
+          'bindings': {
+            'assistant_chat': {
+              'mode': 'inherit',
+              'model': const ModelReference('s', 'm').toJson(),
+              'reasoning': 'deep',
+            },
+          },
+        },
+      ),
+      expectedRevision: cleared.revision,
+    );
+    final raw = (inherited.document['bindings'] as Map)['assistant_chat'] as Map;
+    expect(raw['mode'], 'inherit');
+    expect(raw.containsKey('model'), false);
+    expect(raw.containsKey('reasoning'), false);
+    expect(raw['futureField'], {'retained': true});
+    expect((await store.load()).binding(TaskType.assistantChat).mode, TaskBindingMode.inherit);
   });
 }

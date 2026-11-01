@@ -242,12 +242,54 @@ void main() {
             status: status,
             revision: 0,
           ),
+        RunManifest(
+          context: RunContext(runId: 'failed-with-progress', config: config, knowledgeVersions: {}),
+          taskType: TaskType.documentTranslate,
+          inputFingerprint: 'fixture',
+          promptVersion: '1',
+          schemaVersion: '1',
+          status: RunStatus.failed,
+          revision: 1,
+          checkpoint: {
+            'version': 1,
+            'remainingInputIds': ['paragraph-2'],
+          },
+        ),
+        // A completed/cancelled run may retain checkpoints for audit, not replay.
+        for (final status in [RunStatus.completed, RunStatus.cancelled])
+          RunManifest(
+            context: RunContext(runId: '${status.name}-with-progress', config: config, knowledgeVersions: {}),
+            taskType: TaskType.documentTranslate,
+            inputFingerprint: 'fixture',
+            promptVersion: '1',
+            schemaVersion: '1',
+            status: status,
+            revision: 1,
+            checkpoint: {
+              'remainingInputIds': ['paragraph-2'],
+            },
+          ),
       ],
     );
     final uses = await index.listModelUses();
     expect(uses.first.model, const ModelReference('b', 'same'));
-    expect(uses.where((u) => u.kind == RoutingUsageKind.recoverableRun), hasLength(6));
-    expect(uses.map((u) => u.id), isNot(contains('completed')));
+    expect(uses.where((u) => u.kind == RoutingUsageKind.recoverableRun).map((u) => u.id).toSet(), {
+      'created',
+      'validating',
+      'running',
+      'awaitingUser',
+      'paused',
+      'interrupted',
+      'partial',
+      'failed-with-progress',
+    });
+    expect(
+      uses.map((u) => u.id),
+      isNot(contains('failed')),
+      reason: 'A failed run with no saved progress has no resumable checkpoint.',
+    );
+    expect(uses.map((u) => u.id), isNot(contains('completed-with-progress')));
+    expect(uses.map((u) => u.id), isNot(contains('cancelled-with-progress')));
   });
   test('only actually compilable heavy reasoning options are exposed', () {
     expect(resolver.reasoningOptions(profile(catalog.services.first)), ReasoningPolicy.values.toSet());

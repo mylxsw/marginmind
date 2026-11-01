@@ -107,10 +107,14 @@ class AssistantRoutingStore {
         continue;
       }
       final previous = ((current.document['bindings'] as Map?)?[type.key] as Map?) ?? {};
+      final owned = TaskModelBinding.fromJson(Map<String, dynamic>.from(raw));
       bindings[type.key] = {
-        ...previous,
-        ...raw,
-        if (raw['model'] is Map) 'model': snapshot(raw['model'] as Map, previous['model'] as Map?),
+        for (final entry in previous.entries)
+          if (!{'mode', 'model', 'reasoning'}.contains(entry.key)) entry.key: entry.value,
+        for (final entry in raw.entries)
+          if (!{'mode', 'model', 'reasoning'}.contains(entry.key)) entry.key: entry.value,
+        ...owned.toJson(),
+        if (owned.model != null) 'model': snapshot(raw['model'] as Map, previous['model'] as Map?),
       };
     }
     final saved = _decode(
