@@ -3660,7 +3660,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerSelectionEnd => 'Selection end';
 
   @override
-  String get convertTitle => 'Convert to Document';
+  String get convertTitle => 'Save to Library';
+
+  @override
+  String get convertDocumentName => 'Document Name';
+
+  @override
+  String get convertFormat => 'Save Format';
+
+  @override
+  String get convertPreview => 'Content Preview';
+
+  @override
+  String get convertSave => 'Save Document';
 
   @override
   String get convertTitlePlaceholder => 'Title';

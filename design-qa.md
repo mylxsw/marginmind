@@ -592,3 +592,11 @@ final result: passed
 - 真实macOS窗口前后截图均为1280×820pt、2×、2560×1640px，同一学习集、同一 `test` 标签与一个结果，原文均为第87页。原始全图仅保留本地 `tag-redesign/06-typography-before.png` 和 `07-typography-after.png`。
 - `docs/evidence/tag-content-view/comparison-typography.png` 将两份截图的同一区域并排，按2×等比归一，没有拉伸；新实现局部为 `implemented-pane-compact.png`，不含原文书页。已在同一对照中核对字体层级、间距、颜色、现有矢量图标和实际文案，无待处理P0/P1/P2。
 - 8项标签流程测试、静态检查、macOS Debug构建通过；已重启实际应用确认紧凑字号，保留内容页供用户查看。没有为这次可逆的样式调整新增重复实现的测试。
+
+---
+
+# 保存到资料库弹窗（2026-11-01）
+
+final result: passed
+
+按用户确认的删减版实现单栏表单、来源摘要、格式选择和正文预览，标题改为“保存到资料库”，不显示副标题及格式说明。18 项相关测试、最终布局复测、定向静态分析和 macOS Debug 构建通过。[设计对照与验证边界](docs/evidence/web-conversion-redesign/design-qa.md)。
