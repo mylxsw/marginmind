@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// What the system says about accent color and accessibility. On platforms
+/// Host appearance, accessibility and pointer timing. On platforms
 /// without the native channel every value is the default.
 @immutable
 class SystemAppearance {
@@ -12,6 +12,7 @@ class SystemAppearance {
     this.reduceTransparency = false,
     this.reduceMotion = false,
     this.increaseContrast = false,
+    this.doubleClickInterval = const Duration(milliseconds: 300),
   });
 
   /// System accent (System Settings › Appearance), or null to keep the
@@ -21,13 +22,20 @@ class SystemAppearance {
   final bool reduceMotion;
   final bool increaseContrast;
 
+  /// Pointer double-click timing from the host OS.
+  final Duration doubleClickInterval;
+
   factory SystemAppearance.fromMap(Map<Object?, Object?> map) {
     final accent = map['accent'];
+    final interval = map['doubleClickIntervalMs'];
     return SystemAppearance(
       accentColor: accent is int ? Color(accent) : null,
       reduceTransparency: map['reduceTransparency'] == true,
       reduceMotion: map['reduceMotion'] == true,
       increaseContrast: map['increaseContrast'] == true,
+      doubleClickInterval: interval is int && interval > 0
+          ? Duration(milliseconds: interval)
+          : const Duration(milliseconds: 300),
     );
   }
 
@@ -37,10 +45,11 @@ class SystemAppearance {
       other.accentColor == accentColor &&
       other.reduceTransparency == reduceTransparency &&
       other.reduceMotion == reduceMotion &&
-      other.increaseContrast == increaseContrast;
+      other.increaseContrast == increaseContrast &&
+      other.doubleClickInterval == doubleClickInterval;
 
   @override
-  int get hashCode => Object.hash(accentColor, reduceTransparency, reduceMotion, increaseContrast);
+  int get hashCode => Object.hash(accentColor, reduceTransparency, reduceMotion, increaseContrast, doubleClickInterval);
 }
 
 /// Reads [SystemAppearance] from the macOS runner
@@ -63,7 +72,7 @@ class SystemAppearanceSource {
     }
   }
 
-  /// Emits whenever the accent color or accessibility options change.
+  /// Emits when preferences change or the app becomes active again.
   Stream<SystemAppearance> get changes {
     if (!_listening) {
       _listening = true;

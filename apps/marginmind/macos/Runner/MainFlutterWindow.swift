@@ -315,6 +315,9 @@ final class SystemAppearanceChannel: NSObject {
     NotificationCenter.default.addObserver(
       self, selector: #selector(changed),
       name: NSColor.systemColorsDidChangeNotification, object: nil)
+    NotificationCenter.default.addObserver(
+      self, selector: #selector(changed),
+      name: NSApplication.didBecomeActiveNotification, object: nil)
   }
 
   deinit {
@@ -332,6 +335,7 @@ final class SystemAppearanceChannel: NSObject {
       "reduceTransparency": workspace.accessibilityDisplayShouldReduceTransparency,
       "reduceMotion": workspace.accessibilityDisplayShouldReduceMotion,
       "increaseContrast": workspace.accessibilityDisplayShouldIncreaseContrast,
+      "doubleClickIntervalMs": Int((NSEvent.doubleClickInterval * 1000).rounded()),
     ]
     if let accent = NSColor.controlAccentColor.usingColorSpace(.sRGB) {
       func channel(_ v: CGFloat) -> Int { Int((v * 255).rounded()) & 0xFF }

@@ -82,6 +82,7 @@ class MarginMindApp extends ConsumerWidget {
           child: MMInput(
             touchPlatform: touchPlatform,
             phone: phone,
+            doubleClickInterval: system.doubleClickInterval,
             child: MMAppearance(
               reduceTransparency: system.reduceTransparency,
               reduceMotion: system.reduceMotion,

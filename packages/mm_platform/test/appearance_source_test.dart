@@ -14,21 +14,30 @@ void main() {
   test('reads native appearance, receives changes, and disposes channel', () async {
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     final source = SystemAppearanceSource(channel: channel);
-    messenger.setMockMethodCallHandler(channel, (_) async => {'accent': 0xFF123456, 'reduceMotion': true});
+    messenger.setMockMethodCallHandler(
+      channel,
+      (_) async => {'accent': 0xFF123456, 'reduceMotion': true, 'doubleClickIntervalMs': 500},
+    );
     final initial = await source.read();
     expect(initial.accentColor, const Color(0xFF123456));
     expect(initial.reduceMotion, isTrue);
+    expect(initial.doubleClickInterval, const Duration(milliseconds: 500));
     final changes = source.changes;
     expect(source.changes.isBroadcast, isTrue);
     final next = changes.first;
     await messenger.handlePlatformMessage(
       channel.name,
-      const StandardMethodCodec().encodeMethodCall(const MethodCall('changed', {'increaseContrast': true})),
+      const StandardMethodCodec().encodeMethodCall(
+        const MethodCall('changed', {'increaseContrast': true, 'doubleClickIntervalMs': 700}),
+      ),
       (_) {},
     );
     final changed = await next;
-    expect(changed, const SystemAppearance(increaseContrast: true));
-    expect(changed.hashCode, const SystemAppearance(increaseContrast: true).hashCode);
+    expect(changed, const SystemAppearance(increaseContrast: true, doubleClickInterval: Duration(milliseconds: 700)));
+    expect(
+      changed.hashCode,
+      const SystemAppearance(increaseContrast: true, doubleClickInterval: Duration(milliseconds: 700)).hashCode,
+    );
     await source.dispose();
   });
   test('missing plugin, empty native reply, and non-Mac use defaults', () async {

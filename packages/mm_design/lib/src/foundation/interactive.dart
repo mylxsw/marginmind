@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import 'adaptive.dart';
+
 /// Visual state passed to [MMInteractive.builder].
 @immutable
 class MMInteractionState {
@@ -111,6 +113,7 @@ class _MMInteractiveState extends State<MMInteractive> {
                 (tap) {
                   if (!_enabled || (tap.selected && !widget.selected)) tap.resetSequence();
                   tap
+                    ..doubleClickInterval = MMInput.of(context).doubleClickInterval
                     ..selected = widget.selected
                     ..onTapDown = _enabled
                         ? (_) {
@@ -184,6 +187,7 @@ class _MMInteractiveState extends State<MMInteractive> {
 /// Only double-tap detection changes: it never holds the first tap's arena.
 class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
   VoidCallback? onDoubleTap;
+  Duration doubleClickInterval = kDoubleTapTimeout;
   bool selected = false;
   PointerDownEvent? _lastTap;
   Timer? _tapTimeout;
@@ -226,7 +230,10 @@ class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
     if (down.buttons == kPrimaryButton && onDoubleTap != null) {
       _lastTap = down;
       _minTapTime = Timer(kDoubleTapMinTime, () {});
-      _tapTimeout = Timer(kDoubleTapTimeout, _clearLastTap);
+      _tapTimeout = Timer(
+        down.kind == PointerDeviceKind.mouse ? doubleClickInterval : kDoubleTapTimeout,
+        _clearLastTap,
+      );
     }
     super.handleTapUp(down: down, up: up);
   }

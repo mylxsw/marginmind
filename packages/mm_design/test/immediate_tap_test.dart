@@ -6,6 +6,42 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  testWidgets('mouse double click follows the host interval while touch keeps its own timing', (tester) async {
+    var opens = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMInput(
+          touchPlatform: false,
+          doubleClickInterval: const Duration(milliseconds: 500),
+          child: Center(
+            child: MMInteractive(
+              immediateTap: true,
+              onTap: () {},
+              onDoubleTap: () => opens++,
+              builder: (_, _) => const SizedBox(width: 200, height: 100),
+            ),
+          ),
+        ),
+      ),
+    );
+    final target = find.byType(MMInteractive);
+    await tester.tap(target, kind: PointerDeviceKind.mouse);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(target, kind: PointerDeviceKind.mouse);
+    expect(opens, 1);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(target, kind: PointerDeviceKind.mouse);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(target, kind: PointerDeviceKind.mouse);
+    expect(opens, 1);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(target);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(target);
+    expect(opens, 1);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   for (final kind in [PointerDeviceKind.mouse, PointerDeviceKind.touch]) {
     testWidgets('$kind selects on release and double tap activates without selecting twice', (tester) async {
       var selects = 0;

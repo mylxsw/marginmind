@@ -46,8 +46,13 @@ enum MMSizeClass {
 /// sizes controls, so a trackpad on an iPad gets pointer-sized ones.
 @immutable
 class MMInputState {
-  const MMInputState({this.touchPlatform = false, this.phone = false, this.touch = false, bool? touchInput})
-    : touchInput = touchInput ?? touch;
+  const MMInputState({
+    this.touchPlatform = false,
+    this.phone = false,
+    this.touch = false,
+    bool? touchInput,
+    this.doubleClickInterval = kDoubleTapTimeout,
+  }) : touchInput = touchInput ?? touch;
 
   static const pointer = MMInputState();
 
@@ -58,6 +63,8 @@ class MMInputState {
   bool get tablet => touchPlatform && !phone;
   final bool touch;
   final bool touchInput;
+  /// Host timing for mouse double clicks; touch retains Flutter's timing.
+  final Duration doubleClickInterval;
 
   @override
   bool operator ==(Object other) =>
@@ -65,20 +72,28 @@ class MMInputState {
       other.touchPlatform == touchPlatform &&
       other.phone == phone &&
       other.touch == touch &&
-      other.touchInput == touchInput;
+      other.touchInput == touchInput &&
+      other.doubleClickInterval == doubleClickInterval;
 
   @override
-  int get hashCode => Object.hash(touchPlatform, phone, touch, touchInput);
+  int get hashCode => Object.hash(touchPlatform, phone, touch, touchInput, doubleClickInterval);
 }
 
 /// Provides [MMInputState] below it: the one source of touch decisions.
 class MMInput extends StatefulWidget {
-  const MMInput({super.key, required this.touchPlatform, this.phone = false, required this.child});
+  const MMInput({
+    super.key,
+    required this.touchPlatform,
+    this.phone = false,
+    this.doubleClickInterval = kDoubleTapTimeout,
+    required this.child,
+  });
 
   final bool touchPlatform;
 
   /// Only meaningful with [touchPlatform].
   final bool phone;
+  final Duration doubleClickInterval;
   final Widget child;
 
   /// Without an [MMInput] above, the window is a pointer-only desktop.
@@ -123,6 +138,7 @@ class _MMInputState extends State<MMInput> {
       phone: platform && widget.phone,
       touch: platform && _touch,
       touchInput: _touch,
+      doubleClickInterval: widget.doubleClickInterval,
     );
   }
 

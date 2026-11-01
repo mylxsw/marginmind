@@ -170,10 +170,11 @@ class _Row extends StatelessWidget {
   }
 
   Widget _interactive(BuildContext context, MMColors c) {
+    final touch = MMInput.of(context).touchPlatform;
     return MMInteractive(
-      onTapDown: onSelect,
-      onTap: MMInput.of(context).touchPlatform ? onOpen : null,
-      onDoubleTap: MMInput.of(context).touchPlatform ? null : onOpen,
+      immediateTap: !touch,
+      onTap: touch ? onOpen : onSelect,
+      onDoubleTap: touch ? null : onOpen,
       selected: selected,
       builder: (context, s) => Container(
         height: context.mmTouchPlatform ? MMSizes.touchTarget : 32,

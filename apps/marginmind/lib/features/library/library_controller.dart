@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 
@@ -91,10 +92,16 @@ class LibraryViewController extends Notifier<LibraryViewState> {
     await ref.read(studySetRepositoryProvider).delete(id);
   }
 
-  /// Records the open and switches to the study set's workspace.
+  /// Open immediately. Recent-open metadata is optional bookkeeping: a slow
+  /// disk must not hold navigation, and its completion must not change routes.
   Future<void> open(String id) async {
-    await ref.read(studySetRepositoryProvider).markOpened(id);
+    final repo = ref.read(studySetRepositoryProvider);
     ref.read(navigationProvider.notifier).openStudySet(id);
+    try {
+      await repo.markOpened(id);
+    } catch (error, stack) {
+      debugPrint('Could not record study set open: $error\n$stack');
+    }
   }
 }
 
