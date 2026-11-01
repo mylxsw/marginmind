@@ -1186,7 +1186,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                   : OutlineView(
                                       contentPadding: EdgeInsets.fromLTRB(
                                         16,
-                                        _headerGeometry.toolbarTopInset + 76,
+                                        toolbarTopInset + MMSpacing.s,
                                         16,
                                         chrome.bottom + 72,
                                       ),

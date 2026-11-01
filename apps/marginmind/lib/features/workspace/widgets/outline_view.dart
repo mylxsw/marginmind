@@ -80,7 +80,7 @@ class OutlineView extends StatefulWidget {
 class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineView> {
   final _rowKeys = <String?, GlobalKey>{};
   final _scroll = ScrollController();
-  EdgeInsets get _padding => widget.contentPadding ?? const EdgeInsets.fromLTRB(16, 76, 16, 72);
+  EdgeInsets get _padding => widget.contentPadding ?? const EdgeInsets.fromLTRB(16, 16, 16, 72);
 
   /// Rows top to bottom (null = the root), for ↑ / ↓.
   List<String?> _order = const [null];

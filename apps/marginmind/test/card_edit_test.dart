@@ -240,6 +240,15 @@ void main() {
       return container;
     }
 
+    testWidgets('outline starts just below the view controls without a blank toolbar row', (tester) async {
+      await openOutline(tester);
+      final controls = tester.getRect(find.byType(MMSegmentedControl<MapViewMode>));
+      final root = tester.getRect(find.descendant(of: find.byType(OutlineView), matching: find.text('认知科学入门')));
+      expect(root.top - controls.bottom, inInclusiveRange(0, 32));
+      expect(tester.takeException(), isNull);
+      await settleHud(tester);
+    });
+
     testWidgets('a multi-level tree is written with the keyboard alone', (tester) async {
       final container = await openOutline(tester);
       final controller = container.read(workspaceProvider('demo-1').notifier);
@@ -487,18 +496,19 @@ void main() {
         await tester.pumpAndSettle();
       }
       final view = tester.getRect(find.byType(OutlineView));
+      final topPadding = tester.widget<OutlineView>(find.byType(OutlineView)).contentPadding!.top;
       final row = tester.getRect(find.text('Row 39'));
       // Clear of the floating controls at the bottom (the list's padding).
       expect(row.bottom, lessThanOrEqualTo(view.bottom - 72));
-      expect(row.top, greaterThanOrEqualTo(view.top + 76));
+      expect(row.top, greaterThanOrEqualTo(view.top + topPadding));
       // Up one row at a time: each selected row stays clear of the top controls.
       for (var i = 0; i < 30; i++) {
         await key(tester, LogicalKeyboardKey.arrowUp);
       }
-      expect(tester.getRect(find.text('Row 9')).top, greaterThanOrEqualTo(view.top + 76));
+      expect(tester.getRect(find.text('Row 9')).top, greaterThanOrEqualTo(view.top + topPadding));
       // Back to the top: the first row comes out from under the controls.
       await key(tester, LogicalKeyboardKey.escape);
-      expect(tester.getRect(find.text('遗忘的规律')).top, greaterThan(view.top + 60));
+      expect(tester.getRect(find.text('遗忘的规律')).top, greaterThan(view.top + topPadding));
       await settleHud(tester);
     });
   });
