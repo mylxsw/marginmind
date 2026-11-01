@@ -89,8 +89,20 @@ class CheckedLLMClient implements LLMClient {
   }
 }
 
-class AssistantRun {
-  AssistantRun({
+/// UI-facing run contract, shared by the legacy SDK facade and task Runtime.
+abstract interface class AssistantRun {
+  StatefulAgent get agent;
+  RunBudget get budget;
+  CitationRegistry get citations;
+  ProposalHook get proposals;
+  CancellationToken get cancel;
+  AssistantPermissions get permissions;
+  Stream<StreamingEvent> run(String text);
+  void stop();
+}
+
+class SdkAssistantRun implements AssistantRun {
+  SdkAssistantRun({
     required this.agent,
     required this.citations,
     required this.proposals,
@@ -102,22 +114,30 @@ class AssistantRun {
     this.images = const [],
     this.inputData = const {},
   });
+  @override
   final StatefulAgent agent;
   final List<ImagePart> images;
   final Map<String, dynamic> inputData;
+  @override
   final CitationRegistry citations;
+  @override
   final ProposalHook proposals;
+  @override
   final CancellationToken cancel;
   final CancelToken token;
+  @override
   final RunBudget budget;
+  @override
   final AssistantPermissions permissions;
   final void Function()? close;
+  @override
   void stop() {
     cancel.cancel();
     token.cancel();
     close?.call();
   }
 
+  @override
   Stream<StreamingEvent> run(String text) async* {
     var timedOut = false;
     Timer? timer;
@@ -182,7 +202,7 @@ class AssistantRun {
   }
 }
 
-AssistantRun createAssistantRun({
+SdkAssistantRun createAssistantRun({
   required LLMClient client,
   required String model,
   required AgentState state,
@@ -295,7 +315,7 @@ AssistantRun createAssistantRun({
       CitationHook(citations),
     ],
   );
-  return AssistantRun(
+  return SdkAssistantRun(
     agent: agent,
     images: images,
     inputData: {

@@ -164,8 +164,13 @@ class AssistantController extends Notifier<Conversation> {
   }
 
   Message _message(String id, [_Session? session]) => (session ?? _open).view.messages.firstWhere((m) => m.id == id);
-  Future<void> send(String text, {List<ContextItem> contexts = const [], String? skill}) =>
-      _start(text, contexts: contexts, skill: skill);
+  Future<void> send(
+    String text, {
+    List<ContextItem> contexts = const [],
+    String? skill,
+    ModelReference? taskModel,
+    List<String>? summaryMessageIds,
+  }) => _start(text, contexts: contexts, skill: skill, taskModel: taskModel, summaryMessageIds: summaryMessageIds);
 
   /// Asks [text] in the open conversation. With [replacing] (an answer and
   /// its question) the new pair takes their place instead of following the
@@ -174,6 +179,8 @@ class AssistantController extends Notifier<Conversation> {
     String text, {
     List<ContextItem> contexts = const [],
     String? skill,
+    ModelReference? taskModel,
+    List<String>? summaryMessageIds,
     (Message, Message)? replacing,
     bool tools = true,
   }) {
@@ -189,6 +196,8 @@ class AssistantController extends Notifier<Conversation> {
       text: text,
       contexts: contexts,
       skill: skill,
+      taskModel: taskModel ?? replacing?.$1.taskModel,
+      summaryMessageIds: summaryMessageIds ?? replacing?.$1.summaryMessageIds,
     );
     final answer = Message(
       id: _id(),
@@ -200,7 +209,10 @@ class AssistantController extends Notifier<Conversation> {
     final view = session.view;
     final List<Message> messages;
     if (replacing case (final oldQuestion, final oldAnswer)) {
+      final before = (session.agent.metadata['assistant.before.v1'] as Map?)?[oldQuestion.requestId] as Map?;
+      final identity = (before?['metadata'] as Map?)?['assistant.taskModel.v1'];
       session.agent = forkAssistantHistory(session.agent, oldQuestion.requestId);
+      session.agent.metadata['assistant.taskModel.v1'] = identity;
       final replaced = session.agent.metadata.putIfAbsent('assistant.replaced', () => <dynamic>[]) as List;
       replaced.add(oldAnswer.toJson());
       (session.agent.metadata.putIfAbsent('assistant.viewBranches.v1', () => <dynamic>[]) as List).add(view.toJson());
@@ -240,8 +252,12 @@ class AssistantController extends Notifier<Conversation> {
       'host': Uri.tryParse(session.view.model.endpoint)?.host ?? '',
       'tools': <dynamic>[],
     };
-    AssistantDiagnostics diagnosticView() =>
-        AssistantDiagnostics.fromJson(Map<String, dynamic>.from(allDiagnostics[question.requestId]));
+    AssistantDiagnostics diagnosticView() => AssistantDiagnostics.fromJson(
+      Map<String, dynamic>.from(
+        (session.agent.metadata['assistant.diagnostics'] as Map?)?[question.requestId] ??
+            allDiagnostics[question.requestId],
+      ),
+    );
     _replace(session, _message(answerId, session).copyWith(diagnostics: diagnosticView()));
     try {
       final modelIdentity = jsonEncode(session.view.model.toJson()..remove('supportsTools'));
@@ -686,11 +702,39 @@ class AssistantController extends Notifier<Conversation> {
     }
     await _stop(session);
     if (_disposed || !identical(session, _open)) return;
-    _set(session, session.view.copyWith(model: model));
+    _set(
+      session,
+      session.view.copyWith(
+        model: model,
+        archiveFields: {
+          ...session.view.archiveFields,
+          'taskRouting': {
+            'version': 1,
+            'assistantChat': {'serviceId': model.serviceId ?? 'legacy-${model.provider.name}', 'modelId': model.model},
+          },
+        },
+      ),
+    );
     await _persist(session);
     if (retryMessageId != null && !_disposed && identical(session, _open)) {
       await retry(retryMessageId);
     }
+  }
+
+  Future<void> followTaskSettings() async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
+    await stop();
+    final session = _open;
+    _set(
+      session,
+      session.view.copyWith(
+        archiveFields: {
+          ...session.view.archiveFields,
+          'taskRouting': {'version': 1, 'assistantChat': null},
+        },
+      ),
+    );
+    await _persist(session);
   }
 
   Future<void> setOnline(bool enabled) async {

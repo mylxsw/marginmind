@@ -47,8 +47,9 @@ void main() {
         final p = Provider((ref) => assistantNetworkFor(ref, 's', conversation));
         final n = await container.read(p) as SnapshotAssistantNetwork;
         expect(n.discovery, switch (provider) {
-          AssistantProvider.claude || AssistantProvider.responses => isA<ProviderWebSearch>(),
-          AssistantProvider.gemini => isA<GeminiWebSearch>(),
+          AssistantProvider.claude ||
+          AssistantProvider.responses ||
+          AssistantProvider.gemini => isA<UnavailableWebSearch>(),
           _ => isA<SearxngSearch>(),
         });
         expect(secrets.reads, [

@@ -18,7 +18,7 @@ import '../assistant_scope.dart';
 import '../../../app/providers.dart';
 import '../assistant_settings.dart';
 import 'assistant_context_summary.dart';
-import 'assistant_model_menu.dart';
+import 'assistant_task_setup.dart';
 import 'assistant_overlays.dart';
 
 /// The input at the bottom of the panel: attached context, quick actions,
@@ -447,6 +447,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                 ),
                 const SizedBox(height: 8),
               ],
+              AssistantTaskActivityView(widget.studySetId),
               AnimatedContainer(
                 key: const ValueKey('assistant-input-container'),
                 duration: MMMotion.quick,
@@ -536,16 +537,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                           if (configured)
                             _tabletFlexible(
                               context,
-                              Builder(
-                                builder: (button) => _BarButton(
-                                  key: const ValueKey('assistant-model'),
-                                  label: conversationModelLabel(ref, conversation.model),
-                                  trailing: MMIcons.chevronDown,
-                                  tooltip: l.assistantModel,
-                                  maxLabel: 120,
-                                  onPressed: () => showModelMenu(context, ref, boundsOf(button)),
-                                ),
-                              ),
+                              const AssistantConversationRouteControl(key: ValueKey('assistant-model')),
                             ),
                           const SizedBox(width: MMSpacing.xs),
                           _BarButton(
@@ -789,22 +781,18 @@ class _BarButton extends StatelessWidget {
     super.key,
     this.icon,
     this.label,
-    this.trailing,
     required this.tooltip,
     required this.onPressed,
     this.color,
     this.selected = false,
-    this.maxLabel = 160,
   });
 
   final IconData? icon;
   final String? label;
-  final IconData? trailing;
   final String tooltip;
   final VoidCallback? onPressed;
   final Color? color;
   final bool selected;
-  final double maxLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -835,7 +823,7 @@ class _BarButton extends StatelessWidget {
                 _tabletFlexible(
                   context,
                   ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: maxLabel),
+                    constraints: const BoxConstraints(maxWidth: 160),
                     child: Text(
                       label!,
                       maxLines: 1,
@@ -844,7 +832,6 @@ class _BarButton extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (trailing != null) ...[const SizedBox(width: 3), Icon(trailing, size: 10, color: c.icon)],
             ],
           ),
         );

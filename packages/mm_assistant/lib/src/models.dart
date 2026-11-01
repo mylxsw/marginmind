@@ -2,6 +2,7 @@ import 'package:mm_core/mm_core.dart';
 
 import 'citations.dart';
 import 'permissions.dart';
+import 'model_policy/routing.dart';
 import 'providers.dart';
 
 enum ContextKind { selection, node, branch, page, document, map }
@@ -188,6 +189,8 @@ class Message {
     List<ProposalView> proposals = const [],
     List<ReadPermissionView> permissions = const [],
     this.skill,
+    this.taskModel,
+    this.summaryMessageIds,
     this.noteId,
     this.online = false,
     this.startedAt,
@@ -209,6 +212,8 @@ class Message {
   final List<ReadPermissionView> permissions;
   bool get waitingForPermission => permissions.any((permission) => permission.status == ReadPermissionStatus.pending);
   final String? skill, noteId;
+  final ModelReference? taskModel;
+  final List<String>? summaryMessageIds;
   final bool online;
   final DateTime? startedAt, endedAt;
   final AssistantDiagnostics? diagnostics;
@@ -263,6 +268,8 @@ class Message {
     proposals: proposals ?? this.proposals,
     permissions: permissions ?? this.permissions,
     skill: skill,
+    taskModel: taskModel,
+    summaryMessageIds: summaryMessageIds,
     noteId: noteId ?? this.noteId,
     online: online ?? this.online,
     startedAt: startedAt,
@@ -282,6 +289,8 @@ class Message {
     'proposals': proposals.map((p) => p.toJson()).toList(),
     'permissions': permissions.map((p) => p.toJson()).toList(),
     'skill': skill,
+    'taskModel': taskModel?.toJson(),
+    'summaryMessageIds': summaryMessageIds,
     'noteId': noteId,
     'online': online,
     'diagnostics': diagnostics?.toJson(),
@@ -303,6 +312,8 @@ class Message {
       for (final v in j['permissions'] as List? ?? []) ReadPermissionView.fromJson(Map<String, dynamic>.from(v)),
     ],
     skill: j['skill'],
+    taskModel: j['taskModel'] == null ? null : ModelReference.fromJson(Map<String, dynamic>.from(j['taskModel'])),
+    summaryMessageIds: j['summaryMessageIds'] == null ? null : List<String>.from(j['summaryMessageIds']),
     noteId: j['noteId'],
     online: j['online'] ?? false,
     diagnostics: j['diagnostics'] == null
@@ -322,14 +333,24 @@ class Conversation {
     List<Message> messages = const [],
     this.online = true,
     this.readOnly = false,
+    this.archiveFields = const {
+      'taskRouting': {'version': 1, 'assistantChat': null},
+    },
   }) : messages = List.unmodifiable(messages);
   final String id, studySetId, title;
   final AssistantModel model;
   final List<Message> messages;
   final bool online;
   final bool readOnly;
+  final Map<String, dynamic> archiveFields;
   bool get running => messages.any((m) => m.status == MessageStatus.running);
-  Conversation copyWith({String? title, List<Message>? messages, AssistantModel? model, bool? online}) => Conversation(
+  Conversation copyWith({
+    String? title,
+    List<Message>? messages,
+    AssistantModel? model,
+    bool? online,
+    Map<String, dynamic>? archiveFields,
+  }) => Conversation(
     id: id,
     studySetId: studySetId,
     title: title ?? this.title,
@@ -337,8 +358,10 @@ class Conversation {
     model: model ?? this.model,
     online: online ?? this.online,
     readOnly: readOnly,
+    archiveFields: archiveFields ?? this.archiveFields,
   );
   Map<String, dynamic> toJson() => {
+    ...archiveFields,
     'id': id,
     'studySetId': studySetId,
     'title': title,
@@ -355,5 +378,6 @@ class Conversation {
     messages: [for (final m in j['messages']) Message.fromJson(Map<String, dynamic>.from(m))],
     online: j['online'],
     readOnly: j['readOnly'] ?? false,
+    archiveFields: migrateConversationRouting(j),
   );
 }

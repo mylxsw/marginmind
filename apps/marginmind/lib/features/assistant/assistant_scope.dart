@@ -19,9 +19,9 @@ import 'assistant_controller.dart';
 import 'assistant_network.dart';
 import 'assistant_reader.dart';
 import 'assistant_settings.dart';
-import 'assistant_services.dart';
 import 'quick_tasks.dart';
 import 'assistant_writes.dart';
+import 'assistant_tasks.dart';
 
 // ---- composition -------------------------------------------------------------------
 
@@ -81,30 +81,33 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     online: assistantOnlineDefault(ref, studySetId),
     generateTitle: (_, question) => generateAssistantTitle(ref.read(quickTaskExecutorProvider(studySetId)), question),
     runFactory: (agent, conversation, question) async {
-      final network = ref.read(assistantNetworkProvider) ?? await assistantNetworkFor(ref, studySetId, conversation);
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
       final mapId =
           question.contexts.map((item) => item.mapId).whereType<String>().firstOrNull ??
           ref.read(workspaceProvider(studySetId)).activeMapId;
       // Revision and parents come from one snapshot, as the executor checks both.
       final snapshot = workspace.content;
-      return assistantRunFactory(
-        secrets: ref.read(assistantSecretsProvider),
-        services: ref.read(assistantServicesStoreProvider),
+      return createPersistentAssistantRun(
+        ref: ref,
+        directory: ref.read(contentRepositoryProvider).resolveFile(studySetId, ''),
+        state: agent,
+        conversation: conversation,
+        question: question,
         reader: WorkspaceReader(
           content: () => workspace.content,
           contexts: question.contexts,
           filePath: workspace.filePath,
           pageText: ref.read(assistantPageTextProvider),
         ),
-        documents: snapshot.documents,
         images: (contexts) =>
             loadAssistantNodeImages(content: snapshot, contexts: contexts, imagePath: workspace.imagePath),
+        documents: snapshot.documents,
         mapId: mapId,
-        revision: () => assistantMapRevision(snapshot, mapId),
-        parents: () => mapParents(snapshot, mapId),
-        network: network,
-      )(agent, conversation, question);
+        revision: assistantMapRevision(snapshot, mapId),
+        parents: mapParents(snapshot, mapId),
+        network: ref.read(assistantNetworkProvider),
+        networkFactory: (model) => assistantNetworkFor(ref, studySetId, conversation, model: model),
+      );
     },
   );
 }, dependencies: [assistantMapEditExecutorProvider, assistantNoteSaverProvider, workspaceProvider]);

@@ -11,11 +11,16 @@ final assistantWebCacheProvider = Provider<ResearchDocumentCache?>((ref) => null
 final assistantArticleParserProvider = Provider<HtmlArticleParser>((ref) => WebKitArticleParser());
 
 /// Built for the conversation's selected model, freshly for each request.
-Future<AssistantNetwork?> assistantNetworkFor(Ref ref, String studySetId, Conversation conversation) async {
+Future<AssistantNetwork?> assistantNetworkFor(
+  Ref ref,
+  String studySetId,
+  Conversation conversation, {
+  AssistantModel? model,
+}) async {
   if (!conversation.online) return null;
   final repository = ref.read(contentRepositoryProvider);
   if (repository is! ResearchSnapshotRepository) return null;
-  final model = await ref.read(assistantServicesStoreProvider).resolve(conversation.model);
+  model ??= await ref.read(assistantServicesStoreProvider).resolve(conversation.model);
   final settings = ref.read(webSearchSettingsProvider);
   final secrets = ref.read(assistantSecretsProvider);
   final needsSearchService = !hasNativeWebSearch(model);

@@ -109,7 +109,10 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(registry.items, isEmpty);
     snapshots.hold!.complete();
-    await fetched;
+    final firstPage = await fetched as Map;
+    expect(registry.items, hasLength(1));
+    expect(firstPage['complete'], false);
+    await tools.execute('read_more', {'cursor': firstPage['nextCursor']});
     expect(registry.items, hasLength(2));
     final c = registry.items.first;
     expect(c.title, 'Captured title');
@@ -278,14 +281,7 @@ void main() {
         model: AssistantModel(provider: p, model: 'm', endpoint: 'https://example.org/v1/responses'),
         key: 'test',
       ) as SnapshotAssistantNetwork;
-      expect(
-        n.discovery,
-        p == AssistantProvider.claude || p == AssistantProvider.responses
-            ? isA<ProviderWebSearch>()
-            : p == AssistantProvider.gemini
-            ? isA<GeminiWebSearch>()
-            : isA<UnavailableWebSearch>(),
-      );
+      expect(n.discovery, isA<UnavailableWebSearch>());
       expect(n.paperSearch, isA<OpenAlexSearch>());
       expect(n.extractor, isA<MarkdownArticleExtractor>());
     }
