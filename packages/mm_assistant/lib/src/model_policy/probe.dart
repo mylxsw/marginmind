@@ -1,14 +1,21 @@
-import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
-import 'package:dio/dio.dart';
 import 'package:mm_core/mm_core.dart';
 
 import '../providers.dart';
 import '../services.dart';
-import 'compiler.dart';
 import 'routing.dart';
+import '../task_runtime/provider_steps.dart';
+import '../task_runtime/runtime.dart' show RuntimeModelBinding;
 
 class CapabilityProbeResult {
-  const CapabilityProbeResult({required this.identity, required this.accepted, required this.profile});
+  const CapabilityProbeResult({
+    required this.identity,
+    required this.accepted,
+    required this.profile,
+    this.runId,
+    this.usage = const RunUsage(),
+  });
+  final String? runId;
+  final RunUsage usage;
   final CapabilityIdentity identity;
   final bool accepted;
   final ModelCapabilityProfile profile;
@@ -30,7 +37,14 @@ AssistantConnection _connection(AssistantModel model, String key, ProviderCallPo
 /// Infrastructure-only single SDK request. No Agent tools are registered or
 /// executed. Unknown profiles stay unknown even after a successful response.
 class RoutingCapabilityProbe {
-  RoutingCapabilityProbe({required this.resolver, required this.key, this.connection = _connection});
+  RoutingCapabilityProbe({
+    required this.resolver,
+    required this.key,
+    this.connection = _connection,
+    ProviderSteps? steps,
+  }) : steps = steps ?? ProviderSteps(connection: connection);
+  final ProviderSteps steps;
+  int _sequence = 0;
   final TaskModelResolver resolver;
   final Future<String> Function(AssistantModel) key;
   final ProbeConnectionFactory connection;
@@ -66,24 +80,51 @@ class RoutingCapabilityProbe {
     } else if (reasoning != ReasoningPolicy.auto) {
       throw const ConfigurationFailure('unverifiedCapabilities');
     }
-    final config = service.configuration(model);
-    final secret = await cancellation.bind(key(config));
-    cancellation.check();
-    if (service.protocol != ServiceProtocol.ollama && secret.trim().isEmpty) {
-      throw const ConfigurationFailure('secretUnavailable');
-    }
-    final transport = connection(config, secret, policy);
-    final token = CancelToken();
-    var finished = false;
-    // A completed probe's cancellation listener cannot affect later connections.
-    cancellation.whenCancelled.then((_) {
-      if (!finished) token.cancel();
-    });
+    final diagnostic = policy == null;
+    policy ??= ProviderCallPolicy(
+      identity: identity,
+      requested: ReasoningPolicy.auto,
+      effective: ReasoningPolicy.auto,
+      recipe: ReasoningRecipe.omitted,
+      parameters: const {},
+      maxOutputTokens: 16,
+    );
+    final context = RunContext(
+      runId: 'probe-${DateTime.now().microsecondsSinceEpoch}-${_sequence++}',
+      config: ResolvedTaskConfig(
+        capabilities: profile,
+        policy: policy,
+        routingRevision: 0,
+        source: RoutingSource.explicitRequest,
+      ),
+      knowledgeVersions: const {},
+    );
     try {
-      await transport.client.generate(
-        [sdk.UserMessage.text('Reply OK.')],
-        modelConfig: policy == null ? sdk.ModelConfig(model: model.id, maxTokens: 16) : policyModelConfig(policy),
-        cancelToken: token,
+      await steps.run(
+        context: context,
+        category: TaskCategory.heavy,
+        taskType: TaskType.assistantChat,
+        purpose: RunPurpose.capabilityProbe,
+        cancellation: cancellation,
+        diagnostic: diagnostic,
+        loadModel: (_) async {
+          final config = service.configuration(model);
+          final secret = await cancellation.bind(key(config));
+          if (service.protocol != ServiceProtocol.ollama && secret.trim().isEmpty) {
+            throw const ConfigurationFailure('secretUnavailable');
+          }
+          final latest = await cancellation.bind(resolver.catalog());
+          final currentService = latest.services.where((s) => s.id == reference.serviceId).firstOrNull;
+          final currentModel = currentService?.models.where((m) => m.id == reference.modelId).firstOrNull;
+          if (currentService == null ||
+              currentModel == null ||
+              !currentService.enabled ||
+              !currentModel.enabled ||
+              serviceCapabilityIdentity(currentService, currentModel) != identity) {
+            throw const ConfigurationFailure('serviceConfigurationChanged');
+          }
+          return RuntimeModelBinding(model: config, key: secret, serviceRevision: service.revision);
+        },
       );
       cancellation.check();
       final latest = await cancellation.bind(resolver.catalog());
@@ -97,14 +138,16 @@ class RoutingCapabilityProbe {
         throw const ConfigurationFailure('serviceConfigurationChanged');
       }
       await cancellation.bind(resolver.profiles.recordProbe(identity, reasoning));
-      return CapabilityProbeResult(identity: identity, accepted: true, profile: profile);
+      return CapabilityProbeResult(
+        identity: identity,
+        accepted: true,
+        profile: profile,
+        runId: context.runId,
+        usage: steps.records[context.runId]!.usage,
+      );
     } catch (_) {
       cancellation.check();
       rethrow;
-    } finally {
-      finished = true;
-      token.cancel();
-      transport.close();
     }
   }
 }

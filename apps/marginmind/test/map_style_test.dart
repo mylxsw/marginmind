@@ -171,7 +171,6 @@ void main() {
       WidgetTester tester,
       StudySetContent content, {
       (MapStructure, MapPalette)? preview,
-      EdgeInsets? fitInsets,
       String? selected,
       ThemeData? theme,
     }) async {
@@ -197,7 +196,6 @@ void main() {
               transformation: transform,
               focusNode: focus,
               previewStyle: preview,
-              fitInsets: fitInsets,
               onSelect: (_) {},
               onReveal: (_) {},
               onRename: (_) {},
@@ -314,16 +312,6 @@ void main() {
       expect(node(tester, 'c').right, lessThan(node(tester, rootNodeId).left));
       expect(decoration(tester, rootNodeId).color, MMColors.light.rootNode);
     });
-
-    testWidgets('fit insets keep the whole map clear of the covered area', (tester) async {
-      const insets = EdgeInsets.only(top: 56, right: 324, bottom: 56);
-      await pump(tester, _content(), fitInsets: insets);
-      final area = insets.deflateRect(Offset.zero & const Size(1200, 800));
-      for (final id in [rootNodeId, 'a', 'b', 'c', 'a1', 'a3']) {
-        final r = node(tester, id);
-        expect(area.contains(r.topLeft) && area.contains(r.bottomRight), isTrue, reason: id);
-      }
-    });
   });
 
   group('style popover in the map pane', () {
@@ -407,19 +395,34 @@ void main() {
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, pointer: 42);
       addTearDown(mouse.removePointer);
       await mouse.addPointer(location: Offset.zero);
+      final transform = canvas(tester).transformation;
+      transform.value = Matrix4.identity()
+        ..translateByDouble(130, 90, 0, 1)
+        ..scaleByDouble(0.85, 0.85, 1, 1);
+      await tester.pumpAndSettle();
+      final before = transform.value.clone();
+      Offset rootPosition() => tester.getTopLeft(find.byKey(const ValueKey(rootNodeId)));
+      final rootBefore = rootPosition();
+      void expectViewPreserved() {
+        expect(mapScale(transform.value), closeTo(0.85, 0.0001));
+        expect((rootPosition() - rootBefore).distance, lessThan(0.01));
+      }
+
       await clickStyle(tester, mouse);
       await tester.pumpAndSettle();
       expect(find.byType(MapStylePopover), findsOneWidget);
-      expect(canvas(tester).fitInsets, isNotNull, reason: 'the map makes way for the popover');
+      expect(transform.value, before, reason: 'opening styles must preserve pan and zoom');
       // Background controls add a section without exposing thumbnail labels.
       expect(find.byKey(const ValueKey('map-background-custom')), findsOneWidget);
 
       await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('map-structure-tree'))));
       await tester.pumpAndSettle();
       expect(canvas(tester).previewStyle, (MapStructure.tree, MapPalette.system));
+      expectViewPreserved();
       await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('map-palette-fresh'))));
       await tester.pumpAndSettle();
       expect(canvas(tester).previewStyle, (MapStructure.mind, MapPalette.fresh));
+      expectViewPreserved();
       expect(map().palette, MapPalette.system, reason: 'nothing is saved while previewing');
 
       await mouse.moveTo(const Offset(5, 500));
@@ -429,9 +432,11 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('map-structure-logic')));
       await tester.pumpAndSettle();
       expect(map().structure, MapStructure.logic);
+      expectViewPreserved();
       await tester.tap(find.byKey(const ValueKey('map-palette-morandi')));
       await tester.pumpAndSettle();
       expect(map().palette, MapPalette.morandi);
+      expectViewPreserved();
       expect(find.byType(MapStylePopover), findsOneWidget, reason: 'stays open to try more');
       // Choosing the current one again writes nothing.
       await controller.setMapPalette(MapPalette.morandi);
@@ -446,7 +451,22 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byType(MapStylePopover), findsNothing);
-      expect(canvas(tester).fitInsets, isNull);
+      expectViewPreserved();
+      expect(
+        transform.value.storage,
+        orderedEquals(before.storage.map((v) => closeTo(v, 0.0001))),
+        reason: 'leaving previews and undo restore the original view',
+      );
+      controller.setMapView(MapViewMode.outline);
+      await tester.pumpAndSettle();
+      controller.setMapView(MapViewMode.map);
+      await tester.pumpAndSettle();
+      expectViewPreserved();
+      await clickStyle(tester, mouse);
+      await tester.pumpAndSettle();
+      expectViewPreserved();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
       await settleHud(tester);
     });
 

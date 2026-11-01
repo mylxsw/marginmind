@@ -119,12 +119,24 @@ class RunResult<T> {
   final List<String> evidenceIds;
 }
 
+/// Model starts delimit unverified drafts (also on repairs and tool rounds).
+/// Lifecycle completion is emitted only after the validated result is stored.
+enum RunEventKind { lifecycle, modelStarted, draftDelta, toolStarted, toolCompleted }
+
 class RunEvent {
-  const RunEvent({required this.runId, required this.sequence, required this.status, this.stage, this.draft});
+  const RunEvent({
+    required this.runId,
+    required this.sequence,
+    required this.status,
+    this.stage,
+    this.draft,
+    this.kind = RunEventKind.lifecycle,
+  });
   final String runId;
   final int sequence;
   final RunStatus status;
   final String? stage, draft;
+  final RunEventKind kind;
 }
 
 class RunManifest {

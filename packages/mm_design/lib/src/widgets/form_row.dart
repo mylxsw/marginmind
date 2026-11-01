@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/mm_theme.dart';
+import 'dialog_scope.dart';
 
 /// macOS form row: right-aligned label column, control on the right.
 class MMFormRow extends StatelessWidget {
@@ -12,6 +13,20 @@ class MMFormRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (MMDialogScope.contains(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(label, style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel)),
+            const SizedBox(height: 8),
+            child,
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(

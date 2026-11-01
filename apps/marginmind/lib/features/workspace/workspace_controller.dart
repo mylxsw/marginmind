@@ -2467,53 +2467,44 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           },
         )
         .firstOrNull;
-    if (!isReference && (target is PdfTarget || target is TextTarget)) {
-      unawaited(openAnchorReference(SourceAnchor(target: target!)));
-      return;
-    }
-    if (target is PdfTarget) _revealPdf(target);
-    if (target is TextTarget) {
-      openDocument(target.documentId);
-      state = state.copyWith(reveal: RevealRequest.text(target.documentId, target.textAnchors, ++_revealNonce));
-    }
+    if (target != null) unawaited(revealAnchor(SourceAnchor(target: target)));
   }
 
-  /// Selects and centers the note's card in the active map (the map comes
-  /// back if it was put aside).
+  /// Selects and centers the note's card, preferring the active map and
+  /// restoring the owning map when the card only exists elsewhere.
   Future<void> locateNoteCard(String noteId) async {
-    final card = content.cards
-        .where((c) => c.researchNoteId == noteId && content.node(c.id, mapId: state.activeMapId) != null)
-        .firstOrNull;
-    if (card == null) return;
-    await _update((c) => _expandAncestors(c, card.id), undoable: false);
-    if (!ref.mounted) return;
-    state = state.copyWith(
-      selectedCardId: card.id,
-      locateCardTick: state.locateCardTick + 1,
-      clearPending: true,
-      mapView: MapViewMode.map,
-      layout: _layoutShowingMap,
+    final cards = content.cards.where((c) => c.researchNoteId == noteId).map((c) => c.id).toSet();
+    final nodes = content.nodes.where((n) => cards.contains(n.cardId));
+    final node = nodes.where((n) => n.mapId == state.activeMapId).firstOrNull ?? nodes.firstOrNull;
+    if (node == null) return;
+    await revealAnchor(
+      SourceAnchor(
+        mapId: node.mapId,
+        target: CardTarget(cardId: node.cardId),
+      ),
     );
-    _flash(cardId: card.id);
   }
 
   /// Back to where a research started: the page and sentence, or the node.
+  /// Main-workspace jumps reuse its reader/map. Companion links must opt in
+  /// through [openAnchorReference]; reference controllers keep their own scope.
   /// False when that place no longer exists.
-  Future<bool> revealAnchor(SourceAnchor anchor, {bool asReference = true}) async {
+  Future<bool> revealAnchor(SourceAnchor anchor, {bool asReference = false}) async {
     if (asReference && !isReference) return openAnchorReference(anchor);
     switch (anchor.target) {
       case PdfTarget target when content.document(target.documentId) != null:
         _revealPdf(target);
         return true;
       case TextTarget target when content.document(target.documentId) != null:
-        openDocument(target.documentId);
+        openDocument(target.documentId, followMap: false);
         state = state.copyWith(reveal: RevealRequest.text(target.documentId, target.textAnchors, ++_revealNonce));
         return true;
       case CardTarget(:final cardId):
         final mapId = anchor.mapId ?? state.activeMapId;
         if (!content.isPlaced(cardId, mapId: mapId)) return false;
         if (mapId != state.activeMapId) await selectMap(mapId);
-        if (!ref.mounted) return false;
+        if (!ref.mounted || state.activeMapId != mapId) return false;
+        if (!isReference) activateTab(WorkspaceTab.documents);
         await _update((c) => _expandAncestors(c, cardId), undoable: false);
         if (!ref.mounted) return false;
         state = state.copyWith(
@@ -2533,7 +2524,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void _revealPdf(PdfTarget target) {
     final page = target.pages.first;
-    openDocument(target.documentId);
+    openDocument(target.documentId, followMap: false);
     state = state.copyWith(reveal: RevealRequest(target.documentId, page.page, page.rects, ++_revealNonce));
   }
 
@@ -2790,7 +2781,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// source to a new excerpt.
   Future<void> showCardInMap(String cardId) async {
     final shown = await revealAnchor(SourceAnchor(target: CardTarget(cardId: cardId)));
-    if (shown && ref.mounted && isReference) setLayout(MMSplitMode.secondary);
+    if (shown && ref.mounted) setLayout(MMSplitMode.secondary);
   }
 
   MapEditReason? get mergeReason => _editor.mergeReason(content, state.selectedCardIds);
@@ -2835,15 +2826,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (index < 0 || index >= segments.length) return;
     final annotation = content.annotation(segments[index].annotationId ?? '');
     if (annotation == null) return;
-    if (!isReference) {
-      if (!annotation.needsReview) {
-        revealNoteAnnotation(annotation.id);
-      } else {
-        openDocumentReference(annotation.documentId);
-      }
-      return;
-    }
-    openDocument(annotation.documentId);
+    openDocument(annotation.documentId, followMap: false);
     if (annotation.needsReview) return;
     state = state.copyWith(
       selectedCardId: cardId,
@@ -2857,18 +2840,6 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void revealMapSource(CardSource source) {
     final document = content.document(source.documentId);
     if (document == null || source.page < 1 || source.page > document.pageCount) return;
-    if (!isReference) {
-      openDocumentReference(
-        source.documentId,
-        anchor: SourceAnchor(
-          target: PdfTarget(
-            documentId: source.documentId,
-            pages: [AnnotationPage(page: source.page, rects: const [])],
-          ),
-        ),
-      );
-      return;
-    }
     openDocument(source.documentId, followMap: false);
     state = state.copyWith(reveal: RevealRequest(source.documentId, source.page, const [], ++_revealNonce));
   }
@@ -2878,10 +2849,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final card = content.card(cardId);
     if (card == null) return;
     if (card.source case final source?) {
-      if (!isReference) {
-        revealMapSource(source);
-        return;
-      }
+      final document = content.document(source.documentId);
+      if (document == null || source.page < 1 || source.page > document.pageCount) return;
       openDocument(source.documentId, followMap: false);
       state = state.copyWith(
         selectedCardId: cardId,

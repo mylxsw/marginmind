@@ -2,6 +2,7 @@ import '../../shared/assistant_icon.dart';
 import 'widgets/workspace_desktop_shell.dart';
 import 'widgets/workspace_tabbed_content.dart';
 import 'widgets/workspace_tab_strip.dart';
+import 'widgets/workspace_history_controls.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -541,6 +542,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               onPressed: touchPlatform ? () => _setDrawer(true) : controller.showSidebar,
             ),
       actions: [
+        WorkspaceHistoryControls(studySetId: widget.studySetId, compact: true),
         if (!compact)
           MMToolbarGroup(
             children: [
@@ -741,6 +743,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  WorkspaceHistoryControls(studySetId: widget.studySetId, compact: true),
                                   if (MMPlatformCapabilities.current.assistant)
                                     SizedBox.square(
                                       dimension: MMSizes.phoneTopControl,
@@ -805,6 +808,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                   child: Row(
                                     children: [
                                       ?leading,
+                                      WorkspaceHistoryControls(studySetId: widget.studySetId, compact: true),
                                       Expanded(
                                         child: MMSegmentedControl<MMSplitMode>(
                                           key: const ValueKey('workspace-pane-switch'),

@@ -6,11 +6,13 @@ import 'package:mm_platform/mm_platform.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const nativeChrome = MethodChannel('macos_window_utils/window_manipulator');
+  const gestures = MethodChannel('marginmind/window_gestures');
   const manager = MethodChannel('window_manager');
   const screens = MethodChannel('dev.leanflutter.plugins/screen_retriever');
   final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   late List<MethodCall> chromeCalls;
   late List<MethodCall> windowCalls;
+  late List<MethodCall> gestureCalls;
   var maximized = false;
   var fullScreen = false;
 
@@ -18,7 +20,12 @@ void main() {
     fullScreen = false;
     chromeCalls = [];
     windowCalls = [];
+    gestureCalls = [];
     maximized = false;
+    messenger.setMockMethodCallHandler(gestures, (call) async {
+      gestureCalls.add(call);
+      return null;
+    });
     messenger.setMockMethodCallHandler(screens, (call) async {
       final display = {
         'id': 'primary',
@@ -53,6 +60,7 @@ void main() {
   tearDown(() {
     debugDefaultTargetPlatformOverride = null;
     messenger.setMockMethodCallHandler(nativeChrome, null);
+    messenger.setMockMethodCallHandler(gestures, null);
     messenger.setMockMethodCallHandler(manager, null);
     messenger.setMockMethodCallHandler(screens, null);
   });
@@ -70,6 +78,7 @@ void main() {
       'hideTitle',
     ]);
     expect(windowCalls.first.method, 'ensureInitialized');
+    expect(gestureCalls.map((call) => call.method), ['configure']);
     expect(
       windowCalls.map((call) => call.method),
       containsAllInOrder(['setBounds', 'setMinimumSize', 'setTitle', 'show', 'focus']),
@@ -85,6 +94,7 @@ void main() {
       await DesktopWindow.initialize(title: 'MarginMind', minimumSize: const Size(900, 600));
       await Future<void>.delayed(Duration.zero);
       expect(chromeCalls, isEmpty);
+      expect(gestureCalls, isEmpty);
       expect(windowCalls.map((call) => call.method), contains('show'));
     });
   }
@@ -97,17 +107,20 @@ void main() {
     await DesktopWindow.toggleZoom();
     expect(windowCalls, isEmpty);
     expect(chromeCalls, isEmpty);
+    expect(gestureCalls, isEmpty);
   });
 
-  test('empty chrome starts a native drag and toggles zoom in both directions', () async {
+  test('macOS window gestures use the explicit native entry points', () async {
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     DesktopWindow.startDragging();
     await DesktopWindow.toggleZoom();
-    expect(windowCalls.map((call) => call.method), ['startDragging', 'isMaximized', 'maximize']);
+    expect(windowCalls, isEmpty);
+    expect(gestureCalls.map((call) => call.method), ['startDragging', 'toggleZoom']);
     windowCalls.clear();
     maximized = true;
     await DesktopWindow.toggleZoom();
-    expect(windowCalls.map((call) => call.method), ['isMaximized', 'unmaximize']);
+    expect(windowCalls, isEmpty);
+    expect(gestureCalls.last.method, 'toggleZoom');
   });
 
   test('full screen follows the native events and the toggle goes the other way', () async {

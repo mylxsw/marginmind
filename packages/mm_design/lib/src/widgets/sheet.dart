@@ -7,11 +7,12 @@ import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'bottom_sheet.dart';
+import 'dialog_scope.dart';
 
-/// Presents a macOS-style sheet that drops from below the toolbar.
+/// Presents a compact modal form centered in the window.
 /// Esc cancels; clicking outside does nothing (sheets are modal to the
 /// window). A compact window shows it as a bottom sheet.
-Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder builder, double width = 460}) {
+Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder builder, double width = 420}) {
   if (MMSizeClass.of(context) == MMSizeClass.compact) return showMMBottomSheet<T>(context: context, builder: builder);
   final c = context.mmColors;
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
@@ -24,9 +25,9 @@ Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder
     pageBuilder: (context, _, _) => capturedThemes.wrap(
       SafeArea(
         child: Align(
-          alignment: Alignment.topCenter,
+          alignment: Alignment.center,
           child: Padding(
-            padding: const EdgeInsets.only(top: MMSizes.toolbarHeight + 8, left: 16, right: 16),
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 24 + MediaQuery.viewInsetsOf(context).bottom),
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: width),
               child: CallbackShortcuts(
@@ -169,16 +170,19 @@ class MMSheet extends StatelessWidget {
             ?titleTrailing,
           ],
         ),
-        const SizedBox(height: 18),
-        // A bottom sheet can be shorter than its content: the body scrolls.
-        if (bottomSheet) Flexible(child: SingleChildScrollView(child: child)) else child,
+        const SizedBox(height: 20),
+        // Keep actions visible when the window or keyboard limits the height.
+        Flexible(child: SingleChildScrollView(child: child)),
         if (actions.isNotEmpty) ...[
           const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (footer != null) ...[Expanded(child: footer!), const SizedBox(width: 10)],
-              for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
+              if (footer != null) ...[Expanded(child: footer!), const SizedBox(width: 12)],
+              Expanded(
+                flex: 2,
+                child: Wrap(alignment: WrapAlignment.end, spacing: 8, runSpacing: 8, children: actions),
+              ),
             ],
           ),
         ],
@@ -187,20 +191,22 @@ class MMSheet extends StatelessWidget {
     if (bottomSheet) {
       return Material(
         type: MaterialType.transparency,
-        child: Padding(padding: const EdgeInsets.fromLTRB(22, 4, 22, 18), child: column),
+        child: MMDialogScope(
+          child: Padding(padding: const EdgeInsets.fromLTRB(22, 4, 22, 18), child: column),
+        ),
       );
     }
     return Material(
       type: MaterialType.transparency,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
         decoration: BoxDecoration(
           color: c.card,
-          borderRadius: BorderRadius.circular(MMRadii.sheet),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: c.hairline, width: 0.5),
           boxShadow: c.sheetShadow,
         ),
-        child: column,
+        child: MMDialogScope(child: column),
       ),
     );
   }

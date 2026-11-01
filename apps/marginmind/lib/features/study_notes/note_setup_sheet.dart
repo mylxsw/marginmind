@@ -379,7 +379,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
       canPop: !_busy,
       child: MMSheet(
         title: l.noteSetupTitle,
-        actions: noteSheetActions(context, [
+        actions: [
           MMButton(label: l.cancel, onPressed: _busy ? null : () => Navigator.of(context).pop()),
           if (_advanced &&
               aiReady &&
@@ -398,7 +398,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                 ? null
                 : () => _generate(),
           ),
-        ]),
+        ],
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .65),
           child: SingleChildScrollView(

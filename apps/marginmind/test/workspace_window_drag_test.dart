@@ -13,6 +13,7 @@ import 'workspace_tabs_test.dart' show openTabs;
 
 void main() {
   const channel = MethodChannel('window_manager');
+  const gestures = MethodChannel('marginmind/window_gestures');
   final calls = <MethodCall>[];
   setUp(() {
     calls.clear();
@@ -20,10 +21,36 @@ void main() {
       calls.add(call);
       return call.method == 'isMaximized' ? false : null;
     });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(gestures, (call) async {
+      calls.add(call);
+      return null;
+    });
   });
-  tearDown(
-    () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null),
-  );
+  tearDown(() {
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, null);
+    messenger.setMockMethodCallHandler(gestures, null);
+  });
+
+  testWidgets('macOS sidebar controls keep the native window-button center when toggled and resized', (tester) async {
+    await openTabs(tester);
+    for (final size in [const Size(1536, 1092), const Size(1000, 800)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      final hide = find.byKey(const ValueKey('workspace-hide-sidebar'));
+      final expandedCenter = tester.getCenter(hide).dy;
+      expect(expandedCenter, 26);
+      await tester.tap(hide);
+      await tester.pumpAndSettle();
+      final show = find.byKey(const ValueKey('workspace-show-sidebar'));
+      expect(tester.getCenter(show).dy, expandedCenter);
+      expect(tester.getRect(show).left, greaterThanOrEqualTo(MMSizes.windowButtonsWidth));
+      await tester.tap(show);
+      await tester.pumpAndSettle();
+      expect(tester.getCenter(hide).dy, expandedCenter);
+    }
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   testWidgets('tab-row empty space drags and zooms the window; content toolbars do neither', (tester) async {
     await openTabs(tester);
@@ -36,7 +63,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 60));
     await tester.tap(gap, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
-    expect(calls.where((c) => c.method == 'maximize'), hasLength(1));
+    expect(calls.where((c) => c.method == 'toggleZoom'), hasLength(1));
 
     calls.clear();
     final readerMore = tester.getRect(find.byKey(const ValueKey('reader-more')));
@@ -47,7 +74,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 60));
     await tester.tapAt(readerEmpty, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
-    expect(calls.where((c) => c.method == 'startDragging' || c.method == 'maximize'), isEmpty);
+    expect(calls.where((c) => c.method == 'startDragging' || c.method == 'toggleZoom'), isEmpty);
     // The map/reader headers share the same content-only chrome scope.
     for (final element in find.byType(WorkspaceToolbar).evaluate()) {
       final chrome = MMWindowChrome.maybeOf(element);
@@ -68,7 +95,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('close-workspace-tab-documentMap')), kind: PointerDeviceKind.mouse);
     expect(owner.state.tabs.activeId, 'note:written');
     await tester.pumpAndSettle();
-    expect(calls.where((c) => c.method == 'startDragging' || c.method == 'maximize'), isEmpty);
+    expect(calls.where((c) => c.method == 'startDragging' || c.method == 'toggleZoom'), isEmpty);
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 

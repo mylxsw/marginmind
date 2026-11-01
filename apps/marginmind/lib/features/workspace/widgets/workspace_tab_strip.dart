@@ -149,7 +149,6 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
             if (overflow)
               Expanded(child: tabs)
             else ...[
-              const Expanded(child: MMWindowDragRegion()),
               SizedBox(width: tabsWidth, child: tabs),
               const Expanded(child: MMWindowDragRegion(key: ValueKey('workspace-tab-drag-area'))),
             ],

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'models.dart';
 
 enum TaskCategory { quick, heavy }
@@ -59,6 +61,20 @@ class TaskSpec {
   List<String> get knowledgePacks => type.knowledgePacks;
 }
 
+/// Inline image data only: remote URLs could bypass the host's network scope.
+/// The host must authorize the source before constructing a request.
+class TaskImage {
+  TaskImage({required this.base64Data, required this.mimeType}) {
+    if (!const {'image/png', 'image/jpeg', 'image/webp', 'image/gif'}.contains(mimeType) ||
+        base64Data.isEmpty ||
+        base64.decode(base64Data).isEmpty) {
+      throw const FormatException('Invalid task image');
+    }
+  }
+  final String base64Data, mimeType;
+  Map<String, dynamic> toJson() => {'base64Data': base64Data, 'mimeType': mimeType};
+}
+
 class TaskRequest<T> {
   TaskRequest({
     required this.spec,
@@ -68,7 +84,10 @@ class TaskRequest<T> {
     this.reasoning,
     this.maxOutputTokens,
     this.purpose = RunPurpose.task,
-  }) : input = freezeAgentJson(input);
+    List<TaskImage> images = const [],
+    this.streamDrafts = false,
+  }) : input = freezeAgentJson(input),
+       images = List.unmodifiable(images);
   final TaskSpec spec;
   final Map<String, dynamic> input;
   final String inputFingerprint;
@@ -76,6 +95,10 @@ class TaskRequest<T> {
   final ReasoningPolicy? reasoning;
   final int? maxOutputTokens;
   final RunPurpose purpose;
+  final List<TaskImage> images;
+
+  /// Drafts are unvalidated deltas. Only result carries the validated outcome.
+  final bool streamDrafts;
 }
 
 /// Raw versioned bindings preserve unknown task keys for forward-compatible storage.

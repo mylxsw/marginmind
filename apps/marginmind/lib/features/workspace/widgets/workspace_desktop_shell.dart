@@ -21,6 +21,7 @@ import 'reader_pane.dart';
 import 'right_panel.dart';
 import 'workspace_sidebar.dart';
 import 'workspace_toolbar.dart';
+import 'workspace_history_controls.dart';
 import 'workspace_tab_strip.dart';
 import 'workspace_tabbed_content.dart';
 
@@ -48,7 +49,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final owner = ref.read(workspaceProvider(studySetId).notifier);
     final c = context.mmColors;
     final touch = MMInput.of(context).touchPlatform;
-    final toolbarHeight = touch ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight;
+    final toolbarHeight = _titlebarHeight(context);
     final documents = state.tabs.active?.kind == WorkspaceTabKind.documentMap;
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
@@ -81,7 +82,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   ),
                 ),
                 child: CustomMultiChildLayout(
-                  delegate: _CenteredTitlebarLayout(),
+                  delegate: _WorkspaceTitlebarLayout(),
                   children: [
                     LayoutId(
                       id: _TitlebarSlot.leading,
@@ -92,14 +93,18 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                             _ => 0,
                           },
                         ),
-                        child: !sidebarVisible || touch
-                            ? MMIconButton(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!sidebarVisible || touch)
+                              MMIconButton(
                                 key: const ValueKey('workspace-show-sidebar'),
                                 icon: MMIcons.sidebar,
                                 tooltip: l.showSidebar,
                                 onPressed: onShowSidebar,
-                              )
-                            : const SizedBox.shrink(),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                     LayoutId(
@@ -111,6 +116,16 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          WorkspaceHistoryControls(studySetId: studySetId),
+                          if (documents ||
+                              (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant))
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: SizedBox(
+                                height: 18,
+                                child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
+                              ),
+                            ),
                           if (documents) ...[
                             Container(
                               key: const ValueKey('workspace-layout-controls'),
@@ -325,11 +340,16 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     );
   }
 
+  // AppKit's unified toolbar and the expanded sidebar both center controls
+  // at y=26. The collapsed button must use that same 52-point title row.
+  double _titlebarHeight(BuildContext context) => context.mmTouchPlatform || WindowChrome.showsWindowButtons
+      ? MMSizes.windowTitlebarHeight
+      : MMSizes.desktopWindowTitlebarHeight;
+
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;
     final width = box.maxWidth - (hasPanel && box.maxWidth >= 700 ? math.min(360.0, box.maxWidth) : 0);
-    final height =
-        box.maxHeight - (context.mmTouchPlatform ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight);
+    final height = box.maxHeight - _titlebarHeight(context);
     final vertical = context.mmTablet && height > width;
     return MMSplitView.effectiveMode(
       layout,
@@ -345,21 +365,23 @@ class WorkspaceDesktopShell extends ConsumerWidget {
 
 enum _TitlebarSlot { leading, title, trailing }
 
-/// Measure the side controls first so the tabs stay at the workspace centre,
-/// even when the sidebar toggle or assistant changes visibility.
-class _CenteredTitlebarLayout extends MultiChildLayoutDelegate {
+/// Reserve each side control's actual width so tabs start beside the leading
+/// controls without overlapping the trailing actions.
+class _WorkspaceTitlebarLayout extends MultiChildLayoutDelegate {
   @override
   void performLayout(Size size) {
     final sideConstraints = BoxConstraints(maxWidth: size.width / 2, maxHeight: size.height);
     final leading = layoutChild(_TitlebarSlot.leading, sideConstraints);
     final trailing = layoutChild(_TitlebarSlot.trailing, sideConstraints);
-    final inset = math.max(leading.width, trailing.width);
     positionChild(_TitlebarSlot.leading, Offset(0, (size.height - leading.height) / 2));
     positionChild(_TitlebarSlot.trailing, Offset(size.width - trailing.width, (size.height - trailing.height) / 2));
-    layoutChild(_TitlebarSlot.title, BoxConstraints.tight(Size(math.max(0, size.width - inset * 2), size.height)));
-    positionChild(_TitlebarSlot.title, Offset(inset, 0));
+    layoutChild(
+      _TitlebarSlot.title,
+      BoxConstraints.tight(Size(math.max(0, size.width - leading.width - trailing.width), size.height)),
+    );
+    positionChild(_TitlebarSlot.title, Offset(leading.width, 0));
   }
 
   @override
-  bool shouldRelayout(_CenteredTitlebarLayout oldDelegate) => false;
+  bool shouldRelayout(_WorkspaceTitlebarLayout oldDelegate) => false;
 }

@@ -41,7 +41,7 @@ abstract final class MMIcons {
   static const IconData pageZoom = LucideIcons.scaling;
   static const IconData zoomControl = LucideIcons.zoomIn;
   static const IconData crop = LucideIcons.crop;
-  static const IconData locate = LucideIcons.locateFixed;
+  static const IconData locate = LucideIcons.crosshair;
   static const IconData home = LucideIcons.house;
   static const IconData sidebar = LucideIcons.panelLeft;
   static const IconData sidebarClose = LucideIcons.panelLeftClose;
@@ -73,7 +73,8 @@ abstract final class MMIcons {
   static const IconData aiTasks = LucideIcons.split;
   static const IconData research = LucideIcons.fileSearch;
   static const IconData info = LucideIcons.info;
-  static const IconData select = LucideIcons.mousePointer2;
+  // Preserve the reader's established selection cursor when updating menu icons.
+  static const IconData select = CupertinoIcons.cursor_rays;
   static const IconData underline = LucideIcons.pencilLine;
   static const IconData highlight = LucideIcons.highlighter;
   static const IconData mapStyle = LucideIcons.paintbrush;
@@ -86,6 +87,7 @@ abstract final class MMIcons {
   static const IconData inkArrow = LucideIcons.arrowUpRight;
   static const IconData inkEraser = LucideIcons.eraser;
   static const IconData undo = LucideIcons.undo2;
+  static const IconData redo = LucideIcons.redo2;
   static const IconData text = LucideIcons.type;
   static const IconData syncToMap = LucideIcons.gitBranch;
   static const IconData layoutReader = LucideIcons.fileText;
@@ -184,9 +186,9 @@ abstract final class MMIcons {
   static const IconData skip = LucideIcons.stepForward;
 }
 
-/// Lucide vocabulary for reader commands, including toolbar overflow entries.
+/// Shared vocabulary for reader commands, including toolbar overflow entries.
 abstract final class MMReaderIcons {
-  static const select = LucideIcons.mousePointer2;
+  static const select = MMIcons.select;
   static const underline = LucideIcons.underline;
   static const pen = LucideIcons.pencil;
   static const area = LucideIcons.scan;

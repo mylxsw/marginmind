@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/workspace_sidebar.dart';
 import 'package:marginmind/features/workspace/widgets/browser_pane.dart';
+import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_browser.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/document_import.dart';
@@ -43,6 +44,11 @@ void main() {
     await tester.pump();
     final owner = container.read(workspaceBrowserProvider('demo-1').notifier);
     expect(container.read(workspaceBrowserProvider('demo-1')).visible, isTrue);
+    final browserReader = find.byType(ReaderPane);
+    expect(
+      find.descendant(of: browserReader, matching: find.byKey(const ValueKey('map-more'))).hitTestable(),
+      findsNothing,
+    );
     final imports = container.read(documentImportsProvider('demo-1').notifier);
     final task = imports.add('Pending.epub');
     await tester.pump();

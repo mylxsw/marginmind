@@ -172,7 +172,7 @@ class ResearchNoteView extends ConsumerWidget {
                     MMButton(
                       label: l.researchLocate,
                       variant: MMButtonVariant.plain,
-                      onPressed: () => workspace.revealNoteInSource(note.id),
+                      onPressed: () => workspace.revealAnchor(SourceAnchor(target: a.target)),
                     ),
                   MMButton(
                     key: ValueKey('detach-${a.id}'),
@@ -187,6 +187,12 @@ class ResearchNoteView extends ConsumerWidget {
                 icon: MMIcons.document,
                 label: content.document(documentId)?.title ?? l.researchOriginGone,
                 actions: [
+                  if (content.document(documentId) != null)
+                    MMButton(
+                      label: l.researchLocate,
+                      variant: MMButtonVariant.plain,
+                      onPressed: () => workspace.revealAnchor(SourceAnchor(target: a.target)),
+                    ),
                   MMButton(
                     label: l.researchDetach,
                     variant: MMButtonVariant.plain,
@@ -205,7 +211,7 @@ class ResearchNoteView extends ConsumerWidget {
                     MMButton(
                       label: l.researchLocate,
                       variant: MMButtonVariant.plain,
-                      onPressed: () => workspace.locateNoteCard(note.id),
+                      onPressed: () => workspace.revealAnchor(SourceAnchor(target: a.target, mapId: mapId)),
                     ),
                 ],
               ),

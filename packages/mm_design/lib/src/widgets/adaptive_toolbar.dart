@@ -133,7 +133,12 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
       _navigator = Navigator.of(context);
       _width = constraints.maxWidth;
       return FocusTraversalGroup(
-        policy: _VisibleToolbarTraversal(_hidden, _compacted),
+        policy: _VisibleToolbarTraversal(
+          _hidden,
+          _compacted,
+          menuFocus: _menuFocus,
+          hasMenu: () => widget.menuEntries.isNotEmpty || _hidden.isNotEmpty,
+        ),
         child: _ToolbarLayout(
           ids: [for (final item in widget.items) item.id],
           priorities: [for (final item in widget.items) item.priority],
@@ -144,6 +149,7 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
           menuBeforeId: widget.menuBeforeId,
           trailingIds: widget.trailingIds,
           groups: widget.groups,
+          hasMenuEntries: widget.menuEntries.isNotEmpty,
           groupColor: context.mmColors.quaternaryFill,
           onLayout: _reconcileFocus,
           children: [
@@ -199,14 +205,17 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
 }
 
 class _VisibleToolbarTraversal extends WidgetOrderTraversalPolicy {
-  _VisibleToolbarTraversal(this.hidden, this.compacted);
+  _VisibleToolbarTraversal(this.hidden, this.compacted, {required this.menuFocus, required this.hasMenu});
   final Set<String> hidden, compacted;
+  final FocusNode menuFocus;
+  final bool Function() hasMenu;
   @override
   Iterable<FocusNode> sortDescendants(Iterable<FocusNode> descendants, FocusNode currentNode) => super
       .sortDescendants(descendants, currentNode)
       .where(
         (node) => ![node, ...node.ancestors].any(
           (ancestor) =>
+              (identical(ancestor, menuFocus) && !hasMenu()) ||
               hidden.any((id) => ancestor.debugLabel == 'toolbar-item:$id') ||
               (ancestor.debugLabel?.startsWith('toolbar-variant:') == true &&
                   (ancestor.debugLabel!.endsWith(':full')
@@ -228,6 +237,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
     required this.trailingIds,
     required this.groups,
     required this.groupColor,
+    required this.hasMenuEntries,
     required this.onLayout,
     required super.children,
   });
@@ -240,6 +250,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
   final Set<String> trailingIds;
   final List<Set<String>> groups;
   final Color groupColor;
+  final bool hasMenuEntries;
   final VoidCallback onLayout;
   @override
   RenderObject createRenderObject(BuildContext context) => _ToolbarBox(
@@ -253,6 +264,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
     trailingIds,
     groups,
     groupColor,
+    hasMenuEntries,
     onLayout,
   );
   @override
@@ -266,6 +278,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
       ..trailingIds = trailingIds
       ..groups = groups
       ..groupColor = groupColor
+      ..hasMenuEntries = hasMenuEntries
       ..onLayout = onLayout
       ..markNeedsLayout();
   }
@@ -288,11 +301,13 @@ class _ToolbarBox extends RenderBox
     this.trailingIds,
     this.groups,
     this.groupColor,
+    this.hasMenuEntries,
     this.onLayout,
   );
   Set<String> trailingIds;
   List<Set<String>> groups;
   Color groupColor;
+  bool hasMenuEntries;
   VoidCallback onLayout;
   String? menuBeforeId;
   List<String> ids;
@@ -342,7 +357,7 @@ class _ToolbarBox extends RenderBox
         : spacing;
     List<int> visibleIndices() => [
       for (final i in indices)
-        if (i == ids.length || visible[i]) i,
+        if (i == ids.length ? hasMenuEntries || hidden.isNotEmpty : visible[i]) i,
     ];
     double measuredWidth(List<int> shown) {
       var result = 0.0;
@@ -391,7 +406,9 @@ class _ToolbarBox extends RenderBox
       x += child.size.width;
     }
     for (var i = 0; i < controls.length; i++) {
-      (controls[i].parentData! as _ToolbarData).visible = i == ids.length || visible[i];
+      (controls[i].parentData! as _ToolbarData).visible = i == ids.length
+          ? hasMenuEntries || hidden.isNotEmpty
+          : visible[i];
     }
     markNeedsSemanticsUpdate();
     onLayout();

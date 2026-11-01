@@ -142,7 +142,6 @@ class MindMapCanvas extends StatefulWidget {
     this.flashAnnotationId,
     this.onRevealSegment,
     this.previewStyle,
-    this.fitInsets,
     this.toolbarTopInset = 60,
     this.touchSelectionMode,
     this.expansion,
@@ -174,10 +173,6 @@ class MindMapCanvas extends StatefulWidget {
   /// A structure and palette shown in place of the map's own while they are
   /// previewed; nothing is saved.
   final (MapStructure, MapPalette)? previewStyle;
-
-  /// While set, the whole map is kept in view within the viewport less these
-  /// insets (the part a popover covers), also as a preview changes it.
-  final EdgeInsets? fitInsets;
 
   /// Bottom of the pane's fixed controls, in viewport coordinates.
   final double toolbarTopInset;
@@ -941,7 +936,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       case MindMapCommand.up || MindMapCommand.down:
         if (selected != null) widget.onShift(command == MindMapCommand.up ? -1 : 1);
       case MindMapCommand.fit:
-        _fit(widget.fitInsets ?? EdgeInsets.zero);
+        _fit(EdgeInsets.zero);
       case MindMapCommand.center:
         _centerOn(selected ?? rootNodeId, math.max(mapLocateScale, mapScale(widget.transformation.value)));
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
@@ -2108,10 +2103,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Set<String> _firstLevel = const {};
   TreeLayoutResult? _branchesLayout;
 
-  /// The insets, layout and viewport the view was last fitted to while
-  /// [MindMapCanvas.fitInsets] is set: each change fits again once.
-  (EdgeInsets, TreeLayoutResult, Size)? _lastFit;
-
   /// How a node is colored by the palette: the root, and the topics of the
   /// first level. Null keeps the node's own look.
   _NodeLook? _lookOf(String id, _NodeSpec spec, MMMapColors palette, MMColors c) {
@@ -2190,6 +2181,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (field != null) trackField(shown: specs.containsKey(_visibleNode(field.id)));
     final hadLayout = _layout != null;
     final layoutChanged = !identical(result, _layout);
+    final structureChanged = hadLayout && result.structure != _layout!.structure;
     final merging = _mergeAnchor != null;
     _animateTo(result, _layout);
     _layout = result;
@@ -2199,23 +2191,15 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     _keepViewportAnchorInPlace(result);
     _mergeAnchor = null;
     final sceneSize = _sceneSize(result);
-    final fitting = widget.fitInsets;
     if (widget.expansion != null && layoutChanged && !_manualExpansionViewport) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || widget.expansion == null || _manualExpansionViewport) return;
         _fitExpansion();
       });
     }
-    if (fitting != null) {
-      final fit = (fitting, result, _viewport);
-      if (fit != _lastFit) {
-        _lastFit = fit;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && widget.fitInsets == fitting) _fit(fitting);
-        });
-      }
-    } else if (!merging && ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null))) {
-      _lastFit = null;
+    if (!merging &&
+        !structureChanged &&
+        ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null))) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final id = widget.editingCardId ?? _selectedNodeId;
         if (mounted && id != null) _ensureVisible(id, settled: true);
