@@ -147,7 +147,7 @@ class _MMSidebarSectionState extends State<MMSidebarSection> {
                       ),
                     ),
                     if (widget.titleTrailing != null) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       widget.titleTrailing!,
                     ],
                   ],
@@ -339,15 +339,16 @@ class MMBetaBadge extends StatelessWidget {
     final fg = inverted ? c.onAccent : c.research;
     return ExcludeSemantics(
       child: Container(
-        height: 16,
-        padding: const EdgeInsets.symmetric(horizontal: 5),
+        height: 14,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
         child: Text(
           label,
           style: context.mmText.footnote.copyWith(
-            fontSize: 10,
-            height: 1.1,
+            fontSize: 9,
+            height: 1.0,
+            letterSpacing: -0.1,
             fontWeight: FontWeight.w600,
             color: fg,
           ),
