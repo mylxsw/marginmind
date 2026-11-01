@@ -41,7 +41,7 @@ abstract final class MMIcons {
   static const IconData pageZoom = LucideIcons.scaling;
   static const IconData zoomControl = LucideIcons.zoomIn;
   static const IconData crop = LucideIcons.crop;
-  static const IconData locate = LucideIcons.locateFixed;
+  static const IconData locate = LucideIcons.crosshair;
   static const IconData home = LucideIcons.house;
   static const IconData sidebar = LucideIcons.panelLeft;
   static const IconData sidebarClose = LucideIcons.panelLeftClose;
