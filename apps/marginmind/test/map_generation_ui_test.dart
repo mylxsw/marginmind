@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:marginmind/features/assistant/widgets/expansion_widgets.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -263,6 +265,56 @@ void main() {
   });
 
   group('Generation & Review Flow', () {
+    testWidgets('double-click editing restores the exact generated branch selection without waiting for a frame', (
+      tester,
+    ) async {
+      final fake = FakeMapGenerator(
+        chapters: {
+          'c1-all': ['{"k":"point","id":"p1","title":"Point"}'],
+        },
+        generation: [
+          '{"ref":"p","parent":"ROOT","title":"Parent timing"}',
+          '{"ref":"c","parent":"p","title":"Kept timing child"}',
+          '{"ref":"x","parent":"p","title":"Excluded timing child"}',
+        ],
+      );
+      final container = await openWorkspace(
+        tester,
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
+      );
+      final provider = mapGenerationControllerProvider('demo-1');
+      final controller = container.read(provider.notifier);
+      await runGeneration(
+        tester,
+        () => controller.start(
+          const MapGenerationRequest(
+            studySetId: 'demo-1',
+            mapId: 'timing-map',
+            title: 'Click timing',
+            sources: [MapDocumentSelection(documentId: 'c1')],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final excluded = container.read(provider)!.lines.firstWhere((d) => d.title == 'Excluded timing child');
+      controller.toggle(excluded.id, false);
+      await tester.pumpAndSettle();
+      Map<String, bool> selection() => {for (final d in container.read(provider)!.lines) d.id: d.kept};
+      final before = selection();
+      final parent = find.text('Parent timing');
+      await tester.ensureVisible(parent);
+      await tester.tap(parent, kind: PointerDeviceKind.mouse);
+      expect(selection().values, everyElement(false));
+      await tester.tap(parent, kind: PointerDeviceKind.mouse);
+      expect(selection(), before);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(MapGhostNode), matching: find.byType(TextField)), findsOneWidget);
+      await key(tester, LogicalKeyboardKey.escape);
+      expect(selection(), before);
+      controller.discard();
+      await settleHud(tester);
+    });
+
     testWidgets('Reading skeletons -> Streaming ghost nodes -> Review -> Keep creates map with source chip', (
       tester,
     ) async {

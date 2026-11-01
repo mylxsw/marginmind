@@ -1670,16 +1670,22 @@ class _NoteEditableTextState extends State<NoteEditableText> {
           onCancel: () => setState(() => _editing = false),
           onTapOutside: _commit,
         )
-      : GestureDetector(
-          onDoubleTap: widget.onReadTap == null ? null : _edit,
-          child: MMInteractive(
-            onTap: widget.onReadTap ?? _edit,
-            builder: (_, _) => ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: MMNoteLayout.blockButton),
-              child: Text(widget.text.isEmpty ? ' ' : widget.text, style: widget.style),
-            ),
-          ),
+      : widget.onReadTap == null
+      ? _readText()
+      : Row(
+          children: [
+            Expanded(child: _readText()),
+            MMIconButton(icon: MMIcons.editNote, tooltip: context.l10n.editNote, onPressed: _edit),
+          ],
         );
+
+  Widget _readText() => MMInteractive(
+    onTap: widget.onReadTap ?? _edit,
+    builder: (_, _) => ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: MMNoteLayout.blockButton),
+      child: Text(widget.text.isEmpty ? ' ' : widget.text, style: widget.style),
+    ),
+  );
 
   void _edit() {
     _controller.text = widget.text;

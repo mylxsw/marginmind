@@ -44,6 +44,14 @@ import 'phone_scroll_physics.dart';
 
 const _pageShadow = BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2));
 
+/// Acknowledges the viewer's later classified tap after the host has already
+/// handled pointer-up. This timer only expires bookkeeping; it never delays UI.
+class _PdfTapReceipt {
+  _PdfTapReceipt(this.position);
+  final Offset position;
+  Timer? expiry;
+}
+
 class _MarginPaperPainter extends CustomPainter {
   const _MarginPaperPainter(this.viewport, this.color, this.borderColor);
   final Color? borderColor;
@@ -1414,6 +1422,8 @@ class _MMPdfViewState extends State<MMPdfView> {
     }
     if (cropChanged) _marginEpoch++;
     if (cropChanged && _ready) {
+      _annotationLinks.clear();
+      _annotationLinkRequests.clear();
       _restorePosition ??= widget.controller.readingPosition;
       _restoreZoom ??= _controller.currentZoom;
       _overlayCache.clear();
@@ -1455,6 +1465,10 @@ class _MMPdfViewState extends State<MMPdfView> {
     _indexInk();
     if (widget.ink == null || widget.ink!.tool != oldWidget.ink?.tool) _inkCancel();
     if (oldWidget.filePath != widget.filePath) {
+      _annotationLinks.clear();
+      _annotationLinkRequests.clear();
+      _annotationDown = null;
+      _clearTapReceipts();
       for (final token in _cropTokens) {
         token.cancel();
       }
@@ -1535,6 +1549,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   void _viewportChanged() {
+    _annotationDown = null;
     _selectionEpoch++;
     // The area rectangle is anchored to the document while it scrolls; the
     // viewer may adjust its transform during layout, so repaint after it.
@@ -1553,6 +1568,9 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   @override
   void dispose() {
+    _clearTapReceipts();
+    _lastTapWindow?.cancel();
+    _lastTapMinimum?.cancel();
     for (final token in _cropTokens) {
       token.cancel();
     }
@@ -1798,6 +1816,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   List<Widget> _pageOverlays(BuildContext context, Rect pageRect, PdfPage page) {
+    _prepareAnnotationLinks(page.pageNumber);
     final cached = _highlightOverlays(context, pageRect, page);
     final paragraphs = widget.paragraphs.where((p) => p.page == page.pageNumber).toList();
     final highlights = paragraphs.isEmpty
@@ -1848,7 +1867,8 @@ class _MMPdfViewState extends State<MMPdfView> {
     ];
   }
 
-  bool _tapHighlight(MMPdfHighlight h) {
+  bool _tapHighlight(MMPdfHighlight h, {Offset? acknowledgedPosition}) {
+    if (acknowledgedPosition != null && _acknowledgeTap(acknowledgedPosition)) return true;
     if (widget.ink != null || widget.cropEditorBuilder != null || widget.areaSelecting) return false;
     _selectionEpoch++;
     widget.onHighlightTap?.call(h.id, _highlightViewportRect(h));
@@ -1874,11 +1894,16 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   bool _tapNearbyHighlight(Offset point) {
+    final highlight = _nearbyHighlight(point);
+    return highlight != null && _tapHighlight(highlight);
+  }
+
+  MMPdfHighlight? _nearbyHighlight(Offset point) {
     if (widget.onHighlightTap == null ||
         widget.ink != null ||
         widget.cropEditorBuilder != null ||
         widget.areaSelecting) {
-      return false;
+      return null;
     }
     // Keep the page-specific highlight: one annotation id may span pages.
     final lines = <(MMPdfHighlight, Rect)>[];
@@ -1897,9 +1922,9 @@ class _MMPdfViewState extends State<MMPdfView> {
     final highlight = hitAnnotation(
       _controller.documentToLocal(point),
       lines,
-      tolerance: _textPointerKind == PointerDeviceKind.touch ? 12 : 3,
+      tolerance: !_nearHitsReady(point) ? 0 : (_textPointerKind == PointerDeviceKind.touch ? 12 : 3),
     );
-    return highlight != null && _tapHighlight(highlight);
+    return highlight;
   }
 
   List<Widget> _highlightOverlays(BuildContext context, Rect pageRect, PdfPage page) {
@@ -1963,8 +1988,11 @@ class _MMPdfViewState extends State<MMPdfView> {
               return Positioned.fromRect(
                 rect: rect.inflate(1),
                 child: PdfOverlayInteractionRegion(
-                  onTap: (_) => _tapHighlight(h),
-                  onLongPress: (_) => _tapHighlight(h),
+                  onTap: (details) => _tapHighlight(h, acknowledgedPosition: details.globalPosition),
+                  onLongPress: (_) {
+                    _annotationDown = null;
+                    return _tapHighlight(h);
+                  },
                   child: IgnorePointer(
                     child: h.lineStyle != null || h.dashed
                         ? CustomPaint(
@@ -1996,42 +2024,27 @@ class _MMPdfViewState extends State<MMPdfView> {
                 width: size,
                 height: size,
                 child: MouseRegion(
-                  opaque: !widget.useTouchSelectionHandles,
+                  opaque: false,
                   hitTestBehavior: HitTestBehavior.translucent,
                   cursor: SystemMouseCursors.click,
                   onEnter: (event) => _markerHover(h, event, true),
                   onExit: (event) => _markerHover(h, event, false),
-                  child: Builder(
-                    builder: (context) {
-                      final icon = IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(color: h.marker, shape: BoxShape.circle),
-                          child: Icon(
-                            h.markerIcon ?? Icons.sticky_note_2_outlined,
-                            size: size * 0.62,
-                            color: Colors.white,
-                          ),
-                        ),
-                      );
-                      // A desktop icon is a button: bypass the viewer's double-tap
-                      // recognizer. Touch keeps the shared pan/pinch gesture path.
-                      if (widget.useTouchSelectionHandles) {
-                        return PdfOverlayInteractionRegion(
-                          onTap: (_) => _tapHighlight(h),
-                          onLongPress: (_) => _tapHighlight(h),
-                          child: icon,
-                        );
-                      }
-                      return Listener(
-                        onPointerSignal: _controller.handlePointerSignalEvent,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _tapHighlight(h),
-                          onLongPress: () => _tapHighlight(h),
-                          child: icon,
-                        ),
-                      );
+                  child: PdfOverlayInteractionRegion(
+                    onTap: (details) => _tapHighlight(h, acknowledgedPosition: details.globalPosition),
+                    onLongPress: (_) {
+                      _annotationDown = null;
+                      return _tapHighlight(h);
                     },
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(color: h.marker, shape: BoxShape.circle),
+                        child: Icon(
+                          h.markerIcon ?? Icons.sticky_note_2_outlined,
+                          size: size * .62,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               );
@@ -2288,6 +2301,130 @@ class _MMPdfViewState extends State<MMPdfView> {
     if (commit && mounted && epoch == _pencilEpoch) await _commitSelection();
   }
 
+  final _tapPointers = <int>{};
+  PointerDownEvent? _annotationDown;
+  bool _annotationMoved = false, _annotationSecondTap = false;
+  Offset? _lastTapPosition;
+  PointerDeviceKind? _lastTapKind;
+  Timer? _lastTapWindow, _lastTapMinimum;
+  final _tapReceipts = <_PdfTapReceipt>[];
+  final _annotationLinks = <int, List<PdfLink>>{};
+  final _annotationLinkRequests = <int>{};
+
+  void _clearTapReceipts() {
+    for (final receipt in _tapReceipts) {
+      receipt.expiry?.cancel();
+    }
+    _tapReceipts.clear();
+  }
+
+  bool _acknowledgeTap(Offset position) {
+    final index = _tapReceipts.indexWhere((r) => (r.position - position).distance < 2);
+    if (index < 0) return false;
+    _tapReceipts.removeAt(index).expiry?.cancel();
+    return true;
+  }
+
+  void _annotationPointerDown(PointerDownEvent event) {
+    _tapPointers.add(event.pointer);
+    _annotationDown = null;
+    if (_tapPointers.length != 1 ||
+        event.buttons != kPrimaryButton ||
+        (event.kind != PointerDeviceKind.mouse && event.kind != PointerDeviceKind.touch)) {
+      return;
+    }
+    _annotationSecondTap =
+        _lastTapWindow?.isActive == true &&
+        _lastTapKind == event.kind &&
+        _lastTapPosition != null &&
+        (event.position - _lastTapPosition!).distance <= kDoubleTapSlop &&
+        (event.kind == PointerDeviceKind.mouse || _lastTapMinimum?.isActive == false);
+    _lastTapWindow?.cancel();
+    _lastTapMinimum?.cancel();
+    _annotationMoved = false;
+    _annotationDown = event;
+  }
+
+  void _annotationPointerMove(PointerMoveEvent event) {
+    final down = _annotationDown;
+    if (down != null &&
+        event.pointer == down.pointer &&
+        (event.position - down.position).distance > computeHitSlop(event.kind, null)) {
+      _annotationMoved = true;
+    }
+  }
+
+  bool _annotationPointerUp(PointerUpEvent event) {
+    _tapPointers.remove(event.pointer);
+    final down = _annotationDown;
+    _annotationDown = null;
+    if (down == null ||
+        down.pointer != event.pointer ||
+        _annotationMoved ||
+        !_ready ||
+        (event.timeStamp - down.timeStamp) >= kLongPressTimeout ||
+        widget.onHighlightTap == null ||
+        widget.ink != null ||
+        widget.cropEditorBuilder != null ||
+        widget.areaSelecting) {
+      return false;
+    }
+    if (_annotationSecondTap) return false;
+    _lastTapPosition = event.position;
+    _lastTapKind = event.kind;
+    _lastTapMinimum = Timer(kDoubleTapMinTime, () {});
+    _lastTapWindow = Timer(kDoubleTapTimeout, () {});
+    final point = _controller.localToDocument(event.localPosition);
+    final highlight = _markerAt(event.localPosition) ?? _nearbyHighlight(point);
+    if (highlight == null) return false;
+    final receipt = _PdfTapReceipt(event.position);
+    _tapReceipts.add(receipt);
+    receipt.expiry = Timer(kDoubleTapTimeout * 2, () => _tapReceipts.remove(receipt));
+    return _tapHighlight(highlight);
+  }
+
+  MMPdfHighlight? _markerAt(Offset local) {
+    for (final page in _controller.layout.pageLayouts.asMap().entries) {
+      final tl = _controller.documentToLocal(page.value.topLeft);
+      final br = _controller.documentToLocal(page.value.bottomRight);
+      if (!Rect.fromPoints(tl, br).contains(local)) continue;
+      for (final h in (_highlightsByPage[page.key + 1] ?? <MMPdfHighlight>[]).reversed) {
+        if (h.marker == null || h.rects.isEmpty) continue;
+        final size = ((br.dx - tl.dx) * .03).clamp(14.0, 22.0);
+        final first = _originalRect(h.page, h.rects.first);
+        final y = _controller.documentToLocal(first.center).dy;
+        if (Rect.fromLTWH(br.dx - size * 1.6, y - size / 2, size, size).contains(local)) return h;
+      }
+    }
+    return null;
+  }
+
+  void _prepareAnnotationLinks(int page) {
+    if (!_ready || _highlightsByPage[page]?.isNotEmpty != true || !_annotationLinkRequests.add(page)) return;
+    final document = _controller.document;
+    unawaited(
+      _originalPage(page).loadLinks().then(
+        (links) {
+          if (mounted && _ready && identical(document, _controller.document)) _annotationLinks[page] = links;
+        },
+        onError: (Object _) {
+          if (mounted && _ready && identical(document, _controller.document)) _annotationLinks[page] = const [];
+        },
+      ),
+    );
+  }
+
+  bool _nearHitsReady(Offset point) {
+    final index = _controller.layout.pageLayouts.indexWhere((r) => r.contains(point));
+    if (index < 0) return true;
+    final links = _annotationLinks[index + 1];
+    // Exact marks may open immediately while link metadata is loading. A
+    // nearby mark must never steal a footnote/link's precise hit target.
+    if (links == null) return false;
+    final original = _transform(index + 1).toPdf(point);
+    return !links.any((link) => link.rects.any((r) => r.containsPoint(PdfPoint(original.dx, original.dy))));
+  }
+
   Offset? _textDragStart;
   PointerDeviceKind? _textPointerKind;
 
@@ -2299,6 +2436,7 @@ class _MMPdfViewState extends State<MMPdfView> {
             event.kind == PointerDeviceKind.mouse);
     final start = _textDragStart;
     _textDragStart = null;
+    if (_annotationPointerUp(event)) return;
     if (!directStylus || !_pencilDragged) unawaited(_commitSelection());
     if (start == null ||
         widget.onTextUnavailable == null ||
@@ -2600,6 +2738,7 @@ class _MMPdfViewState extends State<MMPdfView> {
       onPointerSignal: (_) => _marginInputEpoch++,
       onPointerPanZoomStart: (_) => _marginInputEpoch++,
       onPointerDown: (event) {
+        _annotationPointerDown(event);
         _marginInputEpoch++;
         _textDragStart = event.localPosition;
         _textPointerKind = event.kind;
@@ -2613,8 +2752,13 @@ class _MMPdfViewState extends State<MMPdfView> {
         _selectionEpoch++;
         if (_cleanSelection != null) setState(() => _cleanSelection = null);
       },
+      onPointerMove: _annotationPointerMove,
       onPointerUp: _textPointerUp,
-      onPointerCancel: (_) => _textDragStart = null,
+      onPointerCancel: (event) {
+        _tapPointers.remove(event.pointer);
+        _annotationDown = null;
+        _textDragStart = null;
+      },
       child: LayoutBuilder(
         builder: (context, constraints) => PdfViewer(
           PdfDocumentRefByLoader(
@@ -2689,6 +2833,14 @@ class _MMPdfViewState extends State<MMPdfView> {
             pageBackgroundPaintCallbacks: [_beginPagePaint],
             pagePaintCallbacks: [_paintMatches, _endPagePaint],
             onGeneralTap: (context, controller, details) {
+              if (details.type == PdfViewerGeneralTapType.longPress) _annotationDown = null;
+              final global = controller.documentToGlobal(details.documentPosition);
+              if (global != null) {
+                if (details.type == PdfViewerGeneralTapType.tap && _acknowledgeTap(global)) return true;
+                if (details.type == PdfViewerGeneralTapType.doubleTap) {
+                  while (_acknowledgeTap(global)) {}
+                }
+              }
               if ((details.type == PdfViewerGeneralTapType.tap || details.type == PdfViewerGeneralTapType.longPress) &&
                   details.tapOn != PdfViewerPart.selectedText &&
                   _tapNearbyHighlight(details.documentPosition)) {
@@ -2736,6 +2888,10 @@ class _MMPdfViewState extends State<MMPdfView> {
               _searcher?.removeListener(_searchChanged);
               _searcher?.dispose();
               _ready = true;
+              final initial = controller.pageNumber ?? widget.initialPage;
+              for (final page in [initial - 1, initial, initial + 1]) {
+                if (page >= 1 && page <= document.pages.length) _prepareAnnotationLinks(page);
+              }
               if (widget.margin != null) setState(() {});
               final restore = _restorePosition;
               final zoom = _restoreZoom;

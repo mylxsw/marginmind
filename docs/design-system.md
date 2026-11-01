@@ -55,6 +55,8 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMAppearance` | 向组件提供“降低透明度”“减少动态效果”。 |
 | `MMIcons` | 统一图标词表，以 Cupertino 为主，补充 Lucide。业务组件只使用词表，不直接依赖第三方图标包。选区工具栏的脑图操作和顶部脑图视图切换共用 Lucide `network`（`network` / `layoutMap`），翻译入口统一使用 Lucide `languages`（`translate`）；文档切换使用 Lucide `book-open`（`collections`）。阅读器缩放入口使用 `zoomControl`（`plus_slash_minus`），菜单项实际大小为正方形、适合宽度为横向双箭头、适合页面为页面矩形；裁边独立使用 `crop`，不与适配复用图标。 |
 
+同一区域同时支持单击和双击时，使用 `immediateTap`：首击立即执行，第二击识别双击。文本阅读区域可复用 `MMImmediateTapGestureRecognizer`，拖动、长按仍由各自识别器处理。若双击编辑与首击修改状态冲突，应恢复首击实际改动的状态；引用文字采用单击跳转、独立铅笔编辑入口。
+
 运行应用后按 ⌥⌘G（或在“设置”里点“组件库”）可以在浅色/深色下查看所有令牌和组件。
 
 ### PDF 阅读配色

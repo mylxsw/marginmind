@@ -108,8 +108,8 @@ class _MMInteractiveState extends State<MMInteractive> {
         ? RawGestureDetector(
             behavior: HitTestBehavior.opaque,
             gestures: {
-              _ImmediateTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<_ImmediateTapGestureRecognizer>(
-                _ImmediateTapGestureRecognizer.new,
+              MMImmediateTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<MMImmediateTapGestureRecognizer>(
+                MMImmediateTapGestureRecognizer.new,
                 (tap) {
                   if (!_enabled || (tap.selected && !widget.selected)) tap.resetSequence();
                   tap
@@ -122,6 +122,7 @@ class _MMInteractiveState extends State<MMInteractive> {
                           }
                         : null
                     ..onTapUp = _enabled ? (_) => _setPressed(false) : null
+                    ..onDoubleTapUp = _enabled ? (_) => _setPressed(false) : null
                     ..onTapCancel = _enabled ? () => _setPressed(false) : null
                     ..onTap = _enabled ? widget.onTap : null
                     ..onDoubleTap = _enabled ? widget.onDoubleTap : null
@@ -185,8 +186,14 @@ class _MMInteractiveState extends State<MMInteractive> {
 
 /// A normal tap still competes with child controls, drags and long presses.
 /// Only double-tap detection changes: it never holds the first tap's arena.
-class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
+class MMImmediateTapGestureRecognizer extends TapGestureRecognizer {
+  MMImmediateTapGestureRecognizer({super.debugOwner, super.supportedDevices});
+
   VoidCallback? onDoubleTap;
+  GestureTapDownCallback? onDoubleTapDown;
+  GestureTapUpCallback? onDoubleTapUp;
+  bool get _hasDoubleTap => onDoubleTap != null || onDoubleTapDown != null;
+
   Duration doubleClickInterval = kDoubleTapTimeout;
   bool selected = false;
   PointerDownEvent? _lastTap;
@@ -203,7 +210,7 @@ class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
   void addAllowedPointer(PointerDownEvent event) {
     final last = _lastTap;
     _doubleTap =
-        onDoubleTap != null &&
+        _hasDoubleTap &&
         last != null &&
         // Mouse clicks already arrive as distinct press/release sequences.
         // The touch debounce interval would discard very fast double clicks.
@@ -213,6 +220,11 @@ class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
         (event.position - last.position).distance <= kDoubleTapSlop;
     _clearLastTap();
     super.addAllowedPointer(event);
+    if (_doubleTap) {
+      onDoubleTapDown?.call(
+        TapDownDetails(globalPosition: event.position, localPosition: event.localPosition, kind: event.kind),
+      );
+    }
   }
 
   void _clearLastTap() {
@@ -223,13 +235,13 @@ class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
 
   @override
   void handleTapUp({required PointerDownEvent down, required PointerUpEvent up}) {
-    if (_doubleTap && onDoubleTap != null) {
+    if (_doubleTap && _hasDoubleTap) {
       _doubleTap = false;
-      onTapUp?.call(TapUpDetails(globalPosition: up.position, localPosition: up.localPosition, kind: up.kind));
-      invokeCallback<void>('onDoubleTap', onDoubleTap!);
+      onDoubleTapUp?.call(TapUpDetails(globalPosition: up.position, localPosition: up.localPosition, kind: up.kind));
+      if (onDoubleTap != null) invokeCallback<void>('onDoubleTap', onDoubleTap!);
       return;
     }
-    if (down.buttons == kPrimaryButton && onDoubleTap != null) {
+    if (down.buttons == kPrimaryButton && _hasDoubleTap) {
       _lastTap = down;
       _minTapTime = Timer(kDoubleTapMinTime, () {});
       _tapTimeout = Timer(

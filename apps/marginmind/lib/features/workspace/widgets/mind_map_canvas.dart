@@ -151,6 +151,7 @@ class MindMapCanvas extends StatefulWidget {
     this.sourceDocumentIds = const [],
     this.onRevealDraftSource,
     this.onDraftToggle,
+    this.onDraftToggleWithUndo,
     this.onDraftEdit,
     this.onDraftMore,
     this.onExpansionBlocked,
@@ -166,6 +167,7 @@ class MindMapCanvas extends StatefulWidget {
   final List<String> sourceDocumentIds;
   final ValueChanged<CardSource>? onRevealDraftSource;
   final ValueChanged<String>? onDraftToggle, onDraftMore;
+  final VoidCallback? Function(String)? onDraftToggleWithUndo;
   final void Function(String, String)? onDraftEdit;
   final VoidCallback? onExpansionKeep, onExpansionStop, onExpansionDiscard, onExpansionBlocked;
 
@@ -1839,19 +1841,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 longPressEnabled: id == rootNodeId,
                 onPressStart: (kind) =>
                     _tapModifiers[id] = _additive || (kind == PointerDeviceKind.touch && _touchSelection),
-                onTap: () {
-                  widget.focusNode.requestFocus();
-                  final additive = _tapModifiers.remove(id) ?? false;
-                  if (widget.connectingFromId != null) {
-                    if (id == rootNodeId) {
-                      widget.onCancelConnect?.call();
-                    } else {
-                      widget.onConnect?.call(id);
-                    }
-                    return;
-                  }
-                  _select(id, additive: additive);
-                },
+                onTap: () => _tapNode(id),
                 onDoubleTap: id == rootNodeId
                     ? null
                     : (spec.kind == _Kind.excerpt || spec.kind == _Kind.research) && widget.onOpenDetails != null
@@ -1896,6 +1886,20 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     );
     _nodeWidgets[id] = (signature: signature, child: child);
     return child;
+  }
+
+  void _tapNode(String id) {
+    widget.focusNode.requestFocus();
+    final additive = _tapModifiers.remove(id) ?? false;
+    if (widget.connectingFromId != null) {
+      if (id == rootNodeId) {
+        widget.onCancelConnect?.call();
+      } else {
+        widget.onConnect?.call(id);
+      }
+      return;
+    }
+    _select(id, additive: additive);
   }
 
   Widget? _notesFooter(String id, _NodeSpec spec) {
@@ -1979,9 +1983,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                 style: t.body.copyWith(height: 19 / 13),
                                 kind: CardKind.note,
                               )
-                            : GestureDetector(
+                            : MMInteractive(
+                                immediateTap: true,
+                                selected: widget.selectedCardIds.contains(id) || id == _selectedNodeId,
+                                onTap: () => _tapNode(id),
                                 onDoubleTap: () => widget.onRename(note.id),
-                                child: Opacity(
+                                builder: (_, _) => Opacity(
                                   opacity: note.suspended ? _suspendedOpacity : 1,
                                   child: Text.rich(
                                     noteSpan(note.title, note.textFormat, t.body.copyWith(height: 19 / 13)),
@@ -2189,6 +2196,15 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                 if (mounted) setState(() {});
                               },
                               generating: widget.expansion!.phase == ExpansionPhase.generating,
+                              onToggleWithUndo: widget.onDraftToggleWithUndo == null
+                                  ? null
+                                  : () {
+                                      setState(() => _draftFocus = id);
+                                      final undo = widget.onDraftToggleWithUndo!(id);
+                                      if (widget.diffLines.isNotEmpty) widget.onDiffFocus?.call(id);
+                                      widget.focusNode.requestFocus();
+                                      return undo;
+                                    },
                               onToggle: () {
                                 setState(() => _draftFocus = id);
                                 widget.onDraftToggle?.call(id);

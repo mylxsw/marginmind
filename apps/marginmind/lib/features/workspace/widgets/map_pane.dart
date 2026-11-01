@@ -1021,16 +1021,29 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                           mapGen?.request.sources.map((s) => s.documentId).toList() ?? [],
                                       onRevealDraftSource: controller.revealMapSource,
                                       skeletons: mapGen?.phase == MapGenerationPhase.reading ? mapGen?.skeletons : null,
+                                      onDraftToggleWithUndo: (id) => mapGen != null
+                                          ? ref
+                                                .read(mapGenerationControllerProvider(widget.studySetId).notifier)
+                                                .toggleForClick(id)
+                                          : ref
+                                                .read(expansionControllerProvider(widget.studySetId).notifier)
+                                                .toggleForClick(id),
                                       onDraftToggle: (id) {
                                         if (mapGen != null) {
-                                          final d = mapGen.lines.where((d) => d.id == id).firstOrNull;
+                                          final current = ref.read(mapGenerationControllerProvider(widget.studySetId));
+                                          final d = current?.lines.where((d) => d.id == id).firstOrNull;
                                           if (d != null) {
                                             ref
                                                 .read(mapGenerationControllerProvider(widget.studySetId).notifier)
                                                 .toggle(id, !d.kept);
                                           }
                                         } else if (expansion != null) {
-                                          final d = expansion.drafts.firstWhere((d) => d.id == id);
+                                          final d = ref
+                                              .read(expansionControllerProvider(widget.studySetId))
+                                              ?.drafts
+                                              .where((d) => d.id == id)
+                                              .firstOrNull;
+                                          if (d == null) return;
                                           ref
                                               .read(expansionControllerProvider(widget.studySetId).notifier)
                                               .toggle(id, !d.kept);

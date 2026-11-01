@@ -8,7 +8,9 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../support/pdf_backend.dart';
 
-void main() {
+void main() => responseLatencyTests();
+
+void responseLatencyTests({bool requireImmediate = false}) {
   setUp(installTestPdfBackend);
   for (final kind in [PointerDeviceKind.mouse, PointerDeviceKind.touch]) {
     for (final id in ['highlight', 'note:attachment', 'vocabulary:entry', 'note:marker']) {
@@ -55,6 +57,9 @@ void main() {
           await tester.pump(const Duration(milliseconds: 1));
         }
         expect(calls, 1);
+        if (requireImmediate) expect(elapsed, 0, reason: '$id ${kind.name} must respond in its first frame');
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(calls, 1, reason: 'the later PDF gesture must not dispatch a second callback');
         debugPrint('LATENCY pdf-$id-${kind.name} = ${elapsed}ms');
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(milliseconds: 400));

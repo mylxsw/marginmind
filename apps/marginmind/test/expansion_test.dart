@@ -187,6 +187,42 @@ void main() {
     );
     expect(draft.details['T1']!.path, contains('遗忘的规律'));
   });
+  testWidgets('immediate double-click editing restores exact descendant selection before a rebuild', (tester) async {
+    final model = ControlledExpander();
+    final app = await openAssistantApp(
+      tester,
+      realWrites: true,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(() async => model)],
+    );
+    app.workspace.selectCard('c3');
+    await focusMap(tester);
+    await key(tester, LogicalKeyboardKey.tab, alt: true);
+    model.output.add(const ExpansionDraft(id: 'parent', parentRef: 'c3', title: 'Parent draft'));
+    model.output.add(const ExpansionDraft(id: 'child', parentRef: 'new:parent', title: 'Kept child'));
+    model.output.add(const ExpansionDraft(id: 'excluded', parentRef: 'new:parent', title: 'Excluded child'));
+    await model.output.close();
+    await tester.pumpAndSettle();
+    final provider = expansionControllerProvider('demo-1');
+    app.container.read(provider.notifier).toggle('excluded', false);
+    await tester.pumpAndSettle();
+    Map<String, bool> selection() => {for (final d in app.container.read(provider)!.drafts) d.id: d.kept};
+    final before = selection();
+    final parent = find.text('Parent draft');
+    await tester.ensureVisible(parent);
+    await tester.tap(parent, kind: PointerDeviceKind.mouse);
+    expect(selection(), {'parent': false, 'child': false, 'excluded': false});
+    // No frame between the clicks: a stale callback must not re-apply the
+    // first toggle, and inverse toggles must not discard kept descendants.
+    await tester.tap(parent, kind: PointerDeviceKind.mouse);
+    expect(selection(), before);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: find.byType(MapGhostNode), matching: find.byType(TextField)), findsOneWidget);
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(selection(), before);
+    app.container.read(provider.notifier).discard();
+    await settleHud(tester);
+  });
+
   testWidgets('stream, cascade, edit, keep, one-step undo and redo', (tester) async {
     final model = ControlledExpander();
     final app = await openAssistantApp(

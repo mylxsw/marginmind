@@ -24,7 +24,7 @@ import '../helpers.dart';
 import '../reflow_fixtures.dart';
 import '../workspace_test.dart' show openFirstSet;
 
-Future<int> measure(WidgetTester tester, String name, Future<void> Function() tap, bool Function() happened) async {
+Future<int> _measure(WidgetTester tester, String name, Future<void> Function() tap, bool Function() happened) async {
   await tap();
   await tester.pump();
   var elapsed = 0;
@@ -47,7 +47,15 @@ Future<void> bare(WidgetTester tester, Widget child) => tester.pumpWidget(
   ),
 );
 
-void main() {
+void main() => responseLatencyTests();
+
+void responseLatencyTests({bool requireImmediate = false}) {
+  Future<int> measure(WidgetTester tester, String name, Future<void> Function() tap, bool Function() happened) async {
+    final elapsed = await _measure(tester, name, tap, happened);
+    if (requireImmediate) expect(elapsed, 0, reason: '$name must respond in its first frame');
+    return elapsed;
+  }
+
   for (final source in [false, true]) {
     testWidgets('measure AI draft ${source ? 'child source button' : 'keep toggle'}', (tester) async {
       var calls = 0;
@@ -180,6 +188,7 @@ void main() {
     await tester.tap(menu);
     await tester.pump();
     final route = ModalRoute.of(tester.element(find.text('Delete').last))!;
+    if (requireImmediate) expect(route.animation!.value, 1);
     debugPrint(
       'ANIMATION margin-note-more initial=${route.animation!.value}, duration=${(route as TransitionRoute).transitionDuration.inMilliseconds}ms',
     );

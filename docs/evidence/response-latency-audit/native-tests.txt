@@ -1,0 +1,18 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/response_latency_test.dart
+Building macOS application...
+✓ Built build/macos/Build/Products/Debug/Foliarc.app
+00:00 +0: draft PointerDeviceKind.mouse double edit restores the first click toggle and can still save text
+00:01 +1: draft PointerDeviceKind.touch double edit restores the first click toggle and can still save text
+00:01 +2: reference jump and explicit edit remain separate; edit saves without a second jump
+00:02 +3: reflow PointerDeviceKind.mouse double tap still selects one word and dragging extends selection
+00:09 +4: reflow PointerDeviceKind.touch double tap still selects one word and dragging extends selection
+00:15 +5: native PDF note preview responds immediately and remains interactive
+Note preview: initialize native window
+Note preview: prepare PDF fixture
+Note preview: mount workspace
+00:21 +5: draft PointerDeviceKind.mouse double edit restores the first click toggle and can still save text
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Containers/io.github.mylxsw.marginmind/Data/tmp/foliarc-note-preview-pRJnB9/source.pdf) (22 ms)
+00:24 +5: native PDF note preview responds immediately and remains interactive
+Note preview screenshot: /Users/mylxsw/Library/Containers/io.github.mylxsw.marginmind/Data/tmp/foliarc-note-hover.png
+00:27 +6: (tearDownAll)
+00:27 +6: All tests passed!

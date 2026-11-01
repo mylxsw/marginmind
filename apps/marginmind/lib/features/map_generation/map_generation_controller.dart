@@ -963,6 +963,32 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     state = null;
   }
 
+  /// An immediate first click may be followed by double-click editing. Keep
+  /// an exact, selection-only undo: toggling a parent twice is not an inverse
+  /// because excluding it also excludes its descendants.
+  void Function()? toggleForClick(String id) {
+    if (!_reviewable) return null;
+    final current = state!;
+    final request = current.request;
+    final item = current.lines.where((d) => d.id == id).firstOrNull;
+    if (item == null) return null;
+    final before = {for (final d in current.lines) d.id: d.kept};
+    toggle(id, !item.kept);
+    final changed = {
+      for (final d in state!.lines)
+        if (before[d.id] != d.kept) d.id: d.kept,
+    };
+    return () {
+      if (!_reviewable || !identical(state!.request, request)) return;
+      state = state!.copyWith(
+        lines: [
+          for (final d in state!.lines)
+            if (changed.containsKey(d.id) && d.kept == changed[d.id]) d.copyWith(kept: before[d.id]!) else d,
+        ],
+      );
+    };
+  }
+
   void toggle(String id, bool kept) {
     if (!_reviewable) return;
     state = state!.copyWith(lines: _select(state!.lines, id, kept));

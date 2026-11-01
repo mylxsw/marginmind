@@ -109,10 +109,22 @@ void main() {
     expect(popover, findsOneWidget);
     await tester.pump(MMMotion.hoverExit * 2);
     expect(popover, findsOneWidget);
+    final sourceBounds = (container.read(workspaceProvider('demo-1')).pending as PendingResearchNote).viewportRect;
     await mouse.removePointer();
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
     expect(popover, findsNothing);
+    await tester.tapAt(tester.getTopLeft(find.byType(MMPdfView)) + sourceBounds.center, kind: PointerDeviceKind.touch);
+    expect(
+      container.read(workspaceProvider('demo-1')).pending,
+      isA<PendingResearchNote>(),
+      reason: 'a touch on the saved PDF text must respond before any timer advances',
+    );
+    await tester.pump();
+    expect(popover, findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(popover, findsNothing, reason: 'the later classified PDF tap must not reopen the note');
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();

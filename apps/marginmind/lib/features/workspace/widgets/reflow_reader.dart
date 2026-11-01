@@ -143,7 +143,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     if (pair.right is AiCompareTarget) ref.read(translationSourceInputProvider(widget.studySetId).notifier).take();
   }
 
+  int _tapRevision = 0;
+
   Future<void> _jump(TextReadingPosition position) async {
+    _tapRevision++;
     _takeInput();
     _dismiss();
     final found = await session.jump(position);
@@ -182,6 +185,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   }
 
   Future<void> _turn(int delta, bool paged) async {
+    _tapRevision++;
     _takeInput();
     if (paged) {
       _dismiss();
@@ -930,28 +934,14 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         ],
       ),
     );
-    final isPhone = MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact;
     return !widget.document.capabilities().zoom
         ? pages
-        : GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onDoubleTap: isPhone
-                ? () {
-                    final isZoomed = s.zoom > s.widthZoom * 1.05;
-                    if (isZoomed) {
-                      s.fitWidth();
-                    } else {
-                      s.zoomTo(1.5 * s.widthZoom);
-                    }
-                  }
-                : null,
-            child: InteractiveViewer(
-              transformationController: _fixedTransform,
-              minScale: MMReaderLayout.minZoom,
-              maxScale: MMReaderLayout.maxZoom,
-              onInteractionStart: (_) => _dismiss(),
-              child: pages,
-            ),
+        : InteractiveViewer(
+            transformationController: _fixedTransform,
+            minScale: MMReaderLayout.minZoom,
+            maxScale: MMReaderLayout.maxZoom,
+            onInteractionStart: (_) => _dismiss(),
+            child: pages,
           );
   }
 
@@ -1060,135 +1050,147 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
             _turn(_panZoomX < 0 ? 1 : -1, true);
           }
         },
-        child: GestureDetector(
+        child: _ImmediateReaderTap(
+          key: ValueKey((surfaceId, _tapRevision, 'mouse')),
           supportedDevices: const {PointerDeviceKind.mouse},
-          dragStartBehavior: DragStartBehavior.down,
-          behavior: HitTestBehavior.opaque,
           onTapUp: tap,
           onDoubleTapDown: selectable ? word : null,
-          onPanStart: !selectable
-              ? null
-              : (d) {
-                  _activate(layout, d.globalPosition, d.localPosition, page);
-                  _select(layout, d.localPosition, true, page: page);
-                },
-          onPanUpdate: !selectable
-              ? null
-              : (d) {
-                  _drag(layout, d.globalPosition, d.localPosition, page);
-                },
-          onPanEnd: !selectable ? null : (_) => _commit(),
-          onPanCancel: !selectable
-              ? null
-              : () {
-                  if (_base != null) _dismiss();
-                },
           child: GestureDetector(
-            supportedDevices: const {
-              PointerDeviceKind.touch,
-              PointerDeviceKind.stylus,
-              PointerDeviceKind.invertedStylus,
-            },
+            supportedDevices: const {PointerDeviceKind.mouse},
+            dragStartBehavior: DragStartBehavior.down,
             behavior: HitTestBehavior.opaque,
-            onTapUp: tap,
-            onDoubleTapDown: (isPhone && widget.document.capabilities().zoom) ? null : (selectable ? word : null),
-            onDoubleTap: (isPhone && widget.document.capabilities().zoom)
-                ? () {
-                    final isZoomed = session.zoom > session.widthZoom * 1.05;
-                    if (isZoomed) {
-                      session.fitWidth();
-                    } else {
-                      session.zoomTo(1.5 * session.widthZoom);
-                    }
-                  }
-                : null,
-            onLongPressStart: !selectable
+            onPanStart: !selectable
                 ? null
                 : (d) {
                     _activate(layout, d.globalPosition, d.localPosition, page);
-                    if (_editAnnotation(layout, d.localPosition, page, tolerance: 12)) return;
-                    _word(layout, d.localPosition, page, commit: false);
-                    _base = _selection.firstOrNull;
-                    _gestureChapter = layout.chapter.id;
+                    _select(layout, d.localPosition, true, page: page);
                   },
-            onLongPressMoveUpdate: !selectable
+            onPanUpdate: !selectable
                 ? null
                 : (d) {
                     _drag(layout, d.globalPosition, d.localPosition, page);
                   },
-            onLongPressEnd: !selectable ? null : (_) => _commit(),
-            onLongPressCancel: !selectable
+            onPanEnd: !selectable ? null : (_) => _commit(),
+            onPanCancel: !selectable
                 ? null
                 : () {
                     if (_base != null) _dismiss();
                   },
-            onHorizontalDragEnd: page == null || session.zoom > 1
-                ? null
-                : (d) {
-                    if ((d.primaryVelocity ?? 0).abs() > MMReaderLayout.margin) {
-                      _turn(d.primaryVelocity! < 0 ? 1 : -1, true);
+            child: _ImmediateReaderTap(
+              key: ValueKey((surfaceId, _tapRevision, 'touch')),
+              supportedDevices: const {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.stylus,
+                PointerDeviceKind.invertedStylus,
+              },
+              onTapUp: tap,
+              onDoubleTapDown: (isPhone && widget.document.capabilities().zoom) ? null : (selectable ? word : null),
+              onDoubleTap: (isPhone && widget.document.capabilities().zoom)
+                  ? () {
+                      final isZoomed = session.zoom > session.widthZoom * 1.05;
+                      if (isZoomed) {
+                        session.fitWidth();
+                      } else {
+                        session.zoomTo(1.5 * session.widthZoom);
+                      }
                     }
-                  },
-            child: Semantics(
-              label: label,
-              textDirection: Directionality.of(context),
-              onScrollLeft: page == null ? null : () => _turn(1, true),
-              onScrollRight: page == null ? null : () => _turn(-1, true),
-              onSetSelection: !widget.document.capabilities().selectText
-                  ? null
-                  : (value) {
-                      final a = (start + value.start).clamp(0, layout.chapter.canonicalText.length);
-                      final b = (start + value.end).clamp(0, layout.chapter.canonicalText.length);
-                      setState(
-                        () => _selection = [
-                          layout.chapter.anchor(math.min(a, b), math.max(a, b), revision: session.book!.revision),
-                        ],
-                      );
-                      _commit();
-                    },
-              child: Stack(
-                children: [
-                  ReflowTools(
-                    studySetId: widget.studySetId,
-                    documentId: widget.document.id,
-                    layout: layout,
-                    page: page,
-                    child: CustomPaint(
-                      key: ValueKey(page == null || page == session.page ? 'reflow-surface' : 'reflow-second-page'),
-                      size: Size(
-                        layout.spec.width,
-                        page == null ? layout.height + MMSizes.readerNavigationHeight : layout.spec.pageHeight,
-                      ),
-                      painter: ReflowReaderPainter(
-                        layout,
-                        page,
-                        highlights,
-                        resolved,
-                        _selection,
-                        session.currentMatch,
-                        state.flashAnnotationId,
-                        state.selectedCardId == null
-                            ? null
-                            : workspace.content.card(state.selectedCardId!)?.annotationId,
-                        editing: switch (state.pending) {
-                          PendingHighlight(:final annotationId) => annotationId,
-                          _ => null,
+                  : null,
+              child: GestureDetector(
+                supportedDevices: const {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.invertedStylus,
+                },
+                behavior: HitTestBehavior.opaque,
+                onLongPressStart: !selectable
+                    ? null
+                    : (d) {
+                        _activate(layout, d.globalPosition, d.localPosition, page);
+                        if (_editAnnotation(layout, d.localPosition, page, tolerance: 12)) return;
+                        _word(layout, d.localPosition, page, commit: false);
+                        _base = _selection.firstOrNull;
+                        _gestureChapter = layout.chapter.id;
+                      },
+                onLongPressMoveUpdate: !selectable
+                    ? null
+                    : (d) {
+                        _drag(layout, d.globalPosition, d.localPosition, page);
+                      },
+                onLongPressEnd: !selectable ? null : (_) => _commit(),
+                onLongPressCancel: !selectable
+                    ? null
+                    : () {
+                        if (_base != null) _dismiss();
+                      },
+                onHorizontalDragEnd: page == null || session.zoom > 1
+                    ? null
+                    : (d) {
+                        if ((d.primaryVelocity ?? 0).abs() > MMReaderLayout.margin) {
+                          _turn(d.primaryVelocity! < 0 ? 1 : -1, true);
+                        }
+                      },
+                child: Semantics(
+                  label: label,
+                  textDirection: Directionality.of(context),
+                  onScrollLeft: page == null ? null : () => _turn(1, true),
+                  onScrollRight: page == null ? null : () => _turn(-1, true),
+                  onSetSelection: !widget.document.capabilities().selectText
+                      ? null
+                      : (value) {
+                          final a = (start + value.start).clamp(0, layout.chapter.canonicalText.length);
+                          final b = (start + value.end).clamp(0, layout.chapter.canonicalText.length);
+                          setState(
+                            () => _selection = [
+                              layout.chapter.anchor(math.min(a, b), math.max(a, b), revision: session.book!.revision),
+                            ],
+                          );
+                          _commit();
                         },
-                        editingColor: context.mmColors.accent,
-                        sourceFlash: sourceFlash == null ? null : session.book!.resolve(sourceFlash),
-                        sourceFlashColor: context.mmColors.vocabularyTint,
+                  child: Stack(
+                    children: [
+                      ReflowTools(
+                        studySetId: widget.studySetId,
+                        documentId: widget.document.id,
+                        layout: layout,
+                        page: page,
+                        child: CustomPaint(
+                          key: ValueKey(page == null || page == session.page ? 'reflow-surface' : 'reflow-second-page'),
+                          size: Size(
+                            layout.spec.width,
+                            page == null ? layout.height + MMSizes.readerNavigationHeight : layout.spec.pageHeight,
+                          ),
+                          painter: ReflowReaderPainter(
+                            layout,
+                            page,
+                            highlights,
+                            resolved,
+                            _selection,
+                            session.currentMatch,
+                            state.flashAnnotationId,
+                            state.selectedCardId == null
+                                ? null
+                                : workspace.content.card(state.selectedCardId!)?.annotationId,
+                            editing: switch (state.pending) {
+                              PendingHighlight(:final annotationId) => annotationId,
+                              _ => null,
+                            },
+                            editingColor: context.mmColors.accent,
+                            sourceFlash: sourceFlash == null ? null : session.book!.resolve(sourceFlash),
+                            sourceFlashColor: context.mmColors.vocabularyTint,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: ReflowTransientDecoration(
-                        child: CustomPaint(key: const ValueKey('vocabulary-hints-surface'), painter: hintPainter),
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: ReflowTransientDecoration(
+                            child: CustomPaint(key: const ValueKey('vocabulary-hints-surface'), painter: hintPainter),
+                          ),
+                        ),
                       ),
-                    ),
+                      ..._handles(layout, page),
+                    ],
                   ),
-                  ..._handles(layout, page),
-                ],
+                ),
               ),
             ),
           ),
@@ -1920,4 +1922,38 @@ class _ReflowFindBarState extends State<_ReflowFindBar> {
       ),
     );
   }
+}
+
+/// Taps share an arena with selection drags and long presses, but never wait
+/// for a possible second tap. Child controls still win their own taps.
+class _ImmediateReaderTap extends StatelessWidget {
+  const _ImmediateReaderTap({
+    super.key,
+    required this.child,
+    required this.supportedDevices,
+    required this.onTapUp,
+    this.onDoubleTapDown,
+    this.onDoubleTap,
+  });
+  final Widget child;
+  final Set<PointerDeviceKind> supportedDevices;
+  final GestureTapUpCallback onTapUp;
+  final GestureTapDownCallback? onDoubleTapDown;
+  final VoidCallback? onDoubleTap;
+
+  @override
+  Widget build(BuildContext context) => RawGestureDetector(
+    behavior: HitTestBehavior.opaque,
+    gestures: {
+      MMImmediateTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<MMImmediateTapGestureRecognizer>(
+        () => MMImmediateTapGestureRecognizer(supportedDevices: supportedDevices),
+        (tap) => tap
+          ..doubleClickInterval = MMInput.of(context).doubleClickInterval
+          ..onTapUp = onTapUp
+          ..onDoubleTapDown = onDoubleTapDown
+          ..onDoubleTap = onDoubleTap,
+      ),
+    },
+    child: child,
+  );
 }

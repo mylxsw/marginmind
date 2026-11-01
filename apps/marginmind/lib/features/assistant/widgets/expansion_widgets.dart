@@ -422,6 +422,7 @@ class MapGhostNode extends StatefulWidget {
     required this.focused,
     required this.generating,
     required this.onToggle,
+    this.onToggleWithUndo,
     required this.onEdit,
     required this.onMore,
     this.onHover,
@@ -432,6 +433,10 @@ class MapGhostNode extends StatefulWidget {
   final Widget? sourceChip;
   final bool focused, generating;
   final VoidCallback onToggle;
+
+  /// Restores exactly what the first click changed when a second click edits.
+  /// Required for hierarchical selections, where toggling twice is not inverse.
+  final VoidCallback? Function()? onToggleWithUndo;
   final ValueChanged<String> onEdit;
   final VoidCallback? onMore;
   final ValueChanged<bool>? onHover;
@@ -442,6 +447,34 @@ class MapGhostNode extends StatefulWidget {
 
 class MapGhostNodeState extends State<MapGhostNode> {
   TextEditingController? _text;
+  final _editFocus = FocusNode();
+  String? _toggledDraftId;
+  VoidCallback? _undoToggle;
+
+  void _toggle() {
+    _toggledDraftId = widget.draft.id;
+    if (widget.onToggleWithUndo != null) {
+      _undoToggle = widget.onToggleWithUndo!();
+    } else {
+      widget.onToggle();
+    }
+  }
+
+  void _doubleEdit() {
+    // The first click is immediate. A second click restores that click's
+    // reversible draft toggle before opening the editor.
+    if (_toggledDraftId == widget.draft.id) {
+      if (widget.onToggleWithUndo != null) {
+        _undoToggle?.call();
+      } else {
+        widget.onToggle();
+      }
+    }
+    _undoToggle = null;
+    _toggledDraftId = null;
+    beginEdit();
+  }
+
   bool get editing => _text != null;
   void beginEdit() {
     if (widget.generating || _text != null) return;
@@ -451,6 +484,9 @@ class MapGhostNodeState extends State<MapGhostNode> {
             ..selection = TextSelection(baseOffset: 0, extentOffset: widget.draft.title.length),
     );
     widget.onEditingChanged?.call();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && editing) _editFocus.requestFocus();
+    });
   }
 
   void _finish(bool save) {
@@ -466,6 +502,7 @@ class MapGhostNodeState extends State<MapGhostNode> {
   @override
   void dispose() {
     _text?.dispose();
+    _editFocus.dispose();
     super.dispose();
   }
 
@@ -492,9 +529,7 @@ class MapGhostNodeState extends State<MapGhostNode> {
         onEnter: (_) => widget.onHover?.call(true),
         onExit: (_) => widget.onHover?.call(false),
         child: GestureDetector(
-          onTap: widget.generating ? null : widget.onToggle,
-          onDoubleTap: beginEdit,
-          onLongPressStart: widget.generating
+          onLongPressStart: widget.generating || editing
               ? null
               : (details) => showMMMenu(
                   context,
@@ -505,61 +540,68 @@ class MapGhostNodeState extends State<MapGhostNode> {
                     if (widget.onMore != null) MMMenuItem(l.mapIdeaDraftMore, widget.onMore),
                   ],
                 ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: d.kept ? Color.alphaBlend(c.researchWash, c.canvas) : c.canvas,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [if (widget.focused) BoxShadow(color: c.research, spreadRadius: 2)],
-            ),
-            foregroundDecoration: ShapeDecoration(shape: _DraftBorder(color: d.kept ? c.research : c.line)),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_text != null)
-                  CallbackShortcuts(
-                    bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => _finish(false)},
-                    child: TextField(
-                      autofocus: true,
-                      controller: _text,
-                      style: context.mmText.body,
-                      decoration: const InputDecoration(isDense: true, border: InputBorder.none),
-                      onSubmitted: (_) => _finish(true),
-                      onTapOutside: (_) => _finish(true),
+          child: MMInteractive(
+            immediateTap: true,
+            onTap: widget.generating || editing ? null : _toggle,
+            onDoubleTap: widget.generating || editing ? null : _doubleEdit,
+            canRequestFocus: false,
+            builder: (_, _) => Container(
+              decoration: BoxDecoration(
+                color: d.kept ? Color.alphaBlend(c.researchWash, c.canvas) : c.canvas,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [if (widget.focused) BoxShadow(color: c.research, spreadRadius: 2)],
+              ),
+              foregroundDecoration: ShapeDecoration(shape: _DraftBorder(color: d.kept ? c.research : c.line)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_text != null)
+                    CallbackShortcuts(
+                      bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => _finish(false)},
+                      child: TextField(
+                        autofocus: true,
+                        focusNode: _editFocus,
+                        controller: _text,
+                        style: context.mmText.body,
+                        decoration: const InputDecoration(isDense: true, border: InputBorder.none),
+                        onSubmitted: (_) => _finish(true),
+                        onTapOutside: (_) => _finish(true),
+                      ),
+                    )
+                  else
+                    Text(
+                      d.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.mmText.body.copyWith(
+                        color: d.kept ? c.label : c.secondaryLabel,
+                        decoration: d.kept ? null : TextDecoration.lineThrough,
+                      ),
                     ),
-                  )
-                else
-                  Text(
-                    d.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.mmText.body.copyWith(
-                      color: d.kept ? c.label : c.secondaryLabel,
-                      decoration: d.kept ? null : TextDecoration.lineThrough,
-                    ),
-                  ),
-                if (d.tag != ExpansionDirection.auto || d.page != null)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (d.tag != ExpansionDirection.auto)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(4)),
-                          child: Text(
-                            expansionDirectionLabel(l, d.tag),
-                            style: context.mmText.footnote.copyWith(color: c.onResearch),
+                  if (d.tag != ExpansionDirection.auto || d.page != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (d.tag != ExpansionDirection.auto)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(4)),
+                            child: Text(
+                              expansionDirectionLabel(l, d.tag),
+                              style: context.mmText.footnote.copyWith(color: c.onResearch),
+                            ),
                           ),
-                        ),
-                      if (d.page != null) ...[
-                        if (d.tag != ExpansionDirection.auto) const SizedBox(width: 6),
-                        widget.sourceChip ?? MapSourceChip(page: d.page!),
+                        if (d.page != null) ...[
+                          if (d.tag != ExpansionDirection.auto) const SizedBox(width: 6),
+                          widget.sourceChip ?? MapSourceChip(page: d.page!),
+                        ],
                       ],
-                    ],
-                  ),
-              ],
+                    ),
+                ],
+              ),
             ),
           ),
         ),
