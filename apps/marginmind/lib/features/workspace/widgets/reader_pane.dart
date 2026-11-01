@@ -731,7 +731,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   )
                 : showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document.id),
           ),
-          icon: MMIcons.layers,
+          icon: MMIcons.translate,
           id: 'full-translation',
         ),
     ];
@@ -1050,7 +1050,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     MMDropdownItem<Object>(
                       value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
                       child: _menuRow(
-                        MMIcons.layers,
+                        MMIcons.translate,
                         hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
                       ),
                     ),
@@ -1122,7 +1122,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   MMDropdownItem<Object>(
                     value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
                     child: _menuRow(
-                      MMIcons.layers,
+                      MMIcons.translate,
                       hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
                     ),
                   ),
