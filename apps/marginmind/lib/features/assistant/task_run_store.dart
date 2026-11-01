@@ -89,6 +89,9 @@ class PersistentTaskAssembly {
     if (service.protocol != ServiceProtocol.ollama && (key == null || key.trim().isEmpty)) {
       throw const ConfigurationFailure('secretUnavailable');
     }
+    // Keychain may suspend while a credential update persists a newer disabled
+    // identity. Never pair the returned key with the earlier catalog snapshot.
+    await resolver.validateCurrent(context.config);
     return RuntimeModelBinding(model: service.configuration(model), key: key ?? '', serviceRevision: service.revision);
   }
 

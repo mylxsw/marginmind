@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,11 +17,21 @@ import 'package:mm_data/mm_data.dart';
 
 import '../../../packages/mm_assistant/test/task_runtime_test.dart' as fixture;
 
+class DelayedSecrets extends Secrets {
+  Completer<void>? entered, release;
+  @override
+  Future<String?> read(String name) async {
+    entered?.complete();
+    if (release != null) await release!.future;
+    return super.read(name);
+  }
+}
+
 void main() {
   test('catalog dispatch reads existing SecretStore and rejects changed identity or missing key', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    final secrets = Secrets()..values['assistant.service.remote'] = 'first-key';
+    final secrets = DelayedSecrets()..values['assistant.service.remote'] = 'first-key';
     final services = AssistantServicesStore(prefs, secrets);
     final service = AssistantService(
       id: 'remote',
@@ -55,6 +66,17 @@ void main() {
     secrets.values['assistant.service.remote'] = 'restored';
     await services.save(AssistantServices(services: [service.copyWith(endpoint: 'https://changed.example/v1')]));
     await expectLater(assembly.loadModel(context), throwsA(isA<ConfigurationFailure>()));
+    await services.save(AssistantServices(services: [service]));
+    secrets.entered = Completer<void>();
+    secrets.release = Completer<void>();
+    final pending = assembly.loadModel(context);
+    await secrets.entered!.future;
+    // The controller persists this fence before mutating Keychain. A read that
+    // began earlier must not combine the new key with the old capability identity.
+    await services.save(AssistantServices(services: [service.copyWith(enabled: false, revision: 2)]));
+    secrets.values['assistant.service.remote'] = 'new-generation';
+    secrets.release!.complete();
+    await expectLater(pending, throwsA(isA<ConfigurationFailure>()));
   });
   test('production assembly uses guarded SDK HTTP and persists real study-set run envelope', () async {
     final dir = await Directory.systemTemp.createTemp('runtime-assembly-');
