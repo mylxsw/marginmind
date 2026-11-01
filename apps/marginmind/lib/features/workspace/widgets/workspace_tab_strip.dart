@@ -163,7 +163,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     final c = context.mmColors;
     final touch = context.mmTouchPlatform;
     final showClose = touch || widget.selected || _hovered || _focused;
-    final type = context.mmText.body.copyWith(
+    final type = (touch ? context.mmText.body : context.mmText.callout).copyWith(
       fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w400,
       color: widget.selected ? c.label : c.secondaryLabel,
     );
@@ -176,7 +176,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         child: SizedBox(
           key: widget.anchor,
           width: widget.width,
-          height: touch ? 44 : 36,
+          height: touch ? 44 : 30,
           child: MMInteractive(
             isButton: false,
             canRequestFocus: false,
@@ -193,13 +193,13 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                     : _hovered
                     ? c.hover
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(touch ? 8 : 6),
                 boxShadow: widget.selected && c.brightness == Brightness.light
                     ? const [BoxShadow(color: Color(0x0C000000), blurRadius: 3, offset: Offset(0, 1))]
                     : null,
               ),
               foregroundDecoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(touch ? 8 : 6),
                 border: Border.all(
                   color: _focused
                       ? c.accent
@@ -217,11 +217,15 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                       semanticLabel: widget.title,
                       onTap: widget.onSelect,
                       builder: (context, interaction) => Padding(
-                        padding: const EdgeInsets.only(left: 12, right: 4),
+                        padding: EdgeInsets.only(left: touch ? 12 : 10, right: 4),
                         child: Row(
                           children: [
-                            Icon(_tabIcon(widget.tab), size: 15, color: widget.selected ? c.accent : c.icon),
-                            const SizedBox(width: 8),
+                            Icon(
+                              _tabIcon(widget.tab),
+                              size: touch ? 15 : 14,
+                              color: widget.selected ? c.accent : c.icon,
+                            ),
+                            SizedBox(width: touch ? 8 : 6),
                             Expanded(
                               child: LayoutBuilder(
                                 builder: (context, bounds) {

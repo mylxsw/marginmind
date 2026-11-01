@@ -52,7 +52,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final documents = state.tabs.active?.kind == WorkspaceTabKind.documentMap;
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
-      toolbarExtent: 48,
+      toolbarExtent: touch ? 52 : 40,
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
@@ -64,11 +64,11 @@ class WorkspaceDesktopShell extends ConsumerWidget {
         children: [
           MMToolbar.content(
             semanticLabel: l.workspaceDocumentMapTab,
-            height: touch ? 52 : 48,
+            height: touch ? 52 : 40,
             child: Container(
               padding: EdgeInsets.only(left: MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0),
               key: const ValueKey('workspace-tab-row'),
-              height: touch ? 52 : 48,
+              height: touch ? 52 : 40,
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: c.separator)),
                 color: Color.lerp(c.windowBackground, c.sidebarOpaque, .35),
@@ -251,7 +251,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;
     final width = box.maxWidth - (hasPanel && box.maxWidth >= 700 ? math.min(360.0, box.maxWidth) : 0);
-    final height = box.maxHeight - (MMInput.of(context).touchPlatform ? 52 : 48);
+    final height = box.maxHeight - (MMInput.of(context).touchPlatform ? 52 : 40);
     final vertical = context.mmTablet && height > width;
     return MMSplitView.effectiveMode(
       layout,
