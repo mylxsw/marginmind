@@ -5739,6 +5739,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteProgressPreviewEmpty => 'The preview appears as each section is completed';
 
   @override
+  String get workspaceOpenTabs => 'Open Tabs';
+
+  @override
   String get workspaceDocumentMapTab => 'Documents & Mind Maps';
 
   @override

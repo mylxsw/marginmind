@@ -71,6 +71,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
               height: touch ? 52 : 48,
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: c.separator)),
+                color: Color.lerp(c.windowBackground, c.sidebarOpaque, .35),
               ),
               child: Row(
                 children: [
@@ -78,25 +79,39 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                     MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: onShowSidebar),
                   Expanded(child: WorkspaceTabStrip(studySetId: studySetId)),
                   if (documents) ...[
-                    for (final entry in [
-                      (MMSplitMode.primary, MMIcons.layoutReader, l.layoutReader),
-                      (MMSplitMode.split, MMIcons.layoutSplit, l.layoutSplit),
-                      (MMSplitMode.secondary, MMIcons.layoutMap, l.layoutMap),
-                    ])
-                      MMIconButton(
-                        key: ValueKey(
-                          'toolbar-layout-${switch (entry.$1) {
-                            MMSplitMode.primary => 'reader',
-                            MMSplitMode.split => 'split',
-                            MMSplitMode.secondary => 'map',
-                          }}',
-                        ),
-                        icon: entry.$2,
-                        tooltip: entry.$3,
-                        selected: _shownLayout(context, constraints, state) == entry.$1,
-                        onPressed: () => owner.setLayout(entry.$1),
+                    Container(
+                      key: const ValueKey('workspace-layout-controls'),
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final entry in [
+                            (MMSplitMode.primary, MMIcons.layoutReader, l.layoutReader),
+                            (MMSplitMode.split, MMIcons.layoutSplit, l.layoutSplit),
+                            (MMSplitMode.secondary, MMIcons.layoutMap, l.layoutMap),
+                          ])
+                            MMIconButton(
+                              key: ValueKey(
+                                'toolbar-layout-${switch (entry.$1) {
+                                  MMSplitMode.primary => 'reader',
+                                  MMSplitMode.split => 'split',
+                                  MMSplitMode.secondary => 'map',
+                                }}',
+                              ),
+                              size: 28,
+                              icon: entry.$2,
+                              tooltip: entry.$3,
+                              selected: _shownLayout(context, constraints, state) == entry.$1,
+                              onPressed: () => owner.setLayout(entry.$1),
+                            ),
+                        ],
                       ),
-                    const SizedBox(width: MMSpacing.s),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: SizedBox(height: 18, child: VerticalDivider(width: 1, thickness: 1, color: c.separator)),
+                    ),
                   ],
                   if (MMPlatformCapabilities.current.assistant)
                     MMIconButton(
@@ -108,7 +123,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                       color: c.research,
                       onPressed: () => toggleAssistant(ref, studySetId),
                     ),
-                  const SizedBox(width: MMSpacing.s),
+                  const SizedBox(width: 12),
                 ],
               ),
             ),

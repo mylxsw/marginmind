@@ -5514,6 +5514,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noteProgressPreviewEmpty => '每完成一节，正文会显示在这里';
 
   @override
+  String get workspaceOpenTabs => '已打开的标签页';
+
+  @override
   String get workspaceDocumentMapTab => '文档与脑图';
 
   @override

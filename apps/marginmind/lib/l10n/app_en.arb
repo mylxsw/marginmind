@@ -3001,6 +3001,7 @@
     }
   },
   "noteProgressPreviewEmpty": "The preview appears as each section is completed",
+  "workspaceOpenTabs": "Open Tabs",
   "workspaceDocumentMapTab": "Documents & Mind Maps",
   "workspaceReferenceTitle": "Reference",
   "workspaceReferenceFrom": "From: {title}",

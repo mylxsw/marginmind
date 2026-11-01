@@ -1,3 +1,11 @@
+# 顶部 Tab 外观优化（2026-11-01）
+
+final result: passed
+
+根据用户反馈改为圆角选中标签、稳定的关闭位置、长标题提示及标签列表；布局按钮与 AI 分组。35 项相关交互回归、2 项深浅色截图检查、静态检查与 macOS Release 构建通过。对照和验证边界见 [本轮验收](docs/evidence/tab-bar-polish/README.md)。
+
+---
+
 # 工作区 Tab 与右侧内容栏（2026-11-01）
 
 final result: passed

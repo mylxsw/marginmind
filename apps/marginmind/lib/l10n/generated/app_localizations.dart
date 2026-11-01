@@ -10094,6 +10094,12 @@ abstract class AppLocalizations {
   /// **'The preview appears as each section is completed'**
   String get noteProgressPreviewEmpty;
 
+  /// No description provided for @workspaceOpenTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Tabs'**
+  String get workspaceOpenTabs;
+
   /// No description provided for @workspaceDocumentMapTab.
   ///
   /// In en, this message translates to:

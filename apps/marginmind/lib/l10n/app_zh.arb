@@ -2302,6 +2302,7 @@
     }
   },
   "noteProgressPreviewEmpty": "每完成一节，正文会显示在这里",
+  "workspaceOpenTabs": "已打开的标签页",
   "workspaceDocumentMapTab": "文档与脑图",
   "workspaceReferenceTitle": "参考内容",
   "workspaceReferenceFrom": "来自：{title}",
