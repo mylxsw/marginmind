@@ -1,0 +1,14 @@
+Source: audit working tree after menu fix
+Clock: controlled Flutter test clock; not wall-clock performance.
+
+LATENCY draft-keep-toggle = 300ms
+LATENCY draft-source-button = 300ms
+LATENCY study-note-xref = 300ms
+LATENCY reflow-saved-mark-mouse = 300ms
+LATENCY reflow-saved-mark-touch = 300ms
+LATENCY reflow-footnote-mouse = 300ms
+LATENCY reflow-footnote-touch = 300ms
+LATENCY attached-note-text-owner-selection = 300ms
+ANIMATION margin-note-more initial=1.0, duration=0ms
+ANIMATION margin-note-more at299=1.0
+ANIMATION margin-note-more at300=1.0

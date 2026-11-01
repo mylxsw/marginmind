@@ -557,6 +557,7 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
                                 width: 22,
                                 height: 22,
                                 child: PopupMenuButton<Object>(
+                                  popUpAnimationStyle: AnimationStyle.noAnimation,
                                   padding: EdgeInsets.zero,
                                   iconSize: 12,
                                   tooltip: l.moreTools,

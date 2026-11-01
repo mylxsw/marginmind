@@ -84,8 +84,15 @@ void main() {
     expect(linkedCard.body, 'Source quote');
     expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
     await tester.tap(within(find.byType(PopupMenuButton<Object>)));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Copy').last);
+    await tester.pump();
+    final copyItem = find.text('Copy').last;
+    expect(copyItem.hitTestable(), findsOneWidget);
+    expect(
+      ModalRoute.of(tester.element(copyItem))!.animation!.value,
+      1,
+      reason: 'the note menu must be complete in its first frame',
+    );
+    await tester.tap(copyItem);
     await tester.pumpAndSettle();
     expect(copied, 'My comment');
     await tester.tap(within(find.byType(PopupMenuButton<Object>)));
