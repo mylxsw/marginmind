@@ -275,7 +275,7 @@ class AssistantHeader extends ConsumerWidget {
               ],
             ),
           ),
-          MMToolbarButton(
+          MMIconButton(
             key: const ValueKey('assistant-history-button'),
             icon: MMIcons.recent,
             tooltip: l.assistantHistory,

@@ -441,7 +441,12 @@ void main() {
       final history = find.byKey(const ValueKey('assistant-history-button'));
       expect(find.descendant(of: history, matching: find.byIcon(MMIcons.recent)), findsOneWidget);
       expect(find.descendant(of: history, matching: find.byType(Text)), findsNothing);
-      expect(tester.widget<MMToolbarButton>(history).tooltip, '对话记录');
+      expect(tester.widget<MMIconButton>(history).tooltip, '对话记录');
+      for (final key in ['assistant-history-button', 'assistant-new', 'assistant-close']) {
+        final button = find.byKey(ValueKey(key));
+        final icon = tester.widget<Icon>(find.descendant(of: button, matching: find.byType(Icon)));
+        expect(icon.color, tester.element(button).mmColors.icon);
+      }
       expect(find.descendant(of: find.byType(AssistantHeader), matching: find.byIcon(MMIcons.ai)), findsOneWidget);
       // The collapsed reference summary keeps the page visible; expand for its document title.
       expect(find.textContaining('第 '), findsWidgets);

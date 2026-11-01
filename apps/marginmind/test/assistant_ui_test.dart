@@ -618,10 +618,14 @@ void main() {
       await tester.tap(historyButton);
       await pumpFor(tester);
       expect(find.byKey(const ValueKey('assistant-history')), findsOneWidget);
-      expect(tester.widget<MMToolbarButton>(historyButton).selected, isFalse);
+      expect(tester.widget<MMIconButton>(historyButton).selected, isFalse);
+      expect(
+        tester.widget<Icon>(find.descendant(of: historyButton, matching: find.byIcon(MMIcons.recent))).color,
+        tester.element(historyButton).mmColors.icon,
+      );
       await tester.tap(historyButton);
       await pumpFor(tester);
-      expect(tester.widget<MMToolbarButton>(historyButton).selected, isFalse);
+      expect(tester.widget<MMIconButton>(historyButton).selected, isFalse);
       expect(tester.widget<EditableText>(find.byType(EditableText).last).controller.text, '还没发送的草稿');
 
       // A manual hide survives closing and reopening the conversation panel.
