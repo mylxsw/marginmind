@@ -1521,31 +1521,49 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     final panel = Container(
       width: MMSizeClass.of(context) == MMSizeClass.compact
           ? double.infinity
-          : math.min(width, MediaQuery.sizeOf(context).width * .45),
+          : math.max(0, math.min(width, MediaQuery.sizeOf(context).width * .45) - MMSpacing.m),
+      margin: const EdgeInsets.all(MMSpacing.m / 2),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.mmColors.sidebarOpaque,
-        border: Border(right: BorderSide(color: context.mmColors.separator)),
+        borderRadius: BorderRadius.circular(MMRadii.sidebar),
+        border: Border.all(color: context.mmColors.border, width: MMSizes.hairline),
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (final tab in [
-                if (widget.document.capabilities().zoom)
-                  (ReaderPanelMode.thumbnails, MMIcons.thumbnails, l.readerThumbnails),
-                (ReaderPanelMode.outline, MMIcons.outline, l.readerOutline),
-                (ReaderPanelMode.bookmarks, MMIcons.bookmark, l.readerBookmarks),
-                (ReaderPanelMode.annotations, MMIcons.annotations, l.readerAnnotations),
-              ])
-                MMToolbarButton(
-                  icon: tab.$2,
-                  tooltip: tab.$3,
-                  selected: mode == tab.$1,
-                  onPressed: workspace.canShowReaderPanel(tab.$1) ? () => workspace.setReaderPanelMode(tab.$1) : null,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
+            child: LayoutBuilder(
+              builder: (context, bounds) => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: bounds.maxWidth),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (final tab in [
+                        if (widget.document.capabilities().zoom)
+                          (ReaderPanelMode.thumbnails, MMIcons.thumbnails, l.readerThumbnails),
+                        (ReaderPanelMode.outline, MMIcons.outline, l.readerOutline),
+                        (ReaderPanelMode.bookmarks, MMIcons.bookmark, l.readerBookmarks),
+                        (ReaderPanelMode.annotations, MMIcons.annotations, l.readerAnnotations),
+                      ])
+                        MMToolbarButton(
+                          icon: tab.$2,
+                          tooltip: tab.$3,
+                          selected: mode == tab.$1,
+                          onPressed: workspace.canShowReaderPanel(tab.$1)
+                              ? () => workspace.setReaderPanelMode(tab.$1)
+                              : null,
+                        ),
+                    ],
+                  ),
                 ),
-            ],
+              ),
+            ),
           ),
+          Divider(height: 1, thickness: 1, color: context.mmColors.separator),
           Expanded(
             child: ListView(
               children: switch (mode) {
