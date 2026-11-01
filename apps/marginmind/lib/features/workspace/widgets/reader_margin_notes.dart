@@ -590,12 +590,13 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
                                         ],
                                       ),
                                     ),
-                                    PopupMenuItem(
+                                    MMDropdownItem(
                                       value: 'map',
+                                      icon: MMIcons.mindMap,
                                       child: Text(note.nodeId == null ? l.addToMapAction : l.locateCard),
                                     ),
-                                    PopupMenuItem(value: 'copy', child: Text(l.copyAction)),
-                                    PopupMenuItem(value: 'delete', child: Text(l.delete)),
+                                    MMDropdownItem(value: 'copy', icon: MMIcons.copy, child: Text(l.copyAction)),
+                                    MMDropdownItem(value: 'delete', icon: MMIcons.trash, child: Text(l.delete)),
                                   ],
                                 ),
                               ),

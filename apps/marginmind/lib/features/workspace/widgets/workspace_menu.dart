@@ -17,12 +17,18 @@ List<PopupMenuEntry<VoidCallback>> workspaceMenuEntries(BuildContext context, Wi
       MMDropdownItem(
         value: () => owner.showNoteReference(NoteReference.document),
         enabled: state.activeDocumentId != null,
+        icon: MMIcons.document,
         child: Text(context.l10n.paneSource),
       ),
-      MMDropdownItem(value: () => owner.showNoteReference(NoteReference.map), child: Text(context.l10n.paneMap)),
+      MMDropdownItem(
+        value: () => owner.showNoteReference(NoteReference.map),
+        icon: MMIcons.mindMap,
+        child: Text(context.l10n.paneMap),
+      ),
     ],
     if (betaEnabled)
       MMDropdownItem(
+        icon: MMIcons.organizeNote,
         key: const ValueKey('workspace-command-organize-note'),
         value: () => showNoteSetupSheet(context, ref, id),
         child: Row(

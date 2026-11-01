@@ -193,7 +193,7 @@ class ReaderCompareMenu<T> extends ConsumerWidget {
                 key: item.key,
                 enabled: item.enabled && item.value != null,
                 value: item.value == null ? null : (() => unawaited(invoke(item.value!))) as T,
-                child: item.child,
+                child: item is MMDropdownItem<String> ? item.menuChild : item.child,
               )
             else if (item is PopupMenuDivider)
               const PopupMenuDivider(),

@@ -88,8 +88,8 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
                   icon: const Icon(MMIcons.add),
                   onSelected: (action) => action(),
                   itemBuilder: (_) => [
-                    MMDropdownItem(value: widget.onAddDocument, child: Text(l.importDocument)),
-                    MMDropdownItem(value: widget.onAddWebPage!, child: Text(l.addWebPage)),
+                    MMDropdownItem(value: widget.onAddDocument, icon: MMIcons.import, child: Text(l.importDocument)),
+                    MMDropdownItem(value: widget.onAddWebPage!, icon: MMIcons.web, child: Text(l.addWebPage)),
                   ],
                 ),
           children: widget.documents,
@@ -104,8 +104,9 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
                   icon: const Icon(MMIcons.add),
                   onSelected: (action) => action(),
                   itemBuilder: (_) => [
-                    MMDropdownItem(value: widget.onAddMap, child: Text(l.newMap)),
+                    MMDropdownItem(value: widget.onAddMap, icon: MMIcons.mindMap, child: Text(l.newMap)),
                     MMDropdownItem(
+                      icon: MMIcons.generateMap,
                       value: widget.onGenerateMap!,
                       child: Row(
                         children: [

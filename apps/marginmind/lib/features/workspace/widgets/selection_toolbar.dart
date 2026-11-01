@@ -327,17 +327,20 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
             capabilities.excerpt
                 ? () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
                 : null,
+            icon: MMIcons.mindMap,
           ),
           if (!isArea && MMPlatformCapabilities.current.assistant)
-            MMMenuItem(l.vocabularyTranslate, capabilities.translate ? _translate : null),
+            MMMenuItem(l.vocabularyTranslate, capabilities.translate ? _translate : null, icon: MMIcons.translate),
           if (isHighlight)
             MMMenuItem(
               l.deleteHighlight,
               capabilities.annotate ? () => _run(ReaderSelectionCommand.deleteHighlight) : null,
+              icon: MMIcons.trash,
             ),
           MMMenuItem(
             l.marginNoteAction,
             capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
+            icon: MMIcons.marginNote,
           ),
         ],
       );

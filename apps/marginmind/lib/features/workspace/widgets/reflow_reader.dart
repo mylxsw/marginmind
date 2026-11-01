@@ -1368,8 +1368,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
               context,
               position: d.globalPosition,
               entries: [
-                if (onRename != null) MMMenuItem(l.rename, onRename),
-                if (onDelete != null) MMMenuItem(l.delete, onDelete),
+                if (onRename != null) MMMenuItem(l.rename, onRename, icon: MMIcons.editNote),
+                if (onDelete != null) MMMenuItem(l.delete, onDelete, icon: MMIcons.trash),
               ],
             ),
       child: MMInteractive(

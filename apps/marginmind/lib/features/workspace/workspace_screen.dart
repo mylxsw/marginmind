@@ -399,14 +399,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         value: invoke,
         child: Row(
           children: [
-            if (id == 'assistant')
-              const AssistantIcon(size: MMSizes.dropdownIcon)
-            else
-              Icon(switch (id) {
-                'layout-reader' => MMReaderIcons.layoutReader,
-                'layout-split' => MMIcons.compare,
-                _ => icon,
-              }, size: MMSizes.dropdownIcon),
+            Icon(switch (id) {
+              'assistant' => MMIcons.ai,
+              'layout-reader' => MMReaderIcons.layoutReader,
+              'layout-split' => MMIcons.compare,
+              _ => icon,
+            }, size: MMSizes.dropdownIcon),
             const SizedBox(width: MMSpacing.s),
             Expanded(child: Text(label)),
             if (badge != null) ...[const SizedBox(width: MMSpacing.xs), badge],
@@ -456,9 +454,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         MMDropdownItem(
           value: state.activeDocumentId == null ? null : () => controller.showNoteReference(NoteReference.document),
           enabled: state.activeDocumentId != null,
+          icon: MMIcons.document,
           child: Text(l.paneSource),
         ),
-        MMDropdownItem(value: () => controller.showNoteReference(NoteReference.map), child: Text(l.paneMap)),
+        MMDropdownItem(
+          value: () => controller.showNoteReference(NoteReference.map),
+          icon: MMIcons.mindMap,
+          child: Text(l.paneMap),
+        ),
       ],
       if (betaEnabled)
         action(
@@ -844,6 +847,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                         itemBuilder: (_) => [
                                           if (betaEnabled)
                                             MMDropdownItem(
+                                              icon: MMIcons.organizeNote,
                                               key: const ValueKey('workspace-command-organize-note'),
                                               value: () => showNoteSetupSheet(context, ref, widget.studySetId),
                                               child: Row(
@@ -858,14 +862,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                           MMDropdownItem(
                                             enabled: ref.read(studySetProvider(widget.studySetId)) != null,
                                             value: () => controller.activateTab(WorkspaceTab.review),
+                                            icon: MMIcons.review,
                                             child: Text(l.review),
                                           ),
                                           MMDropdownItem(
                                             value: () => controller.activateTab(WorkspaceTab.vocabulary),
+                                            icon: MMIcons.vocabulary,
                                             child: Text(l.vocabularyTitle),
                                           ),
                                           MMDropdownItem(
                                             value: () => ref.read(navigationProvider.notifier).showLibrary(),
+                                            icon: MMIcons.library,
                                             child: Text(l.librarySection),
                                           ),
                                         ],

@@ -175,7 +175,10 @@ class MMPopUpButton<T> extends StatelessWidget {
                 context,
                 position: box.localToGlobal(Offset(0, box.size.height + 2)),
                 minWidth: box.size.width,
-                entries: [for (final (v, text) in items) MMMenuItem(text, () => onChanged!(v), checked: v == value)],
+                entries: [
+                  for (final (v, text) in items)
+                    MMMenuItem(text, () => onChanged!(v), icon: MMIcons.settings, checked: v == value),
+                ],
               );
             }
           : null,

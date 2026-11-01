@@ -498,20 +498,20 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
         context,
         position: position,
         entries: [
-          MMMenuItem(l.open, () => open(id)),
+          MMMenuItem(l.open, () => open(id), icon: MMIcons.reading),
           if (s.dueCount > 0)
             MMMenuItem(l.reviewCount(s.dueCount), () async {
               await repo.markOpened(id);
               ref.read(navigationProvider.notifier).startReview(id);
-            }),
+            }, icon: MMIcons.review),
           const MMMenuDivider(),
           MMMenuItem(l.renameEllipsis, () async {
             final title = await showRenameSheet(context, title: l.renameStudySet, initial: s.title);
             if (title != null && title.isNotEmpty) await repo.rename(id, title);
-          }),
-          MMMenuItem(s.starred ? l.unstar : l.star, () => repo.setStarred(id, starred: !s.starred)),
+          }, icon: MMIcons.editNote),
+          MMMenuItem(s.starred ? l.unstar : l.star, () => repo.setStarred(id, starred: !s.starred), icon: MMIcons.star),
           const MMMenuDivider(),
-          MMMenuItem(l.deleteEllipsis, () => confirmDelete(s), destructive: true),
+          MMMenuItem(l.deleteEllipsis, () => confirmDelete(s), destructive: true, icon: MMIcons.trash),
         ],
       );
     }

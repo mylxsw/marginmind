@@ -175,23 +175,32 @@ class WorkspaceSidebar extends ConsumerWidget {
                   if (title != null && title.trim().isNotEmpty) {
                     await controller.changeStudyNote(note.id, (n) => n.copyWith(title: title.trim()));
                   }
-                }),
-                MMMenuItem(l.exportStudyNote, () => showNoteExportSheet(context, ref, studySetId, note.id)),
-                MMMenuItem(l.delete, () async {
-                  await controller.deleteStudyNote(note.id);
-                  if (context.mounted) {
-                    MMHud.show(
-                      context,
-                      l.deletedHud(note.title),
-                      action: (
-                        l.undo,
-                        () {
-                          controller.undo();
-                        },
-                      ),
-                    );
-                  }
-                }, destructive: true),
+                }, icon: MMIcons.editNote),
+                MMMenuItem(
+                  l.exportStudyNote,
+                  () => showNoteExportSheet(context, ref, studySetId, note.id),
+                  icon: MMIcons.export,
+                ),
+                MMMenuItem(
+                  l.delete,
+                  () async {
+                    await controller.deleteStudyNote(note.id);
+                    if (context.mounted) {
+                      MMHud.show(
+                        context,
+                        l.deletedHud(note.title),
+                        action: (
+                          l.undo,
+                          () {
+                            controller.undo();
+                          },
+                        ),
+                      );
+                    }
+                  },
+                  destructive: true,
+                  icon: MMIcons.trash,
+                ),
               ],
             ),
           ),
@@ -240,7 +249,11 @@ class WorkspaceSidebar extends ConsumerWidget {
             context,
             position: position,
             entries: [
-              MMMenuItem(l.cancelImport, () => ref.read(documentImportsProvider(studySetId).notifier).cancel(task.id)),
+              MMMenuItem(
+                l.cancelImport,
+                () => ref.read(documentImportsProvider(studySetId).notifier).cancel(task.id),
+                icon: MMIcons.close,
+              ),
             ],
           ),
         ),
@@ -337,7 +350,11 @@ class WorkspaceSidebar extends ConsumerWidget {
                     context,
                     position: position,
                     entries: [
-                      MMMenuItem(l.reviewTag, () => controller.startReview(mapId: state.activeMapId, tag: tag)),
+                      MMMenuItem(
+                        l.reviewTag,
+                        () => controller.startReview(mapId: state.activeMapId, tag: tag),
+                        icon: MMIcons.review,
+                      ),
                     ],
                   )
                 : null,
@@ -419,13 +436,14 @@ class WorkspaceSidebar extends ConsumerWidget {
 
     final canAddWebPage = ref.watch(canAddWebPageProvider);
     List<PopupMenuEntry<String>> documentEntries(BuildContext _) => [
-      MMDropdownItem(value: 'import', child: Text(l.importDocument)),
-      if (canAddWebPage) MMDropdownItem(value: 'web', child: Text(l.addWebPage)),
+      MMDropdownItem(value: 'import', icon: MMIcons.import, child: Text(l.importDocument)),
+      if (canAddWebPage) MMDropdownItem(value: 'web', icon: MMIcons.web, child: Text(l.addWebPage)),
     ];
     List<PopupMenuEntry<String>> mapEntries(BuildContext _) => [
-      MMDropdownItem(value: 'new', child: Text(l.newMap)),
+      MMDropdownItem(value: 'new', icon: MMIcons.mindMap, child: Text(l.newMap)),
       if (betaEnabled)
         MMDropdownItem(
+          icon: MMIcons.generateMap,
           value: 'generate',
           child: Row(
             children: [
@@ -569,10 +587,10 @@ class WorkspaceSidebar extends ConsumerWidget {
       context,
       position: position,
       entries: [
-        MMMenuItem(l.newMap, () => showNewMapSheet(context, ref, studySetId)),
-        MMMenuItem(l.renameMap, () => showMapRenameSheet(context, ref, studySetId, map.id)),
+        MMMenuItem(l.newMap, () => showNewMapSheet(context, ref, studySetId), icon: MMIcons.mindMap),
+        MMMenuItem(l.renameMap, () => showMapRenameSheet(context, ref, studySetId, map.id), icon: MMIcons.editNote),
         if (controller.content.maps.length > 1)
-          MMMenuItem(l.deleteMap, () => controller.removeMap(map.id), destructive: true),
+          MMMenuItem(l.deleteMap, () => controller.removeMap(map.id), destructive: true, icon: MMIcons.trash),
       ],
     );
   }
@@ -590,18 +608,20 @@ class WorkspaceSidebar extends ConsumerWidget {
       context,
       position: position,
       entries: [
-        MMMenuItem(l.open, () => controller.openDocument(doc.id)),
+        MMMenuItem(l.open, () => controller.openDocument(doc.id), icon: MMIcons.reading),
         if (canFullTranslate) ...[
           if (hasActiveFullJob)
             MMMenuItem(
               l.fullTranslationTaskMenu(fullState!.percent),
               () =>
                   showFullTranslationPanel(context, studySetId: studySetId, documentId: doc.id, targetLang: targetLang),
+              icon: MMIcons.translate,
             )
           else
             MMMenuItem(
               l.fullTranslationMenu,
               () => showFullTranslationSheet(context, studySetId: studySetId, documentId: doc.id),
+              icon: MMIcons.translate,
             ),
         ],
         if (betaEnabled)
@@ -609,25 +629,31 @@ class WorkspaceSidebar extends ConsumerWidget {
             l.mapGenerateDocumentMenu,
             () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: doc.id),
             badge: const MMBetaBadge(),
+            icon: MMIcons.generateMap,
           ),
 
         MMMenuItem(l.renameEllipsis, () async {
           final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);
           if (title != null) await controller.renameDocument(doc.id, title);
-        }),
+        }, icon: MMIcons.editNote),
         const MMMenuDivider(),
-        MMMenuItem(l.removeDocumentEllipsis, () async {
-          final excerpts = controller.content.annotationsOn(doc.id).length;
-          final ok = await showConfirmSheet(
-            context,
-            title: l.removeDocumentTitle(doc.title),
-            message: l.removeDocumentMessage(excerpts),
-            confirmLabel: l.remove,
-          );
-          if (!ok) return;
-          final notice = await controller.removeDocument(doc.id);
-          if (context.mounted) showNotice(context, notice, rootTitle: '');
-        }, destructive: true),
+        MMMenuItem(
+          l.removeDocumentEllipsis,
+          () async {
+            final excerpts = controller.content.annotationsOn(doc.id).length;
+            final ok = await showConfirmSheet(
+              context,
+              title: l.removeDocumentTitle(doc.title),
+              message: l.removeDocumentMessage(excerpts),
+              confirmLabel: l.remove,
+            );
+            if (!ok) return;
+            final notice = await controller.removeDocument(doc.id);
+            if (context.mounted) showNotice(context, notice, rootTitle: '');
+          },
+          destructive: true,
+          icon: MMIcons.trash,
+        ),
       ],
     );
   }

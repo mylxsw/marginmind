@@ -302,6 +302,7 @@ class _VocabularyScope extends StatelessWidget {
       itemBuilder: (_) => [
         for (final (value, title) in [(false, l.vocabularyThisSet), (true, l.vocabularyAllSets)])
           MMDropdownItem(
+            icon: MMIcons.collections,
             value: value,
             child: Row(
               children: [

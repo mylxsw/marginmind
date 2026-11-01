@@ -39,9 +39,21 @@ class ReaderEntryHeader extends StatelessWidget {
                       context,
                       position: box.localToGlobal(Offset(0, box.size.height)),
                       entries: [
-                        MMMenuItem(context.l10n.readerSortPageAscending, () => onSort(ReaderEntrySort.pageAscending)),
-                        MMMenuItem(context.l10n.readerSortPageDescending, () => onSort(ReaderEntrySort.pageDescending)),
-                        MMMenuItem(context.l10n.readerSortTitle, () => onSort(ReaderEntrySort.title)),
+                        MMMenuItem(
+                          context.l10n.readerSortPageAscending,
+                          () => onSort(ReaderEntrySort.pageAscending),
+                          icon: MMIcons.sortAscending,
+                        ),
+                        MMMenuItem(
+                          context.l10n.readerSortPageDescending,
+                          () => onSort(ReaderEntrySort.pageDescending),
+                          icon: MMIcons.sortDescending,
+                        ),
+                        MMMenuItem(
+                          context.l10n.readerSortTitle,
+                          () => onSort(ReaderEntrySort.title),
+                          icon: MMIcons.sortTitle,
+                        ),
                       ],
                     );
                   },

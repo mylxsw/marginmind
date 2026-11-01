@@ -527,6 +527,7 @@ class _Annotations extends ConsumerWidget {
                             l.delete,
                             () => ref.read(workspaceProvider(studySetId).notifier).deleteHighlight(entry.highlight!.id),
                             destructive: true,
+                            icon: MMIcons.trash,
                           ),
                         ],
                       ),

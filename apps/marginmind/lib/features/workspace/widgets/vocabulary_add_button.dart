@@ -149,7 +149,7 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
               context,
               position: box.localToGlobal(Offset.zero) + Offset(0, box.size.height),
               entries: [
-                MMMenuItem(l.vocabularyView, () => _details(e.id)),
+                MMMenuItem(l.vocabularyView, () => _details(e.id), icon: MMIcons.vocabulary),
                 MMMenuItem(
                   l.vocabularyMarkKnown,
                   () => _edit(
@@ -161,10 +161,12 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
                     ),
                     l.vocabularyKnown,
                   ),
+                  icon: MMIcons.check,
                 ),
                 MMMenuItem(
                   l.vocabularyRemove,
                   () => _edit((items) => const VocabularyEditor().remove(items, e.id), l.vocabularyRemove),
+                  icon: MMIcons.trash,
                 ),
               ],
             );
