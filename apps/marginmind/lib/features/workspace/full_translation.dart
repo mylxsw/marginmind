@@ -406,6 +406,17 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     state = state.copyWith(checkpointCollapsed: collapsed);
   }
 
+  void _observe(Future<void>? work) {
+    if (work == null) return;
+    unawaited(
+      work.catchError((Object error) {
+        if (ref.mounted && _scheduler?.job == null) state = state.copyWith(loadError: error);
+        // Scheduler failures already publish their retryable error state. Observe
+        // the future so storage errors cannot escape into the Flutter zone.
+      }),
+    );
+  }
+
   Future<void> startJob({
     required int from,
     required int to,
@@ -414,6 +425,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     String? note,
     String? sourceLang,
     required String modelName,
+    ModelReference? modelOverride,
     required int estimatedTokens,
   }) async {
     await _loading;
@@ -421,27 +433,30 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     final scheduler = _scheduler;
     if (scheduler == null || state.loadError != null) throw StateError('Translation unavailable: ${state.loadError}');
     final isOnline = ref.read(translationOnlineProvider(studySetId));
-    final job = TranslationJob(
-      id: newId(),
-      documentId: documentId,
-      sourceLang: sourceLang,
-      targetLang: targetLang,
-      range: TranslationRange(from, to),
-      mode: mode,
-      batchSize: batchSize,
-      note: note?.trim() ?? '',
-      model: modelName,
-      state: isOnline ? TranslationJobState.running : TranslationJobState.offline,
-      batch: TranslationBatch(
-        index: 1,
-        range: TranslationRange(from, mode == TranslationMode.all ? to : math.min(to, from + batchSize - 1)),
+    final job = await scheduler.prepareJob(
+      TranslationJob(
+        id: newId(),
+        documentId: documentId,
+        sourceLang: sourceLang,
+        targetLang: targetLang,
+        range: TranslationRange(from, to),
+        mode: mode,
+        batchSize: batchSize,
+        note: note?.trim() ?? '',
+        model: modelName,
+        state: isOnline ? TranslationJobState.running : TranslationJobState.offline,
+        batch: TranslationBatch(
+          index: 1,
+          range: TranslationRange(from, mode == TranslationMode.all ? to : math.min(to, from + batchSize - 1)),
+        ),
+        estimateTokens: estimatedTokens,
+        createdAt: DateTime.now().toUtc(),
+        updatedAt: DateTime.now().toUtc(),
       ),
-      estimateTokens: estimatedTokens,
-      createdAt: DateTime.now().toUtc(),
-      updatedAt: DateTime.now().toUtc(),
+      modelOverride: modelOverride,
     );
     state = state.copyWith(job: job, recoveredQuit: false, checkpointCollapsed: false);
-    unawaited(scheduler.start(job));
+    _observe(scheduler.start(job));
   }
 
   Future<void> pause() async {
@@ -450,12 +465,12 @@ class FullTranslationController extends Notifier<FullTranslationState> {
 
   Future<void> resume() async {
     state = state.copyWith(recoveredQuit: false);
-    unawaited(_scheduler?.resume());
+    _observe(_scheduler?.resume());
   }
 
   Future<void> continueBatch({int? batchSize, String? note, bool all = false}) async {
     state = state.copyWith(checkpointCollapsed: false);
-    unawaited(_scheduler?.continueBatch(batchSize: batchSize, note: note, all: all));
+    _observe(_scheduler?.continueBatch(batchSize: batchSize, note: note, all: all));
   }
 
   Future<void> stop() async {
@@ -493,7 +508,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     final onPage = state.paragraphs.where((p) => p.unit == page).toList();
     for (final p in onPage) {
       if (!state.values.containsKey(p.fingerprint) && !state.values.containsKey(textKey(p.text, targetLang))) {
-        unawaited(scheduler.retry(p));
+        _observe(scheduler.retry(p));
       }
     }
   }

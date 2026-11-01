@@ -6,7 +6,6 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
-import '../assistant/assistant_settings.dart';
 import 'reader_compare.dart';
 import 'reader_ocr.dart';
 import 'reader_paragraphs.dart';
@@ -34,25 +33,6 @@ final translationParagraphsProvider = FutureProvider.autoDispose.family<List<Tra
   final ocr = ref.watch(readerOcrProvider(path));
   return MMPdfEngine.translationParagraphs(ocr.document?.path ?? path, doc.id);
 }, dependencies: [workspaceProvider, readingPagesProvider]);
-
-// A page can contain many PDF text runs, especially with reasoning models.
-// Keep work bounded per viewed page rather than applying a short whole-job
-// allowance to an arbitrary number of small paragraphs.
-const _pageTranslationBudget = ResearchBudget(outputTokens: 16384, duration: Duration(minutes: 3));
-
-final paragraphTranslatorProvider = Provider<Future<ParagraphTranslator> Function(AssistantModel)>((ref) {
-  final secrets = ref.watch(assistantSecretsProvider);
-  return (model) async {
-    final key = await assistantModelKey(secrets, model);
-    if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
-      throw const ResearchFailure(ResearchFailureKind.authentication);
-    }
-    return ModelParagraphTranslator(
-      connectAssistant(model, key ?? '', budget: _pageTranslationBudget, retryRequests: false, perRequestBudget: true),
-      model.model,
-    );
-  };
-});
 
 class ReaderTranslationState {
   const ReaderTranslationState({
@@ -244,11 +224,6 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
     if (pair?.right is! AiCompareTarget) return;
     if (_session?.job?.isActive == true) return;
     try {
-      final model = ref.read(assistantDefaultModelProvider);
-      if (model == null || (!assistantOnlineDefault(ref, studySetId) && model.provider != AssistantProvider.ollama)) {
-        if (current()) state = state.copyWith(failed: true);
-        return;
-      }
       final session = _session;
       if (session == null || !current() || session.job?.isActive == true) return;
       if (paragraphs.first.textAnchor != null) {
@@ -300,10 +275,6 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
   void hover(String? key) => state = state.copyWith(hovered: key, clearHover: key == null);
 
   Future<void> retry() async {
-    final model = ref.read(assistantDefaultModelProvider);
-    if (model == null || (!assistantOnlineDefault(ref, studySetId) && model.provider != AssistantProvider.ollama)) {
-      return;
-    }
     if (_session != null) {
       if (_session!.job?.isActive == true) return;
       for (final p in state.pageParagraphs.where((p) => !state.values.containsKey(p.fingerprint)).toList()) {

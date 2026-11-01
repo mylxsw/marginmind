@@ -71,9 +71,24 @@ class TranslationScheduler {
   final Future<ParagraphTranslator> Function()? createTranslator;
   Future<ParagraphTranslator>? _opening;
   bool _refreshTranslator = false;
-  Future<ParagraphTranslator> _getTranslator() => _translator != null
-      ? Future.value(_translator)
-      : _opening ??= createTranslator!().then((t) => _translator = t).whenComplete(() => _opening = null);
+  String? _boundJobId;
+  bool _starting = false;
+  Future<ParagraphTranslator> _getTranslator({bool prepareScope = true}) async {
+    final t =
+        _translator ??
+        await (_opening ??= createTranslator!().then((t) => _translator = t).whenComplete(() => _opening = null));
+    if (t is ScheduledParagraphTranslator && _job != null && _boundJobId != _job!.id) {
+      final previous = _job!;
+      final bound = await t.bindJob(previous);
+      if (_job?.id == previous.id) {
+        _job = _job!.copyWith(runContext: bound.runContext, model: bound.model);
+        _boundJobId = previous.id;
+      }
+    }
+    if (prepareScope && t is ScheduledParagraphTranslator && _job == null) await t.prepareScope();
+    return t;
+  }
+
   final TranslationStore store;
   final ResearchBudget budget;
   final void Function()? changed;
@@ -99,6 +114,8 @@ class TranslationScheduler {
   final _editVersions = <String, int>{};
   TranslationJob? _job;
   Object? _failure;
+  final _pendingSegments = <String, (TranslationSegment, int, bool)>{};
+  final _requestCancels = <CancellationToken>{};
   TranslationUsage _usage = TranslationUsage();
 
   TranslationJob? get job => _job;
@@ -121,10 +138,13 @@ class TranslationScheduler {
   );
   String keyOf(TranslationParagraph p) => _keys[p.fingerprint] ?? textKey(p.text, language);
   int _page(TranslationParagraph p) => p.unit;
+  bool get _available =>
+      _online ||
+      (_translator is ScheduledParagraphTranslator && (_translator as ScheduledParagraphTranslator).localOnly);
   bool get _gate =>
       !_closed &&
       !_closingRequested &&
-      _online &&
+      _available &&
       (_job == null || !_job!.isActive || _job!.state == TranslationJobState.running);
   int get concurrency => math.min(
     budget.outputTokens,
@@ -156,6 +176,10 @@ class TranslationScheduler {
     _job = await store.loadJob(documentId, language);
     _usage = _job?.usage ?? TranslationUsage();
     _failed.addAll(_job?.failures.keys ?? []);
+    if (_job?.runContext != null && _job!.isActive) {
+      final t = await _getTranslator();
+      if (t is ScheduledParagraphTranslator) await t.saveJob(_job!);
+    }
     _emit();
   }
 
@@ -164,37 +188,70 @@ class TranslationScheduler {
     if (focus != null) _focus = focus;
   }
 
-  Future<void> start(TranslationJob job) async {
-    _commandVersion++;
+  Future<TranslationJob> prepareJob(TranslationJob job, {ModelReference? modelOverride}) async {
     if (_closed || _closingRequested || _job?.isActive == true) throw StateError('Scheduler is busy');
-    if (job.documentId != documentId || job.targetLang != language) throw ArgumentError('Different task scope');
-    _job = job.copyWith(state: _online ? TranslationJobState.running : TranslationJobState.offline, updatedAt: _now());
-    _usage = TranslationUsage(
-      inputTokens: job.usage.inputTokens,
-      outputTokens: job.usage.outputTokens,
-      requests: job.usage.requests + _active.values.toSet().length,
-    );
     _demand = {};
-    _batchRequested = false;
-    _failed
-      ..clear()
-      ..addAll(job.failures.keys);
-    _failure = null;
-    await _persist(force: true);
-    _emit();
-    await _run();
+    if (_translator case final ScheduledParagraphTranslator current) current.pauseDispatch();
+    await _runFuture;
+    if (_active.isNotEmpty) await Future.wait(_active.values.toSet());
+    final t = await _getTranslator(prepareScope: false);
+    return t is ScheduledParagraphTranslator ? t.bindJob(job, modelOverride: modelOverride) : job;
+  }
+
+  Future<void> start(TranslationJob job) async {
+    if (_closed || _closingRequested || _starting || _job?.isActive == true) throw StateError('Scheduler is busy');
+    final command = ++_commandVersion;
+    _starting = true;
+    try {
+      if (job.documentId != documentId || job.targetLang != language) throw ArgumentError('Different task scope');
+      _demand = {};
+      if (_translator case final ScheduledParagraphTranslator current) current.pauseDispatch();
+      await _runFuture;
+      if (_active.isNotEmpty) await Future.wait(_active.values.toSet());
+      final translator = await _getTranslator(prepareScope: false);
+      if (translator is ScheduledParagraphTranslator) {
+        job = await translator.bindJob(job);
+        _boundJobId = job.id;
+        translator.authorizeRecovery();
+      }
+      if (_closed || _closingRequested || command != _commandVersion) throw StateError('Task start superseded');
+      _job = job.copyWith(
+        state: _available ? TranslationJobState.running : TranslationJobState.offline,
+        updatedAt: _now(),
+      );
+      _usage = TranslationUsage(
+        inputTokens: job.usage.inputTokens,
+        outputTokens: job.usage.outputTokens,
+        requests: job.usage.requests + _active.values.toSet().length,
+      );
+      _demand = {};
+      _batchRequested = false;
+      _failed
+        ..clear()
+        ..addAll(job.failures.keys);
+      _failure = null;
+      await _persist(force: true);
+      _emit();
+      await _run();
+    } finally {
+      _starting = false;
+    }
   }
 
   /// Viewing a page never bypasses an unfinished full-document job.
   Future<void> demand(Iterable<int> pages) async {
     if (_job?.isActive == true || _closed || _closingRequested) return;
     _demand = pages.toSet();
+    if (_translator case final ScheduledParagraphTranslator t) {
+      t.pauseDispatch(paused: _demand.isEmpty);
+    }
     _failure = null;
     await _run();
   }
 
   Future<void> pause({TranslationPauseReason reason = TranslationPauseReason.user}) async {
     _commandVersion++;
+    if (_translator case final ScheduledParagraphTranslator t) t.pauseDispatch();
     if (_closed) return;
     if (_job?.isActive != true) {
       _demand = {};
@@ -211,8 +268,9 @@ class TranslationScheduler {
     await _refreshConnection();
     if (_closed || _closingRequested || command != _commandVersion) return;
     _failure = null;
+    if (_translator case final ScheduledParagraphTranslator t) t.authorizeRecovery();
     _job = _job!.copyWith(
-      state: _online ? TranslationJobState.running : TranslationJobState.offline,
+      state: _available ? TranslationJobState.running : TranslationJobState.offline,
       budgetAcknowledged: _job!.budgetAcknowledged || _job!.state == TranslationJobState.budget,
       updatedAt: _now(),
     );
@@ -224,6 +282,7 @@ class TranslationScheduler {
   Future<void> continueBatch({int? batchSize, String? note, bool all = false}) async {
     if (_closed || _closingRequested || _job?.state != TranslationJobState.review) return;
     final j = _job!;
+    if (_translator case final ScheduledParagraphTranslator t) t.authorizeRecovery();
     final from = j.batch.range.to + 1;
     if (from > j.range.to) return;
     final size = batchSize ?? j.batchSize;
@@ -235,7 +294,7 @@ class TranslationScheduler {
         index: j.batch.index + 1,
         range: TranslationRange(from, all ? j.range.to : math.min(j.range.to, from + size - 1)),
       ),
-      state: _online ? TranslationJobState.running : TranslationJobState.offline,
+      state: _available ? TranslationJobState.running : TranslationJobState.offline,
       updatedAt: _now(),
     );
     _batchRequested = false;
@@ -249,6 +308,12 @@ class TranslationScheduler {
     _demand = {};
     if (_closed || _job == null) return;
     _job = _job!.copyWith(state: TranslationJobState.stopped, updatedAt: _now());
+    if (_translator case final ScheduledParagraphTranslator t) {
+      for (final cancel in _requestCancels) {
+        cancel.cancel();
+      }
+      await t.cancelPending();
+    }
     _emit();
     await _persist(force: true);
   }
@@ -256,11 +321,11 @@ class TranslationScheduler {
   Future<void> setOnline(bool online) async {
     if (_closed || _closingRequested) return;
     _online = online;
-    if (!online && _job?.state == TranslationJobState.running) {
+    if (!_available && _job?.state == TranslationJobState.running) {
       _job = _job!.copyWith(state: TranslationJobState.offline, updatedAt: _now());
       await _persist(force: true);
       _emit();
-    } else if (online && _job?.state == TranslationJobState.offline) {
+    } else if (_available && _job?.state == TranslationJobState.offline) {
       await resume();
     }
   }
@@ -337,7 +402,7 @@ class TranslationScheduler {
   Future<void> retranslate(TranslationParagraph p) => _explicit(p, replace: true);
 
   Future<void> _explicit(TranslationParagraph p, {required bool replace}) async {
-    if (_closed || _closingRequested || !_online) return;
+    if (_closed || _closingRequested) return;
     if (p.documentId != documentId || !paragraphs.any((q) => q.fingerprint == p.fingerprint && q.text == p.text)) {
       throw ArgumentError('Unknown paragraph');
     }
@@ -349,13 +414,25 @@ class TranslationScheduler {
     if (!replace && _segments.containsKey(keyOf(p))) return;
     if (_refreshTranslator) {
       await _refreshConnection();
-      if (_closed || _closingRequested || !_online) return;
+      if (_closed || _closingRequested || !_available) return;
       final racing = _active[keyOf(p)];
       if (racing != null) {
         await racing;
         return;
       }
       if (!replace && _segments.containsKey(keyOf(p))) return;
+    }
+    final currentTranslator = await _getTranslator();
+    if (!_available || _closed || _closingRequested) return;
+    if (_active[keyOf(p)] case final Future<void> racing) {
+      await racing;
+      return;
+    }
+    if (!replace && _segments.containsKey(keyOf(p))) return;
+    if (currentTranslator is ScheduledParagraphTranslator) currentTranslator.authorizeRecovery();
+    if (replace) {
+      final t = currentTranslator;
+      if (t is ScheduledParagraphTranslator) t.newTranslation(p);
     }
     _clearFailures(p);
     await _dispatch([p], explicit: true);
@@ -419,7 +496,20 @@ class TranslationScheduler {
   }
 
   Future<void> _drain() async {
-    if (_candidates().isNotEmpty && _gate) {
+    try {
+      for (final entry in _pendingSegments.entries.toList()) {
+        final (segment, version, replace) = entry.value;
+        await _append(segment, editVersion: version, replaceEdited: replace);
+        _pendingSegments.remove(entry.key);
+      }
+    } catch (_) {
+      _storageFailed();
+      rethrow;
+    }
+    if (_candidates().isNotEmpty &&
+        !_closed &&
+        !_closingRequested &&
+        (_job == null || !_job!.isActive || _job!.state == TranslationJobState.running)) {
       try {
         await _getTranslator();
       } catch (error) {
@@ -518,7 +608,7 @@ class TranslationScheduler {
     // A stopped job permits new on-demand work, but never revives its old bulk attempts.
     bool bulkJobRunning() => bulkJobId == null || (_job?.id == bulkJobId && _job?.state == TranslationJobState.running);
     bool canAttempt() =>
-        !_closed && !_closingRequested && _online && (explicit || (bulkJobRunning() && _gate && slot < concurrency));
+        !_closed && !_closingRequested && _available && (explicit || (bulkJobRunning() && _gate && slot < concurrency));
     final editVersions = {for (final p in pack) keyOf(p): _editVersions[keyOf(p)] ?? 0};
     // Capture provenance before awaiting: edits to requirements affect later requests.
     final note = _job?.note ?? '';
@@ -536,6 +626,7 @@ class TranslationScheduler {
       _reserved += reservation;
       var saving = true, accounted = false, sent = false;
       final requestCancel = CancellationToken();
+      _requestCancels.add(requestCancel);
       try {
         await _persist();
         if (!canAttempt()) return;
@@ -543,36 +634,53 @@ class TranslationScheduler {
         saving = false;
         final t = await _getTranslator();
         if (!canAttempt()) return;
-        final requestModel = t is ModelParagraphTranslator ? t.model : model;
-        if (pack.fold<int>(512 + note.length, (n, p) => n + p.text.length) > budget.inputCharacters) {
+        final managed = t is ScheduledParagraphTranslator;
+        final requestModel = t is ScheduledParagraphTranslator
+            ? t.modelIdentity
+            : t is ModelParagraphTranslator
+            ? t.model
+            : model;
+        if (!managed && pack.fold<int>(512 + note.length, (n, p) => n + p.text.length) > budget.inputCharacters) {
           if (!bulkJobRunning()) return;
           await _recordFailure(pack, ResearchFailureKind.protocol, 0);
           return;
         }
-        _usage = TranslationUsage(
-          inputTokens: _usage.inputTokens,
-          outputTokens: _usage.outputTokens,
-          requests: _usage.requests + 1,
-        );
+        if (!managed) {
+          _usage = TranslationUsage(
+            inputTokens: _usage.inputTokens,
+            outputTokens: _usage.outputTokens,
+            requests: _usage.requests + 1,
+          );
+        }
         if (!explicit && _job?.isActive == true) _batchRequested = true;
         sent = true;
         if (t is PackedParagraphTranslator) {
-          response = await t
-              .translatePack(pack, language, requestCancel, allowance, sourceLanguage: _job?.sourceLang, note: note)
-              .timeout(budget.duration);
+          final pending = t.translatePack(
+            pack,
+            language,
+            requestCancel,
+            allowance,
+            sourceLanguage: _job?.sourceLang,
+            note: note,
+          );
+          // A long source paragraph may require many bounded SDK children;
+          // Runtime-backed calls enforce timeout per child, not per paragraph.
+          response = managed ? await pending : await pending.timeout(budget.duration);
         } else {
           final r = await t
               .translate(pack.single, language, requestCancel, allowance, sourceLanguage: _job?.sourceLang)
               .timeout(budget.duration);
           response = PackedParagraphTranslation([r.text], inputTokens: r.inputTokens, outputTokens: r.tokens);
         }
-        _usage = TranslationUsage(
-          inputTokens: _usage.inputTokens + _positiveUsage(response.inputTokens, inputEstimate),
-          outputTokens:
-              _usage.outputTokens +
-              _positiveUsage(response.outputTokens, utf8.encode(response.texts.join()).length + pack.length * 8),
-          requests: _usage.requests,
-        );
+        _usage = t is ScheduledParagraphTranslator
+            ? await t.readUsage()
+            : TranslationUsage(
+                inputTokens: _usage.inputTokens + _positiveUsage(response.inputTokens, inputEstimate),
+                outputTokens:
+                    _usage.outputTokens +
+                    _positiveUsage(response.outputTokens, utf8.encode(response.texts.join()).length + pack.length * 8),
+                requests: _usage.requests,
+              );
         accounted = true;
         if (_consecutive429 < 2) _consecutive429 = 0;
         _checkBudget();
@@ -580,6 +688,11 @@ class TranslationScheduler {
           throw const ResearchFailure(ResearchFailureKind.protocol);
         }
         saving = true;
+        if (managed) await _persist(force: true);
+        if (managed && bulkJobId != null && (_job?.id != bulkJobId || _job?.state == TranslationJobState.stopped)) {
+          return;
+        }
+        if (managed) requestCancel.check();
         for (var i = 0; i < pack.length; i++) {
           final p = pack[i];
           final segment = TranslationSegment(
@@ -593,22 +706,29 @@ class TranslationScheduler {
             origin: TranslationOrigin.ai,
             at: _now(),
           );
-          await _append(segment, editVersion: editVersions[segment.key], replaceEdited: explicit);
+          _pendingSegments[segment.key] = (segment, editVersions[segment.key]!, explicit);
+        }
+        for (final key in pack.map(keyOf)) {
+          final pending = _pendingSegments[key];
+          if (pending == null) continue;
+          final (segment, version, replace) = pending;
+          await _append(segment, editVersion: version, replaceEdited: replace);
+          _pendingSegments.remove(key);
         }
         await _persist();
         return;
       } catch (error) {
         if (_closed) return;
         if (saving) {
-          _failure = const ResearchFailure(ResearchFailureKind.unavailable, 'storage');
-          _demand = {};
-          if (_job?.isActive == true) {
-            _job = _job!.copyWith(state: TranslationJobState.error, errorKind: 'storage', updatedAt: _now());
-          }
-          _emit();
+          _storageFailed();
           // Never buy a translation again because its journal write failed.
           rethrow;
         }
+        if (_translator case final ScheduledParagraphTranslator t) {
+          _usage = await t.readUsage();
+          accounted = true;
+        }
+        if (error is ResearchFailure && error.code == 'translationPaused') return;
         if (!accounted && sent) {
           _usage = TranslationUsage(
             inputTokens:
@@ -626,12 +746,13 @@ class TranslationScheduler {
         requestCancel.cancel();
         final kind = error is TimeoutException ? ResearchFailureKind.timeout : assistantFailureKind(error);
         if (kind == ResearchFailureKind.network && !_online) return;
-        final reason = _taskError(error, kind);
+        if (bulkJobId != null && (_job?.id != bulkJobId || _job?.state == TranslationJobState.stopped)) return;
+        final reason = error is ConfigurationFailure ? 'model' : _taskError(error, kind);
         if (reason != null) {
           if (_job?.isActive == true) {
             _job = _job!.copyWith(state: TranslationJobState.error, errorKind: reason, updatedAt: _now());
           }
-          _refreshTranslator = createTranslator != null;
+          _refreshTranslator = _translator is! ScheduledParagraphTranslator && createTranslator != null;
           _failure = ResearchFailure(kind);
           _demand = {};
           await _persist(force: true);
@@ -643,7 +764,9 @@ class TranslationScheduler {
           await pause(reason: TranslationPauseReason.quit);
           return;
         }
-        if ({ResearchFailureKind.protocol, ResearchFailureKind.refusal}.contains(kind) && pack.length > 1) {
+        if (_translator is! ScheduledParagraphTranslator &&
+            {ResearchFailureKind.protocol, ResearchFailureKind.refusal}.contains(kind) &&
+            pack.length > 1) {
           // Release the output reservation before the recursive single calls.
           _reserved -= reservation;
           try {
@@ -668,7 +791,7 @@ class TranslationScheduler {
           ResearchFailureKind.unavailable,
           ResearchFailureKind.network,
         }.contains(kind);
-        if (transient && attempt < 3) {
+        if (_translator is! ScheduledParagraphTranslator && transient && attempt < 3) {
           for (final p in pack) {
             _retries[keyOf(p)] = attempt + 1;
           }
@@ -683,6 +806,7 @@ class TranslationScheduler {
         return;
       } finally {
         requestCancel.cancel();
+        _requestCancels.remove(requestCancel);
         _reserved -= reservation;
       }
     }
@@ -725,6 +849,7 @@ class TranslationScheduler {
       if (error.response?.statusCode == 402) return 'quota';
       if (error.response?.statusCode == 404) return 'model';
     }
+    if (code == 'storage') return 'storage';
     if (kind == ResearchFailureKind.authentication) return 'authentication';
     if ({'quota', 'insufficient_quota', 'quota_exceeded', 'billing_hard_limit_reached'}.contains(code)) return 'quota';
     if ({'model', 'model_not_found'}.contains(code)) return 'model';
@@ -765,11 +890,31 @@ class TranslationScheduler {
     }
     _ledgerTimer?.cancel();
     _ledgerTimer = null;
-    _lastSaved = _now();
+    final savedAt = _now();
     final snapshot = _job!;
-    final write = _writes.then((_) => store.saveJob(snapshot));
+    final write = _writes.then((_) async {
+      await store.saveJob(snapshot);
+      if (_translator case final ScheduledParagraphTranslator t) await t.saveJob(snapshot);
+    });
     _writes = write.catchError((Object _) {});
-    await write;
+    try {
+      await write;
+      _lastSaved = savedAt;
+    } catch (_) {
+      _storageFailed();
+      rethrow;
+    }
+  }
+
+  // Saving is part of the task lifecycle, including before dispatch and when
+  // retrying a validated result. Publish even if disk cannot persist the error.
+  void _storageFailed() {
+    if (_job != null && _job!.state != TranslationJobState.stopped) {
+      _job = _job!.copyWith(state: TranslationJobState.error, errorKind: 'storage', usage: _usage, updatedAt: _now());
+    }
+    _demand = {};
+    _failure = const ResearchFailure(ResearchFailureKind.unavailable, 'storage');
+    _emit();
   }
 
   Future<void> _refreshConnection() async {
@@ -787,10 +932,7 @@ class TranslationScheduler {
     try {
       await _persist(force: true);
     } catch (_) {
-      if (_job?.isActive == true) _job = _job!.copyWith(state: TranslationJobState.error, errorKind: 'storage');
-      _demand = {};
-      _failure = const ResearchFailure(ResearchFailureKind.unavailable, 'storage');
-      _emit();
+      // _persist has already published the storage failure.
     }
   }
 
@@ -809,6 +951,7 @@ class TranslationScheduler {
     _ledgerTimer?.cancel();
     _ledgerTimer = null;
     _closingRequested = true;
+    if (_translator case final ScheduledParagraphTranslator t) t.pauseDispatch();
     _emit();
     try {
       if (_job?.state == TranslationJobState.running || _job?.state == TranslationJobState.offline) {

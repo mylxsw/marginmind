@@ -50,6 +50,21 @@ abstract interface class PackedParagraphTranslator implements ParagraphTranslato
   });
 }
 
+/// Runtime-backed schedulers freeze a job before dispatch and keep their own
+/// durable attempt ledger. The scheduler must not multiply transport retries.
+abstract interface class ScheduledParagraphTranslator implements PackedParagraphTranslator {
+  Future<void> prepareScope();
+  Future<TranslationJob> bindJob(TranslationJob job, {ModelReference? modelOverride});
+  Future<void> saveJob(TranslationJob job);
+  Future<TranslationUsage> readUsage();
+  Future<void> cancelPending();
+  void newTranslation(TranslationParagraph paragraph);
+  String get modelIdentity;
+  void authorizeRecovery();
+  bool get localOnly;
+  void pauseDispatch({bool paused = true});
+}
+
 /// Selection-only adapter. Full-document scheduling keeps its own task policy.
 class TaskParagraphTranslator implements ParagraphTranslator {
   TaskParagraphTranslator(this.execute);
