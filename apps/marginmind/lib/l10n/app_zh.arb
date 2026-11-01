@@ -2454,5 +2454,10 @@
   "mapTaskGenerate": "生成导图",
   "mapTaskExpand": "扩展导图",
   "mapTaskContinueNotice": "已完成阶段将直接复用，待保存结果只重试保存。若中断的请求尚无已记录结果，继续可能再次调用模型并产生费用。是否继续？",
-  "mapTaskCannotContinue": "无法继续，请确认原导图及来源未变更，且存储可用。"
+  "mapTaskCannotContinue": "无法继续，请确认原导图及来源未变更，且存储可用。",
+  "workspaceSearchTabs": "搜索标签页",
+  "workspaceNoMatchingTabs": "没有匹配的标签页",
+  "webSaveDocumentTitle": "保存为文档",
+  "workspaceScrollTabsLeft": "向左滚动标签页",
+  "workspaceScrollTabsRight": "向右滚动标签页"
 }

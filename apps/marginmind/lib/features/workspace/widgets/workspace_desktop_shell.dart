@@ -51,6 +51,8 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final touch = MMInput.of(context).touchPlatform;
     final toolbarHeight = _titlebarHeight(context);
     final documents = state.tabs.active?.kind == WorkspaceTabKind.documentMap;
+    final browserTab = state.tabs.active?.kind == WorkspaceTabKind.browser;
+    final layoutControls = documents || browserTab;
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
       toolbarExtent: toolbarHeight,
@@ -126,7 +128,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           WorkspaceHistoryControls(studySetId: studySetId),
-                          if (documents ||
+                          if (layoutControls ||
                               (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant))
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -135,7 +137,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                                 child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
                               ),
                             ),
-                          if (documents) ...[
+                          if (layoutControls) ...[
                             Container(
                               key: const ValueKey('workspace-layout-controls'),
                               padding: const EdgeInsets.all(2),
@@ -162,15 +164,19 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                                       size: 28,
                                       icon: entry.$2,
                                       tooltip: entry.$3,
-                                      selected: _shownLayout(context, constraints, state) == entry.$1,
-                                      onPressed: () => owner.setLayout(entry.$1),
+                                      selected:
+                                          (browserTab
+                                              ? MMSplitMode.primary
+                                              : _shownLayout(context, constraints, state)) ==
+                                          entry.$1,
+                                      onPressed: documents ? () => owner.setLayout(entry.$1) : null,
                                     ),
                                 ],
                               ),
                             ),
                           ],
                           if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant) ...[
-                            if (documents)
+                            if (layoutControls)
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 10),
                                 child: SizedBox(

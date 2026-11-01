@@ -1,3 +1,6 @@
+import '../../../app/document_commands.dart';
+import '../workspace_browser.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show listEquals;
@@ -9,7 +12,13 @@ import 'package:mm_design/mm_design.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 
-String workspaceTabTitle(BuildContext context, WorkspaceState state, WorkspaceTab tab) => switch (tab.kind) {
+String workspaceTabTitle(
+  BuildContext context,
+  WorkspaceState state,
+  WorkspaceTab tab, {
+  WorkspaceBrowserState? browser,
+}) => switch (tab.kind) {
+  WorkspaceTabKind.browser => browser?.page(tab.browserId)?.title ?? context.l10n.webUrlPlaceholder,
   WorkspaceTabKind.documentMap => context.l10n.workspaceDocumentMapTab,
   WorkspaceTabKind.note => state.content?.studyNote(tab.noteId ?? '')?.title ?? context.l10n.notesTitle,
   WorkspaceTabKind.vocabulary => context.l10n.vocabularyTitle,
@@ -18,6 +27,7 @@ String workspaceTabTitle(BuildContext context, WorkspaceState state, WorkspaceTa
 };
 
 IconData _tabIcon(WorkspaceTab tab) => switch (tab.kind) {
+  WorkspaceTabKind.browser => MMIcons.web,
   WorkspaceTabKind.documentMap => MMIcons.document,
   WorkspaceTabKind.note => MMIcons.studyNote,
   WorkspaceTabKind.vocabulary => MMIcons.vocabulary,
@@ -69,20 +79,29 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
   Widget build(BuildContext context) {
     ref.watch(workspaceProvider(studySetId).select((s) => s.tabs));
     ref.watch(workspaceContentProvider(studySetId));
+    final browser = ref.watch(workspaceBrowserProvider(studySetId));
+    final canAddWeb = ref.watch(canAddWebPageProvider);
     final state = ref.read(workspaceProvider(studySetId));
     final owner = ref.read(workspaceProvider(studySetId).notifier);
     return LayoutBuilder(
       builder: (context, bounds) {
         final count = state.tabs.open.length;
-        final titles = [for (final tab in state.tabs.open) workspaceTabTitle(context, state, tab)];
-        final widths = [for (final title in titles) _tabWidth(context, title)];
-        final tabsWidth = count == 0 ? 0.0 : widths.fold(0.0, (total, width) => total + width) + 24;
-        final overflow = tabsWidth > bounds.maxWidth;
-        // Same size MMDropdownButton gives its icon button; a squeezed strip drops the
-        // open-tabs menu rather than overflow (the tab list still scrolls).
-        final menuWidth =
-            (context.mmTouch || context.mmTouchPlatform ? context.mmToolbarButton : MMSizes.readerToolbarButton).width;
+        final titles = [for (final tab in state.tabs.open) workspaceTabTitle(context, state, tab, browser: browser)];
+        final naturalWidths = [for (final title in titles) _tabWidth(context, title)];
+        final naturalTotal = naturalWidths.fold(0.0, (total, width) => total + width) + 24;
+        final addWidth = canAddWeb && bounds.maxWidth >= 100 ? (context.mmTouchPlatform ? 44.0 : 28.0) : 0.0;
+        final overflow = naturalTotal + addWidth > bounds.maxWidth;
+        const menuWidth = 56.0;
         final showMenu = overflow && bounds.maxWidth >= menuWidth;
+        final arrows = overflow && bounds.maxWidth >= 260;
+        final arrowWidth = context.mmTouchPlatform ? 44.0 : 28.0;
+        final available = math.max(
+          0.0,
+          bounds.maxWidth - addWidth - (showMenu ? menuWidth : 0) - (arrows ? arrowWidth * 2 : 0),
+        );
+        final perTab = count == 0 ? 224.0 : (available - 24) / count;
+        final widths = [for (final width in naturalWidths) overflow ? math.min(width, math.max(120.0, perTab)) : width];
+        final tabsWidth = count == 0 ? 0.0 : widths.fold(0.0, (total, width) => total + width) + 24;
         if (_lastActive != state.tabs.activeId ||
             _lastWidth != bounds.maxWidth ||
             !listEquals(_lastTabWidths, widths)) {
@@ -153,44 +172,80 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (arrows)
+              MMIconButton(
+                key: const ValueKey('workspace-tabs-scroll-left'),
+                size: arrowWidth,
+                icon: MMIcons.chevronLeft,
+                tooltip: context.l10n.workspaceScrollTabsLeft,
+                onPressed: () => _scrollBy(-1),
+              ),
             if (overflow)
               Expanded(child: tabs)
             else ...[
               SizedBox(width: tabsWidth, child: tabs),
               const Expanded(child: MMWindowDragRegion(key: ValueKey('workspace-tab-drag-area'))),
             ],
+            if (arrows)
+              MMIconButton(
+                key: const ValueKey('workspace-tabs-scroll-right'),
+                size: arrowWidth,
+                icon: MMIcons.chevronRight,
+                tooltip: context.l10n.workspaceScrollTabsRight,
+                onPressed: () => _scrollBy(1),
+              ),
+            if (addWidth > 0)
+              MMIconButton(
+                key: const ValueKey('workspace-new-web-tab'),
+                size: addWidth,
+                icon: MMIcons.add,
+                tooltip: context.l10n.addWebTitle,
+                onPressed: () => showAddWebPage(context, ref, studySetId),
+              ),
             if (showMenu)
-              MMDropdownButton<WorkspaceTab>(
-                key: const ValueKey('workspace-tab-overflow'),
-                tooltip: context.l10n.workspaceOpenTabs,
-                width: 280,
-                icon: const Icon(MMIcons.chevronDown, size: 14),
-                onSelected: owner.activateTab,
-                itemBuilder: (_) => [
-                  for (final tab in state.tabs.open)
-                    MMDropdownItem<WorkspaceTab>(
-                      value: tab,
-                      child: Row(
-                        children: [
-                          Icon(_tabIcon(tab), size: 14, color: context.mmColors.secondaryLabel),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              workspaceTabTitle(context, state, tab),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (tab.id == state.tabs.activeId)
-                            Icon(MMIcons.check, size: 14, color: context.mmColors.accent),
-                        ],
-                      ),
+              SizedBox(
+                width: menuWidth,
+                child: MMDropdownButton<WorkspaceTab>(
+                  key: const ValueKey('workspace-tab-overflow'),
+                  tooltip: context.l10n.workspaceOpenTabs,
+                  width: math.min(340, MediaQuery.sizeOf(context).width - 24),
+                  onSelected: owner.activateTab,
+                  itemBuilder: (_) => [
+                    _OpenTabsMenu(
+                      tabs: state.tabs.open,
+                      titles: titles,
+                      activeId: state.tabs.activeId,
+                      browser: browser,
                     ),
-                ],
+                  ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('$count', style: context.mmText.callout),
+                        const SizedBox(width: 4),
+                        const Icon(MMIcons.chevronDown, size: 14),
+                      ],
+                    ),
+                  ),
+                ),
               ),
           ],
         );
       },
+    );
+  }
+
+  void _scrollBy(int direction) {
+    if (!_scroll.hasClients) return;
+    _scroll.animateTo(
+      (_scroll.offset + direction * _scroll.position.viewportDimension * .7).clamp(
+        0.0,
+        _scroll.position.maxScrollExtent,
+      ),
+      duration: MMAppearance.duration(context, MMMotion.standard),
+      curve: Curves.easeInOut,
     );
   }
 }
@@ -312,7 +367,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                                             return truncated
                                                 ? Tooltip(
                                                     message: widget.title,
-                                                    triggerMode: TooltipTriggerMode.manual,
+                                                    triggerMode: touch ? TooltipTriggerMode.manual : null,
                                                     child: text,
                                                   )
                                                 : text;
@@ -410,4 +465,92 @@ class _ChromeTabShape extends ShapeBorder {
 
   @override
   ShapeBorder scale(double t) => _ChromeTabShape(side: side.scale(t));
+}
+
+class _OpenTabsMenu extends PopupMenuEntry<WorkspaceTab> {
+  const _OpenTabsMenu({required this.tabs, required this.titles, required this.activeId, required this.browser});
+  final List<WorkspaceTab> tabs;
+  final List<String> titles;
+  final String? activeId;
+  final WorkspaceBrowserState browser;
+  @override
+  double get height => 420;
+  @override
+  bool represents(WorkspaceTab? value) => false;
+  @override
+  State<_OpenTabsMenu> createState() => _OpenTabsMenuState();
+}
+
+class _OpenTabsMenuState extends State<_OpenTabsMenu> {
+  String query = '';
+  @override
+  Widget build(BuildContext context) {
+    final indices = [
+      for (var i = 0; i < widget.tabs.length; i++)
+        if ('${widget.titles[i]} ${widget.browser.page(widget.tabs[i].browserId)?.session.url ?? ''}'
+            .toLowerCase()
+            .contains(query.toLowerCase()))
+          i,
+    ];
+    return SizedBox(
+      height: math.min(420, MediaQuery.sizeOf(context).height * .7),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('${context.l10n.workspaceOpenTabs} · ${widget.tabs.length}', style: context.mmText.headline),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: MMTextField(
+              key: const ValueKey('workspace-tab-search'),
+              placeholder: context.l10n.workspaceSearchTabs,
+              onChanged: (value) => setState(() => query = value),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: indices.isEmpty
+                ? Center(child: Text(context.l10n.workspaceNoMatchingTabs, style: context.mmText.bodySecondary))
+                : ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: indices.length,
+                    itemBuilder: (context, index) {
+                      final i = indices[index];
+                      final tab = widget.tabs[i];
+                      final selected = tab.id == widget.activeId;
+                      final page = widget.browser.page(tab.browserId);
+                      return ListTile(
+                        key: ValueKey('workspace-tab-menu-${tab.id}'),
+                        dense: true,
+                        selected: selected,
+                        selectedTileColor: context.mmColors.accentTint,
+                        leading: Icon(_tabIcon(tab), size: 18, color: context.mmColors.accent),
+                        title: Text(
+                          widget.titles[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.mmText.callout,
+                        ),
+                        subtitle: page == null
+                            ? null
+                            : Text(
+                                page.session.url.host,
+                                style: context.mmText.footnote,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                        trailing: selected ? Icon(MMIcons.check, size: 14, color: context.mmColors.accent) : null,
+                        onTap: () => Navigator.of(context).pop(tab),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -28,8 +28,6 @@ import '../../research/widgets/research_note_popover.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_find_bar.dart';
-import '../workspace_browser.dart';
-import 'browser_pane.dart';
 import '../reader_crop.dart';
 import '../reader_compare.dart';
 import '../reader_translation.dart';
@@ -172,49 +170,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
   @override
   Widget build(BuildContext context) {
-    final browser = ref.watch(workspaceBrowserProvider(widget.studySetId));
-    final noteOpen = ref.watch(workspaceProvider(widget.studySetId).select((s) => s.activeNoteId != null));
-    final browserVisible = browser.visible && !noteOpen;
-    final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
-    final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? StudySetContent.empty;
-    Widget browserChrome(Widget child) => WorkspaceToolbarScope.maybeOf(context) == null
-        ? child
-        : Column(
-            children: [
-              WorkspaceToolbar(items: const [], menuEntries: const [], label: context.l10n.moreTools),
-              Expanded(child: child),
-            ],
-          );
-    return Stack(
-      children: [
-        Offstage(
-          offstage: browserVisible,
-          child: ExcludeFocus(excluding: browserVisible, child: _buildReader(context)),
-        ),
-        if (browser.session case final session?)
-          Offstage(
-            offstage: !browserVisible,
-            child: browserChrome(
-              BrowserPane(
-                key: ValueKey(session.id),
-                studySetId: widget.studySetId,
-                session: session,
-                visible: browserVisible,
-                documentSwitcher: DocumentSwitcher(
-                  studySetId: widget.studySetId,
-                  documents: content.documents,
-                  activeDocumentId: null,
-                  onOpen: (id) {
-                    ref.read(workspaceBrowserProvider(widget.studySetId).notifier).hide();
-                    workspace.isReference ? workspace.openDocumentReference(id) : workspace.openDocument(id);
-                  },
-                  onClose: null,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
+    return _buildReader(context);
   }
 
   Widget _buildReader(BuildContext context) {

@@ -6172,4 +6172,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get mapTaskCannotContinue =>
       'Could not continue. Check that the original map and sources are unchanged and storage is available.';
+
+  @override
+  String get workspaceSearchTabs => 'Search tabs';
+
+  @override
+  String get workspaceNoMatchingTabs => 'No matching tabs';
+
+  @override
+  String get webSaveDocumentTitle => 'Save as a document';
+
+  @override
+  String get workspaceScrollTabsLeft => 'Scroll tabs left';
+
+  @override
+  String get workspaceScrollTabsRight => 'Scroll tabs right';
 }

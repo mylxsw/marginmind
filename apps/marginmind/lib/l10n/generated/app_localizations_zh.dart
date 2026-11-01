@@ -5933,4 +5933,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mapTaskCannotContinue => '无法继续，请确认原导图及来源未变更，且存储可用。';
+
+  @override
+  String get workspaceSearchTabs => '搜索标签页';
+
+  @override
+  String get workspaceNoMatchingTabs => '没有匹配的标签页';
+
+  @override
+  String get webSaveDocumentTitle => '保存为文档';
+
+  @override
+  String get workspaceScrollTabsLeft => '向左滚动标签页';
+
+  @override
+  String get workspaceScrollTabsRight => '向右滚动标签页';
 }

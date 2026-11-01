@@ -7,12 +7,28 @@ import '../../shared/l10n.dart';
 import 'workspace_controller.dart';
 import 'web_conversion.dart';
 
+class BrowserTabSession {
+  const BrowserTabSession(this.session, {this.replacingDocumentId});
+  final BrowserSession session;
+  final String? replacingDocumentId;
+  WorkspaceTab get tab => WorkspaceTab(WorkspaceTabKind.browser, browserId: session.id);
+  String get title => session.title.trim().isEmpty ? session.url.host : session.title;
+}
+
 class WorkspaceBrowserState {
-  const WorkspaceBrowserState({this.session, this.visible = false, this.replacingDocumentId, this.converting = false});
+  const WorkspaceBrowserState({
+    this.session,
+    this.visible = false,
+    this.replacingDocumentId,
+    this.converting = false,
+    this.pages = const [],
+  });
   final BrowserSession? session;
   final bool visible;
   final String? replacingDocumentId;
   final bool converting;
+  final List<BrowserTabSession> pages;
+  BrowserTabSession? page(int? id) => pages.where((p) => p.session.id == id).firstOrNull;
 }
 
 final workspaceBrowserProvider = NotifierProvider.autoDispose.family<WorkspaceBrowser, WorkspaceBrowserState, String>(
@@ -32,66 +48,100 @@ final browserConverterProvider = Provider<BrowserConverter?>(
 class WorkspaceBrowser extends Notifier<WorkspaceBrowserState> {
   WorkspaceBrowser(this.studySetId);
   final String studySetId;
-  BrowserSession? _session;
+  final _pages = <int, BrowserTabSession>{};
+  int? _selectedId;
+  bool _converting = false;
+
   @override
   WorkspaceBrowserState build() {
+    ref.listen(workspaceProvider(studySetId).select((s) => s.tabs), (_, tabs) {
+      final openIds = tabs.open.where((t) => t.kind == WorkspaceTabKind.browser).map((t) => t.browserId).toSet();
+      for (final id in _pages.keys.toList()) {
+        if (!openIds.contains(id)) _disposePage(id);
+      }
+      if (tabs.active?.kind == WorkspaceTabKind.browser) _selectedId = tabs.active!.browserId;
+      _publish();
+    });
     ref.onDispose(() {
-      _session?.removeListener(_changed);
-      _session?.dispose();
+      for (final page in _pages.values) {
+        page.session.removeListener(_changed);
+        page.session.dispose();
+      }
+      _pages.clear();
     });
     return const WorkspaceBrowserState();
   }
 
   void open(Uri url, {String? documentId}) {
-    if (_session == null || _session!.disposed) {
-      _session = BrowserSession(url, onDataCleared: close);
-      _session!.addListener(_changed);
-    } else {
-      _session!.navigate(url);
+    // Reopening the same URL activates its existing session without reloading it.
+    final existing = _pages.values
+        .where((p) => p.session.url == url && p.replacingDocumentId == documentId)
+        .firstOrNull;
+    if (existing != null) {
+      show(existing.session.id);
+      return;
     }
-    state = WorkspaceBrowserState(session: _session, visible: true, replacingDocumentId: documentId);
-    ref.read(workspaceProvider(studySetId).notifier).setLayout(MMSplitMode.primary);
+    late final BrowserSession session;
+    session = BrowserSession(url, onDataCleared: () => close(session.id));
+    session.addListener(_changed);
+    final page = BrowserTabSession(session, replacingDocumentId: documentId);
+    _pages[session.id] = page;
+    _selectedId = session.id;
+    _publish();
+    ref.read(workspaceProvider(studySetId).notifier).activateTab(page.tab);
+    _publish();
   }
 
-  void _changed() => state = WorkspaceBrowserState(
-    session: _session,
-    visible: state.visible,
-    replacingDocumentId: state.replacingDocumentId,
-    converting: state.converting,
-  );
+  void _changed() => _publish();
 
-  void show() => state = WorkspaceBrowserState(
-    session: _session,
-    visible: true,
-    replacingDocumentId: state.replacingDocumentId,
-    converting: state.converting,
-  );
-  void hide() => state = WorkspaceBrowserState(
-    session: _session,
-    replacingDocumentId: state.replacingDocumentId,
-    converting: state.converting,
-  );
-  bool beginConversion() {
-    if (state.converting) return false;
+  void _publish() {
+    final page = _pages[_selectedId];
     state = WorkspaceBrowserState(
-      session: _session,
-      visible: state.visible,
-      replacingDocumentId: state.replacingDocumentId,
-      converting: true,
+      session: page?.session,
+      visible: page != null && ref.read(workspaceProvider(studySetId)).tabs.activeId == page.tab.id,
+      replacingDocumentId: page?.replacingDocumentId,
+      converting: _converting,
+      pages: List.unmodifiable(_pages.values),
     );
+  }
+
+  void show([int? id]) {
+    final page = _pages[id ?? _selectedId];
+    if (page == null) return;
+    _selectedId = page.session.id;
+    ref.read(workspaceProvider(studySetId).notifier).activateTab(page.tab);
+    _publish();
+  }
+
+  void hide() {
+    if (state.visible) ref.read(workspaceProvider(studySetId).notifier).activateTab(WorkspaceTab.documents);
+  }
+
+  bool beginConversion([int? sessionId]) {
+    if (_converting || (sessionId != null && !_pages.containsKey(sessionId))) return false;
+    _converting = true;
+    _publish();
     return true;
   }
 
-  void endConversion() => state = WorkspaceBrowserState(
-    session: _session,
-    visible: state.visible,
-    replacingDocumentId: state.replacingDocumentId,
-  );
-  void close() {
-    _session?.removeListener(_changed);
-    _session?.dispose();
-    _session = null;
-    state = const WorkspaceBrowserState();
+  void endConversion() {
+    _converting = false;
+    _publish();
+  }
+
+  void _disposePage(int id) {
+    final page = _pages.remove(id);
+    page?.session.removeListener(_changed);
+    page?.session.dispose();
+    if (_selectedId == id) _selectedId = _pages.keys.lastOrNull;
+  }
+
+  void close([int? id]) {
+    final page = _pages[id ?? _selectedId];
+    if (page == null) return;
+    ref.read(workspaceProvider(studySetId).notifier).closeTab(page.tab.id);
+    // The workspace listener owns disposal, including closing tabs elsewhere.
+    _publish();
   }
 }
 

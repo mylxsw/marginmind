@@ -209,17 +209,12 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             locale: const Locale('en'),
             home: Scaffold(
-              body: BrowserPane(
-                studySetId: 'demo-1',
-                session: s,
-                visible: true,
-                documentSwitcher: const SizedBox.shrink(),
-              ),
+              body: BrowserPane(studySetId: 'demo-1', session: s, visible: true),
             ),
           ),
         ),
       );
-      expect(tester.widget<MMButton>(find.byKey(const ValueKey('browser-convert'))).onPressed, isNull);
+      expect(tester.widget<MMIconButton>(find.byKey(const ValueKey('browser-convert'))).onPressed, isNull);
       expect(find.byIcon(MMIcons.lock), findsOneWidget);
       expect(find.byKey(const ValueKey('browser-load-progress')), findsOneWidget);
       expect(

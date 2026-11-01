@@ -3,17 +3,22 @@ import 'package:mm_core/mm_core.dart';
 /// A right sidebar displays content; its entry points live elsewhere.
 enum RightPanel { assistant, details, reference, tags }
 
-enum WorkspaceTabKind { documentMap, note, vocabulary, review, statistics }
+enum WorkspaceTabKind { documentMap, note, vocabulary, review, statistics, browser }
 
 class WorkspaceTab {
-  const WorkspaceTab(this.kind, {this.noteId});
+  const WorkspaceTab(this.kind, {this.noteId, this.browserId});
   static const documents = WorkspaceTab(WorkspaceTabKind.documentMap);
   static const vocabulary = WorkspaceTab(WorkspaceTabKind.vocabulary);
   static const review = WorkspaceTab(WorkspaceTabKind.review);
   static const statistics = WorkspaceTab(WorkspaceTabKind.statistics);
   final WorkspaceTabKind kind;
   final String? noteId;
-  String get id => kind == WorkspaceTabKind.note ? 'note:$noteId' : kind.name;
+  final int? browserId;
+  String get id => switch (kind) {
+    WorkspaceTabKind.note => 'note:$noteId',
+    WorkspaceTabKind.browser => 'browser:$browserId',
+    _ => kind.name,
+  };
 }
 
 enum WorkspaceReferenceKind { document, map, note, vocabulary, card }

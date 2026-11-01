@@ -3163,5 +3163,10 @@
   "mapTaskGenerate": "Generate map",
   "mapTaskExpand": "Expand map",
   "mapTaskContinueNotice": "Completed stages will be reused. Unsaved results will only be saved. An interrupted request with no recorded result may call the model again and incur a charge. Continue?",
-  "mapTaskCannotContinue": "Could not continue. Check that the original map and sources are unchanged and storage is available."
+  "mapTaskCannotContinue": "Could not continue. Check that the original map and sources are unchanged and storage is available.",
+  "workspaceSearchTabs": "Search tabs",
+  "workspaceNoMatchingTabs": "No matching tabs",
+  "webSaveDocumentTitle": "Save as a document",
+  "workspaceScrollTabsLeft": "Scroll tabs left",
+  "workspaceScrollTabsRight": "Scroll tabs right"
 }

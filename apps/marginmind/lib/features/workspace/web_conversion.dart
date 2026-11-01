@@ -27,12 +27,12 @@ final webCaptureProvider = Provider<WebCapture>(
 
 Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId, BrowserSession session) async {
   final owner = ref.read(workspaceBrowserProvider(studySetId).notifier);
-  if (!owner.beginConversion()) return;
+  if (!owner.beginConversion(session.id)) return;
   session.dismissPrompt();
   final generation = session.navigationId;
   final controller = ref.read(workspaceProvider(studySetId).notifier);
   final previous = controller.content.document(
-    ref.read(workspaceBrowserProvider(studySetId)).replacingDocumentId ?? '',
+    ref.read(workspaceBrowserProvider(studySetId)).page(session.id)?.replacingDocumentId ?? '',
   );
   final id = previous?.id ?? newId();
   var abandoned = false;

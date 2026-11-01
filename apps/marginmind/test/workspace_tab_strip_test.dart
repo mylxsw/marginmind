@@ -1,5 +1,4 @@
 import 'package:marginmind/settings/app_settings.dart';
-import 'package:mm_design/mm_design.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
@@ -173,9 +172,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('workspace-tab-overflow')));
     await tester.pumpAndSettle();
-    final choice = find.byWidgetPredicate(
-      (w) => w is MMDropdownItem<WorkspaceTab> && w.value?.id == WorkspaceTab.documents.id,
-    );
+    final choice = find.byKey(ValueKey('workspace-tab-menu-${WorkspaceTab.documents.id}'));
     await tester.tap(choice);
     await tester.pumpAndSettle();
     expect(owner.state.tabs.activeId, WorkspaceTab.documents.id);

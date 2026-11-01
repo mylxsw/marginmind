@@ -257,7 +257,8 @@ class WorkspaceSidebar extends ConsumerWidget {
           ),
         ),
     ];
-    if (browser.session case final session?) {
+    for (final page in browser.pages) {
+      final session = page.session;
       docs.add(
         ListenableBuilder(
           listenable: session,
@@ -279,11 +280,11 @@ class WorkspaceSidebar extends ConsumerWidget {
                         label: session.phase == BrowserPhase.loading || session.title.isEmpty
                             ? session.url.host
                             : session.title,
-                        selected: browser.visible,
+                        selected: browser.visible && browser.session?.id == session.id,
                         selectionStyle: context.mmTouchPlatform
                             ? MMSidebarSelectionStyle.marker
                             : MMSidebarSelectionStyle.filled,
-                        onTap: browserOwner.show,
+                        onTap: () => browserOwner.show(session.id),
                       );
                       return phone ? phoneRow(item) : item;
                     },
