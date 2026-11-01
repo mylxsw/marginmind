@@ -163,11 +163,6 @@ class _AddressDialogState extends State<_AddressDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            context.l10n.webUrlLabel,
-            style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
-          ),
-          const SizedBox(height: MMSpacing.s),
           ListenableBuilder(
             listenable: _focus,
             builder: (context, _) => GestureDetector(

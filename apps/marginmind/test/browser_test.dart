@@ -31,7 +31,7 @@ void main() {
     final sidebar = tester.element(find.byType(WorkspaceSidebar));
     unawaited(showAddWebPage(sidebar, sidebar as WidgetRef, 'demo-1'));
     await tester.pumpAndSettle();
-    expect(find.text('Web address'), findsOneWidget);
+    expect(find.text('Web address'), findsNothing);
     expect(tester.widget<TextField>(find.byType(TextField).last).decoration!.hintText, 'https://');
     await tester.tap(find.widgetWithText(MMButton, 'Open'));
     await tester.pumpAndSettle();
