@@ -5,6 +5,7 @@ import '../foundation/adaptive.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import '../tokens/colors.dart';
 import '../tokens/motion.dart';
 
 /// A square checkbox with its label; the whole row toggles. [color] fills
@@ -67,9 +68,9 @@ class MMCheckbox extends StatelessWidget {
                         : null,
                   ),
                   child: mixed
-                      ? const Icon(MMIcons.zoomOut, size: 11, color: Colors.white)
+                      ? Icon(MMIcons.zoomOut, size: 11, color: readableForeground(tint))
                       : value
-                      ? const Icon(MMIcons.check, size: 11, color: Colors.white)
+                      ? Icon(MMIcons.check, size: 11, color: readableForeground(tint))
                       : null,
                 ),
                 if (label != null) ...[

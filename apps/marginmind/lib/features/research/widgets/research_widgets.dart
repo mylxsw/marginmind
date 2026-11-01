@@ -131,7 +131,7 @@ class CiteBadge extends StatelessWidget {
         ),
         child: Text(
           '$number',
-          style: context.mmText.footnote.copyWith(color: s.hovered ? c.onAccent : c.research, height: 15 / 11),
+          style: context.mmText.footnote.copyWith(color: s.hovered ? c.onResearch : c.research, height: 15 / 11),
         ),
       ),
     );

@@ -30,44 +30,33 @@ void main() {
         expect(contrastRatio(c.onAccent, c.accentFill), greaterThanOrEqualTo(4.5));
       });
 
-      test('research labels reach 4.5:1 on the window and keep their own hue', () {
-        expect(contrastRatio(c.research, c.windowBackground), greaterThanOrEqualTo(4.5));
-        expect(c.researchTint.toARGB32() & 0xFFFFFF, c.research.toARGB32() & 0xFFFFFF);
-        expect(c.researchTint.a, lessThan(0.3));
-        final tinted = c.withAccent(const Color(0xFFFF9500));
-        expect(tinted.research, c.research, reason: 'the system accent never recolors research');
-        expect(c.lerp(c, 0.5).research, c.research);
-      });
-
-      test('research wash and solid research fills keep their text readable', () {
-        expect(c.researchWash.toARGB32() & 0xFFFFFF, c.research.toARGB32() & 0xFFFFFF);
-        expect(c.researchWash.a, closeTo(c.researchTint.a / 2, 0.01));
-        // Draft titles, struck-out drafts and page chips sit on the wash.
-        final wash = composite(c.researchWash, c.canvas);
-        expect(contrastRatio(c.label, wash), greaterThanOrEqualTo(4.5));
-        expect(contrastRatio(c.secondaryLabel, wash), greaterThanOrEqualTo(4.5));
-        expect(contrastRatio(c.secondaryLabel, composite(c.quaternaryFill, wash)), greaterThanOrEqualTo(4.5));
-        // Primary button, selected chip and direction tag: solid research.
-        expect(contrastRatio(c.onResearch, c.research), greaterThanOrEqualTo(4.5));
-        final tinted = c.withAccent(const Color(0xFFFF9500));
-        expect(tinted.researchWash, c.researchWash);
-        expect(tinted.onResearch, c.onResearch);
+      test('all feature colors share the system accent through theme changes', () {
+        for (final accent in [c.accent, const Color(0xFFAF52DE), const Color(0xFFFF9500), const Color(0xFFFFCC00)]) {
+          final themed = c.withAccent(accent);
+          expect(themed.research, themed.accent);
+          expect(themed.vocabulary, themed.accent);
+          expect(themed.researchTint, themed.accentTint);
+          expect(themed.vocabularyTint, themed.accentTint);
+          expect(themed.accentFill, accent);
+          expect(themed.researchWash.a, closeTo(themed.accentTint.a / 2, 0.002));
+          expect(themed.researchWash.toARGB32() & 0xFFFFFF, accent.toARGB32() & 0xFFFFFF);
+          expect(contrastRatio(themed.onAccent, themed.accentFill), greaterThanOrEqualTo(4.5));
+          expect(contrastRatio(themed.onResearch, themed.research), greaterThanOrEqualTo(4.5));
+          expect(contrastRatio(themed.onVocabulary, themed.vocabulary), greaterThanOrEqualTo(4.5));
+          expect(contrastRatio(themed.label, composite(themed.accentTint, themed.card)), greaterThanOrEqualTo(4.5));
+          final wash = composite(themed.researchWash, themed.canvas);
+          expect(contrastRatio(themed.label, wash), greaterThanOrEqualTo(4.5));
+          expect(contrastRatio(themed.secondaryLabel, wash), greaterThanOrEqualTo(4.5));
+        }
         final other = c == MMColors.light ? MMColors.dark : MMColors.light;
-        expect(c.lerp(other, 0).researchWash, c.researchWash);
-        expect(c.lerp(other, 1).onResearch, other.onResearch);
-      });
-
-      test('vocabulary contrast, tint and fixed hue survive theme changes', () {
-        expect(contrastRatio(c.vocabulary, c.windowBackground), greaterThanOrEqualTo(4.5));
-        expect(contrastRatio(c.onVocabulary, c.vocabulary), greaterThanOrEqualTo(4.5));
-        expect(contrastRatio(c.label, composite(c.vocabularyTint, c.card)), greaterThanOrEqualTo(4.5));
-        expect(c.vocabularyTint.toARGB32() & 0xFFFFFF, c.vocabulary.toARGB32() & 0xFFFFFF);
-        expect(c.vocabularyTint.a, closeTo(c.brightness == Brightness.light ? 0.12 : 0.16, 0.002));
-        final tinted = c.withAccent(const Color(0xFFFF9500));
-        expect(tinted.vocabulary, c.vocabulary);
-        expect(tinted.vocabularyTint, c.vocabularyTint);
-        expect(c.lerp(c, 0.5).vocabulary, c.vocabulary);
-        expect(c.lerp(c, 0.5).vocabularyTint, c.vocabularyTint);
+        for (final t in [0.0, 0.5, 1.0]) {
+          final blended = c.lerp(other, t);
+          expect(blended.research, blended.accent);
+          expect(blended.vocabulary, blended.accent);
+          expect(blended.researchTint, blended.accentTint);
+          expect(blended.vocabularyTint, blended.accentTint);
+          expect(contrastRatio(blended.onResearch, blended.research), greaterThanOrEqualTo(4.5));
+        }
         expect(MMIcons.vocabulary.fontFamily, isNotEmpty);
       });
 

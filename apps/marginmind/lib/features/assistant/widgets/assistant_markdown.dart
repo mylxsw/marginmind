@@ -470,8 +470,8 @@ class CitationChip extends StatelessWidget {
       canRequestFocus: false,
       builder: (context, s) {
         final (Color bg, Color fg) = external
-            ? (s.hovered ? c.research : c.fill, s.hovered ? c.onAccent : c.secondaryLabel)
-            : (s.hovered ? c.accent : c.accentTint, s.hovered ? c.onAccent : c.accent);
+            ? (s.hovered ? c.research : c.fill, s.hovered ? c.onResearch : c.secondaryLabel)
+            : (s.hovered ? c.accent : c.accentTint, s.hovered ? c.onResearch : c.accent);
         return AnimatedContainer(
           duration: MMMotion.quick,
           curve: MMMotion.quickCurve,

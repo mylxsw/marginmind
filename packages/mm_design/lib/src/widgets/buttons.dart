@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../foundation/adaptive.dart';
 import '../foundation/interactive.dart';
 import '../tokens/metrics.dart';
+import '../tokens/colors.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/motion.dart';
 import 'control_frame.dart';
 
 enum MMButtonVariant {
-  /// Accent fill with white text. At most one per view.
+  /// System accent fill with contrasting text. At most one per view.
   primary,
 
   /// Neutral fill.
@@ -60,7 +61,10 @@ class MMButton extends StatelessWidget {
       semanticLabel: label,
       builder: (context, s) {
         final (Color bg, Color fg) = switch (variant) {
-          MMButtonVariant.primary => (color ?? c.accentFill, foregroundColor ?? c.onAccent),
+          MMButtonVariant.primary => (
+            color ?? c.accentFill,
+            foregroundColor ?? (color == null ? c.onAccent : readableForeground(color!)),
+          ),
           MMButtonVariant.secondary => (c.fill, destructive ? c.critical : c.label),
           MMButtonVariant.plain => (s.hovered ? c.hover : Colors.transparent, color ?? c.label),
         };

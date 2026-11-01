@@ -29,12 +29,6 @@ class MMColors extends ThemeExtension<MMColors> {
     required this.accentFill,
     required this.accentTint,
     required this.onAccent,
-    required this.research,
-    required this.researchTint,
-    required this.researchWash,
-    required this.onResearch,
-    required this.vocabulary,
-    required this.vocabularyTint,
     required this.positive,
     required this.caution,
     required this.critical,
@@ -98,34 +92,20 @@ class MMColors extends ThemeExtension<MMColors> {
   /// reports one (see [withAccent]).
   final Color accent;
 
-  /// selectedContentBackgroundColor — fills that carry white text.
+  /// selectedContentBackgroundColor — solid controls, with [onAccent] ink.
   final Color accentFill;
   final Color accentTint;
   final Color onAccent;
 
-  /// Research: the research panel, research notes and their entry points.
-  /// Fixed, unlike [accent], so research stays apart from selection.
-  final Color research;
-
-  /// [research] at 12% / 20%: research card wash, selected research controls.
-  final Color researchTint;
-
-  /// [research] at 6% / 10%: AI draft nodes and the idea expansion section,
-  /// lighter than [researchTint] so a draft never reads as a selection.
-  final Color researchWash;
-
-  /// Text and icons on a solid [research] fill (white / near-black): white on
-  /// the lighter dark-mode research falls below 4.5:1.
-  final Color onResearch;
-
-  /// Fixed vocabulary hue; the light shade meets 4.5:1 on white.
-  final Color vocabulary;
-
-  /// Text on a solid vocabulary action; dark teal needs dark ink.
-  Color get onVocabulary => brightness == Brightness.dark ? light.label : onAccent;
-
-  /// Vocabulary wash at 12% / 16%.
-  final Color vocabularyTint;
+  /// Compatibility names for feature surfaces. All features share the system
+  /// accent; none owns a separate hue or a separately configurable palette.
+  Color get research => accent;
+  Color get researchTint => accentTint;
+  Color get researchWash => accentTint.withValues(alpha: accentTint.a / 2);
+  Color get onResearch => readableForeground(accent);
+  Color get vocabulary => accent;
+  Color get vocabularyTint => accentTint;
+  Color get onVocabulary => readableForeground(accent);
 
   /// Status text on a 12% wash of itself: done / partial / failed (e.g. a
   /// source's reading state). Apple's increased-contrast system green,
@@ -183,12 +163,6 @@ class MMColors extends ThemeExtension<MMColors> {
     accentFill: Color(0xFF0A66D0),
     accentTint: Color(0x1F007AFF),
     onAccent: Color(0xFFFFFFFF),
-    research: Color(0xFF5E5CE6),
-    researchTint: Color(0x1F5E5CE6),
-    researchWash: Color(0x0F5E5CE6),
-    onResearch: Color(0xFFFFFFFF),
-    vocabulary: Color(0xFF0D8480),
-    vocabularyTint: Color(0x1F0D8480),
     positive: Color(0xFF248A3D),
     caution: Color(0xFFC93400),
     critical: Color(0xFFD70015),
@@ -233,12 +207,6 @@ class MMColors extends ThemeExtension<MMColors> {
     accentFill: Color(0xFF0A66D0),
     accentTint: Color(0x330A84FF),
     onAccent: Color(0xFFFFFFFF),
-    research: Color(0xFF7D7AFF),
-    researchTint: Color(0x337D7AFF),
-    researchWash: Color(0x1A7D7AFF),
-    onResearch: Color(0xFF1E1E1F),
-    vocabulary: Color(0xFF40C8C0),
-    vocabularyTint: Color(0x2940C8C0),
     positive: Color(0xFF30D158),
     caution: Color(0xFFFF9F0A),
     critical: Color(0xFFFF453A),
@@ -262,6 +230,7 @@ class MMColors extends ThemeExtension<MMColors> {
   MMColors withAccent(Color systemAccent) {
     return copyWith(
       accent: systemAccent,
+      accentFill: systemAccent,
       accentTint: systemAccent.withValues(alpha: brightness == Brightness.dark ? 0.2 : 0.12),
     );
   }
@@ -290,13 +259,7 @@ class MMColors extends ThemeExtension<MMColors> {
       accent: accent ?? this.accent,
       accentFill: accentFill ?? this.accentFill,
       accentTint: accentTint ?? this.accentTint,
-      onAccent: onAccent,
-      research: research,
-      researchTint: researchTint,
-      researchWash: researchWash,
-      onResearch: onResearch,
-      vocabulary: vocabulary,
-      vocabularyTint: vocabularyTint,
+      onAccent: accentFill == null ? onAccent : readableForeground(accentFill),
       positive: positive,
       caution: caution,
       critical: critical,
@@ -345,12 +308,6 @@ class MMColors extends ThemeExtension<MMColors> {
       accentFill: c(accentFill, other.accentFill),
       accentTint: c(accentTint, other.accentTint),
       onAccent: c(onAccent, other.onAccent),
-      research: c(research, other.research),
-      researchTint: c(researchTint, other.researchTint),
-      researchWash: c(researchWash, other.researchWash),
-      onResearch: c(onResearch, other.onResearch),
-      vocabulary: c(vocabulary, other.vocabulary),
-      vocabularyTint: c(vocabularyTint, other.vocabularyTint),
       positive: c(positive, other.positive),
       caution: c(caution, other.caution),
       critical: c(critical, other.critical),
@@ -371,6 +328,11 @@ class MMColors extends ThemeExtension<MMColors> {
     );
   }
 }
+
+/// Solid system accents may be light (yellow) or dark (blue). Use the same
+/// contrast rule for every feature instead of hard-coding a feature's ink.
+Color readableForeground(Color background) =>
+    contrastRatio(Colors.white, background) >= contrastRatio(Colors.black, background) ? Colors.white : Colors.black;
 
 /// WCAG contrast ratio between two opaque colors, used by tests to keep
 /// text tokens at 4.5:1 or better.

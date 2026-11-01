@@ -162,7 +162,7 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
                           color: selected?.id == e.id
-                              ? context.mmColors.vocabularyTint
+                              ? context.mmColors.selectedRow
                               : state.hovered
                               ? context.mmColors.hover
                               : null,
@@ -341,7 +341,7 @@ class _VocabularyScope extends StatelessWidget {
   }
 }
 
-/// Feature-tinted tabs keep the system segmented controls elsewhere neutral.
+/// Status tabs use the same neutral selection as the shared segmented control.
 class _VocabularyStatusTabs extends StatelessWidget {
   const _VocabularyStatusTabs({
     required this.value,
@@ -380,13 +380,17 @@ class _VocabularyStatusTabs extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: 6),
                     decoration: BoxDecoration(
                       color: value == status
-                          ? c.vocabularyTint
+                          ? (MMFlatSurface.of(context) ? c.selectedSegment : c.card)
                           : state.hovered
                           ? c.hover
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(MMRadii.capsuleButton - MMSpacing.xxs),
                       border: Border.all(
-                        color: value == status || state.focused ? c.vocabulary : Colors.transparent,
+                        color: state.focused
+                            ? c.accent
+                            : value == status && MMFlatSurface.of(context)
+                            ? c.border
+                            : Colors.transparent,
                         width: state.focused ? 2 : MMSizes.hairline,
                       ),
                     ),
@@ -766,8 +770,6 @@ class _VocabularyActions extends StatelessWidget {
       label: learning ? l.vocabularyMarkKnown : l.vocabularyLearnAgain,
       icon: learning ? MMIcons.check : MMIcons.retry,
       variant: MMButtonVariant.primary,
-      color: c.vocabulary,
-      foregroundColor: c.brightness == Brightness.dark ? c.canvas : c.page,
       onPressed: onStatus,
     );
     final more = MMDropdownButton<String>(

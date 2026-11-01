@@ -733,7 +733,7 @@ class _SendButton extends StatelessWidget {
           child: Icon(
             running ? MMIcons.stop : MMIcons.send,
             size: running ? 10 : 14,
-            color: running ? c.windowBackground : c.onAccent,
+            color: running ? c.windowBackground : c.onResearch,
           ),
         ),
       ),

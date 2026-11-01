@@ -6,8 +6,8 @@
 
 | 类 | 内容 |
 | --- | --- |
-| `MMColors.vocabulary` / `vocabularyTint` | 生词色：浅色 `#0D8480`、深色 `#40C8C0`，底色 12% / 16%，不随系统强调色变化。浅色由原型 `#0E8A86`（白底 4.20:1）微调以达到 4.5:1。图标 `MMIcons.vocabulary` 使用 Lucide `book-a`。色底上的正文使用 `label`。 |
-| `MMColors` | 语义色（`ThemeExtension`），浅色 `MMColors.light` / 深色 `MMColors.dark`。`withAccent()` 套用系统强调色。研究专用色 `research`（浅色 `#5E5CE6`、深色 `#7D7AFF`）、`researchTint`（12% / 20%）、`researchWash`（6% / 10%，AI 草稿底色）与 `onResearch`（实心 `research` 上的文字：浅色白、深色 `#1E1E1F`，深色白字不足 4.5:1）固定，不随系统强调色变化。状态色 `positive` / `caution` / `critical`（浅色 `#248A3D` / `#C93400` / `#D70015`，深色 `#30D158` / `#FF9F0A` / `#FF453A`，即系统绿 / 橙 / 红的高对比版本）用于状态文字，底色取自身 12%（如资料的读取状态）。 |
+| `MMColors.vocabulary` / `vocabularyTint` | 生词使用系统 `accent` / `accentTint`，这两个名称仅为兼容入口，不再拥有固定青绿色。筛选及列表选中态使用全局中性色，主按钮使用 `accentFill` / `onAccent`；正文提示、状态标记与查词卡片随系统强调色更新。图标继续使用 Lucide `book-a`。 |
+| `MMColors` | 语义色（`ThemeExtension`），浅色 `MMColors.light` / 深色 `MMColors.dark`。`withAccent()` 将强调色与实心按钮同步为系统颜色，文字自动选择黑/白以保证对比度。`research` / `researchTint` 同样只兼容映射到 `accent` / `accentTint`，AI 不再使用固定紫色；`researchWash` 使用强调底色一半透明度，实心填色的 `onResearch` / `onVocabulary` 自动选黑/白。状态色 `positive` / `caution` / `critical` 保持系统成功、警告与错误含义；用户选择的标注颜色与脑图配色保持内容含义。 |
 | `MMAnnotationColor` | 六种预设标注色与任意 RGB 自定义色。`colorIndex` 保留预设 ID 0–5，自定义色存 `0x01000000 | RGB`，通过 `fromIndex` 统一解码；`highlight`（32%）、`underline`（90%）、`cardTint`（14%）。 |
 | `MMInkColor` / `MMInkWidth` | 画笔的六色（红/橙/黄/绿/蓝/墨黑，`stroke` 为 90% 不透明）与三档粗细（1.5 / 2.5 / 4，单位 PDF 点，随页面缩放）。数据只存颜色索引和点数。 |
 | `MMTypography` / `MMTextStyles` | macOS 文本样式：title3 15、headline 13 semibold、body 13、callout 12、subheadline 11 semibold、footnote 11；阅读用宋体 16.5/32，摘录 13/20。 |
@@ -34,7 +34,7 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMToolbar` / `MMToolbarGroup` / `MMToolbarButton` / `MMToolbarDivider` / `MMToolbarSearchField` | 统一工具栏与玻璃胶囊按钮组；空白处拖动窗口、双击缩放。 |
 | `MMSplitView` | 两栏 + 可拖动分隔线（8pt 热区、双击复位），隐藏的面板保持挂载，但不保留键盘焦点；窗口太窄时自动只显示主面板。 |
 | `MMSegmentedControl` | 分段控件，选中段为白色浮起。 |
-| `MMButton` / `MMIconButton` | 胶囊按钮（主要 / 次要 / 纯文本）与面板内小图标按钮；按钮文字放不下时以省略号结尾。主要按钮可用 `color` 换成功能色（研究用 `research`），纯文本按钮的 `color` 是文字色（设置里的 `accent` 链接、`critical` 的“移除服务”）；`MMToolbarButton` 对应的是 `tint`，选中时也保持 `tint`（打开的助手）。 |
+| `MMButton` / `MMIconButton` | 胶囊按钮（主要 / 次要 / 纯文本）与面板内小图标按钮；按钮文字放不下时以省略号结尾。主要按钮默认使用系统强调色；`color` 仅用于有明确含义的覆盖，纯文本按钮的 `color` 是文字色（设置里的 `accent` 链接、`critical` 的“移除服务”）；`MMToolbarButton` 对应的是 `tint`，选中时也保持 `tint`（打开的助手）。 |
 | `MMCheckbox` / `MMSwitch` / `MMPill` | 复选框（整行可点）、小开关、状态标签（文字为给定颜色，底为其 12%；不给颜色时为中性）。 |
 | `MMSearchField` / `MMTextField` / `MMFormRow` / `MMColorPicker` | 表单控件；Esc 清空搜索。`MMTextField` 可多行（`maxLines` / `minLines`，随内容长高）、隐藏输入（`obscureText`，用于 API Key）并接收外部 `focusNode`；`plain` 用于无底色和焦点环的原地值。设置页统一用 `MMTextField.settings`：高 28、最大宽度 `MMSizes.settingsFieldWidth`（245，窄窗口随可用空间缩小）、右对齐、8pt 内边距，平时无底色和边框，只在聚焦时显示淡底、强调色边框和焦点环；必须提供空值提示和辅助功能名称，关闭自动纠错与输入建议。密钥始终隐藏，不显示明文切换按钮。 |
 | `MMInlineTextField` | 原地编辑用的无边框文本框，随所在位置换行（`maxLines: 1` 时保持单行）；Enter 提交、Esc 取消，输入法组合期间这两个键交给输入法；`multiline` 时 ⇧Enter 换行。 |
@@ -85,7 +85,7 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 
 ### 研究（P2-R3）
 
-研究的入口、按钮和选中状态一律用 `research` / `researchTint`，与选择用的强调色分开。启动卡是锚在选区或节点旁的卡片（宽 440，`MMRadii.sheet - 6`），意图为四列网格，推荐项带紫色角标；方式是三等分的分段控件，不可用的方式置灰。研究面板从上到下是起点卡、可原地修改的问题、进度行（运行中显示阶段与“取消”，失败显示原因与“重试”）、三个视图（解答 / 资料 / 已摘取）和追问框；勾选的要点、引用编号（`researchTint` 底的小号数字）与原文摘录（衬线体、`research` 竖线）都在解答视图里。资料的读取状态用 `MMPill` 加状态色：已提取正文、已取得字幕为 `positive`，仅摘要、无字幕为 `caution`，读取失败为 `critical`，其余中性。
+研究的入口、按钮和选中状态与全局共用系统强调色；`research` / `researchTint` 为兼容名称。启动卡是锚在选区或节点旁的卡片（宽 440，`MMRadii.sheet - 6`），意图为四列网格，推荐项带系统强调色角标；方式是三等分的分段控件，不可用的方式置灰。研究面板从上到下是起点卡、可原地修改的问题、进度行（运行中显示阶段与“取消”，失败显示原因与“重试”）、三个视图（解答 / 资料 / 已摘取）和追问框；勾选的要点、引用编号（`researchTint` 底的小号数字）与原文摘录（衬线体、`research` 竖线）都在解答视图里。资料的读取状态用 `MMPill` 加状态色：已提取正文、已取得字幕为 `positive`，仅摘要、无字幕为 `caution`，读取失败为 `critical`，其余中性。
 
 保存后，原文中被关联的文字画 1.5pt 的 `research` 虚线下划线（`MMPdfHighlight.dashed`），页面右侧边距出现 `research` 圆形标记（`marker`），点击弹出研究笔记卡片；脑图中的研究笔记卡片左侧为 3pt `research` 竖线，第一行“研究笔记 · N 个来源”，标题最多两行、正文最多两行（紧凑显示时只留标题一行），底部“查看全文与引用 ›”。右键菜单用 `MMMenuHeader` 给出“研究「节点」”分组。
 
@@ -212,4 +212,4 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 
 ### 脑图生成起始页（方案 3）
 
-空脑图以“从资料生成脑图”作为标题，真实资料标题独立显示为紫色描边主题节点，来源显示保存的网页域名或文件格式。节点右侧的＋与底部“新建空白主题”共用手动新建行为。`MMSizes.mapEmptyStateWidth` 为620pt；来源节点最大320pt、最小224×76pt，长标题两行省略并保留全文提示。补充要求表单标明选填，底部分隔出设置与生成按钮，下面是三条可切换的要求建议。窄窗使用较短间距并可纵向滚动；触控标签至少44pt。AI实心按钮使用research/onResearch配色。设计及实际渲染对照见 `docs/evidence/map-empty-canvas/design-qa.md`。
+空脑图以“从资料生成脑图”作为标题，真实资料标题独立显示为系统强调色描边主题节点，来源显示保存的网页域名或文件格式。节点右侧的＋与底部“新建空白主题”共用手动新建行为。`MMSizes.mapEmptyStateWidth` 为620pt；来源节点最大320pt、最小224×76pt，长标题两行省略并保留全文提示。补充要求表单标明选填，底部分隔出设置与生成按钮，下面是三条可切换的要求建议。窄窗使用较短间距并可纵向滚动；触控标签至少44pt。AI实心按钮使用research/onResearch配色。设计及实际渲染对照见 `docs/evidence/map-empty-canvas/design-qa.md`。

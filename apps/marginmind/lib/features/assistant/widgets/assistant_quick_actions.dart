@@ -640,7 +640,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                                     size: 28,
                                     icon: running ? MMIcons.stop : MMIcons.send,
                                     tooltip: running ? l.assistantStop : l.assistantSend,
-                                    color: c.onAccent,
+                                    color: c.onResearch,
                                     onPressed: running
                                         ? () => unawaited(
                                             ref

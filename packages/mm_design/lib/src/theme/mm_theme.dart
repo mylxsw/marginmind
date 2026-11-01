@@ -16,7 +16,7 @@ abstract final class MMTheme {
     final text = MMTextStyles(c);
     final scheme = ColorScheme.fromSeed(seedColor: c.accent, brightness: c.brightness).copyWith(
       primary: c.accent,
-      onPrimary: c.onAccent,
+      onPrimary: readableForeground(c.accent),
       surface: c.windowBackground,
       onSurface: c.label,
       outline: c.separator,
