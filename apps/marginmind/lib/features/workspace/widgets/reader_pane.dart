@@ -668,17 +668,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           key: const ValueKey('reader-vocabulary'),
           label: l.vocabularyHints,
           icon: MMIcons.vocabulary,
-          selected: hintMode != VocabularyHintMode.off,
           itemBuilder: (_) => [
-            entry(
-              l.vocabularyHints,
-              () => unawaited(toggleVocabularyHints(context, ref, document.id)),
-              selected: hintMode != VocabularyHintMode.off,
-              id: 'vocabulary-hint-toggle',
-              icon: MMIcons.vocabulary,
-              routeThroughPane: false,
-            ),
-            const PopupMenuDivider(),
+            MMDropdownHeader<VoidCallback>(l.vocabularyHintsModeScope),
             for (final (mode, label) in vocabularyHintModes(context))
               entry(
                 label,
@@ -689,13 +680,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     if (mode != VocabularyHintMode.off) await owner.setDocumentHidden(document.id, false);
                   }),
                 ),
-                selected: mode == hintMode,
+                selected: mode == hints.mode,
                 id: 'reader-vocabulary-${mode.name}',
-                icon: switch (mode) {
-                  VocabularyHintMode.off => MMIcons.eyeSlash,
-                  VocabularyHintMode.underline => MMIcons.underline,
-                  VocabularyHintMode.gloss => MMIcons.translate,
-                },
                 routeThroughPane: false,
               ),
             const PopupMenuDivider(),
@@ -711,7 +697,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               ),
               selected: hints.hiddenDocuments.contains(document.id),
               id: 'reader-vocabulary-hidden',
-              icon: MMIcons.eyeSlash,
               routeThroughPane: false,
             ),
             entry(
@@ -724,7 +709,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               ),
               selected: hints.showKnown,
               id: 'reader-vocabulary-known',
-              icon: MMIcons.check,
               routeThroughPane: false,
             ),
           ],

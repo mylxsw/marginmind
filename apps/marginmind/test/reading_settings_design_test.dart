@@ -102,15 +102,15 @@ Future<void> verifyReadingSettingsFlow(WidgetTester tester, {String prefix = 're
   showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading);
   await tester.pumpAndSettle();
 
-  Focus.of(tester.element(find.text('仅下划线'))).requestFocus();
+  Focus.of(tester.element(find.text('仅标记生词'))).requestFocus();
   await tester.pump();
   await tester.sendKeyEvent(LogicalKeyboardKey.space);
   await tester.pumpAndSettle();
   expect(find.text('关闭'), findsOneWidget);
-  expect(find.text('显示释义'), findsOneWidget);
+  expect(find.text('标记并显示释义'), findsOneWidget);
   expect(find.byIcon(MMIcons.check), findsOneWidget);
   await captureReadingSettings(tester, '$prefix-dark-dropdown');
-  await tester.tap(find.text('显示释义').last);
+  await tester.tap(find.text('标记并显示释义').last);
   await tester.pumpAndSettle();
   expect(mode(), VocabularyHintMode.gloss);
   expect(container.read(vocabularyHintProvider).mode, VocabularyHintMode.gloss);
@@ -131,7 +131,7 @@ Future<void> verifyReadingSettingsFlow(WidgetTester tester, {String prefix = 're
 
   await tester.tap(modes);
   await tester.pumpAndSettle();
-  await tester.tap(find.text('仅下划线').last);
+  await tester.tap(find.text('仅标记生词').last);
   await tester.pumpAndSettle();
   expect(mode(), VocabularyHintMode.underline);
 

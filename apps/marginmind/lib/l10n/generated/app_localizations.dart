@@ -6986,6 +6986,12 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get vocabularyAddForm;
 
+  /// No description provided for @vocabularyHintsModeScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Display mode (all documents)'**
+  String get vocabularyHintsModeScope;
+
   /// No description provided for @vocabularyHints.
   ///
   /// In en, this message translates to:
@@ -7001,25 +7007,25 @@ abstract class AppLocalizations {
   /// No description provided for @vocabularyHintsUnderline.
   ///
   /// In en, this message translates to:
-  /// **'Underline'**
+  /// **'Mark words only'**
   String get vocabularyHintsUnderline;
 
   /// No description provided for @vocabularyHintsGloss.
   ///
   /// In en, this message translates to:
-  /// **'Meaning'**
+  /// **'Mark words with meanings'**
   String get vocabularyHintsGloss;
 
   /// No description provided for @vocabularyHintsHidden.
   ///
   /// In en, this message translates to:
-  /// **'Hide in this document'**
+  /// **'Hide only in this document'**
   String get vocabularyHintsHidden;
 
   /// No description provided for @vocabularyHintsKnown.
   ///
   /// In en, this message translates to:
-  /// **'Mark known words'**
+  /// **'Include learned words'**
   String get vocabularyHintsKnown;
 
   /// No description provided for @mapIdeaMenu.
