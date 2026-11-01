@@ -319,6 +319,9 @@ void main() {
     Future<void> pick(String key, String language) async {
       await tester.tap(find.byKey(ValueKey(key)));
       await tester.pump(const Duration(milliseconds: 200));
+      final menu = find.ancestor(of: find.text(language).last, matching: find.byType(MMGlass)).first;
+      expect(find.descendant(of: menu, matching: find.byType(Icon)), findsOneWidget);
+      expect(find.descendant(of: menu, matching: find.byIcon(MMIcons.check)), findsOneWidget);
       await tester.tap(find.text(language).last);
       await tester.pump(const Duration(milliseconds: 200));
     }

@@ -742,9 +742,8 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
             child: Text(_destination == 'new' ? l.mapGenerateTargetNew : l.mapGenerateTargetBranch),
             onSelected: (value) => setState(() => _destination = value),
             itemBuilder: (_) => [
-              MMDropdownItem(value: 'new', icon: MMIcons.mindMap, child: Text(l.mapGenerateTargetNew)),
-              if (hasNodes)
-                MMDropdownItem(value: 'branch', icon: MMIcons.syncToMap, child: Text(l.mapGenerateTargetBranch)),
+              MMDropdownItem(value: 'new', child: Text(l.mapGenerateTargetNew)),
+              if (hasNodes) MMDropdownItem(value: 'branch', child: Text(l.mapGenerateTargetBranch)),
             ],
           ),
         ),

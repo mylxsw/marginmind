@@ -467,7 +467,6 @@ class _MMDropdownSubmenuState<T> extends State<MMDropdownSubmenu<T>> {
           for (final entry in widget.entries)
             MMDropdownItem<T>(
               value: entry.value,
-              icon: widget.icon,
               child: Row(
                 children: [
                   Expanded(child: Text(entry.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
