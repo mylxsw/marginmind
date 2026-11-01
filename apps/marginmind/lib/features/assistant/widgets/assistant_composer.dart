@@ -376,11 +376,8 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
             ),
           ),
         ),
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(10, MMSpacing.s, 10, 10),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: c.separator)),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -416,10 +413,9 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                 duration: MMMotion.quick,
                 curve: MMMotion.quickCurve,
                 decoration: BoxDecoration(
-                  color: c.card,
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: _focus.hasFocus ? c.research : c.separator),
-                  boxShadow: _focus.hasFocus ? [BoxShadow(color: c.researchTint, spreadRadius: 3)] : null,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -485,7 +481,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                               focusNode: _focus,
                               enabled: configured,
                               readOnly: _voice.active,
-                              minLines: 1,
+                              minLines: configured && chips.isNotEmpty ? 2 : 3,
                               maxLines: null,
                               keyboardType: TextInputType.multiline,
                               style: t.body.copyWith(height: context.mmTouchPlatform ? 1.4 : 20 / 13, color: c.label),
