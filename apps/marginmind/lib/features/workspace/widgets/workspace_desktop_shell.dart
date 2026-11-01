@@ -74,11 +74,20 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                 key: const ValueKey('workspace-tab-row'),
                 height: toolbarHeight,
                 decoration: BoxDecoration(
-                  color: touch ? Color.lerp(c.windowBackground, c.sidebarOpaque, .35) : c.windowBackground,
-                ),
-                foregroundDecoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: c.separator, width: MMSizes.hairline),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      c.brightness == Brightness.dark
+                          ? Color.lerp(c.windowBackground, Colors.black, .22)!
+                          : c.sidebarOpaque,
+                      c.brightness == Brightness.dark
+                          ? Color.lerp(c.windowBackground, Colors.black, .22)!
+                          : c.sidebarOpaque,
+                      c.windowBackground,
+                      c.windowBackground,
+                    ],
+                    stops: [0, 1 - 1 / toolbarHeight, 1 - 1 / toolbarHeight, 1],
                   ),
                 ),
                 child: CustomMultiChildLayout(
