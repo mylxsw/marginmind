@@ -130,7 +130,7 @@
 
 | 状态 | 判定（来自 Resolver / 能力档案） | 选择器 | 行下状态 | 操作 |
 | --- | --- | --- | --- | --- |
-| 尚未创建任何模型 | 已启用的服务和模型均为空 | 整页替换为居中的主按钮“添加模型”（场景 6） | — | “添加模型”切到“模型”分区并打开 `showServiceList` |
+| 尚未创建任何模型 | 从未配置模型，且路由无任何默认/显式引用 | 整页替换为居中的主按钮“添加模型”（场景 6） | — | “添加模型”切到“模型”分区并打开 `showServiceList` |
 | 某类默认未设置 | `defaults.quick/heavy == null` | 默认行占位“选择模型”（`caution`）；该类继承行显示“需配置”（`caution`） | 无（默认行已经说明问题，继承行不重复） | 点选择器 |
 | quick 模型无法关闭思考 | `alwaysOn` | 正常显示模型名；继承它的快速功能行文字用 `caution` | 在“思考”行（默认）或该功能行（显式）下：⚠“此模型无法关闭思考” | “更换模型”（打开该行选择器） |
 | 能力未知 | `unknown`，或缺少本功能所需能力的证据 | 正常 | ⚠ `caution`“需验证兼容性” | “测试”：运行 `capability_probe`。运行中把链接换成 12pt 转圈，可取消（离开页面时取消）。结束后按结果刷新本行：通过则消失；不支持则变为对应状态；连接失败则显示“连接不可用” |
@@ -140,6 +140,7 @@
 | 密钥暂不可访问 | Keychain 读取失败或 `secret_store` | 正常（**不**标为能力不支持） | ⚠ `caution`“连接不可用” | “打开模型设置”（定位到该服务卡片） |
 
 - 失效引用**不清空、不改为继承、不换成列表第一项**。默认行失效时，继承它的功能行显示“需配置”，不悄悄回退到另一个服务。
+- 全部模型停用/删除但仍有路由引用时，保留完整设置页和失效项；没有启用模型不能被当作首次使用空态。提供打开模型设置的入口以启用或添加模型。
 - 同一行同时有多个问题时，只显示优先级最高的一个：删除/停用 > 密钥不可用 > 能力不足/无法关闭思考 > 能力未知。
 - 本页只用于配置，可以保存含异常的草稿（上位文档 §3 允许保存未就绪配置），只是在开始任务时拦截（§6）。
 - 迁移后首次打开：quick 默认若由旧默认模型预填但能力未确认，按“能力未知”显示，不加引导横幅。
@@ -232,7 +233,7 @@
 | paused（用户） | `quaternaryFill`“已暂停 {x}/{y}” | 已暂停 | — | 继续 |
 | paused（任务级错误） | critical 8%“已暂停” | 已暂停 | critical：原因短语 + 一个操作（“打开模型设置”/“AI 功能设置”/“重试”） | 继续 |
 | interrupted | caution 9%“已中断 {x}/{y}” | `caution`“已中断” | caution：“上次运行未完成” | 继续 |
-| partial | caution 9%“已完成 · {n} {单位}未完成” | 同胶囊 | — | “重试 {n} {单位}”；次要“查看结果” |
+| partial | caution 9%“部分完成 · {n} {单位}未完成” | 同胶囊 | — | “重试 {n} {单位}”；次要“查看结果” |
 | failed | critical 8%“失败” | 失败 | critical：原因短语 + 操作 | 重试 |
 | cancelled | `quaternaryFill`“已停止 {x}/{y}” | 已停止 | — | — |
 | completed | positive 10%“✓ 已完成” | — | — | — |
@@ -292,7 +293,7 @@
 | 删除确认 | 移除“{模型}”？ / 快速任务默认模型 / 重型任务默认模型 / 当前对话 / n 个对话 / 另有 n 项 | Remove “{model}”? / Quick default / Heavy default / This conversation / n conversations / n more |
 | 对话菜单 | 跟随设置 / AI 功能设置… | Use Setting / AI Features Settings… |
 | 拦截 | 更换本次模型 / AI 功能设置 | Use Another Model / AI Features Settings |
-| 任务 | 已中断 / 上次运行未完成 / 已完成 · n {单位}未完成 / 重试 n {单位} / 查看结果 / 先暂停 / 后续使用 {模型}？ / 后续使用 / 更换后续模型 | Interrupted / Last run didn't finish / Done · n {unit} unfinished / Retry n {unit} / View Results / Pause first / Use {model} from here? / Use from Here / Change Model for Remaining |
+| 任务 | 已中断 / 上次运行未完成 / 部分完成 · n {单位}未完成 / 重试 n {单位} / 查看结果 / 先暂停 / 后续使用 {模型}？ / 后续使用 / 更换后续模型 | Interrupted / Last run didn't finish / Partially complete · n {unit} unfinished / Retry n {unit} / View Results / Pause first / Use {model} from here? / Use from Here / Change Model for Remaining |
 
 已有可复用的 key：`settingsSaveFailed`、`settingsUnsaved`、`settingsSaving`、`voiceSaved`、`save`、`cancel`、`assistantCannotConnect`。新增 key 统一以 `aiTasks` 前缀命名。
 
@@ -332,7 +333,7 @@
 
 需要 S1/S2 的接口提供以下信息（本任务不实现，交父负责人协调，不另造兼容协议）：
 
-1. **失效引用的显示名快照。** 上位文档 §4 的绑定示例只有 `(serviceId, modelId)`；模型被删除后，界面需要“保留原显示名”。需要在路由配置的引用中保存 `label` 快照（如 `{"serviceId","modelId","label"}`，只用于显示，不参与解析），或由服务存储保留删除墓碑。由 S1 决定其中一种。
+1. **失效引用的显示名快照。** 父负责人决定：路由默认/显式绑定保存服务名与模型显示名快照，只用于显示，仍以 `(serviceId, modelId)` 解析，不另建完整服务删除墓碑。旧记录无快照时保留 ID 作为显示回退，不猜测同名模型。Run 的配置阶段也保存显示快照。
 2. **按引用列出使用方。** `RoutingUsage.of(ModelReference | serviceId)` 返回默认、功能、会话覆盖、可恢复 run 的列表，供 §4.4 与 §4.3 使用。
 3. **按行解析状态。** Resolver 对每个 taskType 返回 `{effective: ModelReference?, source: explicit|inherit, issue: none|unset|deleted|modelOff|serviceOff|serviceRemoved|secretUnavailable|thinkingAlwaysOn|capabilityMissing(kind)|unknown}`。界面只按此枚举渲染，不自行判断能力或匹配名字。
 4. **重型思考可选值。** 能力档案给出该模型支持的 `ReasoningPolicy` 值集合，用于 §2.2 和 §2.4。
