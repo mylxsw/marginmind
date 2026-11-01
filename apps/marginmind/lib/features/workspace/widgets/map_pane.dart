@@ -179,6 +179,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
   /// The style popover, the style it previews, and where it hangs.
   bool _styleOpen = false;
+  bool _styleCustomOpen = false;
   (MapStructure, MapPalette)? _stylePreview;
   final _stylePortal = OverlayPortalController();
   static const _styleRegion = 'map-style';
@@ -197,6 +198,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     _stylePortal.hide();
     setState(() {
       _styleOpen = false;
+      _styleCustomOpen = false;
       _stylePreview = null;
     });
     _focus.requestFocus();
@@ -914,13 +916,16 @@ class _MapPaneState extends ConsumerState<MapPane> {
               : double.infinity,
           popover: TapRegion(
             groupId: _styleRegion,
-            onTapOutside: (_) => _closeStyle(),
+            onTapOutside: (_) {
+              if (!_styleCustomOpen) _closeStyle();
+            },
             child: SingleChildScrollView(
               child: MapStylePopover(
                 density: map?.density ?? MapDensity.compact,
                 onDensity: controller.setMapDensity,
                 backgroundColor: map?.backgroundColor,
                 onBackgroundColor: controller.setMapBackgroundColor,
+                onCustomOpenChanged: (open) => _styleCustomOpen = open,
                 structure: map?.structure ?? MapStructure.mind,
                 palette: map?.palette ?? MapPalette.system,
                 onPreview: (style) => setState(() => _stylePreview = style),
@@ -1387,7 +1392,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                           key: const ValueKey('map-style-menu'),
                                           value: _toggleStyle,
                                           enabled: map != null,
-                                          child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
+                                          child: TapRegion(
+                                            groupId: _styleRegion,
+                                            child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
+                                          ),
                                         ),
                                         if (MMInput.touchInputOf(context))
                                           MMDropdownItem<VoidCallback>(
