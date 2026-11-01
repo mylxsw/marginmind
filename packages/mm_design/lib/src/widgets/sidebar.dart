@@ -146,10 +146,7 @@ class _MMSidebarSectionState extends State<MMSidebarSection> {
                         ),
                       ),
                     ),
-                    if (widget.titleTrailing != null) ...[
-                      const SizedBox(width: 4),
-                      widget.titleTrailing!,
-                    ],
+                    if (widget.titleTrailing != null) ...[const SizedBox(width: 4), widget.titleTrailing!],
                   ],
                 ),
               ),
