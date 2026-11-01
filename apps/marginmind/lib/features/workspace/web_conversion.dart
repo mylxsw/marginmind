@@ -237,14 +237,13 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(label, style: context.mmText.body.copyWith(color: c.secondaryLabel)),
+            Text(label, style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
             const SizedBox(height: MMSpacing.s),
             child,
           ],
         );
         return MMSheet(
           title: l.convertTitle,
-          titleStyle: context.mmText.title3.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
           actions: [
             MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
             save,
