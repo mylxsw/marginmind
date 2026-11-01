@@ -192,17 +192,21 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
                           header: true,
                           child: Text(
                             l.mapEmptyGenerateTitle,
-                            style: t.largeTitle.copyWith(fontWeight: FontWeight.w600),
+                            style: t.largeTitle.copyWith(
+                              fontSize: compact ? 26 : 32,
+                              height: 1.25,
+                              fontWeight: FontWeight.w600,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
                         const SizedBox(height: MMSpacing.s),
                         Text(
                           l.mapEmptyGenerateSubtitle,
-                          style: t.body.copyWith(color: c.secondaryLabel, height: 1.5),
+                          style: t.body.copyWith(fontSize: 16, color: c.secondaryLabel, height: 1.5),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: gap),
+                        SizedBox(height: compact ? gap : 48),
                         if (document != null) ...[
                           _SourceTopic(document: document, onAdd: _createBlankTopic),
                           SizedBox(height: gap),
@@ -229,21 +233,25 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
                                     children: [
                                       Text(
                                         l.mapGenerateInstructionsHint,
-                                        style: t.body.copyWith(color: c.secondaryLabel),
+                                        style: t.body.copyWith(fontSize: 14, color: c.secondaryLabel),
                                       ),
                                       const SizedBox(height: MMSpacing.s),
                                       TextField(
                                         key: const ValueKey('map-empty-state-instructions'),
                                         controller: _controller,
                                         focusNode: _focusNode,
-                                        minLines: 2,
+                                        minLines: compact ? 2 : 3,
                                         maxLines: 6,
-                                        style: t.body.copyWith(height: 1.6),
+                                        style: t.body.copyWith(fontSize: 14, height: 1.6),
                                         decoration: InputDecoration(
                                           isDense: true,
                                           border: InputBorder.none,
                                           hintText: l.mapEmptyInstructionsPlaceholder,
-                                          hintStyle: t.body.copyWith(color: c.secondaryLabel, height: 1.6),
+                                          hintStyle: t.body.copyWith(
+                                            fontSize: 14,
+                                            color: c.secondaryLabel,
+                                            height: 1.6,
+                                          ),
                                           contentPadding: EdgeInsets.zero,
                                         ),
                                         onChanged: (text) {
@@ -342,51 +350,73 @@ class _SourceTopic extends StatelessWidget {
           };
     return Column(
       children: [
-        Text(l.mapEmptySourceStart, style: t.callout.copyWith(color: c.secondaryLabel)),
+        Text(l.mapEmptySourceStart, style: t.callout.copyWith(fontSize: 14, color: c.secondaryLabel)),
         const SizedBox(height: MMSpacing.m),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(width: 52),
-            Flexible(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: MMSizes.mapEmptySourceWidth),
-                child: Tooltip(
-                  message: document.title,
-                  child: Container(
-                    key: const ValueKey('map-empty-state-source'),
-                    constraints: const BoxConstraints(minHeight: MMSizes.mapEmptySourceHeight),
-                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xl, vertical: MMSpacing.l),
-                    decoration: BoxDecoration(
-                      color: c.surface,
-                      borderRadius: BorderRadius.circular(MMRadii.mapEmptyGlyph),
-                      border: Border.all(color: c.research, width: 1.5),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(icon, size: 22, color: c.research),
-                        const SizedBox(width: MMSpacing.m),
-                        Flexible(
-                          child: Text(document.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: t.headline),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 480;
+            final connector = wide ? 76.0 : 24.0;
+            final control = context.mmTouchPlatform ? MMSizes.tabletControlVisual : 32.0;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(width: connector + control),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: MMSizes.mapEmptySourceWidth),
+                    child: Tooltip(
+                      message: document.title,
+                      child: Container(
+                        key: const ValueKey('map-empty-state-source'),
+                        constraints: const BoxConstraints(
+                          minWidth: MMSizes.mapEmptySourceMinWidth,
+                          minHeight: MMSizes.mapEmptySourceHeight,
                         ),
-                      ],
+                        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xl, vertical: MMSpacing.l),
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          borderRadius: BorderRadius.circular(MMRadii.mapEmptyGlyph),
+                          border: Border.all(color: c.research, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon, size: 26, color: c.research),
+                            const SizedBox(width: MMSpacing.m),
+                            Flexible(
+                              child: Text(
+                                document.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: t.headline.copyWith(fontSize: 16, height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            SizedBox(width: 24, child: Divider(height: 1, color: c.research, thickness: 1)),
-            MMIconButton(
-              key: const ValueKey('map-empty-state-source-add'),
-              icon: MMIcons.add,
-              tooltip: l.mapGenerateBlank,
-              onPressed: onAdd,
-            ),
-          ],
+                SizedBox(
+                  width: connector,
+                  child: Divider(height: 1, color: c.research, thickness: 1),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(color: c.fill, shape: BoxShape.circle),
+                  child: MMIconButton(
+                    key: const ValueKey('map-empty-state-source-add'),
+                    icon: MMIcons.add,
+                    size: 32,
+                    tooltip: l.mapGenerateBlank,
+                    onPressed: onAdd,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         const SizedBox(height: MMSpacing.s),
-        Text('${l.mapGenerateSource}：$source', style: t.footnote.copyWith(color: c.secondaryLabel)),
+        Text('${l.mapGenerateSource}：$source', style: t.footnote.copyWith(fontSize: 13, color: c.secondaryLabel)),
       ],
     );
   }
@@ -415,7 +445,7 @@ class _SuggestionChip extends StatelessWidget {
           final fg = selected ? c.onResearch : (hovered ? c.label : c.secondaryLabel);
 
           return Container(
-            constraints: BoxConstraints(minHeight: context.mmTouchPlatform ? MMSizes.touchTarget : 24),
+            constraints: BoxConstraints(minHeight: context.mmTouchPlatform ? MMSizes.touchTarget : 32),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
             child: Center(
@@ -423,7 +453,7 @@ class _SuggestionChip extends StatelessWidget {
               child: Text(
                 text,
                 textAlign: TextAlign.center,
-                style: t.callout.copyWith(color: fg),
+                style: t.callout.copyWith(fontSize: 14, color: fg),
               ),
             ),
           );

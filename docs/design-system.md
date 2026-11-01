@@ -209,3 +209,7 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 `MMPhoneReaderLayout` 对应原型 CSS：水平 inset 14、模式切换宽 170（窄屏可收缩）、底边 24、顶部 inset 4、组间距 10、scroll-edge 64 / 沉浸 6（均从状态栏安全区下方测量）、scrubHeight 74、colorHeight 46、progress 14、工具色点 8 / 球色点 10、toolInset 6、scrubInset 18；工具栏圆角使用 `MMRadii.phoneReaderToolbar` 28。工作区继续使用 flat 材质，仅新控件的外壳通过局部 `MMFlatSurface(enabled: false)` 渲染玻璃，内部按钮恢复 flat 继承以保证其弹出菜单仍为 flat。底部距离与原始安全区取最大值，36pt 页码包在至少 44pt 热区中。50pt 球左右拖动停靠，本机偏好保存停靠侧；切换文档重置瞬态控件并取消旧计时器。
 
 四态互斥优先于原型默认同时显示页码与工具球的示意。流式文档胶囊显示当前章节内页码，进度环和滑块仍覆盖全书；固定 EPUB 按源页面导航。原型已有上述几何值，无需改变视觉源。Linux 的 393×852 浅深色 golden 证据及复现命令见 `docs/evidence/gul-631/`。
+
+### 脑图生成起始页（方案 3）
+
+空脑图以“从资料生成脑图”作为标题，真实资料标题独立显示为紫色描边主题节点，来源显示保存的网页域名或文件格式。节点右侧的＋与底部“新建空白主题”共用手动新建行为。`MMSizes.mapEmptyStateWidth` 为620pt；来源节点最大320pt、最小224×76pt，长标题两行省略并保留全文提示。补充要求表单标明选填，底部分隔出设置与生成按钮，下面是三条可切换的要求建议。窄窗使用较短间距并可纵向滚动；触控标签至少44pt。AI实心按钮使用research/onResearch配色。设计及实际渲染对照见 `docs/evidence/map-empty-canvas/design-qa.md`。
