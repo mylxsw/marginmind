@@ -22,18 +22,9 @@ String assistantTitlePlaceholder(String question, List<ContextItem> contexts) =>
   (assistantSelectionTitle(question, contexts) ?? question).trim().replaceAll(RegExp(r'\s+'), ' ').runes.take(24),
 );
 
-/// Select only an explicitly available small model on the same service.
-AssistantModel assistantTitleModel(AssistantModel current, List<AssistantModel> available) =>
-    available
-        .where(
-          (m) =>
-              m.serviceId == current.serviceId &&
-              m.provider == current.provider &&
-              m.endpoint == current.endpoint &&
-              RegExp(r'haiku|mini|flash|small', caseSensitive: false).hasMatch(m.model),
-        )
-        .firstOrNull ??
-    current;
+/// Compatibility only; title tasks resolve their own quick route during S3 migration.
+@Deprecated('Resolve TaskType.titleGenerate through TaskModelResolver')
+AssistantModel assistantTitleModel(AssistantModel current, List<AssistantModel> available) => current;
 
 Future<String> generateAssistantTitle(LLMClient client, String model, String question) async {
   final cancel = CancelToken();

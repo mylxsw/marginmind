@@ -80,7 +80,7 @@ void main() {
         ),
       ),
     );
-    expect((await store.resolve(old, quick: true)).model, 'gpt-mini');
+    expect((await store.resolve(old, quick: true)).model, 'gpt');
     expect((await store.resolve(old)).model, 'gpt');
     await store.save(value.remove('legacy-responses'));
     await expectLater(store.resolve(old), throwsA(isA<ResearchFailure>()));

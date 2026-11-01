@@ -23,7 +23,7 @@ void main() {
     );
     expect(assistantTitlePlaceholder('  一个\n问题  ', []), '一个 问题');
   });
-  test('title uses available faster model from same service, otherwise current', () {
+  test('legacy title helper never chooses a model by name', () {
     const small = AssistantModel(
       provider: AssistantProvider.compatible,
       model: 'mini',
@@ -35,7 +35,7 @@ void main() {
       endpoint: 'https://other.example/v1',
     );
     expect(assistantTitleModel(current, [other]), current);
-    expect(assistantTitleModel(current, [other, small]), small);
+    expect(assistantTitleModel(current, [other, small]), current);
   });
   test('title recording/replay is separate, bounded and language instructed', () async {
     final store = InMemoryRecordingStore();

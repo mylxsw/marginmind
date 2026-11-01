@@ -33,3 +33,6 @@ export 'src/translation_scheduler.dart';
 export 'src/map_generation.dart';
 
 export 'src/model_policy/compiler.dart';
+
+export 'src/model_policy/routing.dart';
+export 'src/model_policy/probe.dart';
