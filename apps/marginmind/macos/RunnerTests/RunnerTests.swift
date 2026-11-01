@@ -471,6 +471,7 @@ class RunnerTests: XCTestCase {
     window.titlebarAppearsTransparent = true
     let target = ToolbarEventSpy()
     window.installFlutterToolbar(eventTarget: target)
+    XCTAssertTrue(window.acceptsMouseMovedEvents)
     let toolbar = try XCTUnwrap(window.toolbar as? FlutterWindowToolbar)
     window.orderFront(nil)
     window.contentView?.layoutSubtreeIfNeeded()
@@ -511,7 +512,7 @@ class RunnerTests: XCTestCase {
     eventView.isHidden = true
     XCTAssertTrue(window.toolbarEventView(at: point) === eventView)
     target.onDown = { XCTAssertFalse(window.isMovable) }
-    for type: NSEvent.EventType in [.leftMouseDown, .leftMouseDragged, .leftMouseUp] {
+    for type: NSEvent.EventType in [.mouseMoved, .leftMouseDown, .leftMouseDragged, .leftMouseUp] {
       let event = try XCTUnwrap(NSEvent.mouseEvent(with: type, location: point,
         modifierFlags: [], timestamp: 1, windowNumber: window.windowNumber,
         context: nil, eventNumber: 1, clickCount: 2, pressure: 0.5))

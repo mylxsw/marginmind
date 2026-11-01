@@ -14,6 +14,7 @@ class MainFlutterWindow: NSWindow {
     // Transparent title bars can start AppKit gestures outside the forwarding
     // surface. Keep automatic movement off; Flutter opts in for a title drag.
     flutterOwnsWindowGestures = true
+    acceptsMouseMovedEvents = true
     isMovableByWindowBackground = false
     isMovable = false
   }
@@ -67,6 +68,13 @@ class MainFlutterWindow: NSWindow {
 
   override func sendEvent(_ event: NSEvent) {
     switch event.type {
+    case .mouseMoved:
+      // Native title-bar overlays also cover tabs. Route hover through the
+      // same window-level hit test as clicks, including item padding.
+      if let target = toolbarEventView(at: event.locationInWindow) {
+        target.mouseMoved(with: event)
+        return
+      }
     case .leftMouseDown:
       toolbarPointerTarget = nil
       if let target = toolbarEventView(at: event.locationInWindow) {
