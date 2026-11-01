@@ -127,6 +127,8 @@ class ResolvedTaskConfig {
     required this.policy,
     required this.routingRevision,
     required this.source,
+    this.serviceLabel,
+    this.modelLabel,
   }) {
     if (capabilities.identity != policy.identity) {
       throw const ConfigurationFailure('snapshotIdentityMismatch');
@@ -136,6 +138,7 @@ class ResolvedTaskConfig {
   final ProviderCallPolicy policy;
   final int routingRevision;
   final RoutingSource source;
+  final String? serviceLabel, modelLabel;
   ModelReference get model => capabilities.identity.model;
 }
 

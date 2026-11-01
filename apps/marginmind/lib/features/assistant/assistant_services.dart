@@ -96,7 +96,7 @@ class AssistantServicesStore {
     final model = service.models.where((m) => m.id == old.model && m.enabled).firstOrNull;
     if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable, 'select_model');
     final current = service.configuration(model);
-    return quick ? quickModelFor(service, current) : current;
+    return current; // Task routing owns quick/heavy selection, never model names.
   }
 }
 
@@ -132,7 +132,10 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
   /// A pending settings save must not restore stale models or enabled state.
   Future<void> updateDetails(String id, {String? name, String? endpoint, String? key}) => _change((value) async {
     var service = _service(value, id);
-    if (key != null) await _writeKey(service, key);
+    if (key != null) {
+      await _writeKey(service, key);
+      service = service.copyWith(revision: service.revision + 1);
+    }
     if (name != null) service = service.copyWith(name: name);
     if (endpoint != null) service = serviceWithEndpoint(service, endpoint);
     return value.upsert(service);
@@ -153,7 +156,7 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
   });
   Future<void> saveKey(String id, String key) => _change((v) async {
     await _writeKey(_service(v, id), key);
-    return v;
+    return v.upsert(_service(v, id).copyWith(revision: _service(v, id).revision + 1));
   });
 
   Future<void> _writeKey(AssistantService service, String key) async {
@@ -288,4 +291,5 @@ AssistantService serviceWithEndpoint(AssistantService service, String endpoint) 
       ? service.responses
       : _openAiHost(endpoint) || (service.responses && !_openAiHost(service.endpoint)),
   models: service.models,
+  revision: service.revision,
 );
