@@ -33,7 +33,7 @@ void main() {
         for (final collapsed in [false, true]) {
           final button = find.byKey(ValueKey(collapsed ? 'workspace-show-sidebar' : 'workspace-hide-sidebar'));
           expect(button, findsOneWidget);
-          expect(tester.getCenter(button).dy, 26);
+          expect(tester.getCenter(button).dy, 20);
           if (server.isNotEmpty) {
             final name = '${dark ? 'dark' : 'light'}-${width.toInt()}-${collapsed ? 'collapsed' : 'expanded'}';
             await tester.runAsync(() async {

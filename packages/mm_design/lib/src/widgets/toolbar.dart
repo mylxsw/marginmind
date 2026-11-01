@@ -10,7 +10,7 @@ import 'control_frame.dart';
 import 'search_field.dart';
 import 'window_scaffold.dart';
 
-/// Unified window toolbar (height 56): title and subtitle on the left,
+/// Unified window toolbar: title and subtitle on the left,
 /// glass control groups on the right. Dragging empty space moves the window;
 /// double-clicking it zooms, like a native title bar.
 class MMToolbar extends StatelessWidget {
@@ -43,7 +43,7 @@ class MMToolbar extends StatelessWidget {
     final t = context.mmText;
     final chrome = MMWindowChrome.maybeOf(context);
     return SizedBox(
-      height: height,
+      height: child == null && !context.mmTouchPlatform ? MMSizes.desktopWindowTitlebarHeight : height,
       child: Stack(
         fit: StackFit.expand,
         children: [

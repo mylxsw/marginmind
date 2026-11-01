@@ -140,11 +140,11 @@ abstract final class MMSizes {
   /// Space reserved at the top of the sidebar for the window buttons.
   static const double windowButtonsHeight = 28;
 
-  /// Matches the macOS unified toolbar: window button centers sit at y=26.
+  /// Touch title row with room for 44pt controls.
   static const double windowTitlebarHeight = 52;
 
-  /// Compact tab row; its controls still use the native y=26 center.
-  static const double desktopWindowTitlebarHeight = 44;
+  /// Matches the macOS unified compact toolbar and its y=20 button center.
+  static const double desktopWindowTitlebarHeight = 40;
 
   /// Width the window buttons need when the sidebar is hidden and they sit
   /// in the toolbar instead.

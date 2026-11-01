@@ -49,8 +49,13 @@ class MMSidebar extends StatelessWidget {
         borderRadius: radius,
         border: flat ? null : Border.all(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: 0.5),
       ),
-      // Desktop removes the outer inset; keep window-button controls at y=26.
-      padding: EdgeInsets.fromLTRB(10, flat ? 12 : 3.5, 10, 10),
+      // Center desktop controls in the native compact title row.
+      padding: EdgeInsets.fromLTRB(
+        10,
+        flat ? (MMSizes.desktopWindowTitlebarHeight - MMSizes.windowButtonsHeight) / 2 : 3.5,
+        10,
+        10,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
