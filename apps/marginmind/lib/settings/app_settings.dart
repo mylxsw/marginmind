@@ -197,9 +197,15 @@ class SettingsController extends Notifier<AppSettings> {
   }
 
   Future<void> usePhoneReadingDefault(DocumentFormat format) async {
-    final key = ReadingSettings.isArticle(format) ? 'settings.reading.article' : 'settings.reading.book';
+    final article = ReadingSettings.isArticle(format);
+    final key = article ? 'settings.reading.article' : 'settings.reading.book';
     if (!ref.read(sharedPreferencesProvider).containsKey('$key.size')) {
-      await setReading(format, state.reading(format).copyWith(size: MMReaderTypography.defaultSizePhone));
+      await setReading(
+        format,
+        state
+            .reading(format)
+            .copyWith(size: article ? MMReaderTypography.defaultSizePhone : MMReaderTypography.defaultSize),
+      );
     }
   }
 

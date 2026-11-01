@@ -74,6 +74,22 @@ void main() {
     expect(() => SourceSelection.text([]), throwsArgumentError);
     expect(() => SourceSelection.text([const TextAnchor('main', 0, 1, 'x')]), throwsArgumentError);
   });
+  for (final format in [DocumentFormat.epub, DocumentFormat.mobi, DocumentFormat.azw3]) {
+    test('$format starts at the fourth font size on desktop and phone and preserves saved sizes', () async {
+      final container = ProviderContainer(overrides: await testOverrides());
+      addTearDown(container.dispose);
+      expect(const AppSettings().reading(format).size, 3);
+      expect(container.read(settingsProvider).reading(format).size, 3);
+      final controller = container.read(settingsProvider.notifier);
+      await controller.usePhoneReadingDefault(format);
+      expect(container.read(settingsProvider).reading(format).size, 3);
+      await controller.setReading(format, const ReadingSettings(size: 6));
+      await controller.usePhoneReadingDefault(format);
+      container.invalidate(settingsProvider);
+      expect(container.read(settingsProvider).reading(format).size, 6);
+    });
+  }
+
   test('reading settings clamp, persist and keep book/article groups separate', () async {
     final overrides = await testOverrides(
       prefs: {
