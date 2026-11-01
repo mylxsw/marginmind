@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
+import 'package:marginmind/features/assistant/settings/model_route_picker.dart';
 import 'package:marginmind/features/assistant/assistant_entry.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:mm_core/mm_core.dart';
@@ -52,6 +53,20 @@ ProviderContainer _scope(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byKey(const ValueKey('assistant-input'))));
 
 void main() {
+  for (final width in [1000.0, 1600.0]) {
+    testWidgets('model picker shares the bottom toolbar at window width $width', (tester) async {
+      await _open(tester, size: Size(width, 760));
+      final picker = tester.getRect(find.byType(ModelRoutePicker));
+      final send = tester.getRect(find.byKey(const ValueKey('assistant-send')));
+      final online = tester.getRect(find.byKey(const ValueKey('assistant-online')));
+      expect(picker.center.dy, closeTo(send.center.dy, 1));
+      expect(picker.center.dy, closeTo(online.center.dy, 1));
+      expect(picker.left, greaterThanOrEqualTo(online.right));
+      expect(picker.right, lessThan(send.left));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final width in [1000.0, 1600.0]) {
     testWidgets('model menu stays above its button at window width $width', (tester) async {
       await _open(tester, size: Size(width, 760));
