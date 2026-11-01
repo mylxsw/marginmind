@@ -891,6 +891,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final locateButton = MMToolbarButton(
       key: const ValueKey('map-locate-selected'),
       icon: MMIcons.locate,
+      tint: c.icon,
       tooltip: l.centerCurrentNode,
       onPressed: () => viewCommand('center', () => _viewCommand(MindMapCommand.center)),
     );
