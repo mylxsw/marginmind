@@ -8,6 +8,7 @@ import '../../../shared/l10n.dart';
 import '../../vocabulary/hint_controls.dart';
 import '../reader_compare.dart';
 import '../workspace_controller.dart';
+import '../phone_reader_controls_controller.dart';
 
 void showReadingSettings(BuildContext context, WidgetRef ref, String setId, {Document? document}) {
   final id = ref.read(workspaceProvider(setId)).activeDocumentId;
@@ -27,7 +28,12 @@ void showReadingSettings(BuildContext context, WidgetRef ref, String setId, {Doc
           padding: EdgeInsets.only(top: MMChromeInsets.of(context).top + MMSizes.touchTarget, bottom: MMSpacing.l),
           child: Material(
             type: MaterialType.transparency,
-            child: ReadingSettingsPanel(format: doc.format, studySetId: setId, documentId: doc.id),
+            child: ReadingSettingsPanel(
+              format: doc.format,
+              studySetId: setId,
+              documentId: doc.id,
+              showVocabulary: usePhoneReaderControls(context) || !doc.capabilities().readingSettings,
+            ),
           ),
         ),
       ),
@@ -36,9 +42,16 @@ void showReadingSettings(BuildContext context, WidgetRef ref, String setId, {Doc
 }
 
 class ReadingSettingsPanel extends ConsumerWidget {
-  const ReadingSettingsPanel({super.key, required this.format, this.studySetId, this.documentId});
+  const ReadingSettingsPanel({
+    super.key,
+    required this.format,
+    this.studySetId,
+    this.documentId,
+    this.showVocabulary = true,
+  });
   final String? studySetId, documentId;
   final DocumentFormat format;
+  final bool showVocabulary;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -154,8 +167,10 @@ class ReadingSettingsPanel extends ConsumerWidget {
                 onChanged: (v) => change(value.copyWith(font: v)),
               ),
             ],
-            const SizedBox(height: MMSpacing.m),
-            VocabularyHintSettings(documentId: documentId),
+            if (showVocabulary) ...[
+              const SizedBox(height: MMSpacing.m),
+              VocabularyHintSettings(documentId: documentId),
+            ],
             if (!comparing && format != DocumentFormat.pdf) ...[
               const SizedBox(height: MMSpacing.s),
               MMSegmentedControl<bool>(

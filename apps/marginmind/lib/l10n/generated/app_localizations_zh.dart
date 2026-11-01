@@ -1017,10 +1017,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerAppearance => '阅读外观';
 
   @override
-  String get readerMenuReading => '阅读辅助';
+  String get readerTheme => '阅读主题';
 
   @override
-  String get readerMenuPage => '页面显示';
+  String get readerTextLayout => '文字与排版…';
+
+  @override
+  String get readerPageFit => '页面适配';
+
+  @override
+  String get readerMenuReading => '阅读工具';
+
+  @override
+  String get readerMenuPage => '显示设置';
 
   @override
   String get readerMenuTools => '工具与工作区';
@@ -2868,7 +2877,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantQuickSelection => '已选文字';
 
   @override
-  String get cropMargins => '裁掉白边';
+  String get cropMargins => '裁剪白边';
 
   @override
   String get uncropMargins => '取消裁边';

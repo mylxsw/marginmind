@@ -541,7 +541,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('narrow tablet disables document choices; compact phone hides the entry', (tester) async {
+  testWidgets('narrow tablet and compact phone hide unsupported comparison entry', (tester) async {
     final container = await pumpApp(
       tester,
       size: const Size(820, 1100),
@@ -549,11 +549,10 @@ void main() {
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
+    await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
-    expect(find.text('Window too narrow'), findsOneWidget);
-    final item = tester.widget<MenuItemButton>(find.byKey(const ValueKey('compare-document-c2')));
-    expect(item.onPressed, isNull);
+    expect(find.byKey(const ValueKey('reader-compare')), findsNothing);
+    expect(find.text('Window too narrow'), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     tester.view.physicalSize = const Size(390, 844);

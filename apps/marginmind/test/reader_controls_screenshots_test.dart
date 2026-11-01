@@ -19,6 +19,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../packages/mm_pdf/test/support/pdf_backend.dart';
 import 'helpers.dart';
+import 'reflow_fixtures.dart';
 import 'reader_compare_test.dart' show compareFixture, CompareOcr;
 
 import 'package:marginmind/features/workspace/reader_ocr.dart';
@@ -38,7 +39,9 @@ Future<void> _fonts() async {
           ..addFont(Future.value(cjk)))
         .load();
   }
-  await (FontLoader('PingFang SC')..addFont(Future.value(cjk))).load();
+  for (final family in ['PingFang SC', 'Songti SC', 'Noto Serif CJK SC', 'Noto Sans CJK SC']) {
+    await (FontLoader(family)..addFont(Future.value(cjk))).load();
+  }
   final symbols = Platform.environment['MM_SYMBOL_FONT'];
   if (symbols != null) {
     // Use an existing fallback slot so shortcut symbols are visible in exports.
@@ -82,6 +85,34 @@ void main() {
   });
   for (final dark in [true, false]) {
     testWidgets(
+      'reflow grouped menu ${dark ? 'dark' : 'light'}',
+      (tester) async {
+        final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
+        final book = await storeBook(repo);
+        final container = await pumpApp(
+          tester,
+          content: repo,
+          prefs: {'settings.appearance': dark ? 'dark' : 'light', 'settings.language': 'zh'},
+        );
+        container.read(navigationProvider.notifier).openStudySet('demo-1');
+        await tester.pumpAndSettle();
+        container.read(workspaceProvider('demo-1').notifier).openDocument(book.id);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('reader-more')));
+        await tester.pumpAndSettle();
+        final popup = find.byWidgetPredicate(
+          (w) =>
+              w is Material &&
+              w.shape is RoundedRectangleBorder &&
+              (w.shape as RoundedRectangleBorder).borderRadius == BorderRadius.circular(MMRadii.dropdown),
+        );
+        await _save(tester, 'reflow-menu-${dark ? 'dark' : 'light'}', bounds: tester.getRect(popup.last).inflate(2));
+        expect(tester.takeException(), isNull);
+      },
+      skip: skip,
+      variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+    );
+    testWidgets(
       'reader chrome ${dark ? 'dark' : 'light'}',
       (tester) async {
         installTestPdfBackend();
@@ -119,6 +150,8 @@ void main() {
         await _save(tester, 'divider-$name', bounds: Rect.fromCenter(center: controls.center, width: 100, height: 140));
         for (final (key, label) in [
           ('reader-more', 'zoom'),
+          ('reader-page-fit', 'page-fit'),
+          ('reader-vocabulary', 'vocabulary'),
           ('reader-crop', 'crop'),
           ('reader-appearance', 'appearance'),
           ('reader-compare', 'compare'),

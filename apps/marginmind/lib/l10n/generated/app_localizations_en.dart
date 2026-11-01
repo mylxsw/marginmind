@@ -1060,10 +1060,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerAppearance => 'Reading Appearance';
 
   @override
-  String get readerMenuReading => 'Reading Aids';
+  String get readerTheme => 'Reading Theme';
 
   @override
-  String get readerMenuPage => 'Page Display';
+  String get readerTextLayout => 'Text & Layout…';
+
+  @override
+  String get readerPageFit => 'Page Fit';
+
+  @override
+  String get readerMenuReading => 'Reading Tools';
+
+  @override
+  String get readerMenuPage => 'Display Settings';
 
   @override
   String get readerMenuTools => 'Tools & Workspace';

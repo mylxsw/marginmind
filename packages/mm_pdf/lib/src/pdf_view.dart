@@ -403,6 +403,12 @@ class MMPdfViewController extends ChangeNotifier {
   double get widthZoom =>
       isReady ? math.min(1.4, _state!._controller.viewSize.width / _state!._controller.documentSize.width) : 1;
 
+  /// Target scales for menu preset indicators, using the same matrices as the actions.
+  double get fitWidthZoom => isReady ? _state!._fitWidthMatrix().getMaxScaleOnAxis() : 1;
+  double get fitPageZoom => isReady
+      ? _state!._controller.calcMatrixForFit(pageNumber: _state!._controller.pageNumber ?? 1)?.getMaxScaleOnAxis() ?? 1
+      : 1;
+
   /// Apply slider updates immediately and retain the line being read.
   Future<void> setWidthZoom(double factor) async {
     if (!isReady || !factor.isFinite || factor <= 0) return;

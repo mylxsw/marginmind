@@ -4,6 +4,7 @@ import 'dart:async';
 import 'reading_settings.dart';
 import '../../vocabulary/pdf_hints.dart';
 import '../../vocabulary/hint_controls.dart';
+import '../../vocabulary/vocabulary_hints.dart';
 import '../../vocabulary/vocabulary_source_flash.dart';
 import 'reader_page_field.dart';
 import '../reflow_session.dart';
@@ -437,7 +438,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
     final canFullTranslate =
-        MMPlatformCapabilities.current.assistant && MMSizeClass.of(context) != MMSizeClass.compact && document != null;
+        MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact &&
+        document != null &&
+        capabilities.translate;
     final fullState = canFullTranslate
         ? ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id)).select((s) => s.value))
         : null;
@@ -463,9 +467,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       bool selected = false,
       IconData? icon,
       String? id,
+      bool routeThroughPane = true,
     }) => MMDropdownItem<VoidCallback>(
       key: id == null ? null : ValueKey(id),
-      value: command(id ?? label, action, selected: selected),
+      value: routeThroughPane ? command(id ?? label, action, selected: selected) : action,
       enabled: action != null,
       child: Semantics(
         selected: selected,
@@ -532,140 +537,194 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       ],
     );
     final items = <MMToolbarItem>[
-      MMToolbarItem(
-        id: 'navigation',
-        priority: 90,
-        child: MMToolbarButton(
-          key: const ValueKey('reader-navigation'),
-          icon: MMIcons.readerNavigation,
-          tooltip: AppShortcuts.tip(
-            state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-            AppShortcuts.toggleReaderSidebar,
+      if (capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate)
+        MMToolbarItem(
+          id: 'navigation',
+          priority: 90,
+          child: MMToolbarButton(
+            key: const ValueKey('reader-navigation'),
+            icon: MMIcons.readerNavigation,
+            tooltip: AppShortcuts.tip(
+              state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+              AppShortcuts.toggleReaderSidebar,
+            ),
+            selected: state.readerPanelVisible,
+            onPressed: command(
+              'reader-navigation',
+              capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate
+                  ? controller.toggleReaderPanel
+                  : null,
+              selected: state.readerPanelVisible,
+            ),
           ),
-          selected: state.readerPanelVisible,
-          onPressed: command(
-            'reader-navigation',
+          menuEntry: entry(
+            state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
             capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate
                 ? controller.toggleReaderPanel
                 : null,
             selected: state.readerPanelVisible,
+            icon: MMIcons.readerNavigation,
+            id: 'reader-navigation',
           ),
         ),
-        menuEntry: entry(
-          state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-          capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate
-              ? controller.toggleReaderPanel
-              : null,
-          selected: state.readerPanelVisible,
-          icon: MMIcons.readerNavigation,
-          id: 'reader-navigation',
-        ),
-      ),
       for (final (tool, icon, label, priority) in tools)
-        MMToolbarItem(
-          id: tool.name,
-          priority: priority,
-          child: IgnorePointer(
-            ignoring: crop.editing,
-            child: Opacity(
-              opacity: crop.editing ? .3 : 1,
-              child: tool == AnnotationTool.highlight
-                  ? HighlightColorButton(
-                      color: state.color,
-                      selected: state.tool == tool,
-                      enabled: capabilities.annotate && !crop.editing,
-                      onOpen: () => controller.setTool(tool),
-                      onChanged: controller.setColor,
-                    )
-                  : tool == AnnotationTool.underline
-                  ? UnderlineToolButton(studySetId: widget.studySetId, enabled: capabilities.annotate && !crop.editing)
-                  : MMToolbarButton(
-                      icon: icon,
-                      tooltip: switch (tool) {
-                        AnnotationTool.area => AppShortcuts.tip(label, AppShortcuts.toggleAreaTool),
-                        AnnotationTool.ink => AppShortcuts.tip(label, AppShortcuts.toggleInkTool),
-                        _ => label,
-                      },
-                      selected: state.tool == tool,
-                      onPressed: command(
-                        'tool-${tool.name}',
-                        !crop.editing && controller.canUseTool(tool) ? () => controller.setTool(tool) : null,
+        if (controller.canUseTool(tool))
+          MMToolbarItem(
+            id: tool.name,
+            priority: priority,
+            child: IgnorePointer(
+              ignoring: crop.editing,
+              child: Opacity(
+                opacity: crop.editing ? .3 : 1,
+                child: tool == AnnotationTool.highlight
+                    ? HighlightColorButton(
+                        color: state.color,
                         selected: state.tool == tool,
+                        enabled: capabilities.annotate && !crop.editing,
+                        onOpen: () => controller.setTool(tool),
+                        onChanged: controller.setColor,
+                      )
+                    : tool == AnnotationTool.underline
+                    ? UnderlineToolButton(
+                        studySetId: widget.studySetId,
+                        enabled: capabilities.annotate && !crop.editing,
+                      )
+                    : MMToolbarButton(
+                        icon: icon,
+                        tooltip: switch (tool) {
+                          AnnotationTool.area => AppShortcuts.tip(label, AppShortcuts.toggleAreaTool),
+                          AnnotationTool.ink => AppShortcuts.tip(label, AppShortcuts.toggleInkTool),
+                          _ => label,
+                        },
+                        selected: state.tool == tool,
+                        onPressed: command(
+                          'tool-${tool.name}',
+                          !crop.editing && controller.canUseTool(tool) ? () => controller.setTool(tool) : null,
+                          selected: state.tool == tool,
+                        ),
                       ),
-                    ),
+              ),
+            ),
+            menuEntry: entry(
+              label,
+              !crop.editing && controller.canUseTool(tool) ? () => controller.setTool(tool) : null,
+              selected: state.tool == tool,
+              icon: switch (tool) {
+                AnnotationTool.select => MMReaderIcons.select,
+                AnnotationTool.ink => MMReaderIcons.pen,
+                AnnotationTool.area => MMReaderIcons.area,
+                _ => icon,
+              },
+              id: 'tool-${tool.name}',
+            ),
+          ),
+      if (capabilities.excerpt)
+        MMToolbarItem(
+          id: 'sync',
+          priority: 20,
+          child: MMToolbarButton(
+            icon: MMIcons.syncToMap,
+            tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
+            selected: state.syncToMap,
+            onPressed: command(
+              'sync',
+              capabilities.excerpt && !crop.editing ? controller.toggleSyncToMap : null,
+              selected: state.syncToMap,
             ),
           ),
           menuEntry: entry(
-            label,
-            !crop.editing && controller.canUseTool(tool) ? () => controller.setTool(tool) : null,
-            selected: state.tool == tool,
-            icon: switch (tool) {
-              AnnotationTool.select => MMReaderIcons.select,
-              AnnotationTool.ink => MMReaderIcons.pen,
-              AnnotationTool.area => MMReaderIcons.area,
-              _ => icon,
-            },
-            id: 'tool-${tool.name}',
-          ),
-        ),
-      MMToolbarItem(
-        id: 'sync',
-        priority: 20,
-        child: MMToolbarButton(
-          icon: MMIcons.syncToMap,
-          tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
-          selected: state.syncToMap,
-          onPressed: command(
-            'sync',
+            state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
             capabilities.excerpt && !crop.editing ? controller.toggleSyncToMap : null,
             selected: state.syncToMap,
+            icon: MMReaderIcons.syncToMap,
           ),
         ),
-        menuEntry: entry(
-          state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
-          capabilities.excerpt && !crop.editing ? controller.toggleSyncToMap : null,
-          selected: state.syncToMap,
-          icon: MMReaderIcons.syncToMap,
-        ),
-      ),
       if (widget.showDocumentTitle)
         MMToolbarItem(id: 'documents', priority: 70, child: documents, menuEntry: documentMenu),
     ];
-    // Rich zoom controls remain available alongside grouped reader commands.
-    final menuEntries = <PopupMenuEntry<VoidCallback>>[
-      if (!widget.showDocumentTitle) documentMenu,
-      MMDropdownHeader<VoidCallback>(l.readerMenuReading),
-      entry(
-        l.marginNotes,
-        capabilities.marginNotes && document != null && !crop.editing && !comparing
-            ? () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id)
-            : null,
-        selected: marginState.openDocuments.contains(state.activeDocumentId),
-        icon: MMReaderIcons.marginNote,
-        id: 'reader-margin',
-      ),
-      if (document != null)
+    final hints = ref.watch(vocabularyHintProvider);
+    final hintMode = document == null ? VocabularyHintMode.off : hints.modeFor(document.id);
+    if (capabilities.selectText && document != null) {
+      command(
+        'vocabulary-hint-toggle',
+        () => unawaited(toggleVocabularyHints(context, ref, document.id)),
+        selected: hintMode != VocabularyHintMode.off,
+      );
+    }
+    final readingEntries = <PopupMenuEntry<VoidCallback>>[
+      if (capabilities.marginNotes && document != null)
         entry(
-          l.vocabularyHints,
-          () => toggleVocabularyHints(context, ref, document.id),
+          l.marginNotes,
+          !crop.editing && !comparing
+              ? () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id)
+              : null,
+          selected: marginState.openDocuments.contains(document.id),
+          icon: MMReaderIcons.marginNote,
+          id: 'reader-margin',
+        ),
+      if (capabilities.selectText && document != null)
+        MMDropdownSubmenu<VoidCallback>.items(
+          key: const ValueKey('reader-vocabulary'),
+          label: l.vocabularyHints,
           icon: MMIcons.vocabulary,
-          id: 'vocabulary-hint-toggle',
+          selected: hintMode != VocabularyHintMode.off,
+          itemBuilder: (_) => [
+            entry(
+              l.vocabularyHints,
+              () => unawaited(toggleVocabularyHints(context, ref, document.id)),
+              selected: hintMode != VocabularyHintMode.off,
+              id: 'vocabulary-hint-toggle',
+              routeThroughPane: false,
+            ),
+            const PopupMenuDivider(),
+            for (final (mode, label) in vocabularyHintModes(context))
+              entry(
+                label,
+                () => unawaited(
+                  changeVocabularyHint(context, () async {
+                    final owner = ref.read(vocabularyHintProvider.notifier);
+                    await owner.setMode(mode);
+                    if (mode != VocabularyHintMode.off) await owner.setDocumentHidden(document.id, false);
+                  }),
+                ),
+                selected: mode == hintMode,
+                id: 'reader-vocabulary-${mode.name}',
+                routeThroughPane: false,
+              ),
+            const PopupMenuDivider(),
+            entry(
+              l.vocabularyHintsHidden,
+              () => unawaited(
+                changeVocabularyHint(
+                  context,
+                  () => ref
+                      .read(vocabularyHintProvider.notifier)
+                      .setDocumentHidden(document.id, !hints.hiddenDocuments.contains(document.id)),
+                ),
+              ),
+              selected: hints.hiddenDocuments.contains(document.id),
+              id: 'reader-vocabulary-hidden',
+              routeThroughPane: false,
+            ),
+            entry(
+              l.vocabularyHintsKnown,
+              () => unawaited(
+                changeVocabularyHint(
+                  context,
+                  () => ref.read(vocabularyHintProvider.notifier).setShowKnown(!hints.showKnown),
+                ),
+              ),
+              selected: hints.showKnown,
+              id: 'reader-vocabulary-known',
+              routeThroughPane: false,
+            ),
+          ],
         ),
-      entry(
-        l.readingSettings,
-        capabilities.readingSettings
-            ? () {
-                settingsHandler?.call(context, ref, widget.studySetId);
-              }
-            : null,
-        icon: MMIcons.readingSettings,
-        id: 'reader-settings',
-      ),
-      if (!MMInput.of(context).phone && MMSizeClass.of(context) != MMSizeClass.compact)
-        ReaderCompareSubmenu<VoidCallback>(
-          studySetId: widget.studySetId,
-          enabled: capabilities.parallel && !crop.editing,
-        ),
+      if (capabilities.parallel &&
+          !MMInput.of(context).phone &&
+          MMSizeClass.of(context) != MMSizeClass.compact &&
+          !(MMSizeClass.of(context) == MMSizeClass.medium && MediaQuery.sizeOf(context).width < 874))
+        ReaderCompareSubmenu<VoidCallback>(studySetId: widget.studySetId, enabled: !crop.editing),
       if (canFullTranslate)
         entry(
           hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
@@ -682,51 +741,107 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           icon: MMIcons.layers,
           id: 'full-translation',
         ),
-      const PopupMenuDivider(),
-      MMDropdownHeader<VoidCallback>(l.readerMenuPage),
-      PopupMenuItem<VoidCallback>(
-        enabled: false,
-        child: document?.contentManifest != null
-            ? ReaderZoomSlider.source(
-                ratio: () {
-                  final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
-                  return session.zoom / session.widthZoom;
-                },
-                ready: () => ref.read(reflowSessionProvider((widget.studySetId, document!.id))).ready,
-                onZoom: (ratio) {
-                  final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
-                  session.zoomTo(ratio * session.widthZoom);
-                },
-                enabled: capabilities.zoom && !crop.editing,
-              )
-            : ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
-      ),
-      for (final command in [
-        (ReaderZoomCommand.actualSize, l.pdfActualSize, MMReaderIcons.actualSize),
-        (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMReaderIcons.fitWidth),
-        (ReaderZoomCommand.fitPage, l.pdfFitPage, MMReaderIcons.fitPage),
-      ])
+    ];
+    // Phone controls consume the same command registry without opening desktop submenus.
+    for (final preset in [ReaderZoomCommand.actualSize, ReaderZoomCommand.fitWidth, ReaderZoomCommand.fitPage]) {
+      command('reader-zoom-${preset.name}', capabilities.zoom && !crop.editing ? () => pageCommand(preset) : null);
+    }
+    final displayEntries = <PopupMenuEntry<VoidCallback>>[
+      if (capabilities.readingSettings)
         entry(
-          command.$2,
-          capabilities.zoom && !crop.editing ? () => pageCommand(command.$1) : null,
-          icon: command.$3,
-          id: 'reader-zoom-${command.$1.name}',
+          l.readerTextLayout,
+          settingsHandler == null || crop.editing ? null : () => settingsHandler(context, ref, widget.studySetId),
+          icon: MMIcons.readingSettings,
+          id: 'reader-settings',
         ),
-      entry(l.cropMargins, canAdjustCrop ? cropSession.adjust : null, icon: MMReaderIcons.crop, id: 'reader-crop'),
-      const PopupMenuDivider(),
-      MMDropdownSubmenu<VoidCallback>.items(
-        key: const ValueKey('reader-appearance'),
-        label: l.readerAppearance,
-        icon: MMIcons.appearance,
-        width: 220,
-        itemBuilder: (_) => [
-          for (final value in MMReaderStyle.values)
-            MMDropdownItem<VoidCallback>(
-              value: () => setStyle(value),
-              child: _stylePreview(context, value, selected: value == style),
-            ),
-        ],
-      ),
+      if (capabilities.zoom) ...[
+        PopupMenuItem<VoidCallback>(
+          enabled: false,
+          child: document?.contentManifest != null
+              ? ReaderZoomSlider.source(
+                  ratio: () {
+                    final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
+                    return session.zoom / session.widthZoom;
+                  },
+                  ready: () => ref.read(reflowSessionProvider((widget.studySetId, document!.id))).ready,
+                  onZoom: (ratio) {
+                    final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
+                    session.zoomTo(ratio * session.widthZoom);
+                  },
+                  enabled: capabilities.zoom && !crop.editing,
+                )
+              : ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
+        ),
+        MMDropdownSubmenu<VoidCallback>.items(
+          key: const ValueKey('reader-page-fit'),
+          label: l.readerPageFit,
+          icon: MMReaderIcons.fitPage,
+          enabled: !crop.editing,
+          itemBuilder: (_) {
+            final session = document?.contentManifest != null
+                ? ref.read(reflowSessionProvider((widget.studySetId, document!.id)))
+                : null;
+            final ready = session?.ready ?? _pdf.isReady;
+            final zoom = session?.zoom ?? _pdf.zoom;
+            final targets = {
+              ReaderZoomCommand.actualSize: session == null ? 1.0 : 1 / session.pageScale,
+              ReaderZoomCommand.fitWidth: session?.widthZoom ?? _pdf.fitWidthZoom,
+              ReaderZoomCommand.fitPage: session == null ? _pdf.fitPageZoom : 1.0,
+            };
+            // Prefer width fitting when two presets happen to have the same scale.
+            final selected = [
+              ReaderZoomCommand.fitWidth,
+              ReaderZoomCommand.fitPage,
+              ReaderZoomCommand.actualSize,
+            ].where((command) => ready && (zoom - targets[command]!).abs() < .001).firstOrNull;
+            return [
+              for (final command in [
+                (ReaderZoomCommand.actualSize, l.pdfActualSize, MMReaderIcons.actualSize),
+                (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMReaderIcons.fitWidth),
+                (ReaderZoomCommand.fitPage, l.pdfFitPage, MMReaderIcons.fitPage),
+              ])
+                entry(
+                  command.$2,
+                  ready && !crop.editing ? () => pageCommand(command.$1) : null,
+                  selected: selected == command.$1,
+                  icon: command.$3,
+                  id: 'reader-zoom-${command.$1.name}',
+                  routeThroughPane: false,
+                ),
+            ];
+          },
+        ),
+      ],
+      if (capabilities.crop)
+        entry(
+          l.cropMargins,
+          canAdjustCrop ? cropSession.adjust : null,
+          selected: document?.crop?.enabled == true,
+          icon: MMReaderIcons.crop,
+          id: 'reader-crop',
+        ),
+      if (document != null && document.format != DocumentFormat.unknown)
+        MMDropdownSubmenu<VoidCallback>.items(
+          key: const ValueKey('reader-appearance'),
+          label: l.readerTheme,
+          icon: MMIcons.appearance,
+          width: 220,
+          itemBuilder: (_) => [
+            for (final value in MMReaderStyle.values)
+              MMDropdownItem<VoidCallback>(
+                value: () => setStyle(value),
+                child: _stylePreview(context, value, selected: value == style),
+              ),
+          ],
+        ),
+    ];
+    final menuEntries = <PopupMenuEntry<VoidCallback>>[
+      if (!widget.showDocumentTitle) documentMenu,
+      if (!widget.showDocumentTitle && (readingEntries.isNotEmpty || displayEntries.isNotEmpty))
+        const PopupMenuDivider(),
+      if (readingEntries.isNotEmpty) ...[MMDropdownHeader<VoidCallback>(l.readerMenuReading), ...readingEntries],
+      if (readingEntries.isNotEmpty && displayEntries.isNotEmpty) const PopupMenuDivider(),
+      if (displayEntries.isNotEmpty) ...[MMDropdownHeader<VoidCallback>(l.readerMenuPage), ...displayEntries],
     ];
     _paneChrome?.bindReader(this, WorkspacePaneCommands(state.activeDocumentId, commands));
     return ReaderAnnotationTools(
@@ -830,7 +945,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final targetLang = fullState?.targetLang ?? 'zh';
     final hasActiveFullJob = fullState?.isActive == true;
     final canFullTranslate =
-        MMPlatformCapabilities.current.assistant && MMSizeClass.of(context) != MMSizeClass.compact && document != null;
+        MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact &&
+        document != null &&
+        capabilities.translate;
     final marginButton = MMToolbarButton(
       key: const ValueKey('reader-margin'),
       compact: compact,

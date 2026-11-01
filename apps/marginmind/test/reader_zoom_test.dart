@@ -38,7 +38,7 @@ void main() {
     await tester.pumpAndSettle();
     final slider = find.byKey(const ValueKey('reader-zoom-slider'));
     expect(slider, findsOneWidget);
-    expect(find.descendant(of: find.byType(ReaderZoomSlider), matching: find.text('100%')), findsNothing);
+    expect(find.descendant(of: find.byType(ReaderZoomSlider), matching: find.text('100%')), findsOneWidget);
     expect(tester.getSize(find.byType(ReaderZoomSlider)).height, 56);
     expect(find.byKey(const ValueKey('reader-compare')).hitTestable(), findsOneWidget);
     final l = AppLocalizations.of(tester.element(find.byType(ReaderPane)));
@@ -56,8 +56,14 @@ void main() {
     control.onChanged!(0);
     await tester.pumpAndSettle();
     expect(pdf.zoom, closeTo(baseline, .001));
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    // Page presets are nested and still execute through the real submenu.
+    expect(find.text(l.pdfActualSize), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('reader-page-fit')));
     await tester.pumpAndSettle();
+    expect(find.text(l.pdfActualSize), findsOneWidget);
+    await tester.tap(find.text(l.pdfActualSize));
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, closeTo(1, .001));
     expect(slider, findsNothing);
     await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();

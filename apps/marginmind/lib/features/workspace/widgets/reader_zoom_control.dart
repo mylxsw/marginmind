@@ -43,6 +43,20 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
     _value = (math.log((widget.ratio?.call() ?? widget.pdf!.zoom / widget.pdf!.widthZoom)) / math.ln2).clamp(-2.0, 2.0);
   }
 
+  bool get _enabled => widget.enabled && (widget.ready?.call() ?? widget.pdf!.isReady);
+
+  void _change(double value) {
+    final bounded = value.clamp(-2.0, 2.0);
+    final next = bounded.abs() < .06 ? 0.0 : bounded;
+    setState(() => _value = next);
+    final ratio = math.pow(2, next).toDouble();
+    if (widget.onZoom != null) {
+      widget.onZoom!(ratio);
+    } else {
+      widget.pdf!.setWidthZoom(ratio);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => SizedBox(
     width: 260,
@@ -57,7 +71,11 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
         ),
         child: Row(
           children: [
-            Icon(MMReaderIcons.zoomOut, size: MMSpacing.l, semanticLabel: context.l10n.zoomOut),
+            MMToolbarButton(
+              icon: MMReaderIcons.zoomOut,
+              tooltip: context.l10n.zoomOut,
+              onPressed: _enabled && _value > -2 ? () => _change(_value - .25) : null,
+            ),
             Expanded(
               child: Slider(
                 key: const ValueKey('reader-zoom-slider'),
@@ -66,22 +84,15 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
                 max: 2,
                 secondaryTrackValue: 0,
                 semanticFormatterCallback: (value) => '${(math.pow(2, value) * 100).round()}%',
-                onChanged: !widget.enabled || !(widget.ready?.call() ?? widget.pdf!.isReady)
-                    ? null
-                    : (value) {
-                        // A small center detent makes width fitting easy to recover.
-                        final next = value.abs() < .06 ? 0.0 : value;
-                        setState(() => _value = next);
-                        final ratio = math.pow(2, next).toDouble();
-                        if (widget.onZoom != null) {
-                          widget.onZoom!(ratio);
-                        } else {
-                          widget.pdf!.setWidthZoom(ratio);
-                        }
-                      },
+                onChanged: _enabled ? _change : null,
               ),
             ),
-            Icon(MMReaderIcons.zoomIn, size: MMSpacing.l, semanticLabel: context.l10n.zoomIn),
+            Text('${(math.pow(2, _value) * 100).round()}%', style: context.mmText.footnote),
+            MMToolbarButton(
+              icon: MMReaderIcons.zoomIn,
+              tooltip: context.l10n.zoomIn,
+              onPressed: _enabled && _value < 2 ? () => _change(_value + .25) : null,
+            ),
           ],
         ),
       ),

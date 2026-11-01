@@ -1940,16 +1940,34 @@ abstract class AppLocalizations {
   /// **'Reading Appearance'**
   String get readerAppearance;
 
+  /// No description provided for @readerTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading Theme'**
+  String get readerTheme;
+
+  /// No description provided for @readerTextLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Text & Layout…'**
+  String get readerTextLayout;
+
+  /// No description provided for @readerPageFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Fit'**
+  String get readerPageFit;
+
   /// No description provided for @readerMenuReading.
   ///
   /// In en, this message translates to:
-  /// **'Reading Aids'**
+  /// **'Reading Tools'**
   String get readerMenuReading;
 
   /// No description provided for @readerMenuPage.
   ///
   /// In en, this message translates to:
-  /// **'Page Display'**
+  /// **'Display Settings'**
   String get readerMenuPage;
 
   /// No description provided for @readerMenuTools.
