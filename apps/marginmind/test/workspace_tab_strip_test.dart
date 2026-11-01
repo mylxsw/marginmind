@@ -15,6 +15,19 @@ double closeOpacity(WidgetTester tester, String id) =>
     tester.widget<AnimatedOpacity>(find.ancestor(of: close(id), matching: find.byType(AnimatedOpacity))).opacity;
 
 void main() {
+  testWidgets('tabs start at the leading edge for one or multiple open tabs', (tester) async {
+    final c = await openTabs(tester);
+    final strip = find.byKey(const ValueKey('workspace-main-tabs'));
+    final left = tester.getTopLeft(strip).dx;
+    expect(left, tester.getTopLeft(find.byKey(const ValueKey('workspace-tab-row'))).dx);
+    expect(tester.getTopLeft(tab('documentMap')).dx, closeTo(left + 12, 0.01));
+    c.read(workspaceProvider('demo-1').notifier).openStudyNote('written');
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(strip).dx, left);
+    expect(tester.getTopLeft(tab('documentMap')).dx, closeTo(left + 12, 0.01));
+    expect(find.byKey(const ValueKey('workspace-tab-drag-area')).hitTestable(), findsOneWidget);
+  });
+
   for (final touch in [false, true]) {
     testWidgets('dragging a tab changes order while retaining selection and references; touch=$touch', (tester) async {
       const channel = MethodChannel('window_manager');

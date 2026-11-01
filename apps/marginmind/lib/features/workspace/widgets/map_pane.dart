@@ -1214,14 +1214,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       onOpenDetails: controller.showDetails,
                                       onResize: controller.setCardWidth,
                                       previewStyle: _styleOpen ? _stylePreview : null,
-                                      // The map makes way for the popover and shows all of itself.
-                                      fitInsets: _styleOpen && !context.mmTablet
-                                          ? EdgeInsets.only(
-                                              top: toolbarTopInset,
-                                              right: MMSizes.mapStylePopoverWidth + MMSpacing.m * 2,
-                                              bottom: chrome.bottom + MMSizes.toolbarHeight,
-                                            )
-                                          : null,
                                     )
                                   : OutlineView(
                                       contentPadding: EdgeInsets.fromLTRB(

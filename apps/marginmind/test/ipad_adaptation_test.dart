@@ -233,7 +233,6 @@ void main() {
       final before = canvas.transformation.value.clone();
       await toggleMapStyle(t);
       await t.pumpAndSettle();
-      expect(t.widget<MindMapCanvas>(find.byType(MindMapCanvas)).fitInsets, isNull);
       expect(canvas.transformation.value.storage, before.storage);
       await toggleMapStyle(t);
       await t.pumpAndSettle();

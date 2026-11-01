@@ -81,7 +81,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   ),
                 ),
                 child: CustomMultiChildLayout(
-                  delegate: _CenteredTitlebarLayout(),
+                  delegate: _WorkspaceTitlebarLayout(),
                   children: [
                     LayoutId(
                       id: _TitlebarSlot.leading,
@@ -345,21 +345,23 @@ class WorkspaceDesktopShell extends ConsumerWidget {
 
 enum _TitlebarSlot { leading, title, trailing }
 
-/// Measure the side controls first so the tabs stay at the workspace centre,
-/// even when the sidebar toggle or assistant changes visibility.
-class _CenteredTitlebarLayout extends MultiChildLayoutDelegate {
+/// Reserve each side control's actual width so tabs start beside the leading
+/// controls without overlapping the trailing actions.
+class _WorkspaceTitlebarLayout extends MultiChildLayoutDelegate {
   @override
   void performLayout(Size size) {
     final sideConstraints = BoxConstraints(maxWidth: size.width / 2, maxHeight: size.height);
     final leading = layoutChild(_TitlebarSlot.leading, sideConstraints);
     final trailing = layoutChild(_TitlebarSlot.trailing, sideConstraints);
-    final inset = math.max(leading.width, trailing.width);
     positionChild(_TitlebarSlot.leading, Offset(0, (size.height - leading.height) / 2));
     positionChild(_TitlebarSlot.trailing, Offset(size.width - trailing.width, (size.height - trailing.height) / 2));
-    layoutChild(_TitlebarSlot.title, BoxConstraints.tight(Size(math.max(0, size.width - inset * 2), size.height)));
-    positionChild(_TitlebarSlot.title, Offset(inset, 0));
+    layoutChild(
+      _TitlebarSlot.title,
+      BoxConstraints.tight(Size(math.max(0, size.width - leading.width - trailing.width), size.height)),
+    );
+    positionChild(_TitlebarSlot.title, Offset(leading.width, 0));
   }
 
   @override
-  bool shouldRelayout(_CenteredTitlebarLayout oldDelegate) => false;
+  bool shouldRelayout(_WorkspaceTitlebarLayout oldDelegate) => false;
 }
