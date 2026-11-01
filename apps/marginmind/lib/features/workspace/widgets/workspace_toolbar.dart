@@ -35,12 +35,14 @@ class WorkspaceToolbar extends StatelessWidget {
     super.key,
     required this.items,
     required this.menuEntries,
+    this.trailingItems = const [],
     this.trailingMenuEntries = const [],
     required this.label,
     this.menuIcon,
     this.overflowLabel,
   });
   final List<MMToolbarItem> items;
+  final List<MMToolbarItem> trailingItems;
   final List<PopupMenuEntry<VoidCallback>> menuEntries;
   final List<PopupMenuEntry<VoidCallback>> trailingMenuEntries;
   final String label;
@@ -72,6 +74,7 @@ class WorkspaceToolbar extends StatelessWidget {
       ...actions.where((item) => item.id != 'assistant'),
       ...readerCompanions,
       ...actions.where((item) => item.id == 'assistant'),
+      ...trailingItems,
     ];
     final toolbar = ColoredBox(
       color: phone ? context.mmColors.surface : context.mmColors.windowBackground,
@@ -110,6 +113,7 @@ class WorkspaceToolbar extends StatelessWidget {
                   cascadingMenu: menuIcon != null,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                   trailingIds: {
+                    ...trailingItems.map((item) => item.id),
                     if (menuIcon != null && !portraitTablet) ...{'compare', 'documents'},
                     if (readerCompanions.isNotEmpty && actions.isEmpty) ...{'compare', 'documents'},
                     if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),

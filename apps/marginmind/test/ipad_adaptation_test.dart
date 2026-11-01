@@ -94,7 +94,9 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.byKey(const ValueKey('map-more')));
       await t.pumpAndSettle();
-      for (final label in ['添加子主题', '在后面添加同级节点', '添加关联线', '添加概要', '添加笔记', '插入图片…', '标签…', '显示详情', '定位选中节点', '多选']) {
+      expect(find.byKey(const ValueKey('map-locate-selected')), findsOneWidget);
+      expect(find.text('定位选中节点'), findsNothing);
+      for (final label in ['添加子主题', '在后面添加同级节点', '添加关联线', '添加概要', '添加笔记', '插入图片…', '标签…', '显示详情', '多选']) {
         final row = find.ancestor(of: find.text(label), matching: find.byType(MMDropdownItem<VoidCallback>));
         expect(row, findsOneWidget);
         expect(

@@ -768,7 +768,8 @@ void main() {
           expect(find.descendant(of: find.byWidget(entry), matching: find.text(label)), findsNothing);
         }
       }
-      expect(find.text('定位选中节点'), findsOneWidget);
+      expect(find.text('定位选中节点'), findsNothing);
+      expect(find.byTooltip('定位选中节点'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
 

@@ -28,6 +28,7 @@ void main() {
       final headers = find.byType(WorkspaceToolbar);
       expect(tester.getRect(headers.first).right, closeTo(tester.getRect(find.byType(ReaderPane)).right, .01));
       expect(tester.getRect(headers.last).left, closeTo(tester.getRect(find.byType(MapPane)).left, .01));
+      expect(find.byKey(const ValueKey('map-locate-selected')).hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
 
@@ -91,6 +92,15 @@ void main() {
         expect(find.byKey(const ValueKey('map-style-button')), findsNothing);
         expect(find.byKey(const ValueKey('map-style-menu')), findsNothing);
         expect(find.byKey(const ValueKey('map-density')), findsNothing);
+        final locate = find.byKey(const ValueKey('map-locate-selected'));
+        final more = find.byKey(const ValueKey('map-more'));
+        expect(locate.hitTestable(), findsOneWidget);
+        final locateButton = tester.widget<MMToolbarButton>(locate);
+        expect(locateButton.icon, MMIcons.locate);
+        expect(locateButton.label, isNull);
+        expect(tester.getRect(locate).right, lessThan(tester.getRect(more).left));
+        expect(tester.getRect(more).left - tester.getRect(locate).right, lessThanOrEqualTo(16));
+        expect(tester.getCenter(locate).dy, tester.getCenter(more).dy);
         await toggleMapStyle(tester);
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('map-density')), findsOneWidget);

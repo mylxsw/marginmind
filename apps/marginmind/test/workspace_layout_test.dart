@@ -136,9 +136,7 @@ void main() {
     await tester.tap(find.byTooltip('Show Entire Map'));
     await tester.pumpAndSettle();
     expect(mapScale(restored.transformation.value), lessThan(1));
-    await tester.tap(find.byKey(const ValueKey('map-more')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Locate Selected Node'));
+    await tester.tap(find.byTooltip('Locate Selected Node'));
     await tester.pumpAndSettle();
     expect(mapScale(restored.transformation.value), 1);
   });

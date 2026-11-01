@@ -858,6 +858,13 @@ class _MapPaneState extends ConsumerState<MapPane> {
       }
     }
 
+    final locateButton = MMToolbarButton(
+      key: const ValueKey('map-locate-selected'),
+      icon: MMIcons.locate,
+      tooltip: l.centerCurrentNode,
+      onPressed: () => viewCommand('center', () => _viewCommand(MindMapCommand.center)),
+    );
+
     final mapPane = LayoutBuilder(
       builder: (context, paneConstraints) {
         final bottomDiff = paneConstraints.maxWidth < MMSizes.mapDiffPanelWidth + MMSizes.mapMinWidth;
@@ -937,6 +944,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 ],
               ),
             ],
+            const SizedBox(width: MMSpacing.s),
+            locateButton,
           ],
         );
         return ColoredBox(
@@ -1293,16 +1302,24 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                             ),
                                         ],
                                       ],
+                                      trailingItems: [
+                                        MMToolbarItem(
+                                          id: 'map-locate-selected',
+                                          priority: 1000,
+                                          child: locateButton,
+                                          menuEntry: MMDropdownItem<VoidCallback>(
+                                            value: () =>
+                                                viewCommand('center', () => _viewCommand(MindMapCommand.center)),
+                                            child: menuLabel(l.centerCurrentNode, const Icon(MMIcons.locate)),
+                                          ),
+                                        ),
+                                      ],
                                       menuEntries: [
                                         MMDropdownItem<VoidCallback>(
                                           key: const ValueKey('map-style-menu'),
                                           value: _toggleStyle,
                                           enabled: map != null,
                                           child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
-                                        ),
-                                        MMDropdownItem<VoidCallback>(
-                                          value: () => viewCommand('center', () => _viewCommand(MindMapCommand.center)),
-                                          child: menuLabel(l.centerCurrentNode, const Icon(MMIcons.locate)),
                                         ),
                                         if (MMInput.touchInputOf(context))
                                           MMDropdownItem<VoidCallback>(
