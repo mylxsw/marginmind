@@ -216,6 +216,34 @@ void main() {
     expect(c.read(workspaceProvider('demo-1')).reveal?.page, 3);
   });
 
+  testWidgets('generic source jumps keep the current map when switching documents', (tester) async {
+    final c = await harness.openWorkspace(
+      tester,
+      content: InMemoryStudySetContentRepository({'demo-1': multiDocumentContent()}),
+    );
+    final owner = c.read(workspaceProvider('demo-1').notifier);
+    owner.openDocument('c1');
+    await tester.pumpAndSettle();
+    expect(
+      await owner.revealAnchor(
+        SourceAnchor(
+          target: PdfTarget(
+            documentId: 'c2',
+            pages: const [AnnotationPage(page: 2, rects: [])],
+          ),
+        ),
+      ),
+      isTrue,
+    );
+    await tester.pumpAndSettle();
+    final state = c.read(workspaceProvider('demo-1'));
+    expect(state.activeDocumentId, 'c2');
+    expect(state.activeMapId, MindMap.defaultId);
+    expect(state.reveal!.page, 2);
+    expect(state.tabs.current.reference, isNull);
+    expect(find.byKey(const ValueKey('map-follow-notice')), findsNothing);
+  });
+
   testWidgets('maps settings changes follow switch', (tester) async {
     final c = await harness.openWorkspace(tester);
     showSettings(tester.element(find.byType(WorkspaceScreen).first), tab: SettingsTab.maps);

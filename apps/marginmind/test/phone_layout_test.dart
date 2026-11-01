@@ -326,9 +326,9 @@ void main() {
       await tester.tap(find.text('View'));
       await tester.pumpAndSettle();
       final state = container.read(workspaceProvider('demo-1'));
-      expect(state.layout, isNot(MMSplitMode.secondary));
-      expect(state.tabs.current.reference?.kind, WorkspaceReferenceKind.map);
-      expect(referenceState(tester).selectedCardId, 'c4');
+      expect(state.layout, MMSplitMode.secondary);
+      expect(state.tabs.current.reference, isNull);
+      expect(state.selectedCardId, 'c4');
       expect(find.byType(PhoneTabBar), findsNothing);
       await settleHud(tester);
 

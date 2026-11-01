@@ -107,6 +107,24 @@ void main() {
     expect(annotation.isText, isTrue);
     annotation.textAnchors.first.validate();
     final before = annotation.textAnchors.first.toJson();
+    // The annotation list must scroll this reader, without creating a reference reader.
+    controller.showReaderPanel(ReaderPanelMode.annotations);
+    await tester.pumpAndSettle();
+    await controller.setReadingPosition(
+      doc.id,
+      TextReadingPosition(revision: doc.revision!, chapterId: anchor.chapterId, offset: 100),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(annotation.quote).first);
+    await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider('demo-1')).tabs.current.reference, isNull);
+    expect(
+      container.read(reflowSessionProvider(('demo-1', doc.id))).position!.offset,
+      annotation.textAnchors.first.start,
+    );
+    controller.toggleReaderPanel();
+    await tester.pumpAndSettle();
+
     await container
         .read(settingsProvider.notifier)
         .setReading(doc.format, const ReadingSettings(size: 6, font: ReaderFont.serif, paged: false));

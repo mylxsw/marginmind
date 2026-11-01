@@ -475,7 +475,9 @@ void main() {
       await tester.tap(_inPanel(find.text('Reveal in Source · Page 24')));
       await tester.pumpAndSettle();
       final state = _state(app.container);
-      expect(referenceState(tester).reveal?.documentId, 'c1');
+      expect(state.reveal?.documentId, 'c1');
+      expect(state.tabs.current.reference, isNull);
+      expect(state.panel, RightPanel.details);
       expect(state.layout, MMSplitMode.split, reason: 'the source comes back to show the excerpt');
       await settleHud(tester);
     });

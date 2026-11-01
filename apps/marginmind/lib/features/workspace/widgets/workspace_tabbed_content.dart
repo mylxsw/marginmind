@@ -27,8 +27,12 @@ class WorkspaceTabbedContent extends ConsumerWidget {
     final tabs = state.tabs.open;
     if (tabs.isEmpty) return Center(child: Text(context.l10n.workspaceNoTabs, style: context.mmText.body));
     return WorkspaceContentHost(
-      openSource: (sourceId, anchor) =>
-          ref.read(workspaceProvider(studySetId).notifier).openAnchorReference(anchor, sourceStudySetId: sourceId),
+      openSource: (sourceId, anchor) {
+        final owner = ref.read(workspaceProvider(studySetId).notifier);
+        return sourceId == studySetId
+            ? owner.revealAnchor(anchor)
+            : owner.openAnchorReference(anchor, sourceStudySetId: sourceId);
+      },
       child: IndexedStack(
         index: tabs.indexWhere((tab) => tab.id == state.tabs.activeId).clamp(0, tabs.length - 1),
         sizing: StackFit.expand,

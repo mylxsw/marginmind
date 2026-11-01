@@ -1,3 +1,6 @@
+import 'package:marginmind/features/workspace/workspace_content_host.dart';
+import 'package:marginmind/features/vocabulary/vocabulary_screen.dart';
+
 import 'dart:async';
 
 import 'package:marginmind/features/workspace/widgets/card_details.dart';
@@ -96,6 +99,32 @@ void main() {
     expect(c.read(workspaceProvider('demo-1')).tabs.open.length, 5);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('embedded vocabulary source returns to the main reader of the same study set', (tester) async {
+    final c = await openTabs(tester);
+    final owner = c.read(workspaceProvider('demo-1').notifier);
+    owner.activateTab(WorkspaceTab.vocabulary);
+    await tester.pumpAndSettle();
+    final host = WorkspaceContentHost.maybeOf(tester.element(find.byType(VocabularyScreen)))!;
+    expect(
+      await host.openSource(
+        'demo-1',
+        SourceAnchor(
+          target: PdfTarget(
+            documentId: 'c1',
+            pages: const [AnnotationPage(page: 24, rects: [])],
+          ),
+        ),
+      ),
+      isTrue,
+    );
+    await tester.pumpAndSettle();
+    final state = c.read(workspaceProvider('demo-1'));
+    expect(state.tabs.active, WorkspaceTab.documents);
+    expect(state.activeDocumentId, 'c1');
+    expect(state.reveal!.page, 24);
+    expect(state.tabs.current.reference, isNull);
+  });
+
   testWidgets('reference reader is isolated and retained across owner and tag switches', (tester) async {
     final c = await openTabs(tester);
     final owner = c.read(workspaceProvider('demo-1').notifier);
