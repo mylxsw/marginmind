@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
@@ -21,6 +23,27 @@ IconData _tabIcon(WorkspaceTab tab) => switch (tab.kind) {
   WorkspaceTabKind.review => MMIcons.review,
 };
 
+TextStyle _tabTextStyle(BuildContext context) =>
+    DefaultTextStyle.of(context).style.merge(context.mmTouchPlatform ? context.mmText.body : context.mmText.callout);
+
+double _tabWidth(BuildContext context, String title) {
+  // Reserve the close slot and measure the stronger selected weight so
+  // activating or hovering a tab never shifts its neighbours.
+  final painter = TextPainter(
+    text: TextSpan(
+      text: title,
+      style: _tabTextStyle(context).copyWith(fontWeight: FontWeight.w600),
+    ),
+    maxLines: 1,
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    locale: Localizations.localeOf(context),
+  )..layout();
+  final width = math.min(224.0, painter.width.ceilToDouble() + (context.mmTouchPlatform ? 87 : 66));
+  painter.dispose();
+  return width;
+}
+
 class WorkspaceTabStrip extends ConsumerStatefulWidget {
   const WorkspaceTabStrip({super.key, required this.studySetId});
   final String studySetId;
@@ -29,65 +52,90 @@ class WorkspaceTabStrip extends ConsumerStatefulWidget {
 }
 
 class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
-  final _keys = <String, GlobalKey>{};
+  final _scroll = ScrollController();
   String? _lastActive;
   double? _lastWidth;
+  List<double> _lastTabWidths = const [];
   String get studySetId => widget.studySetId;
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(workspaceProvider(studySetId).select((s) => s.tabs));
     ref.watch(workspaceContentProvider(studySetId));
     final state = ref.read(workspaceProvider(studySetId));
     final owner = ref.read(workspaceProvider(studySetId).notifier);
-    final touch = context.mmTouchPlatform;
-    _keys.removeWhere((id, _) => !state.tabs.open.any((tab) => tab.id == id));
-    for (final tab in state.tabs.open) {
-      _keys.putIfAbsent(tab.id, () => GlobalKey());
-    }
     return LayoutBuilder(
       builder: (context, bounds) {
         final count = state.tabs.open.length;
-        final overflow = count > 0 && count * 156 + math.max(0, count - 1) * 4 + 24 > bounds.maxWidth;
-        final available = bounds.maxWidth - (overflow ? (touch ? 44 : 28) : 0) - 24 - math.max(0, count - 1) * 4;
-        final width = (available / math.max(1, count)).clamp(156.0, 224.0);
-        if (_lastActive != state.tabs.activeId || _lastWidth != bounds.maxWidth) {
+        final titles = [for (final tab in state.tabs.open) workspaceTabTitle(context, state, tab)];
+        final widths = [for (final title in titles) _tabWidth(context, title)];
+        final tabsWidth = count == 0 ? 0.0 : widths.fold(0.0, (total, width) => total + width) + (count - 1) * 4 + 24;
+        final overflow = tabsWidth > bounds.maxWidth;
+        if (_lastActive != state.tabs.activeId ||
+            _lastWidth != bounds.maxWidth ||
+            !listEquals(_lastTabWidths, widths)) {
           _lastActive = state.tabs.activeId;
           _lastWidth = bounds.maxWidth;
-          final key = _keys[_lastActive];
+          _lastTabWidths = widths;
+          final activeIndex = state.tabs.open.indexWhere((tab) => tab.id == state.tabs.activeId);
+          final duration = MMAppearance.duration(context, MMMotion.standard);
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            final target = key?.currentContext;
-            if (mounted && target != null) {
-              Scrollable.ensureVisible(
-                target,
-                alignment: .5,
-                duration: MMAppearance.duration(context, MMMotion.standard),
+            if (mounted && activeIndex >= 0 && _scroll.hasClients) {
+              final center =
+                  12 +
+                  widths.take(activeIndex).fold(0.0, (total, width) => total + width) +
+                  activeIndex * 4 +
+                  widths[activeIndex] / 2;
+              final target = (center - _scroll.position.viewportDimension / 2).clamp(
+                0.0,
+                _scroll.position.maxScrollExtent,
               );
+              if (duration == Duration.zero) {
+                _scroll.jumpTo(target);
+              } else {
+                _scroll.animateTo(target, duration: duration, curve: Curves.easeInOut);
+              }
             }
           });
         }
-        final tabs = SingleChildScrollView(
+        final tabs = ReorderableListView.builder(
           key: const ValueKey('workspace-main-tabs'),
+          scrollController: _scroll,
+          primary: false,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              for (var i = 0; i < count; i++) ...[
-                if (i > 0) const SizedBox(width: 4),
-                _WorkspaceTab(
-                  key: ValueKey('workspace-tab-${state.tabs.open[i].id}'),
-                  anchor: _keys[state.tabs.open[i].id]!,
-                  tab: state.tabs.open[i],
-                  title: workspaceTabTitle(context, state, state.tabs.open[i]),
-                  selected: state.tabs.open[i].id == state.tabs.activeId,
-                  width: width,
-                  onSelect: () => owner.activateTab(state.tabs.open[i]),
-                  onClose: () => owner.closeTab(state.tabs.open[i].id),
-                ),
-              ],
-            ],
+          buildDefaultDragHandles: false,
+          onReorderItem: (oldIndex, newIndex) {
+            final reorderedWidths = [...widths];
+            reorderedWidths.insert(newIndex, reorderedWidths.removeAt(oldIndex));
+            _lastTabWidths = reorderedWidths;
+            owner.reorderTabs(oldIndex, newIndex);
+          },
+          proxyDecorator: (child, index, animation) => child,
+          itemCount: count,
+          itemExtentBuilder: (index, _) => widths[index] + (index < count - 1 ? 4 : 0),
+          itemBuilder: (context, i) => Padding(
+            key: ValueKey('workspace-tab-item-${state.tabs.open[i].id}'),
+            padding: EdgeInsets.only(right: i < count - 1 ? 4 : 0),
+            child: Center(
+              child: _WorkspaceTab(
+                key: ValueKey('workspace-tab-${state.tabs.open[i].id}'),
+                index: i,
+                tab: state.tabs.open[i],
+                title: titles[i],
+                selected: state.tabs.open[i].id == state.tabs.activeId,
+                width: widths[i],
+                onSelect: () => owner.activateTab(state.tabs.open[i]),
+                onClose: () => owner.closeTab(state.tabs.open[i].id),
+              ),
+            ),
           ),
         );
-        final tabsWidth = count == 0 ? 0.0 : count * width + math.max(0, count - 1) * 4 + 24;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -138,7 +186,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
 class _WorkspaceTab extends StatefulWidget {
   const _WorkspaceTab({
     super.key,
-    required this.anchor,
+    required this.index,
     required this.tab,
     required this.title,
     required this.selected,
@@ -146,7 +194,7 @@ class _WorkspaceTab extends StatefulWidget {
     required this.onSelect,
     required this.onClose,
   });
-  final GlobalKey anchor;
+  final int index;
   final WorkspaceTab tab;
   final String title;
   final bool selected;
@@ -163,7 +211,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     final c = context.mmColors;
     final touch = context.mmTouchPlatform;
     final showClose = touch || widget.selected || _hovered || _focused;
-    final type = (touch ? context.mmText.body : context.mmText.callout).copyWith(
+    final type = _tabTextStyle(context).copyWith(
       fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w400,
       color: widget.selected ? c.label : c.secondaryLabel,
     );
@@ -174,7 +222,6 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         canRequestFocus: false,
         onFocusChange: (value) => setState(() => _focused = value),
         child: SizedBox(
-          key: widget.anchor,
           width: widget.width,
           height: touch ? 44 : 30,
           child: MMInteractive(
@@ -212,43 +259,56 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
               child: Row(
                 children: [
                   Expanded(
-                    child: MMInteractive(
-                      selected: widget.selected,
-                      semanticLabel: widget.title,
-                      onTap: widget.onSelect,
-                      builder: (context, interaction) => Padding(
-                        padding: EdgeInsets.only(left: touch ? 12 : 10, right: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _tabIcon(widget.tab),
-                              size: touch ? 15 : 14,
-                              color: widget.selected ? c.accent : c.icon,
+                    child: _dragHandle(
+                      context,
+                      SizedBox(
+                        height: touch ? 44 : 30,
+                        child: MMInteractive(
+                          selected: widget.selected,
+                          semanticLabel: widget.title,
+                          onTap: widget.onSelect,
+                          builder: (context, interaction) => Padding(
+                            padding: EdgeInsets.only(left: touch ? 12 : 10, right: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _tabIcon(widget.tab),
+                                  size: touch ? 15 : 14,
+                                  color: widget.selected ? c.accent : c.icon,
+                                ),
+                                SizedBox(width: touch ? 8 : 6),
+                                Expanded(
+                                  child: LayoutBuilder(
+                                    builder: (context, bounds) {
+                                      final text = Text(
+                                        widget.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: type,
+                                      );
+                                      final painter = TextPainter(
+                                        text: TextSpan(text: widget.title, style: type),
+                                        maxLines: 1,
+                                        ellipsis: '…',
+                                        textDirection: Directionality.of(context),
+                                        textScaler: MediaQuery.textScalerOf(context),
+                                        locale: Localizations.localeOf(context),
+                                      )..layout(maxWidth: bounds.maxWidth);
+                                      final truncated = painter.didExceedMaxLines;
+                                      painter.dispose();
+                                      return truncated
+                                          ? Tooltip(
+                                              message: widget.title,
+                                              triggerMode: TooltipTriggerMode.manual,
+                                              child: text,
+                                            )
+                                          : text;
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
-                            SizedBox(width: touch ? 8 : 6),
-                            Expanded(
-                              child: LayoutBuilder(
-                                builder: (context, bounds) {
-                                  final text = Text(
-                                    widget.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: type,
-                                  );
-                                  final painter = TextPainter(
-                                    text: TextSpan(text: widget.title, style: type),
-                                    maxLines: 1,
-                                    ellipsis: '…',
-                                    textDirection: Directionality.of(context),
-                                    textScaler: MediaQuery.textScalerOf(context),
-                                  )..layout(maxWidth: bounds.maxWidth);
-                                  final truncated = painter.didExceedMaxLines;
-                                  painter.dispose();
-                                  return truncated ? Tooltip(message: widget.title, child: text) : text;
-                                },
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -278,4 +338,20 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       ),
     );
   }
+
+  Widget _dragHandle(BuildContext context, Widget child) => Listener(
+    onPointerDown: (event) {
+      // A quick finger swipe still scrolls, including on a touch-capable
+      // desktop; a mouse can reorder immediately on any platform.
+      final recognizer = event.kind == PointerDeviceKind.mouse
+          ? ImmediateMultiDragGestureRecognizer(debugOwner: this)
+          : DelayedMultiDragGestureRecognizer(debugOwner: this);
+      SliverReorderableList.of(context).startItemDragReorder(
+        index: widget.index,
+        event: event,
+        recognizer: recognizer..gestureSettings = MediaQuery.maybeGestureSettingsOf(context),
+      );
+    },
+    child: child,
+  );
 }

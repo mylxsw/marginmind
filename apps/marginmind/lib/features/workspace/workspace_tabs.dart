@@ -66,6 +66,15 @@ class WorkspaceTabs {
     contexts: Map.unmodifiable({...contexts, ?(tabId ?? activeId): context}),
   );
 
+  WorkspaceTabs reorder(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= open.length || newIndex < 0 || newIndex >= open.length || oldIndex == newIndex) {
+      return this;
+    }
+    final next = [...open];
+    next.insert(newIndex, next.removeAt(oldIndex));
+    return WorkspaceTabs(open: List.unmodifiable(next), activeId: activeId, contexts: contexts);
+  }
+
   WorkspaceTabs close(String id) {
     final index = open.indexWhere((tab) => tab.id == id);
     if (index < 0) return this;

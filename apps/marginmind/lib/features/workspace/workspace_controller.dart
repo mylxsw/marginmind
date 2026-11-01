@@ -942,6 +942,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     );
   }
 
+  void reorderTabs(int oldIndex, int newIndex) {
+    final tabs = state.tabs.reorder(oldIndex, newIndex);
+    if (!identical(tabs, state.tabs)) state = state.copyWith(tabs: tabs);
+  }
+
   void closeTab(String id) {
     if (id == WorkspaceTab.review.id) {
       _reviewSession?.close();
