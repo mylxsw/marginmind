@@ -3,8 +3,6 @@ import '../../map_generation/widgets/map_ocr_banner.dart';
 
 import 'dart:async';
 
-import 'map_switch_sheet.dart';
-
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -1350,14 +1348,40 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         ),
                                       ],
                                       menuEntries: [
-                                        MMDropdownItem<VoidCallback>(
+                                        MMDropdownSubmenu<VoidCallback>.items(
                                           key: const ValueKey('map-switch-menu'),
-                                          value: () => _runToolbarAction(() async {
-                                            _closeStyle();
-                                            await showMapSwitchSheet(context, ref, widget.studySetId);
-                                          }),
+                                          label: l.switchMap,
+                                          icon: MMIcons.mindMap,
+                                          width: MMSizes.dropdownWideWidth,
                                           enabled: loadedContent != null,
-                                          child: menuLabel(l.switchMap, const Icon(MMIcons.mindMap)),
+                                          itemBuilder: (context) => [
+                                            for (final target in content.maps)
+                                              MMDropdownItem<VoidCallback>(
+                                                key: ValueKey('map-switch-${target.id}'),
+                                                icon: MMIcons.mindMap,
+                                                value: () => _runToolbarAction(() async {
+                                                  _closeStyle();
+                                                  await controller.selectMap(target.id);
+                                                }),
+                                                child: Semantics(
+                                                  selected: target.id == state.activeMapId,
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          target.title.isEmpty ? l.mainMap : target.title,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: context.mmText.callout,
+                                                        ),
+                                                      ),
+                                                      if (target.id == state.activeMapId)
+                                                        const Icon(MMIcons.check, size: 14),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                         MMDropdownItem<VoidCallback>(
                                           key: const ValueKey('map-style-menu'),
