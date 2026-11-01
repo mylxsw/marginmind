@@ -689,7 +689,9 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             failed: _saveFailed,
             onSave: _saveAndCheck,
           ),
-          if (_keyUnavailable) Text(l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
+          // Asks for the key again only until a new one is typed.
+          if (_keyUnavailable && !_keyEdited)
+            Text(l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
           if (serviceEndpointOptional(s.protocol) && !_showsEndpoint)
             MMButton(
               key: const ValueKey('service-custom-address'),

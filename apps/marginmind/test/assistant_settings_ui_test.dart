@@ -250,7 +250,9 @@ void main() {
     expect(find.byKey(const ValueKey('settings-general')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
     await tester.pumpAndSettle();
+    expect(find.text('无法读取 API Key，请重新填写并保存。'), findsOneWidget);
     await _enter(tester, 'service-key', 'valid-test-key');
+    expect(find.text('无法读取 API Key，请重新填写并保存。'), findsNothing, reason: 'answered by the new key');
     await _save(tester);
     // The Keychain write failed after the disabled fence was persisted: the card
     // names the real cause (not an invalid key), the switch shows the fence.
