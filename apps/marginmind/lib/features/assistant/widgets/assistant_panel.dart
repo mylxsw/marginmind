@@ -224,7 +224,7 @@ class _DrawerTransition extends StatelessWidget {
   );
 }
 
-/// The panel's title, history and new conversation.
+/// The panel's title, history, new conversation and close controls.
 class AssistantHeader extends ConsumerWidget {
   const AssistantHeader({super.key, required this.studySetId});
 
@@ -279,7 +279,6 @@ class AssistantHeader extends ConsumerWidget {
             key: const ValueKey('assistant-history-button'),
             icon: MMIcons.recent,
             tooltip: l.assistantHistory,
-            selected: history,
             onPressed: () {
               ref.read(researchPanelProvider(studySetId).notifier).closeNote();
               ui.showHistory(!history);
@@ -292,13 +291,12 @@ class AssistantHeader extends ConsumerWidget {
             tooltip: l.assistantNewConversation,
             onPressed: () => startNewConversation(ref, studySetId),
           ),
-          if (context.mmTouchPlatform)
-            MMIconButton(
-              key: const ValueKey('assistant-close'),
-              icon: MMIcons.close,
-              tooltip: l.closePanel,
-              onPressed: () => ref.read(workspaceProvider(studySetId).notifier).closePanel(),
-            ),
+          MMIconButton(
+            key: const ValueKey('assistant-close'),
+            icon: MMIcons.close,
+            tooltip: l.closePanel,
+            onPressed: () => ref.read(workspaceProvider(studySetId).notifier).closePanel(),
+          ),
         ],
       ),
     );

@@ -429,13 +429,15 @@ void main() {
       await tester.pumpAndSettle();
       final panel = tester.getRect(find.byType(AssistantHeader));
       final newConversation = tester.getRect(find.byKey(const ValueKey('assistant-new')));
-      expect(newConversation.right, closeTo(panel.right - 8, 1));
+      final close = tester.getRect(find.byKey(const ValueKey('assistant-close')));
+      expect(close.right, closeTo(panel.right - 8, 1));
+      expect(newConversation.right, lessThanOrEqualTo(close.left));
       expect(
         tester.getRect(find.byKey(const ValueKey('assistant-history-button'))).right,
         lessThanOrEqualTo(newConversation.left),
       );
       expect(find.byKey(const ValueKey('assistant-settings')), findsNothing);
-      expect(find.byKey(const ValueKey('assistant-close')), findsNothing);
+      expect(find.byKey(const ValueKey('assistant-close')), findsOneWidget);
       final history = find.byKey(const ValueKey('assistant-history-button'));
       expect(find.descendant(of: history, matching: find.byIcon(MMIcons.recent)), findsOneWidget);
       expect(find.descendant(of: history, matching: find.byType(Text)), findsNothing);

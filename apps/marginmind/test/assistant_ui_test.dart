@@ -609,7 +609,7 @@ void main() {
         expect(app.container.read(workspaceProvider('demo-1')).sidebarAutoCollapsed, isFalse);
         expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
       }
-      expect(find.byKey(const ValueKey('assistant-close')), findsNothing);
+      expect(find.byKey(const ValueKey('assistant-close')), findsOneWidget);
       await _type(tester, '还没发送的草稿');
       final historyButton = find.byKey(const ValueKey('assistant-history-button'));
       await tester.tap(find.byKey(const ValueKey('assistant-title')));
@@ -617,7 +617,8 @@ void main() {
       expect(find.byKey(const ValueKey('assistant-history')), findsNothing);
       await tester.tap(historyButton);
       await pumpFor(tester);
-      expect(tester.widget<MMToolbarButton>(historyButton).selected, isTrue);
+      expect(find.byKey(const ValueKey('assistant-history')), findsOneWidget);
+      expect(tester.widget<MMToolbarButton>(historyButton).selected, isFalse);
       await tester.tap(historyButton);
       await pumpFor(tester);
       expect(tester.widget<MMToolbarButton>(historyButton).selected, isFalse);
@@ -637,8 +638,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(sidebarShown(), isTrue);
       expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
-      app.workspace.closePanel();
+      await tester.tap(find.byKey(const ValueKey('assistant-close')));
       await tester.pumpAndSettle();
+      expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
       expect(sidebarShown(), isTrue);
       expect(tester.takeException(), isNull);
     });
