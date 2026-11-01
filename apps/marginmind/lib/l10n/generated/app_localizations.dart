@@ -8741,7 +8741,7 @@ abstract class AppLocalizations {
   /// No description provided for @fullTranslationMenu.
   ///
   /// In en, this message translates to:
-  /// **'Translate Entire Document…'**
+  /// **'Full Translation…'**
   String get fullTranslationMenu;
 
   /// No description provided for @fullTranslationTokensUsed.
@@ -8765,7 +8765,7 @@ abstract class AppLocalizations {
   /// No description provided for @fullTranslationCapsule.
   ///
   /// In en, this message translates to:
-  /// **'Translate All'**
+  /// **'Full Translation'**
   String get fullTranslationCapsule;
 
   /// No description provided for @fullTranslationCapsuleRunning.
@@ -9011,7 +9011,7 @@ abstract class AppLocalizations {
   /// No description provided for @fullTranslationFooterNote.
   ///
   /// In en, this message translates to:
-  /// **'Translations are saved in the study set without modifying the PDF'**
+  /// **'Translations stay in this study set. The original is preserved.'**
   String get fullTranslationFooterNote;
 
   /// No description provided for @fullTranslationStartBatch.
