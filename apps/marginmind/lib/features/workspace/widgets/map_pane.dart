@@ -182,14 +182,21 @@ class _MapPaneState extends ConsumerState<MapPane> {
   /// The style popover, the style it previews, and where it hangs.
   bool _styleOpen = false;
   (MapStructure, MapPalette)? _stylePreview;
-  final _styleLink = LayerLink();
-  final _styleButton = GlobalKey();
+  final _stylePortal = OverlayPortalController();
   static const _styleRegion = 'map-style';
 
-  void _toggleStyle() => _styleOpen ? _closeStyle() : setState(() => _styleOpen = true);
+  void _toggleStyle() {
+    if (_styleOpen) {
+      _closeStyle();
+    } else {
+      _stylePortal.show();
+      setState(() => _styleOpen = true);
+    }
+  }
 
   void _closeStyle() {
     if (!_styleOpen) return;
+    _stylePortal.hide();
     setState(() {
       _styleOpen = false;
       _stylePreview = null;
@@ -871,18 +878,37 @@ class _MapPaneState extends ConsumerState<MapPane> {
         final styleWidth = phone
             ? (paneConstraints.maxWidth - MMSpacing.m * 2).clamp(0.0, MMSizes.mapStylePopoverWidth)
             : MMSizes.mapStylePopoverWidth;
-        var styleOffsetX = 0.0;
-        if (phone && _styleOpen) {
-          final button = _styleButton.currentContext?.findRenderObject() as RenderBox?;
-          if (button != null && button.hasSize) {
-            final right = button.localToGlobal(Offset(button.size.width, 0)).dx;
-            final pane = context.findRenderObject() as RenderBox?;
-            final left = pane?.localToGlobal(Offset.zero).dx ?? 0;
-            final minimum = left + MMSpacing.m + styleWidth;
-            final maximum = left + paneConstraints.maxWidth - MMSpacing.m;
-            styleOffsetX = right.clamp(minimum, maximum < minimum ? minimum : maximum) - right;
-          }
-        }
+        Widget styleAnchor(Widget child) => MapStyleAnchor(
+          controller: _stylePortal,
+          above: phone,
+          width: styleWidth,
+          maxHeight: phone
+              ? (paneConstraints.maxHeight - chrome.vertical - MMSpacing.m * 2).clamp(80.0, double.infinity)
+              : double.infinity,
+          popover: TapRegion(
+            groupId: _styleRegion,
+            onTapOutside: (_) => _closeStyle(),
+            child: SingleChildScrollView(
+              child: MapStylePopover(
+                density: map?.density ?? MapDensity.compact,
+                onDensity: controller.setMapDensity,
+                structure: map?.structure ?? MapStructure.mind,
+                palette: map?.palette ?? MapPalette.system,
+                onPreview: (style) => setState(() => _stylePreview = style),
+                onStructure: (structure) {
+                  setState(() => _stylePreview = null);
+                  controller.setMapStructure(structure);
+                },
+                onPalette: (palette) {
+                  setState(() => _stylePreview = null);
+                  controller.setMapPalette(palette);
+                },
+                onClose: _closeStyle,
+              ),
+            ),
+          ),
+          child: child,
+        );
         final controls = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -902,9 +928,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
             ),
             if (!outline) ...[
               const SizedBox(width: MMSpacing.s),
-              CompositedTransformTarget(
-                link: _styleLink,
-                child: TapRegion(
+              styleAnchor(
+                TapRegion(
                   groupId: _styleRegion,
                   child: MMToolbarButton(
                     key: const ValueKey('map-style-button'),
@@ -1188,10 +1213,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                           ? Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                CompositedTransformTarget(
-                                  key: _styleButton,
-                                  link: _styleLink,
-                                  child: TapRegion(
+                                styleAnchor(
+                                  TapRegion(
                                     groupId: _styleRegion,
                                     child: WorkspaceToolbar(
                                       label: l.moreTools,
@@ -1460,53 +1483,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   fallback: DocumentMapBanner(studySetId: widget.studySetId),
                 ),
               ),
-              if (_styleOpen && (merged || !outline) && map != null)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  child: CompositedTransformFollower(
-                    link: _styleLink,
-                    showWhenUnlinked: false,
-                    targetAnchor: phone ? Alignment.topRight : Alignment.bottomRight,
-                    followerAnchor: phone ? Alignment.bottomRight : Alignment.topRight,
-                    offset: Offset(styleOffsetX, phone ? -MMSpacing.s : MMSpacing.s),
-                    child: TapRegion(
-                      groupId: _styleRegion,
-                      onTapOutside: (_) => _closeStyle(),
-                      child: SizedBox(
-                        width: styleWidth,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: phone
-                                ? (paneConstraints.maxHeight - chrome.vertical - MMSpacing.m * 2).clamp(
-                                    80.0,
-                                    double.infinity,
-                                  )
-                                : double.infinity,
-                          ),
-                          child: SingleChildScrollView(
-                            child: MapStylePopover(
-                              density: map.density,
-                              onDensity: controller.setMapDensity,
-                              structure: map.structure,
-                              palette: map.palette,
-                              onPreview: (style) => setState(() => _stylePreview = style),
-                              onStructure: (structure) {
-                                setState(() => _stylePreview = null);
-                                controller.setMapStructure(structure);
-                              },
-                              onPalette: (palette) {
-                                setState(() => _stylePreview = null);
-                                controller.setMapPalette(palette);
-                              },
-                              onClose: _closeStyle,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               if (state.mapView == MapViewMode.map && !phone)
                 Positioned(
                   left: MMSpacing.m,

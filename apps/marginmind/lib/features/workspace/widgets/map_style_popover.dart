@@ -6,6 +6,71 @@ import 'package:mm_design/mm_design.dart';
 import '../../../shared/l10n.dart';
 import 'mind_map_style.dart';
 
+/// Positions the style panel during layout so its nested tooltips can resolve
+/// their coordinates before painting (unlike a CompositedTransformFollower).
+class MapStyleAnchor extends StatelessWidget {
+  const MapStyleAnchor({
+    super.key,
+    required this.controller,
+    required this.above,
+    required this.width,
+    required this.maxHeight,
+    required this.popover,
+    required this.child,
+  });
+
+  final OverlayPortalController controller;
+  final bool above;
+  final double width, maxHeight;
+  final Widget popover, child;
+
+  @override
+  Widget build(BuildContext context) => OverlayPortal.overlayChildLayoutBuilder(
+    controller: controller,
+    overlayChildBuilder: (context, info) => CustomSingleChildLayout(
+      delegate: _StyleLayout(
+        anchor: MatrixUtils.transformRect(info.childPaintTransform, Offset.zero & info.childSize),
+        above: above,
+        width: width,
+        maxHeight: maxHeight,
+      ),
+      child: popover,
+    ),
+    child: child,
+  );
+}
+
+class _StyleLayout extends SingleChildLayoutDelegate {
+  const _StyleLayout({required this.anchor, required this.above, required this.width, required this.maxHeight});
+
+  final Rect anchor;
+  final bool above;
+  final double width, maxHeight;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => BoxConstraints(
+    minWidth: width.clamp(0, constraints.maxWidth),
+    maxWidth: width.clamp(0, constraints.maxWidth),
+    maxHeight: maxHeight.clamp(0, constraints.maxHeight),
+  );
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => Offset(
+    (anchor.right - childSize.width).clamp(0, (size.width - childSize.width).clamp(0, double.infinity)),
+    (above ? anchor.top - MMSpacing.s - childSize.height : anchor.bottom + MMSpacing.s).clamp(
+      0,
+      (size.height - childSize.height).clamp(0, double.infinity),
+    ),
+  );
+
+  @override
+  bool shouldRelayout(_StyleLayout oldDelegate) =>
+      anchor != oldDelegate.anchor ||
+      above != oldDelegate.above ||
+      width != oldDelegate.width ||
+      maxHeight != oldDelegate.maxHeight;
+}
+
 /// The map's structure and palette: four structure thumbnails and six palette
 /// thumbnails, named only by their tooltips. Hovering a thumbnail previews it
 /// ([onPreview], with the other half of the style unchanged), leaving the

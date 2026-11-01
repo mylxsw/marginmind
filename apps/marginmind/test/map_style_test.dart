@@ -61,6 +61,7 @@ void _expectContiguous(MapConnector c) {
 }
 
 void main() {
+  styleTooltipRegressionTests();
   group('style tokens for stored values', () {
     test('every structure and palette maps to its layout and tokens', () {
       for (final s in MapStructure.values) {
@@ -461,5 +462,54 @@ void main() {
       expect(boxColors(s), contains(MMColors.light.rootNode.toARGB32()));
       expect(curveColors(s), {MMColors.light.line.toARGB32()});
     });
+  });
+}
+
+/// Also exercised in a native macOS window with isolated in-memory content.
+void styleTooltipRegressionTests({bool native = false}) {
+  testWidgets('style tooltips survive hovering, applying and resizing the pane', (tester) async {
+    final container = await pumpApp(
+      tester,
+      size: native ? tester.view.physicalSize / tester.view.devicePixelRatio : const Size(1280, 820),
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    await toggleMapStyle(tester);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+
+    for (final key in [
+      for (final structure in MapStructure.values) 'map-structure-${structure.name}',
+      for (final palette in MapPalette.values) 'map-palette-${palette.name}',
+    ]) {
+      final thumb = find.byKey(ValueKey(key));
+      await mouse.moveTo(tester.getCenter(thumb));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      final tooltip = find.descendant(of: thumb, matching: find.byType(Tooltip));
+      expect(find.text(tester.widget<Tooltip>(tooltip).message!), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await mouse.down(tester.getCenter(thumb));
+      await mouse.up();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(MapStylePopover), findsOneWidget);
+    }
+    expect(controller.content.map(MindMap.defaultId)!.structure, MapStructure.values.last);
+    expect(controller.content.map(MindMap.defaultId)!.palette, MapPalette.values.last);
+
+    if (!native) {
+      tester.view.physicalSize = const Size(1100, 740);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(MapStylePopover), findsNothing);
+    await settleHud(tester);
   });
 }
