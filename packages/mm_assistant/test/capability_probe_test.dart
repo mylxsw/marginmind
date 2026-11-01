@@ -28,14 +28,14 @@ class WaitingClient extends ScriptClient {
 }
 
 void main() {
-  test('HTTP acceptance stays unknown; untrusted evidence is never promoted', () async {
+  test('connection tests are optional; unknown models can be called', () async {
     final service = fixtures.service('a');
     final profiles = CapabilityProfiles();
     final resolver = TaskModelResolver(
       catalog: () async => AssistantServices(services: [service]),
       profiles: profiles,
     );
-    final client = ScriptClient([answer('OK')]);
+    final client = ScriptClient([answer('OK'), answer('OK')]);
     final probe = RoutingCapabilityProbe(
       resolver: resolver,
       key: (_) async => 'fixture-key',
@@ -49,14 +49,19 @@ void main() {
     expect(result.accepted, true);
     expect(result.purpose, RunPurpose.capabilityProbe);
     expect(result.profile.thinking, ThinkingCapability.unknown);
-    expect(resolver.reasoningOptions(result.profile), isEmpty);
+    expect(resolver.reasoningOptions(result.profile), {ReasoningPolicy.auto});
+    expect(result.issue, RoutingIssue.none);
+    expect(result.admissionFailureCode, isNull);
     expect(client.toolRequests.single, isEmpty);
     expect(client.modelConfigs.single.extra, isEmpty);
     expect(profiles.lookup(result.identity).thinking, ThinkingCapability.unknown);
-    await expectLater(
-      probe.probe(const ModelReference('a', 'same'), cancellation: CancellationToken(), reasoning: ReasoningPolicy.off),
-      throwsA(isA<ConfigurationFailure>()),
+    final off = await probe.probe(
+      const ModelReference('a', 'same'),
+      cancellation: CancellationToken(),
+      reasoning: ReasoningPolicy.off,
     );
+    expect(off.accepted, isTrue);
+    expect(client.modelConfigs.last.extra, isEmpty);
   });
   test('probe uses verified policy and never executes returned tools', () async {
     final service = fixtures.service('a');

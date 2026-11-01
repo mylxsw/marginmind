@@ -152,13 +152,13 @@ void main() {
     if (!skip) await _loadFonts();
   });
 
-  testWidgets('AI features: compatibility explanation', (tester) async {
+  testWidgets('AI features: custom models without compatibility restrictions', (tester) async {
     await _open(tester, prefs: _prefs(dark: true));
     await _save(tester, 'compatibility-status');
-    await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
-    await tester.pumpAndSettle();
+    expect(find.text('查看原因'), findsNothing);
+    expect(find.text('尚未适配'), findsNothing);
     expect(tester.takeException(), isNull);
-    await _save(tester, 'compatibility-explanation');
+    expect(find.byType(AlertDialog), findsNothing);
   }, skip: skip);
 
   testWidgets('AI features: normal, menu, draft', (tester) async {

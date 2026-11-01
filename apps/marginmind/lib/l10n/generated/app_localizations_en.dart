@@ -5936,16 +5936,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTasksReasonUnsupported => 'Not supported';
 
   @override
-  String get aiTasksUnverified => 'Not adapted';
-
-  @override
   String get aiTasksIssueThinking => 'This model can\'t turn off thinking';
-
-  @override
-  String get aiTasksIssueUnknown => 'This model is not adapted for this feature. Choose another model.';
-
-  @override
-  String get aiTasksIssueReachable => 'Connected, but not adapted for this feature. Choose another model.';
 
   @override
   String get aiTasksIssueTools => 'This model doesn\'t support tool use';
@@ -5979,9 +5970,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiTasksChangeModel => 'Change Model';
-
-  @override
-  String get aiTasksTest => 'Test connection';
 
   @override
   String get aiTasksChooseAgain => 'Choose Again';
@@ -6187,20 +6175,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workspaceScrollTabsRight => 'Scroll tabs right';
-
-  @override
-  String get aiTasksCompatibilityHelp => 'Why?';
-
-  @override
-  String get aiTasksCompatibilityTitle => 'Why can’t I use this model yet?';
-
-  @override
-  String get aiTasksCompatibilityExplanation =>
-      'This app version has not finished adapting this model for this feature. A connection test only confirms that the service responds; it cannot enable the feature.\n\nChoose another model, or wait for an app update with support. Options marked “Not adapted” also cannot run this feature yet. If the connection test passed, you do not need to repeat it or change your API key.';
-
-  @override
-  String get aiTasksCompatibilityModel => 'Current model';
-
-  @override
-  String get aiTasksCompatibilityConnectionOnly => 'Checks connectivity only; it will not enable this feature.';
 }

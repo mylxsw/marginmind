@@ -21,9 +21,9 @@ class CapabilityProbeResult {
   final ModelCapabilityProfile profile;
   RunPurpose get purpose => RunPurpose.capabilityProbe;
 
-  /// Connectivity cannot resolve missing independent semantic evidence.
-  String? get admissionFailureCode => issue == RoutingIssue.unknown ? 'maintainedEvidenceRequired' : null;
-  RoutingIssue get issue => profile.evidence?.admitsPolicy == true ? RoutingIssue.none : RoutingIssue.unknown;
+  /// Connection tests are diagnostics, never a prerequisite for using a model.
+  String? get admissionFailureCode => null;
+  RoutingIssue get issue => RoutingIssue.none;
 }
 
 typedef ProbeConnectionFactory = AssistantConnection Function(
@@ -35,7 +35,7 @@ AssistantConnection _connection(AssistantModel model, String key, ProviderCallPo
     connectAssistant(model, key, callPolicy: policy, retryRequests: false, requestTimeout: const Duration(seconds: 20));
 
 /// Infrastructure-only single SDK request. No Agent tools are registered or
-/// executed. Unknown profiles stay unknown even after a successful response.
+/// executed. No capability approval is required before or after this check.
 class RoutingCapabilityProbe {
   RoutingCapabilityProbe({
     required this.resolver,
@@ -66,27 +66,19 @@ class RoutingCapabilityProbe {
       throw const ConfigurationFailure('probeModelUnavailable');
     }
     final identity = serviceCapabilityIdentity(service, model);
-    await cancellation.bind(resolver.profiles.refresh());
-    final profile = resolver.profiles.lookup(identity);
-    ProviderCallPolicy? policy;
-    if (profile.evidence?.admitsPolicy == true) {
-      policy = TaskModelResolver.compiler.compile(
-        category: TaskCategory.heavy,
-        requested: reasoning,
-        identity: identity,
-        capabilities: profile,
-        maxOutputTokens: 16,
-      );
-    } else if (reasoning != ReasoningPolicy.auto) {
-      throw const ConfigurationFailure('unverifiedCapabilities');
+    ModelCapabilityProfile profile;
+    try {
+      await cancellation.bind(resolver.profiles.refresh());
+      profile = resolver.profiles.lookup(identity);
+    } catch (_) {
+      cancellation.check();
+      profile = ModelCapabilityProfile(identity: identity);
     }
-    final diagnostic = policy == null;
-    policy ??= ProviderCallPolicy(
+    final policy = TaskModelResolver.compiler.compile(
+      category: TaskCategory.heavy,
+      requested: reasoning,
       identity: identity,
-      requested: ReasoningPolicy.auto,
-      effective: ReasoningPolicy.auto,
-      recipe: ReasoningRecipe.omitted,
-      parameters: const {},
+      capabilities: profile,
       maxOutputTokens: 16,
     );
     final context = RunContext(
@@ -106,7 +98,6 @@ class RoutingCapabilityProbe {
         taskType: TaskType.assistantChat,
         purpose: RunPurpose.capabilityProbe,
         cancellation: cancellation,
-        diagnostic: diagnostic,
         loadModel: (_) async {
           final config = service.configuration(model);
           final secret = await cancellation.bind(key(config));

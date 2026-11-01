@@ -44,23 +44,22 @@ class DefaultProviderPolicyCompiler implements ProviderPolicyCompiler {
     if (identity != capabilities.identity || identity.adapterVersion != modelPolicyAdapterVersion) {
       throw const ConfigurationFailure('staleCapabilities');
     }
-    final effective = category == TaskCategory.quick ? ReasoningPolicy.off : requested;
-    if (capabilities.thinking == ThinkingCapability.unknown || capabilities.evidence?.admitsPolicy != true) {
-      throw const ConfigurationFailure('unverifiedCapabilities');
-    }
-    if (effective == ReasoningPolicy.off && capabilities.thinking == ThinkingCapability.alwaysOn) {
-      throw const ConfigurationFailure('thinkingCannotDisable');
-    }
-    final ReasoningRecipe recipe;
-    if (effective == ReasoningPolicy.auto ||
-        (effective == ReasoningPolicy.off && capabilities.thinking == ThinkingCapability.notApplicable)) {
-      recipe = ReasoningRecipe.omitted;
-    } else {
-      final configured = capabilities.policies[effective];
-      if (configured == null || configured == ReasoningRecipe.omitted) {
-        throw const ConfigurationFailure('unsupportedReasoningPolicy');
+    final desired = category == TaskCategory.quick ? ReasoningPolicy.off : requested;
+    var effective = desired;
+    var recipe = ReasoningRecipe.omitted;
+    // Capability metadata helps choose optional parameters; it never grants or
+    // denies access to a configured model. Unknown models use provider defaults.
+    if (desired != ReasoningPolicy.auto) {
+      final configured = capabilities.evidence?.admitsPolicy == true ? capabilities.policies[desired] : null;
+      if (capabilities.thinking == ThinkingCapability.notApplicable && desired == ReasoningPolicy.off) {
+        effective = ReasoningPolicy.off;
+      } else if (capabilities.thinking != ThinkingCapability.alwaysOn &&
+          configured != null &&
+          configured != ReasoningRecipe.omitted) {
+        recipe = configured;
+      } else {
+        effective = ReasoningPolicy.auto;
       }
-      recipe = configured;
     }
     if ((effective == ReasoningPolicy.off &&
             !{
@@ -160,23 +159,7 @@ void verifyPolicyPayload(ProviderCallPolicy policy, Map<String, dynamic> body) {
   if (jsonEncode(actual) != jsonEncode(expected)) throw const ConfigurationFailure('policyPayloadMismatch');
 }
 
-/// S1 calls this for the selected TaskSpec before constructing a resolved snapshot.
-void validateTaskCapabilities(TaskSpec spec, ModelCapabilityProfile capabilities) {
-  for (final requirement in spec.requiredCapabilities) {
-    // 2.1.8 cannot guarantee general replay on these protocols, even if remote
-    // model metadata advertises tool support. Re-admit only after a codec fix.
-    if (requirement == ModelCapability.historyReplay &&
-        {ModelProtocol.responses, ModelProtocol.gemini}.contains(capabilities.identity.protocol)) {
-      throw const ConfigurationFailure('sdkHistoryReplayUnsupported');
-    }
-    final support = switch (requirement) {
-      ModelCapability.tools => capabilities.tools,
-      ModelCapability.structuredOutput => capabilities.structuredOutput,
-      ModelCapability.multimodal => capabilities.multimodal,
-      ModelCapability.historyReplay => capabilities.historyReplay,
-    };
-    if (support != CapabilitySupport.supported) {
-      throw ConfigurationFailure('${requirement.name}:${support.name}');
-    }
-  }
-}
+/// Capability metadata is advisory. Send the requested task to the configured
+/// provider and report actual API failures instead of imposing an allowlist.
+/// Kept for callers using the public model-policy API.
+void validateTaskCapabilities(TaskSpec spec, ModelCapabilityProfile capabilities) {}

@@ -774,10 +774,6 @@ class _RuntimeClient<T> implements sdk.LLMClient {
       await handle._ready();
       if (phase != handle.context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
       final context = handle._context;
-      validateTaskCapabilities(handle.request.spec, context.config.capabilities);
-      if (handle.request.images.isNotEmpty && context.config.capabilities.multimodal != CapabilitySupport.supported) {
-        throw const ConfigurationFailure('multimodal:unverified');
-      }
       final policy = const DefaultProviderPolicyCompiler().compile(
         category: handle.request.spec.category,
         requested: context.config.policy.requested,

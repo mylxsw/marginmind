@@ -74,7 +74,7 @@ class NoteModelRoute extends ConsumerWidget {
             semanticValue: label,
           ),
           if (issue != null) RoutingIssueLine(text: issue),
-          if (state.hasError) RoutingIssueLine(text: l.aiTasksIssueUnknown),
+          if (state.hasError) RoutingIssueLine(text: l.aiTasksIssueInvalid),
         ],
       ),
     );

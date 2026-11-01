@@ -287,8 +287,7 @@ class AssistantTaskOwner implements AssistantRun {
           allowed: {...tools.map((t) => t.name)},
           budget: budget,
           online: online,
-          toolsEnabled:
-              input['toolsEnabled'] != false && context.config.capabilities.tools == CapabilitySupport.supported,
+          toolsEnabled: input['toolsEnabled'] != false,
           requestId: requestId,
         ),
         if (input['reviewOnly'] == true) _GroundedReviewHook(this),

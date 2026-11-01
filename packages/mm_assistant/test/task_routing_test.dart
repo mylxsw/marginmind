@@ -143,14 +143,14 @@ void main() {
     );
     expect(row.issue, RoutingIssue.invalidConfiguration);
   });
-  test('unknown, user declarations, always on and required capabilities fail closed', () async {
+  test('configured models are usable without capability approval', () async {
     final req = request(TaskType.wordLookup, model: const ModelReference('a', 'same'), reasoning: ReasoningPolicy.deep);
     for (final source in [CapabilityEvidenceSource.userDeclared, CapabilityEvidenceSource.wireProbe]) {
       profiles.put(profile(catalog.services.first, source: source));
-      expect((await resolver.inspect(req, routing())).issue, RoutingIssue.unknown);
+      expect((await resolver.inspect(req, routing())).issue, RoutingIssue.none);
     }
     profiles.put(profile(catalog.services.first, thinking: ThinkingCapability.alwaysOn));
-    expect((await resolver.inspect(req, routing())).issue, RoutingIssue.thinkingAlwaysOn);
+    expect((await resolver.inspect(req, routing())).issue, RoutingIssue.none);
     expect(
       (await resolver.resolve(request(TaskType.assistantChat, model: req.modelOverride), routing())).policy.effective,
       ReasoningPolicy.auto,
@@ -161,7 +161,7 @@ void main() {
         request(TaskType.assistantChat, model: req.modelOverride, required: {ModelCapability.multimodal}),
         routing(),
       )).issue,
-      RoutingIssue.unknown,
+      RoutingIssue.none,
     );
   });
   test('credentials are not capability failures', () async {
@@ -192,7 +192,7 @@ void main() {
     await expectLater(resolver.validateCurrent(snapshot), throwsA(isA<ConfigurationFailure>()));
     expect(
       (await resolver.inspect(request(TaskType.assistantChat, model: snapshot.model), routing())).issue,
-      RoutingIssue.unknown,
+      RoutingIssue.none,
     );
     expect(() => snapshot.policy.parameters['bad'] = true, throwsUnsupportedError);
     profiles.put(profile(catalog.services.first));
@@ -210,7 +210,7 @@ void main() {
     expect(catalog.services.last.revision, greaterThan(snapshot.capabilities.identity.serviceRevision));
     expect(
       (await resolver.inspect(request(TaskType.assistantChat, model: snapshot.model), routing())).issue,
-      RoutingIssue.unknown,
+      RoutingIssue.none,
     );
     expect(
       profiles
@@ -324,7 +324,7 @@ void main() {
           identity: serviceCapabilityIdentity(catalog.services.first, catalog.services.first.models.first),
         ),
       ),
-      isEmpty,
+      {ReasoningPolicy.auto},
     );
     expect(
       resolver.reasoningOptions(profile(catalog.services.first, thinking: ThinkingCapability.alwaysOn)),

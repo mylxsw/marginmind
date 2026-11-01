@@ -55,72 +55,91 @@ class ToolRoundWire implements HttpClientAdapter {
 }
 
 void main() {
-  test('maintained GPT-4.1 tools execute through SDK and replay persisted results on the wire', () async {
-    final service = official(ModelProtocol.chatCompletions),
-        model = official(ModelProtocol.chatCompletions).models.single;
-    final profile = maintainedCapabilityProfile(service, model)!;
-    final policy = const DefaultProviderPolicyCompiler().compile(
-      category: TaskCategory.heavy,
-      requested: ReasoningPolicy.off,
-      identity: profile.identity,
-      capabilities: profile,
-      maxOutputTokens: 128,
-    );
-    final wire = ToolRoundWire();
-    final connection = connectAssistant(service.configuration(model), 'test', callPolicy: policy, adapter: wire);
-    addTearDown(connection.close);
-    var executions = 0;
-    final tool = sdk.Tool(
-      name: 'read',
-      description: 'Read a page',
-      parameters: {
-        'type': 'object',
-        'properties': {
-          'page': {'type': 'integer'},
+  for (final custom in [false, true]) {
+    test('SDK tool execution and persisted replay with custom proxy = $custom', () async {
+      final service = custom
+          ? AssistantService(
+              id: 'proxy',
+              protocol: ServiceProtocol.openai,
+              name: 'Squirrel',
+              endpoint: 'https://proxy.example/v1',
+              models: const [ServiceModel(id: 'deepseek-flash')],
+            )
+          : official(ModelProtocol.chatCompletions);
+      final model = service.models.single;
+      final resolver = TaskModelResolver(
+        catalog: () async => AssistantServices(services: [service]),
+        profiles: CapabilityProfiles(),
+      );
+      final config = await resolver.resolve(
+        TaskRequest<String>(
+          spec: assistantChatSpec,
+          input: const {},
+          inputFingerprint: 'tool-wire',
+          modelOverride: ModelReference(service.id, model.id),
+        ),
+        RoutingConfig(document: {'version': 1, 'revision': 0}),
+      );
+      final policy = config.policy;
+      expect(policy.parameters, isEmpty);
+      expect(config.capabilities.tools, CapabilitySupport.unknown);
+      final wire = ToolRoundWire();
+      final connection = connectAssistant(service.configuration(model), 'test', callPolicy: policy, adapter: wire);
+      addTearDown(connection.close);
+      var executions = 0;
+      final tool = sdk.Tool(
+        name: 'read',
+        description: 'Read a page',
+        parameters: {
+          'type': 'object',
+          'properties': {
+            'page': {'type': 'integer'},
+          },
+          'required': ['page'],
         },
-        'required': ['page'],
-      },
-      parameterMode: sdk.ToolParameterMode.object,
-      executable: (Map<String, dynamic> input) {
-        expect(input['page'], 1);
-        executions++;
-        return 'Evidence for page 1';
-      },
-    );
-    sdk.StatefulAgent agent(sdk.AgentState state) => sdk.StatefulAgent(
-      name: 'tool-test',
-      state: state,
-      client: connection.client,
-      tools: [tool],
-      modelConfig: policyModelConfig(policy),
-    );
-    final state = sdk.AgentState(sessionId: 'tools');
-    final responses = await agent(state).run([sdk.UserMessage.text('Read page 1')], useStream: false);
-    expect((responses.last as sdk.ModelMessage).stopReason, 'stop');
-    expect(executions, 1);
-    expect(wire.bodies, hasLength(2));
-    final declaration =
-        (wire.bodies.first['tools'] as List).where((t) => t['function']['name'] == 'read').single as Map;
-    expect(declaration['type'], 'function');
-    expect(declaration['function']['name'], 'read');
-    expect(declaration['function']['parameters']['required'], ['page']);
-    void verifyRound(Map<String, dynamic> body) {
-      verifyPolicyPayload(policy, body);
-      final messages = body['messages'] as List;
-      final call = messages.where((m) => m['tool_calls'] != null).single['tool_calls'].single;
-      expect(call['id'], 'read-page-1');
-      expect(jsonDecode(call['function']['arguments'] as String), {'page': 1});
-      final result = messages.where((m) => m['role'] == 'tool').single;
-      expect(result['tool_call_id'], 'read-page-1');
-      expect(result['content'], contains('Evidence for page 1'));
-    }
+        parameterMode: sdk.ToolParameterMode.object,
+        executable: (Map<String, dynamic> input) {
+          expect(input['page'], 1);
+          executions++;
+          return 'Evidence for page 1';
+        },
+      );
+      sdk.StatefulAgent agent(sdk.AgentState state) => sdk.StatefulAgent(
+        name: 'tool-test',
+        state: state,
+        client: connection.client,
+        tools: [tool],
+        modelConfig: policyModelConfig(policy),
+      );
+      final state = sdk.AgentState(sessionId: 'tools');
+      final responses = await agent(state).run([sdk.UserMessage.text('Read page 1')], useStream: false);
+      expect((responses.last as sdk.ModelMessage).stopReason, 'stop');
+      expect(executions, 1);
+      expect(wire.bodies, hasLength(2));
+      expect(wire.bodies.first['model'], model.id);
+      final declaration =
+          (wire.bodies.first['tools'] as List).where((t) => t['function']['name'] == 'read').single as Map;
+      expect(declaration['type'], 'function');
+      expect(declaration['function']['name'], 'read');
+      expect(declaration['function']['parameters']['required'], ['page']);
+      void verifyRound(Map<String, dynamic> body) {
+        verifyPolicyPayload(policy, body);
+        final messages = body['messages'] as List;
+        final call = messages.where((m) => m['tool_calls'] != null).single['tool_calls'].single;
+        expect(call['id'], 'read-page-1');
+        expect(jsonDecode(call['function']['arguments'] as String), {'page': 1});
+        final result = messages.where((m) => m['role'] == 'tool').single;
+        expect(result['tool_call_id'], 'read-page-1');
+        expect(result['content'], contains('Evidence for page 1'));
+      }
 
-    verifyRound(wire.bodies[1]);
-    final restored = sdk.AgentState.fromJson(jsonDecode(jsonEncode(state.toJson())));
-    await agent(restored).run([sdk.UserMessage.text('Explain that evidence')], useStream: false);
-    verifyRound(wire.bodies.last);
-    expect(executions, 1);
-  });
+      verifyRound(wire.bodies[1]);
+      final restored = sdk.AgentState.fromJson(jsonDecode(jsonEncode(state.toJson())));
+      await agent(restored).run([sdk.UserMessage.text('Explain that evidence')], useStream: false);
+      verifyRound(wire.bodies.last);
+      expect(executions, 1);
+    });
+  }
   test('tool admission does not spread to other protocols or unaudited models', () {
     for (final protocol in [ModelProtocol.responses, ModelProtocol.gemini]) {
       final service = official(protocol);

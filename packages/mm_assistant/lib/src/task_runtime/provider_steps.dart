@@ -134,7 +134,6 @@ class ProviderSteps {
     }
     if (purpose == RunPurpose.nativeSearch &&
         (category == TaskCategory.quick ||
-            caps.tools != CapabilitySupport.supported ||
             !{
               ModelProtocol.anthropicMessages,
               ModelProtocol.responses,

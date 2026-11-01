@@ -3086,10 +3086,7 @@
   "aiTasksReasonStructured": "No structured output",
   "aiTasksReasonContext": "Context too small",
   "aiTasksReasonUnsupported": "Not supported",
-  "aiTasksUnverified": "Not adapted",
   "aiTasksIssueThinking": "This model can't turn off thinking",
-  "aiTasksIssueUnknown": "This model is not adapted for this feature. Choose another model.",
-  "aiTasksIssueReachable": "Connected, but not adapted for this feature. Choose another model.",
   "aiTasksIssueTools": "This model doesn't support tool use",
   "aiTasksIssueStructured": "This model doesn't support structured output",
   "aiTasksIssueContext": "This model's context is too small",
@@ -3101,7 +3098,6 @@
   "aiTasksIssueConnection": "Connection unavailable",
   "aiTasksIssueInvalid": "Setting can't be read",
   "aiTasksChangeModel": "Change Model",
-  "aiTasksTest": "Test connection",
   "aiTasksChooseAgain": "Choose Again",
   "aiTasksOpenModelSettings": "Open Model Settings",
   "aiTasksReset": "Reset to Defaults",
@@ -3168,10 +3164,5 @@
   "workspaceNoMatchingTabs": "No matching tabs",
   "webSaveDocumentTitle": "Save as a document",
   "workspaceScrollTabsLeft": "Scroll tabs left",
-  "workspaceScrollTabsRight": "Scroll tabs right",
-  "aiTasksCompatibilityHelp": "Why?",
-  "aiTasksCompatibilityTitle": "Why can’t I use this model yet?",
-  "aiTasksCompatibilityExplanation": "This app version has not finished adapting this model for this feature. A connection test only confirms that the service responds; it cannot enable the feature.\n\nChoose another model, or wait for an app update with support. Options marked “Not adapted” also cannot run this feature yet. If the connection test passed, you do not need to repeat it or change your API key.",
-  "aiTasksCompatibilityModel": "Current model",
-  "aiTasksCompatibilityConnectionOnly": "Checks connectivity only; it will not enable this feature."
+  "workspaceScrollTabsRight": "Scroll tabs right"
 }

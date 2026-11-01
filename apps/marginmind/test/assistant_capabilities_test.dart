@@ -141,12 +141,8 @@ void main() {
       // Restore the ordinary platform before the next refresh writes new rows.
       SharedPreferencesStorePlatform.instance = original;
       final row = await resolver.inspect(request, routing);
-      if (endpointChange) {
-        expect(row.ready, isFalse);
-      } else {
-        expect(row.ready, isTrue);
-        expect(row.config!.policy.identity, isNot(identity));
-      }
+      expect(row.ready, isTrue, reason: 'an edited proxy endpoint does not need capability approval');
+      expect(row.config!.policy.identity, isNot(identity));
     });
   }
   test('pending persistence failure discards published evidence and permits retry', () async {

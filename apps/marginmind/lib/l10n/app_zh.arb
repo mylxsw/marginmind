@@ -2387,10 +2387,7 @@
   "aiTasksReasonStructured": "不支持结构化输出",
   "aiTasksReasonContext": "上下文不足",
   "aiTasksReasonUnsupported": "不支持",
-  "aiTasksUnverified": "尚未适配",
   "aiTasksIssueThinking": "此模型无法关闭思考",
-  "aiTasksIssueUnknown": "此模型尚未适配此功能，请更换模型",
-  "aiTasksIssueReachable": "连接正常，但此功能尚未适配，请更换模型",
   "aiTasksIssueTools": "此模型不支持工具调用",
   "aiTasksIssueStructured": "此模型不支持结构化输出",
   "aiTasksIssueContext": "此模型上下文不足",
@@ -2402,7 +2399,6 @@
   "aiTasksIssueConnection": "连接不可用",
   "aiTasksIssueInvalid": "设置无法读取",
   "aiTasksChangeModel": "更换模型",
-  "aiTasksTest": "测试连接",
   "aiTasksChooseAgain": "重新选择",
   "aiTasksOpenModelSettings": "打开模型设置",
   "aiTasksReset": "恢复跟随默认",
@@ -2459,10 +2455,5 @@
   "workspaceNoMatchingTabs": "没有匹配的标签页",
   "webSaveDocumentTitle": "保存为文档",
   "workspaceScrollTabsLeft": "向左滚动标签页",
-  "workspaceScrollTabsRight": "向右滚动标签页",
-  "aiTasksCompatibilityHelp": "查看原因",
-  "aiTasksCompatibilityTitle": "此模型为什么暂时不能用？",
-  "aiTasksCompatibilityExplanation": "当前版本还没有完成这个模型在此功能中的适配。连接测试只能确认服务有响应，不能解除使用限制。\n\n请更换模型，或等待应用更新。列表中标注「尚未适配」的模型也暂时不能使用此功能。如果连接测试已通过，无需反复测试或修改 API Key。",
-  "aiTasksCompatibilityModel": "当前模型",
-  "aiTasksCompatibilityConnectionOnly": "仅检查连接，不会解除此功能的使用限制。"
+  "workspaceScrollTabsRight": "向右滚动标签页"
 }

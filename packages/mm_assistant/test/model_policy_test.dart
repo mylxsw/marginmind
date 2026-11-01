@@ -296,7 +296,7 @@ String streamReply(ModelProtocol protocol) {
 }
 
 void main() {
-  test('unknown, unsupported, untrusted or acceptance-only evidence cannot admit quick', () {
+  test('unknown and always-on models use provider defaults without admission checks', () {
     final protocol = ModelProtocol.chatCompletions;
     for (final candidate in [
       ModelCapabilityProfile(identity: identity(protocol)),
@@ -305,18 +305,16 @@ void main() {
       profile(protocol, basis: null),
       profile(protocol, source: CapabilityEvidenceSource.wireProbe),
       profile(protocol, source: CapabilityEvidenceSource.userDeclared),
-      profile(protocol, off: ReasoningRecipe.effortMedium),
       profile(protocol, off: ReasoningRecipe.omitted),
     ]) {
-      expect(
-        () => compiler.compile(
-          category: TaskCategory.quick,
-          requested: ReasoningPolicy.auto,
-          identity: identity(protocol),
-          capabilities: candidate,
-        ),
-        throwsA(isA<ConfigurationFailure>()),
+      final policy = compiler.compile(
+        category: TaskCategory.quick,
+        requested: ReasoningPolicy.auto,
+        identity: identity(protocol),
+        capabilities: candidate,
       );
+      expect(policy.parameters, isEmpty);
+      expect(policy.effective, ReasoningPolicy.auto);
     }
     final omitted = compiler.compile(
       category: TaskCategory.quick,
@@ -326,6 +324,16 @@ void main() {
     );
     expect(omitted.parameters, isEmpty);
     expect(omitted.effective, ReasoningPolicy.off);
+    // Malformed internal parameter recipes still cannot alter a request.
+    expect(
+      () => compiler.compile(
+        category: TaskCategory.quick,
+        requested: ReasoningPolicy.auto,
+        identity: identity(protocol),
+        capabilities: profile(protocol, off: ReasoningRecipe.effortMedium),
+      ),
+      throwsA(isA<ConfigurationFailure>()),
+    );
   });
   test('profiles invalidate by exact identity; no model name heuristic', () {
     final profiles = CapabilityProfiles()..put(profile(ModelProtocol.responses));
@@ -377,7 +385,7 @@ void main() {
     );
     expect(() => compiled.parameters['reasoning']['effort'] = 'high', throwsUnsupportedError);
   });
-  test('required task capabilities reject unknown and unsupported', () {
+  test('capability metadata never blocks a configured model', () {
     final spec = TaskSpec(
       type: TaskType.research,
       inputSchema: 'research.input.v1',
@@ -393,7 +401,7 @@ void main() {
           spec,
           ModelCapabilityProfile(identity: identity(ModelProtocol.responses), tools: support),
         ),
-        throwsA(isA<ConfigurationFailure>()),
+        returnsNormally,
       );
     }
     validateTaskCapabilities(
@@ -401,7 +409,7 @@ void main() {
       ModelCapabilityProfile(identity: identity(ModelProtocol.responses), tools: CapabilitySupport.supported),
     );
   });
-  test('known SDK opaque/multiple-signature gaps override remote replay claims', () {
+  test('history replay is attempted without an SDK allowlist', () {
     final spec = TaskSpec(
       type: TaskType.assistantChat,
       inputSchema: 'i',
@@ -417,7 +425,7 @@ void main() {
           spec,
           ModelCapabilityProfile(identity: identity(protocol), historyReplay: CapabilitySupport.supported),
         ),
-        throwsA(isA<ConfigurationFailure>()),
+        returnsNormally,
       );
     }
   });

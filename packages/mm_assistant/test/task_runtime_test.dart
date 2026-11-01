@@ -152,6 +152,75 @@ class RetryThenRepairClient extends ScriptClient {
 }
 
 void main() {
+  for (final type in [TaskType.titleGenerate, TaskType.assistantChat]) {
+    test('$type with no capability record dispatches and repairs through the runtime', () async {
+      final customSpec = TaskSpec(
+        type: type,
+        inputSchema: 'text',
+        resultSchema: 'title',
+        promptVersion: '1',
+        schemaVersion: '1',
+        completionRule: 'title',
+        requiredCapabilities: ModelCapability.values.toSet(),
+      );
+      final caps = ModelCapabilityProfile(identity: fixture.identity(ModelProtocol.chatCompletions));
+      final config = ResolvedTaskConfig(
+        capabilities: caps,
+        policy: const DefaultProviderPolicyCompiler().compile(
+          category: type.category,
+          requested: ReasoningPolicy.deep,
+          identity: caps.identity,
+          capabilities: caps,
+        ),
+        routingRevision: 0,
+        source: RoutingSource.explicitRequest,
+      );
+      final tasks = TaskRegistry()
+        ..register<String>(
+          TaskDefinition<String>(
+            spec: customSpec,
+            instructions: 'Return a title.',
+            decode: (text) {
+              if (text == 'bad') throw const FormatException('title');
+              return text;
+            },
+            encode: (text) => {'title': text},
+            restore: (json) => json['title'] as String,
+            validator: Validator(),
+            validateInput: (_) => ValidationReport(),
+          ),
+        );
+      final client = ScriptClient([answer('bad'), answer('Title')]);
+      final harness = SdkAgentRuntime(
+        store: Store(),
+        tasks: tasks,
+        knowledge: standardKnowledgeRegistry(),
+        testClient: client,
+        loadModel: (_) async =>
+            RuntimeModelBinding(model: fixture.model(ModelProtocol.chatCompletions), key: '', serviceRevision: 1),
+      );
+      final result = await harness
+          .start(
+            TaskRequest<String>(
+              spec: customSpec,
+              input: {'text': 'source'},
+              inputFingerprint: 'no-capability-record',
+              images: type.category == TaskCategory.heavy
+                  ? [TaskImage(base64Data: 'aGVsbG8=', mimeType: 'image/png')]
+                  : [],
+            ),
+            RunContext(
+              runId: 'custom-${type.name}',
+              config: config,
+              knowledgeVersions: standardKnowledgeVersions(customSpec),
+            ),
+          )
+          .result;
+      expect(result.status, RunStatus.completed);
+      expect(client.calls, 2, reason: 'initial request and schema repair both reach the provider');
+      expect(client.modelConfigs.every((config) => config.extra?.isEmpty ?? true), isTrue);
+    });
+  }
   test('frozen request ceiling survives archive roundtrip, transport retry and schema repair', () async {
     final encoded = encodeRunContext(context());
     (encoded['policy'] as Map)['maxOutputTokens'] = 64;

@@ -132,9 +132,26 @@ class TaskModelResolver implements ModelResolver {
       }
       snapshot = {'serviceLabel': service.name, 'modelLabel': model.displayName};
       final identity = serviceCapabilityIdentity(service, model);
-      await profiles.refresh();
-      final capabilities = profiles.lookup(identity);
-      validateTaskCapabilities(request.spec, capabilities);
+      ModelCapabilityProfile capabilities;
+      try {
+        await profiles.refresh();
+        capabilities = profiles.lookup(identity);
+      } catch (_) {
+        // Optional metadata/cache failures must not stop a configured model.
+        capabilities = ModelCapabilityProfile(identity: identity);
+      }
+      // A service edit while credentials or optional metadata were loading
+      // must not dispatch the old endpoint with a newly edited configuration.
+      final latest = await catalog();
+      final currentService = latest.services.where((s) => s.id == selected!.serviceId).firstOrNull;
+      final currentModel = currentService?.models.where((m) => m.id == selected!.modelId).firstOrNull;
+      if (currentService == null ||
+          currentModel == null ||
+          !currentService.enabled ||
+          !currentModel.enabled ||
+          serviceCapabilityIdentity(currentService, currentModel) != identity) {
+        return failure(RoutingIssue.invalidConfiguration, 'serviceConfigurationChanged');
+      }
       final policy = compiler.compile(
         category: request.spec.category,
         requested: reasoning,
@@ -221,17 +238,17 @@ class TaskModelResolver implements ModelResolver {
 
   Set<ReasoningPolicy> reasoningOptions(ModelCapabilityProfile profile) => Set.unmodifiable({
     for (final reasoning in ReasoningPolicy.values)
-      if (_compiles(profile, reasoning)) reasoning,
+      if (reasoning == ReasoningPolicy.auto || _compiles(profile, reasoning)) reasoning,
   });
   bool _compiles(ModelCapabilityProfile profile, ReasoningPolicy reasoning) {
     try {
-      compiler.compile(
+      final policy = compiler.compile(
         category: TaskCategory.heavy,
         requested: reasoning,
         identity: profile.identity,
         capabilities: profile,
       );
-      return true;
+      return policy.effective == reasoning;
     } on ConfigurationFailure {
       return false;
     }

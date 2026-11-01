@@ -9,7 +9,6 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../settings/settings_save_actions.dart';
 import '../../../shared/l10n.dart';
-import '../assistant_capabilities.dart';
 import '../assistant_routing.dart';
 import '../assistant_services.dart';
 import 'ai_task_status.dart';
@@ -208,7 +207,6 @@ Future<bool> saveAiTaskDraft(WidgetRef ref, AiTaskDraft draft) => draft.save((co
 });
 
 /// A capability test of one model: running, or how it ended.
-enum _ProbeOutcome { running, reachable, unreachable, unsaved }
 
 /// Settings › AI Features: the quick and heavy defaults, then each feature's
 /// model. Rows show the model that will run; colour tells bound from inherited.
@@ -228,7 +226,6 @@ class AiTaskSettingsPage extends ConsumerStatefulWidget {
 class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
   final _rows = <TaskType, RoutingRowState>{};
   final _defaultRows = <TaskCategory, RoutingRowState>{};
-  final _probes = <ModelReference, (_ProbeOutcome, CancellationToken?)>{};
   final _pickers = <String, GlobalKey>{};
   final _focus = <String, FocusNode>{};
   final _rowKeys = <String, GlobalKey>{};
@@ -274,9 +271,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
   void dispose() {
     _draft.removeListener(_changed);
     _highlightTimer?.cancel();
-    for (final (_, token) in _probes.values) {
-      token?.cancel();
-    }
     for (final node in _focus.values) {
       node.dispose();
     }
@@ -302,7 +296,11 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     try {
       // Menus and thinking options read profiles synchronously; load them even
       // when no row resolves far enough to refresh them (nothing assigned yet).
-      await ref.read(assistantCapabilityProfilesProvider).refresh();
+      try {
+        await ref.read(assistantCapabilityProfilesProvider).refresh();
+      } catch (_) {
+        // Optional model metadata is not a prerequisite for using the service.
+      }
       // Resolve against the same draft; each feature retains its own contract.
       results = [
         for (final type in TaskType.values) await resolver.inspect(request(specs[type]!), config),
@@ -387,39 +385,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     if (picker is ModelRoutePicker && context != null && picker.onChanged != null) unawaited(picker.open(context));
   }
 
-  Future<void> _probe(ModelReference model) async {
-    final token = CancellationToken();
-    setState(() => _probes[model] = (_ProbeOutcome.running, token));
-    _ProbeOutcome? outcome;
-    try {
-      await ref.read(assistantCapabilityProbeProvider).probe(model, cancellation: token);
-      // Accepted only proves the connection; unknown capabilities stay unknown.
-      outcome = _ProbeOutcome.reachable;
-    } on ResearchFailure catch (e) {
-      outcome = e.kind == ResearchFailureKind.cancelled ? null : _ProbeOutcome.unreachable;
-    } on ConfigurationFailure catch (e) {
-      outcome = e.code == 'secretUnavailable'
-          ? _ProbeOutcome.unreachable
-          : _storeFailures.contains(e.code)
-          ? _ProbeOutcome.unsaved
-          : null;
-    } on StateError {
-      // The service answered but the observation could not be persisted.
-      outcome = token.isCancelled ? null : _ProbeOutcome.unsaved;
-    } catch (_) {
-      outcome = token.isCancelled ? null : _ProbeOutcome.unreachable;
-    }
-    if (!mounted || _probes[model]?.$2 != token) return;
-    final result = outcome;
-    setState(() => result == null ? _probes.remove(model) : _probes[model] = (result, null));
-    unawaited(_inspect());
-  }
-
-  void _cancelProbe(ModelReference model) {
-    _probes[model]?.$2?.cancel();
-    setState(() => _probes.remove(model));
-  }
-
   Future<void> _reload() async {
     ref.invalidate(assistantRoutingProvider);
     try {
@@ -432,45 +397,13 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
   /// Enabled models of enabled services, by service, with why each cannot
   /// serve a feature of [category] needing [spec]'s capabilities.
   List<ModelRouteGroup> _groups(AssistantServices catalog, TaskCategory category, TaskSpec? spec) {
-    final l = context.l10n;
-    final profiles = ref.read(assistantCapabilityProfilesProvider);
     return [
       for (final service in catalog.services)
         if (service.enabled && (service.protocol != ServiceProtocol.ollama || service.localEnabled))
           if (service.models.where((m) => m.enabled).toList() case final models when models.isNotEmpty)
             ModelRouteGroup(service.name, [
               for (final model in models)
-                () {
-                  final profile = profiles.lookup(serviceCapabilityIdentity(service, model));
-                  String? disabled;
-                  if (category == TaskCategory.quick && profile.thinking == ThinkingCapability.alwaysOn) {
-                    disabled = l.aiTasksReasonThinking;
-                  }
-                  var unknown =
-                      profile.thinking == ThinkingCapability.unknown || profile.evidence?.admitsPolicy != true;
-                  for (final capability in spec?.requiredCapabilities ?? const <ModelCapability>{}) {
-                    final support = switch (capability) {
-                      ModelCapability.tools => profile.tools,
-                      ModelCapability.structuredOutput => profile.structuredOutput,
-                      ModelCapability.multimodal => profile.multimodal,
-                      ModelCapability.historyReplay => profile.historyReplay,
-                    };
-                    if (support == CapabilitySupport.unknown) unknown = true;
-                    if (support == CapabilitySupport.unsupported && disabled == null) {
-                      disabled = switch (capability) {
-                        ModelCapability.tools => l.aiTasksReasonTools,
-                        ModelCapability.structuredOutput => l.aiTasksReasonStructured,
-                        _ => l.aiTasksReasonUnsupported,
-                      };
-                    }
-                  }
-                  return ModelRouteOption(
-                    model: ModelReference(service.id, model.id),
-                    label: model.displayName,
-                    disabledReason: disabled,
-                    note: disabled == null && unknown ? l.aiTasksUnverified : null,
-                  );
-                }(),
+                ModelRouteOption(model: ModelReference(service.id, model.id), label: model.displayName),
             ]),
     ];
   }
@@ -507,10 +440,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
       final revision = next.value?.revision;
       if (revision == _catalogRevision) return;
       _catalogRevision = revision;
-      for (final (_, token) in _probes.values) {
-        token?.cancel();
-      }
-      _probes.clear();
       unawaited(_inspect());
     });
     if (routing.value case final config? when !_draft.loaded) {
@@ -672,65 +601,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     );
   }
 
-  /// A saved connectivity observation for [model]'s current identity. It is
-  /// shown as reachable only; it never makes unknown capabilities supported.
-  bool _accepted(ModelReference model) {
-    final profiles = ref.read(assistantCapabilityProfilesProvider);
-    final catalog = ref.read(assistantServicesProvider).value;
-    final service = catalog?.services.where((s) => s.id == model.serviceId).firstOrNull;
-    final entry = service?.models.where((m) => m.id == model.modelId).firstOrNull;
-    if (profiles is! AssistantCapabilityProfiles || service == null || entry == null) return false;
-    return profiles.probeObservation(serviceCapabilityIdentity(service, entry)) != null;
-  }
-
-  Future<void> _explainCompatibility(ModelReference model, VoidCallback? onChoose) async {
-    final l = context.l10n;
-    final catalog = ref.read(assistantServicesProvider).value;
-    final serviceName = catalog?.services.where((service) => service.id == model.serviceId).firstOrNull?.name;
-    final action = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l.aiTasksCompatibilityTitle),
-        content: SizedBox(
-          width: 440,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l.aiTasksCompatibilityExplanation),
-                const SizedBox(height: MMSpacing.m),
-                Text(l.aiTasksCompatibilityModel),
-                SelectableText('${serviceName ?? model.serviceId} · ${model.modelId}'),
-                const SizedBox(height: MMSpacing.m),
-                Text(l.aiTasksCompatibilityConnectionOnly),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(MaterialLocalizations.of(dialogContext).closeButtonLabel),
-          ),
-          TextButton(
-            key: const ValueKey('ai-compatibility-test-connection'),
-            onPressed: () => Navigator.pop(dialogContext, 'test'),
-            child: Text(l.aiTasksTest),
-          ),
-          TextButton(
-            key: const ValueKey('ai-compatibility-change-model'),
-            onPressed: onChoose == null ? null : () => Navigator.pop(dialogContext, 'choose'),
-            child: Text(l.aiTasksChangeModel),
-          ),
-        ],
-      ),
-    );
-    if (!mounted || _draft.saving) return;
-    if (action == 'test') unawaited(_probe(model));
-    if (action == 'choose') onChoose?.call();
-  }
-
   /// The line under a row, if its state needs a decision.
   Widget? _issue(String id, RoutingRowState? row, {VoidCallback? onChoose, bool showThinking = true}) {
     if (row == null) return null;
@@ -743,45 +613,7 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     final model = row.effective;
     switch (row.issue) {
       case RoutingIssue.unknown:
-        final probe = model == null ? null : _probes[model];
-        if (probe?.$1 == _ProbeOutcome.unsaved) {
-          return RoutingIssueLine(
-            key: ValueKey('ai-issue-$id'),
-            text: l.aiTasksProbeUnsaved,
-            critical: false,
-            action: l.aiTasksCompatibilityHelp,
-            actionKey: ValueKey('ai-action-$id'),
-            onAction: _draft.saving ? null : () => unawaited(_explainCompatibility(model!, onChoose)),
-          );
-        }
-        if (probe?.$1 == _ProbeOutcome.reachable || (probe == null && model != null && _accepted(model))) {
-          return RoutingIssueLine(
-            key: ValueKey('ai-issue-$id'),
-            text: l.aiTasksIssueReachable,
-            action: l.aiTasksCompatibilityHelp,
-            actionKey: ValueKey('ai-action-$id'),
-            onAction: _draft.saving ? null : () => unawaited(_explainCompatibility(model!, onChoose)),
-          );
-        }
-        if (probe?.$1 == _ProbeOutcome.unreachable) {
-          return RoutingIssueLine(
-            key: ValueKey('ai-issue-$id'),
-            text: l.aiTasksIssueConnection,
-            critical: false,
-            action: l.aiTasksOpenModelSettings,
-            actionKey: ValueKey('ai-action-$id'),
-            onAction: () => widget.onOpenModels(serviceId: model!.serviceId),
-          );
-        }
-        return RoutingIssueLine(
-          key: ValueKey('ai-issue-$id'),
-          text: text,
-          action: model == null ? null : l.aiTasksCompatibilityHelp,
-          actionKey: ValueKey('ai-action-$id'),
-          busy: probe?.$1 == _ProbeOutcome.running,
-          onCancel: model == null ? null : () => _cancelProbe(model),
-          onAction: model == null || _draft.saving ? null : () => unawaited(_explainCompatibility(model, onChoose)),
-        );
+        return null;
       case RoutingIssue.secretUnavailable:
         return RoutingIssueLine(
           key: ValueKey('ai-issue-$id'),
@@ -846,12 +678,15 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     if (category == TaskCategory.quick) {
       final id = _defaultId(category);
       final row = _defaultRows[category];
-      // Quick tasks never think: a fixed value in the same place as heavy's control.
+      // Prefer off when the provider has a known control; otherwise use its defaults.
       return _RouteRow(
         key: const ValueKey('ai-tasks-quick-thinking'),
         label: l.aiTasksThinking,
         picker: ExcludeFocus(
-          child: Text(l.aiTasksThinkingOff, style: context.mmText.body.copyWith(color: c.secondaryLabel)),
+          child: Text(
+            row?.config?.policy.effective == ReasoningPolicy.off ? l.aiTasksThinkingOff : l.aiTasksThinkingAuto,
+            style: context.mmText.body.copyWith(color: c.secondaryLabel),
+          ),
         ),
         issue: row?.issue == RoutingIssue.thinkingAlwaysOn ? _issue(id, row, onChoose: () => _openPicker(id)) : null,
       );

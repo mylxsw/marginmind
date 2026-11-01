@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,29 +61,6 @@ class _UsageIndex implements AiRoutingUsageIndex {
   (TaskType, String)? run(String runId) => runId == 'run-1' ? (TaskType.documentTranslate, 'Deep Work') : null;
 }
 
-class _Probe extends RoutingCapabilityProbe {
-  _Probe(TaskModelResolver resolver) : super(resolver: resolver, key: (_) async => 'k');
-  final calls = <ModelReference>[];
-  final result = Completer<void>();
-  @override
-  Future<CapabilityProbeResult> probe(
-    ModelReference reference, {
-    required CancellationToken cancellation,
-    ReasoningPolicy reasoning = ReasoningPolicy.auto,
-  }) async {
-    calls.add(reference);
-    await cancellation.bind(result.future);
-    final catalog = await resolver.catalog();
-    final service = catalog.services.firstWhere((s) => s.id == reference.serviceId);
-    final identity = serviceCapabilityIdentity(service, service.models.firstWhere((m) => m.id == reference.modelId));
-    return CapabilityProbeResult(
-      identity: identity,
-      accepted: true,
-      profile: ModelCapabilityProfile(identity: identity),
-    );
-  }
-}
-
 /// Production-shaped registry whose reads can fail on demand.
 class _FlakyProfiles extends CapabilityProfiles {
   bool fail = false;
@@ -93,16 +68,6 @@ class _FlakyProfiles extends CapabilityProfiles {
   Future<void> refresh() async {
     if (fail) throw StateError('capability store unavailable');
   }
-}
-
-class _UnsavedProbe extends RoutingCapabilityProbe {
-  _UnsavedProbe(TaskModelResolver resolver) : super(resolver: resolver, key: (_) async => 'k');
-  @override
-  Future<CapabilityProbeResult> probe(
-    ModelReference reference, {
-    required CancellationToken cancellation,
-    ReasoningPolicy reasoning = ReasoningPolicy.auto,
-  }) async => throw StateError('Capability persistence failed');
 }
 
 /// An exact model/endpoint pair from the reviewed production allowlist.
@@ -232,16 +197,12 @@ void main() {
         ),
         RoutingConfig(document: {'version': 1, 'revision': 0}),
       );
-      expect(
-        row.issue,
-        specs[type]!.requiredCapabilities.isEmpty ? RoutingIssue.none : RoutingIssue.unknown,
-        reason: type.key,
-      );
+      expect(row.issue, RoutingIssue.none, reason: type.key);
       expect(specs[type]!.promptVersion, isNot('settings'));
     }
   });
 
-  testWidgets('known category defaults still show missing domain capabilities on feature rows', (tester) async {
+  testWidgets('missing capability records do not warn or block any feature', (tester) async {
     const model = ModelReference('openai', 'gpt-4.1-2025-04-14');
     final profiles = _FlakyProfiles()
       ..put(
@@ -261,9 +222,8 @@ void main() {
       secrets: FakeSecrets()..values[AssistantServicesStore.account('openai')] = 'fixture-key',
       overrides: [assistantCapabilityProfilesProvider.overrideWithValue(profiles)],
     );
-    // The class defaults resolve, but eight real feature contracts require
-    // tools/history replay. Keep their warnings even when they inherit.
-    expect(find.text('此模型尚未适配此功能，请更换模型'), findsNWidgets(8));
+    // Every feature can use the configured model without capability records.
+    expect(find.text('此模型尚未适配此功能，请更换模型'), findsNothing);
   });
 
   testWidgets('saving task defaults leaves the legacy catalog byte-for-byte unchanged', (tester) async {
@@ -350,17 +310,17 @@ void main() {
       expect(chat.semanticValue, '跟随默认，Anthropic · Claude Opus');
       expect(chat.tooltip, 'Anthropic · opus');
       expect(_pickerOf(tester, aiTaskName(l, TaskType.wordLookup)).label, 'Claude Haiku');
-      // Quick thinking is fixed; heavy thinking offers only Auto while capabilities are unknown.
+      // Without known controls both categories use provider defaults.
       expect(
-        find.descendant(of: find.byKey(const ValueKey('ai-tasks-quick-thinking')), matching: find.text('关闭')),
+        find.descendant(of: find.byKey(const ValueKey('ai-tasks-quick-thinking')), matching: find.text('自动')),
         findsOneWidget,
       );
       expect(
         tester.widget<MMPopUpButton<ReasoningPolicy>>(find.byKey(const ValueKey('ai-tasks-heavy-reasoning'))).items,
         [(ReasoningPolicy.auto, '自动')],
       );
-      // Unknown capabilities are said once, on each default row, never per inheriting feature.
-      expect(find.text('此模型尚未适配此功能，请更换模型'), findsNWidgets(2));
+      // Optional metadata never produces compatibility warnings.
+      expect(find.text('此模型尚未适配此功能，请更换模型'), findsNothing);
       expect(find.text('跟随默认'), findsNothing);
       expect(find.text('未保存'), findsNothing);
       expect(tester.widget<MMButton>(find.byKey(const ValueKey('ai-tasks-save'))).onPressed, isNull);
@@ -374,7 +334,7 @@ void main() {
       // The menu: follow (with the effective model), then models grouped by service.
       expect(find.text('跟随默认'), findsOneWidget);
       expect(find.text('Proxy'), findsWidgets);
-      expect(find.text('尚未适配'), findsNWidgets(3));
+      expect(find.text('尚未适配'), findsNothing);
       await tester.tap(find.text('Claude Opus').hitTestable().last);
       await tester.pumpAndSettle();
       final picker = _pickerOf(tester, name);
@@ -462,7 +422,7 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('a quick model that cannot turn off thinking is disabled and flagged', (tester) async {
+    testWidgets('always-on models remain selectable and use their own thinking defaults', (tester) async {
       final profiles = CapabilityProfiles();
       final container = await _open(
         tester,
@@ -476,26 +436,16 @@ void main() {
           evidence: _evidence(),
         ),
       );
-      // Re-inspect against the new profile.
       await _choose(tester, aiTaskName(l, TaskType.titleGenerate), 'Claude Opus');
+      expect(find.text('此模型无法关闭思考'), findsNothing);
+      expect(_pickerOf(tester, aiTaskName(l, TaskType.wordLookup)).tone, ModelRouteTone.inherited);
+      await _choose(tester, '快速任务 · 默认模型', 'Claude Haiku');
+      expect(_pickerOf(tester, '快速任务 · 默认模型').selected, _haiku);
+      expect(find.text('无法关闭思考'), findsNothing);
       expect(
-        find.descendant(of: find.byKey(const ValueKey('ai-tasks-quick-thinking')), matching: find.text('此模型无法关闭思考')),
+        find.descendant(of: find.byKey(const ValueKey('ai-tasks-quick-thinking')), matching: find.text('自动')),
         findsOneWidget,
       );
-      expect(_pickerOf(tester, aiTaskName(l, TaskType.wordLookup)).tone, ModelRouteTone.caution);
-      expect(_pickerOf(tester, aiTaskName(l, TaskType.titleGenerate)).tone, ModelRouteTone.explicit);
-      await tester.ensureVisible(find.text('更换模型'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('更换模型'));
-      await tester.pumpAndSettle();
-      expect(find.text('无法关闭思考'), findsOneWidget, reason: 'the default picker opened with the reason');
-      await tester.tap(find.text('Claude Haiku').hitTestable(), warnIfMissed: false);
-      await tester.pumpAndSettle();
-      expect(find.text('无法关闭思考'), findsOneWidget, reason: 'a disabled item does not select');
-      await tester.tap(find.text('Claude Opus').hitTestable().first);
-      await tester.pumpAndSettle();
-      expect(find.text('此模型无法关闭思考'), findsNothing);
-      expect(_pickerOf(tester, '快速任务 · 默认模型').selected, _opus);
     });
 
     testWidgets('invalid references keep their name, never inherit, and stay configurable', (tester) async {
@@ -732,57 +682,20 @@ void main() {
       expect(_stored(container).binding(TaskType.studyNotes).model, _haiku);
     });
 
-    testWidgets('connection testing explains its limits and retains a change-model action', (tester) async {
-      late _Probe probe;
-      final container = await _open(
-        tester,
-        overrides: [
-          assistantCapabilityProbeProvider.overrideWith(
-            (ref) => probe = _Probe(ref.watch(assistantModelResolverProvider)),
-          ),
-        ],
-      );
-      await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
-      await tester.pumpAndSettle();
-      probe = container.read(assistantCapabilityProbeProvider) as _Probe;
-      expect(probe.calls, isEmpty, reason: 'viewing the explanation must not send a request');
-      expect(find.text(l.aiTasksCompatibilityExplanation), findsOneWidget);
-      expect(find.text('Anthropic · haiku'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('ai-compatibility-test-connection')));
-      await tester.pump();
-      expect(probe.calls, [_haiku]);
-      expect(find.byType(CupertinoActivityIndicator), findsWidgets);
-      probe.result.complete();
-      await tester.pumpAndSettle();
-      expect(find.text('连接正常，但此功能尚未适配，请更换模型'), findsOneWidget);
-      expect(find.text('此模型尚未适配此功能，请更换模型'), findsOneWidget, reason: 'the heavy default is still untested');
-      await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
-      await tester.pumpAndSettle();
-      expect(find.text(l.aiTasksCompatibilityExplanation), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('ai-compatibility-change-model')));
-      await tester.pumpAndSettle();
+    testWidgets('custom models need no compatibility test or explanation', (tester) async {
+      final container = await _open(tester);
+      expect(find.byKey(const ValueKey('ai-action-default-quick')), findsNothing);
+      expect(find.byKey(const ValueKey('ai-action-default-heavy')), findsNothing);
+      expect(find.text('查看原因'), findsNothing);
       expect(find.byType(AlertDialog), findsNothing);
-      expect(find.text(l.aiTasksUnverified), findsWidgets, reason: 'the menu marks models that are not adapted');
-    });
-
-    testWidgets('compatibility explanation fits a narrow screen with large text', (tester) async {
-      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await _open(
-        tester,
-        size: const Size(320, 640),
-        overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
-      );
-      final action = find.byKey(const ValueKey('ai-action-default-quick'));
-      await tester.ensureVisible(action);
-      await tester.tap(action);
-      await tester.pumpAndSettle();
-      expect(find.text(l.aiTasksCompatibilityExplanation), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.tap(find.byKey(const ValueKey('ai-compatibility-change-model')));
-      await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(tester.takeException(), isNull);
+      final resolver = container.read(assistantModelResolverProvider);
+      for (final spec in container.read(aiTaskRoutingSpecsProvider).values) {
+        final row = await resolver.inspect(
+          TaskRequest<Object?>(spec: spec, input: const {}, inputFingerprint: 'custom-model'),
+          _stored(container),
+        );
+        expect(row.ready, isTrue, reason: spec.type.key);
+      }
     });
 
     testWidgets('an unreadable key says “Connection unavailable” and opens the service', (tester) async {
@@ -816,7 +729,7 @@ void main() {
       await tester.tap(picker);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('mm-action-sheet')), findsOneWidget);
-      expect(find.text('尚未适配'), findsWidgets, reason: 'notes stay in the sheet');
+      expect(find.text('尚未适配'), findsNothing);
       expect(tester.takeException(), isNull);
     }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
   });
@@ -859,7 +772,7 @@ void main() {
           .read(assistantServicesProvider.notifier)
           .updateDetails('openai', endpoint: 'https://proxy.example/v1');
       await tester.pumpAndSettle();
-      expect(find.text('此模型尚未适配此功能，请更换模型'), findsOneWidget, reason: 'a proxy endpoint is not the reviewed identity');
+      expect(find.text('此模型尚未适配此功能，请更换模型'), findsNothing, reason: 'proxy models are usable without approval');
       expect(
         tester
             .widget<MMPopUpButton<ReasoningPolicy>>(find.byKey(const ValueKey('ai-tasks-heavy-reasoning')))
@@ -869,46 +782,27 @@ void main() {
       );
       await tester.tap(_row(aiTaskName(l, TaskType.research)));
       await tester.pumpAndSettle();
-      expect(find.text('尚未适配'), findsOneWidget);
+      expect(find.text('尚未适配'), findsNothing);
     });
 
-    testWidgets('a failed profile refresh is visible and retryable; the draft stays', (tester) async {
-      final profiles = _FlakyProfiles();
-      await _open(tester, overrides: [assistantCapabilityProfilesProvider.overrideWithValue(profiles)]);
+    testWidgets('optional metadata failure does not block the draft or the model', (tester) async {
+      final profiles = _FlakyProfiles()..fail = true;
+      final container = await _open(
+        tester,
+        overrides: [assistantCapabilityProfilesProvider.overrideWithValue(profiles)],
+      );
       final name = aiTaskName(l, TaskType.documentSummarize);
       await _choose(tester, name, 'Claude Haiku');
-      profiles.fail = true;
-      await _choose(tester, aiTaskName(l, TaskType.research), 'Claude Haiku');
-      expect(find.byKey(const ValueKey('ai-tasks-profiles-failed')), findsOneWidget);
-      expect(find.text('无法读取模型能力'), findsOneWidget);
-      expect(_pickerOf(tester, name).selected, _haiku, reason: 'the draft is untouched');
-      expect(_pickerOf(tester, aiTaskName(l, TaskType.research)).selected, _haiku);
-      expect(find.text('未保存'), findsOneWidget);
-      profiles.fail = false;
-      await tester.ensureVisible(find.byKey(const ValueKey('ai-tasks-profiles-retry')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('ai-tasks-profiles-retry')));
-      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('ai-tasks-profiles-failed')), findsNothing);
+      expect(find.text('无法读取模型能力'), findsNothing);
       expect(_pickerOf(tester, name).selected, _haiku);
-    });
-
-    testWidgets('a probe whose observation cannot be saved says so instead of passing', (tester) async {
-      await _open(
-        tester,
-        overrides: [
-          assistantCapabilityProbeProvider.overrideWith(
-            (ref) => _UnsavedProbe(ref.watch(assistantModelResolverProvider)),
-          ),
-        ],
-      );
-      await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('ai-compatibility-test-connection')));
-      await tester.pumpAndSettle();
-      expect(find.text('测试结果未保存'), findsOneWidget);
-      expect(find.text('连接正常，但此功能尚未适配，请更换模型'), findsNothing);
-      expect(find.text('连接不可用'), findsNothing);
+      final row = await container
+          .read(assistantModelResolverProvider)
+          .inspect(
+            TaskRequest<String>(spec: assistantChatSpec, input: const {}, inputFingerprint: 'metadata-unavailable'),
+            _stored(container),
+          );
+      expect(row.ready, isTrue);
     });
   });
 
@@ -934,7 +828,7 @@ void main() {
 
       expect(routingIssueText(l, RoutingIssue.capabilityMissing, failureCode: 'tools:unsupported'), '此模型不支持工具调用');
       expect(routingIssueText(l, RoutingIssue.unset), isNull);
-      expect(routingIssueBlocks(RoutingIssue.unknown), isTrue);
+      expect(routingIssueBlocks(RoutingIssue.unknown), isFalse);
       expect(routingIssueBlocks(RoutingIssue.secretUnavailable), isTrue);
       expect(routingIssueBlocks(RoutingIssue.none), isFalse);
       expect(routingIssueBlocks(RoutingIssue.deleted), isTrue);

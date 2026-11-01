@@ -10472,29 +10472,11 @@ abstract class AppLocalizations {
   /// **'Not supported'**
   String get aiTasksReasonUnsupported;
 
-  /// No description provided for @aiTasksUnverified.
-  ///
-  /// In en, this message translates to:
-  /// **'Not adapted'**
-  String get aiTasksUnverified;
-
   /// No description provided for @aiTasksIssueThinking.
   ///
   /// In en, this message translates to:
   /// **'This model can\'t turn off thinking'**
   String get aiTasksIssueThinking;
-
-  /// No description provided for @aiTasksIssueUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'This model is not adapted for this feature. Choose another model.'**
-  String get aiTasksIssueUnknown;
-
-  /// No description provided for @aiTasksIssueReachable.
-  ///
-  /// In en, this message translates to:
-  /// **'Connected, but not adapted for this feature. Choose another model.'**
-  String get aiTasksIssueReachable;
 
   /// No description provided for @aiTasksIssueTools.
   ///
@@ -10561,12 +10543,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change Model'**
   String get aiTasksChangeModel;
-
-  /// No description provided for @aiTasksTest.
-  ///
-  /// In en, this message translates to:
-  /// **'Test connection'**
-  String get aiTasksTest;
 
   /// No description provided for @aiTasksChooseAgain.
   ///
@@ -10909,36 +10885,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scroll tabs right'**
   String get workspaceScrollTabsRight;
-
-  /// No description provided for @aiTasksCompatibilityHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Why?'**
-  String get aiTasksCompatibilityHelp;
-
-  /// No description provided for @aiTasksCompatibilityTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Why can’t I use this model yet?'**
-  String get aiTasksCompatibilityTitle;
-
-  /// No description provided for @aiTasksCompatibilityExplanation.
-  ///
-  /// In en, this message translates to:
-  /// **'This app version has not finished adapting this model for this feature. A connection test only confirms that the service responds; it cannot enable the feature.\n\nChoose another model, or wait for an app update with support. Options marked “Not adapted” also cannot run this feature yet. If the connection test passed, you do not need to repeat it or change your API key.'**
-  String get aiTasksCompatibilityExplanation;
-
-  /// No description provided for @aiTasksCompatibilityModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Current model'**
-  String get aiTasksCompatibilityModel;
-
-  /// No description provided for @aiTasksCompatibilityConnectionOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Checks connectivity only; it will not enable this feature.'**
-  String get aiTasksCompatibilityConnectionOnly;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

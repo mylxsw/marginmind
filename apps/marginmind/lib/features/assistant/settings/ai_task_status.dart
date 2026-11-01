@@ -38,7 +38,7 @@ String? routingIssueText(AppLocalizations l, RoutingIssue issue, {String? failur
   RoutingIssue.serviceRemoved => l.aiTasksIssueServiceRemoved,
   RoutingIssue.secretUnavailable => l.aiTasksIssueConnection,
   RoutingIssue.thinkingAlwaysOn => l.aiTasksIssueThinking,
-  RoutingIssue.unknown => l.aiTasksIssueUnknown,
+  RoutingIssue.unknown => null,
   RoutingIssue.invalidConfiguration => l.aiTasksIssueInvalid,
   RoutingIssue.capabilityMissing => switch (failureCode?.split(':').first) {
     'tools' => l.aiTasksIssueTools,
@@ -50,7 +50,7 @@ String? routingIssueText(AppLocalizations l, RoutingIssue issue, {String? failur
 
 /// Whether the issue stops the feature until the user changes something.
 /// Matches resolver admission: only a ready route can dispatch a task.
-bool routingIssueBlocks(RoutingIssue issue) => issue != RoutingIssue.none;
+bool routingIssueBlocks(RoutingIssue issue) => !{RoutingIssue.none, RoutingIssue.unknown}.contains(issue);
 
 /// Whether a reference no longer resolves to an enabled model.
 bool routingIssueInvalid(RoutingIssue issue) =>
