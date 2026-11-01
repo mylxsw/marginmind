@@ -3465,6 +3465,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webUrlPlaceholder => 'URL';
 
   @override
+  String get webUrlLabel => 'Web address';
+
+  @override
   String get webUrlEmpty => 'Enter a URL';
 
   @override

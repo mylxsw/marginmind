@@ -31,6 +31,8 @@ void main() {
     final sidebar = tester.element(find.byType(WorkspaceSidebar));
     unawaited(showAddWebPage(sidebar, sidebar as WidgetRef, 'demo-1'));
     await tester.pumpAndSettle();
+    expect(find.text('Web address'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField).last).decoration!.hintText, 'https://');
     await tester.tap(find.widgetWithText(MMButton, 'Open'));
     await tester.pumpAndSettle();
     expect(find.text('Enter a URL'), findsOneWidget);
@@ -40,7 +42,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Only http and https are supported'), findsOneWidget);
     await tester.enterText(field, 'example.com');
-    await tester.tap(find.widgetWithText(MMButton, 'Open'));
+    await tester.pump();
+    expect(find.text('Only http and https are supported'), findsNothing);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     final owner = container.read(workspaceBrowserProvider('demo-1').notifier);
     expect(container.read(workspaceBrowserProvider('demo-1')).visible, isTrue);

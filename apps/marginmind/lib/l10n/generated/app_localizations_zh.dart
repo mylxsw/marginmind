@@ -3326,6 +3326,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get webUrlPlaceholder => '网址';
 
   @override
+  String get webUrlLabel => '网页地址';
+
+  @override
   String get webUrlEmpty => '请输入网址';
 
   @override

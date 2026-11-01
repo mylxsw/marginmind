@@ -6224,6 +6224,12 @@ abstract class AppLocalizations {
   /// **'URL'**
   String get webUrlPlaceholder;
 
+  /// No description provided for @webUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Web address'**
+  String get webUrlLabel;
+
   /// No description provided for @webUrlEmpty.
   ///
   /// In en, this message translates to:

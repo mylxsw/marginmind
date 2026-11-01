@@ -1791,6 +1791,7 @@
   },
   "addWebPage": "Add Web Page…",
   "webUrlPlaceholder": "URL",
+  "webUrlLabel": "Web address",
   "webUrlEmpty": "Enter a URL",
   "webUrlInvalid": "Not a valid URL",
   "webUrlScheme": "Only http and https are supported",

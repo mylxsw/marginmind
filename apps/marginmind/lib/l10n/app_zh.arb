@@ -1195,6 +1195,7 @@
   },
   "addWebPage": "添加网页…",
   "webUrlPlaceholder": "网址",
+  "webUrlLabel": "网页地址",
   "webUrlEmpty": "请输入网址",
   "webUrlInvalid": "网址无效",
   "webUrlScheme": "只支持 http 和 https",
