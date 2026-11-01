@@ -50,7 +50,7 @@ double _tabWidth(BuildContext context, String title) {
     textScaler: MediaQuery.textScalerOf(context),
     locale: Localizations.localeOf(context),
   )..layout();
-  final width = math.min(224.0, painter.width.ceilToDouble() + (context.mmTouchPlatform ? 103 : 82));
+  final width = math.min(224.0, painter.width.ceilToDouble() + (context.mmTouchPlatform ? 95 : 66));
   painter.dispose();
   return width;
 }
@@ -309,7 +309,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                       child: ColoredBox(color: c.separator, child: const SizedBox(width: 1)),
                     ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Row(
                       children: [
                         Expanded(
@@ -322,7 +322,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                                 semanticLabel: widget.title,
                                 onTap: widget.onSelect,
                                 builder: (context, interaction) => Padding(
-                                  padding: EdgeInsets.only(left: touch ? 12 : 10, right: 4),
+                                  padding: EdgeInsets.only(left: touch ? 12 : 6, right: 4),
                                   child: Row(
                                     children: [
                                       Icon(
@@ -383,7 +383,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: touch ? 4 : 0),
                       ],
                     ),
                   ),
@@ -423,7 +423,7 @@ class _ChromeTabShape extends ShapeBorder {
 
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
-    const foot = 8.0;
+    const foot = 4.0;
     const shoulder = 10.0;
     final l = rect.left, r = rect.right, t = rect.top, b = rect.bottom;
     return Path()
