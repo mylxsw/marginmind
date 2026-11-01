@@ -17,6 +17,8 @@ import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_assistant/mm_assistant.dart' show RoutingRowState, RoutingIssue;
+import 'package:marginmind/features/assistant/widgets/assistant_task_setup.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
@@ -332,7 +334,21 @@ void main() {
   });
 
   testWidgets('composer: IME, shift-return, slash menu, @ menu and automatic chips', (tester) async {
-    final app = await openAssistantApp(tester, client: ScriptClient([answer('总结'), answer('翻译'), answer('三')]));
+    final app = await openAssistantApp(
+      tester,
+      client: ScriptClient([answer('总结'), answer('翻译'), answer('三')]),
+      overrides: [
+        // This input/IME test accepts the dedicated summary setup explicitly.
+        // The ordinary chat route retains its real unknown-capability warning.
+        assistantTaskRouteProvider((TaskType.documentSummarize, null)).overrideWith(
+          (ref) async => const RoutingRowState(
+            effective: ModelReference('summary', 'fixture'),
+            source: RoutingSource.functionBinding,
+            issue: RoutingIssue.none,
+          ),
+        ),
+      ],
+    );
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-suggestions')), findsOneWidget);
@@ -368,6 +384,9 @@ void main() {
     // The page being read is attached automatically: a command sends at once.
     await _type(tester, '/总');
     await _press(tester, LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '发送'));
     await pumpFor(tester, 20);
     final first = conversationOf(tester).messages.first;
     expect(first.skill, 'summarize');
@@ -687,7 +706,9 @@ void main() {
       expect(find.byKey(const ValueKey('assistant-history')), findsOneWidget);
       expect(tester.widget<MMIconButton>(historyButton).selected, isFalse);
       expect(
-        tester.widget<Icon>(find.descendant(of: historyButton, matching: find.byIcon(MMIcons.conversationHistory))).color,
+        tester
+            .widget<Icon>(find.descendant(of: historyButton, matching: find.byIcon(MMIcons.conversationHistory)))
+            .color,
         tester.element(historyButton).mmColors.icon,
       );
       await tester.tap(historyButton);
@@ -843,7 +864,9 @@ void main() {
     expect(conversationOf(tester).model.provider, AssistantProvider.ollama);
     expect(conversationOf(tester).online, false);
     // The retried answer takes the failed one's place.
-    expect(conversationOf(tester).messages, hasLength(7));
+    expect(conversationOf(tester).messages, hasLength(2));
+    final savedBranch = await archive.loadOrCreate('errors-1', null);
+    expect((savedBranch.metadata['assistant.viewBranches.v1'] as List).last['messages'], hasLength(7));
     expect(conversationOf(tester).messages[1].text, '重试后');
     expect(find.text('网络不可用'), findsNothing);
   });

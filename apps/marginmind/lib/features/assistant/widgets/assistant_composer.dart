@@ -499,6 +499,10 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                         ),
                       ),
                     ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      child: AssistantConversationRouteControl(key: ValueKey('assistant-model')),
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
                       child: Row(
@@ -534,11 +538,6 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                             onPressed: configured ? () => unawaited(_setOnline(!conversation.online)) : null,
                           ),
                           if (!context.mmTouchPlatform) const Spacer(),
-                          if (configured)
-                            _tabletFlexible(
-                              context,
-                              const AssistantConversationRouteControl(key: ValueKey('assistant-model')),
-                            ),
                           const SizedBox(width: MMSpacing.xs),
                           _BarButton(
                             key: const ValueKey('assistant-voice'),

@@ -14,12 +14,10 @@ import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
-import '../assistant_settings.dart';
 import 'assistant_messages.dart';
 import 'expansion_widgets.dart';
 import '../expansion_controller.dart';
 import 'assistant_overlays.dart';
-import 'assistant_panel.dart' show ModelSetupCard;
 
 /// A transparent, selection-preserving route. Its content stays inside the
 /// reader; clicking outside or Escape closes it without cancelling the answer.
@@ -324,8 +322,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
       _error = null;
     });
     try {
-      final configured = await ref.read(assistantConfiguredProvider.future);
-      if (!mounted || !configured || controller.busy) return;
+      if (!mounted || controller.busy) return;
       if (_conversationId == null) {
         // Leave existing chat history intact, and do not attach sidebar drafts
         // or the currently selected map node to this passage-only question.
@@ -412,7 +409,6 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
     final l = context.l10n;
     final conversation = ref.watch(assistantControllerProvider);
     final background = ref.watch(assistantBackgroundProvider);
-    final configured = ref.watch(assistantConfiguredProvider);
     final own = _conversationId != null && conversation.id == _conversationId;
     final changed = _conversationId != null && !own;
     final busy = conversation.running || background != null || _sending || ref.watch(expansionBusyProvider);
@@ -421,7 +417,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
         ? null
         : conversation.messages.where((m) => m.role == MessageRole.user && m.requestId == answer.requestId).lastOrNull;
     final running = own && conversation.running;
-    final canSend = configured.value == true && !busy && !changed;
+    final canSend = !busy && !changed;
     if (widget.pending != null) {
       ref.listen(workspaceProvider(widget.studySetId).select((s) => s.pending), (_, pending) {
         if (identical(pending, widget.pending)) return;
@@ -504,14 +500,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (configured.isLoading)
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(l.assistantThinking, style: t.body),
-                              ),
-                            if (configured.hasError || (!configured.isLoading && configured.value != true))
-                              const ModelSetupCard(inline: true)
-                            else if (changed)
+                            if (changed)
                               Text(l.assistantQuickChanged, style: t.body.copyWith(color: c.secondaryLabel))
                             else if (showingAnswer) ...[
                               Divider(height: 12, color: c.separator),

@@ -188,7 +188,16 @@ void main() {
           const ServiceModel(id: 'review'),
         ],
       );
-      await services.save(AssistantServices(services: [service], defaultModel: const ModelReference('local', 'chat')));
+      final unrelated = AssistantService(
+        id: 'cloud',
+        name: 'No credentials',
+        protocol: ServiceProtocol.openai,
+        endpoint: 'https://unrelated.example/v1',
+        models: [const ServiceModel(id: 'missing-key')],
+      );
+      await services.save(
+        AssistantServices(services: [unrelated, service], defaultModel: const ModelReference('cloud', 'missing-key')),
+      );
       final routing = AssistantRoutingStore(prefs, services);
       await routing.load();
       await routing.save(
@@ -202,6 +211,10 @@ void main() {
             },
             'heavyReasoning': 'off',
             'bindings': {
+              TaskType.assistantChat.key: {
+                'mode': 'explicit',
+                'model': {'serviceId': 'local', 'modelId': 'chat'},
+              },
               TaskType.research.key: {
                 'mode': 'explicit',
                 'model': {'serviceId': 'local', 'modelId': 'research'},
@@ -290,6 +303,12 @@ void main() {
 
       await run(Message(id: 'q1', requestId: 'r1', role: MessageRole.user, text: 'question'));
       conversation = conversation.copyWith(
+        archiveFields: {
+          'taskRouting': {
+            'version': 1,
+            'assistantChat': {'serviceId': 'cloud', 'modelId': 'missing-key'},
+          },
+        },
         messages: [Message(id: 'a1', requestId: 'r1', role: MessageRole.agent, text: 'old answer')],
       );
       await run(
@@ -363,8 +382,40 @@ void main() {
       expect(lastOwner!.proposals.proposals.values.single.operations.single.kind, MapEditKind.addReviewCard);
       expect(bodies.skip(4).map((b) => b['model']), ['research', 'research', 'research', 'review', 'review']);
 
+      // A per-message chat override is also resolved independently of the
+      // credential-less conversation override and old global default.
+      await run(
+        Message(
+          id: 'q7',
+          requestId: 'r7',
+          role: MessageRole.user,
+          text: 'override',
+          taskModel: const ModelReference('local', 'chat'),
+        ),
+      );
+      expect(bodies.last['model'], 'chat');
       expect(bodies[3]['reasoning_effort'], 'none');
       expect(bodies.take(3).every((body) => body['max_tokens'] == 8192 || body['max_completion_tokens'] == 8192), true);
+      final purchased = bodies.length;
+      await services.save(
+        AssistantServices(
+          services: [unrelated, service.copyWith(enabled: false)],
+          defaultModel: const ModelReference('cloud', 'missing-key'),
+        ),
+      );
+      await expectLater(
+        run(
+          Message(
+            id: 'q8',
+            requestId: 'r8',
+            role: MessageRole.user,
+            text: 'recheck',
+            taskModel: const ModelReference('local', 'chat'),
+          ),
+        ),
+        throwsA(isA<ConfigurationFailure>().having((e) => e.code, 'current service', 'serviceOff')),
+      );
+      expect(bodies.length, purchased);
       expect(await FileRunStore(dir).resumable(), isEmpty);
       expect(state.metadata['assistant.summaryCoverage.v1'], isNotEmpty);
       expect(await Directory('${dir.path}/ai-runs/v1').exists(), true);

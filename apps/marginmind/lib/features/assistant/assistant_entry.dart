@@ -217,12 +217,7 @@ Future<void> assistantSend(WidgetRef ref, String studySetId, AppLocalizations l,
   final ui = ref.read(assistantUiProvider(studySetId));
   final contexts = outgoingContexts(ui, ref.read(assistantAutoContextsProvider(studySetId)));
   AssistantTaskSetup? setup;
-  if (skill == 'summarize' ||
-      skill == 'verify' ||
-      skill == 'papers' ||
-      skill == 'videos' ||
-      skill == 'quiz' ||
-      skill == 'organize') {
+  if (skill == 'summarize' || skill == 'verify' || skill == 'papers' || skill == 'videos' || skill == 'quiz') {
     final conversation = ref.read(assistantControllerProvider);
     setup = await showAssistantTaskSetup(ref.context, assistantSpecFor(skill, contexts), conversation);
     if (setup == null ||

@@ -44,6 +44,7 @@ class AssistantDependencies {
     this.online = true,
     this.generateTitle,
     this.defaultModel,
+    this.readTaskStatus,
   });
   final String studySetId;
 
@@ -54,6 +55,7 @@ class AssistantDependencies {
   final AssistantModel? Function()? defaultModel;
   AssistantModel get initialModel => defaultModel?.call() ?? model;
   final sdk.StateStorage storage;
+  final Future<RunStatus?> Function(String runId)? readTaskStatus;
   final AssistantRunFactory runFactory;
   final MapEditExecutor executor;
   final NoteSaver notes;
@@ -398,9 +400,13 @@ class AssistantController extends Notifier<Conversation> {
       }
     } catch (error) {
       if (active()) {
-        final kind = assistantFailureKind(error);
+        final kind = error is ConfigurationFailure ? ResearchFailureKind.invalidRequest : assistantFailureKind(error);
         final diagnostics = (session.agent.metadata['assistant.diagnostics'] as Map?)?[question.requestId] as Map?;
-        diagnostics?['failure'] = error is ResearchFailure && error.code == 'secret_store' ? 'secret_store' : kind.name;
+        diagnostics?['failure'] = error is ConfigurationFailure
+            ? error.code
+            : error is ResearchFailure && error.code == 'secret_store'
+            ? 'secret_store'
+            : kind.name;
         final status = assistantFailureStatus(error);
         if (status != null) diagnostics?['httpStatus'] = status;
         for (final tool in diagnostics?['tools'] as List? ?? []) {
@@ -449,12 +455,32 @@ class AssistantController extends Notifier<Conversation> {
     }
   }
 
-  bool get canResumeTask {
-    if (busy || state.readOnly) return false;
+  Map? get _lastTaskRecord {
     final last = state.messages.lastOrNull;
-    return last?.role == MessageRole.agent &&
-        last!.status != MessageStatus.done &&
-        (_open.agent.metadata['assistant.taskRecords.v1'] as Map?)?[last.requestId] != null;
+    if (busy || state.readOnly || last?.role != MessageRole.agent || last!.status == MessageStatus.done) return null;
+    return (_open.agent.metadata['assistant.taskRecords.v1'] as Map?)?[last.requestId] as Map?;
+  }
+
+  bool get canResumeTask {
+    final record = _lastTaskRecord;
+    if (record == null) return false;
+    if ({TaskType.conversationSummarize.key, TaskType.documentSummarize.key}.contains(record['type'])) return true;
+    return !{'failed', 'partial', 'cancelled', 'unavailable'}.contains(record['status']);
+  }
+
+  bool get canRetryTask => _lastTaskRecord != null && !canResumeTask;
+
+  Future<void> _refreshTaskStatus(sdk.AgentState agent, Conversation view) async {
+    final last = view.messages.lastOrNull;
+    if (last == null || last.status == MessageStatus.done || _deps.readTaskStatus == null) return;
+    final record = (agent.metadata['assistant.taskRecords.v1'] as Map?)?[last.requestId] as Map?;
+    final runId = (record?['context'] as Map?)?['runId'];
+    if (record == null || runId is! String) return;
+    try {
+      record['status'] = (await _deps.readTaskStatus!(runId))?.name ?? 'unavailable';
+    } catch (_) {
+      record['status'] = 'unknown';
+    }
   }
 
   Future<void> resumeTask() {
@@ -657,6 +683,8 @@ class AssistantController extends Notifier<Conversation> {
     }
     view = view.copyWith(messages: messages);
     if (_disposed || (_busy?.view.id == id)) return;
+    await _refreshTaskStatus(loaded, view);
+    if (_disposed) return;
     _show(_Session(loaded..isRunning = false, view));
     await _persist();
   }
@@ -720,6 +748,19 @@ class AssistantController extends Notifier<Conversation> {
     _set(session, session.view.copyWith(title: value));
     await _persist(session);
     return true;
+  }
+
+  /// Legacy display metadata may follow settings while an empty conversation
+  /// follows task routing. This is not an explicit assistant_chat override.
+  Future<void> refreshDefaultModel(AssistantModel model) async {
+    if (state.readOnly || state.messages.isNotEmpty || busy) return;
+    try {
+      if (conversationRoutingOverride(state.toJson(), TaskType.assistantChat) != null) return;
+    } catch (_) {
+      return;
+    }
+    _set(_open, state.copyWith(model: model));
+    await _persist(_open);
   }
 
   /// Changes the conversation's model. From an answer's recovery action,

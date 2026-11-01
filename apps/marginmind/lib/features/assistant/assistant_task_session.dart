@@ -48,12 +48,13 @@ class AssistantTaskSession implements AssistantTaskControls {
   int? get total => summary?.leafIds.length;
   void _changed() => changed(this);
 
-  Future<void> remember() async {
+  Future<void> remember({RunStatus? persistedStatus}) async {
     final records =
         owner.conversationState.metadata.putIfAbsent('assistant.taskRecords.v1', () => <String, dynamic>{}) as Map;
     records[owner.requestId] = {
       'version': 1,
       'type': request.spec.type.key,
+      'status': (persistedStatus ?? status).name,
       'input': request.input,
       'fingerprint': request.inputFingerprint,
       'context': encodeRunContext(context),
@@ -77,16 +78,24 @@ class AssistantTaskSession implements AssistantTaskControls {
     if (saved != null) _context = saved.context;
     if (saved?.status == RunStatus.completed) _configurationIntent = null;
     await remember();
-    final result = await dispatch(request, context);
-    final usage = await _rememberUsage();
-    return RunResult<String>(
-      runId: result.runId,
-      status: result.status,
-      value: result.value,
-      validation: result.validation,
-      failureCode: result.failureCode,
-      usage: usage,
-    );
+    try {
+      final result = await dispatch(request, context);
+      final usage = await _rememberUsage();
+      return RunResult<String>(
+        runId: result.runId,
+        status: result.status,
+        value: result.value,
+        validation: result.validation,
+        failureCode: result.failureCode,
+        usage: usage,
+      );
+    } finally {
+      // The persisted manifest decides whether this is a resumable checkpoint
+      // or an immutable terminal attempt requiring an explicit branch retry.
+      final stored = await assembly.runs.load(context.runId);
+      if (stored != null) _status = stored.status;
+      await remember(persistedStatus: stored?.status);
+    }
   }
 
   Future<RunResult<String>> runSummary({List<SummaryUnit>? units, int? capacity}) async {
@@ -244,19 +253,26 @@ class AssistantTaskSession implements AssistantTaskControls {
       _status = result.status;
       return result;
     } finally {
-      if (!received &&
-          !{RunStatus.completed, RunStatus.partial, RunStatus.failed, RunStatus.cancelled}.contains(handle.status)) {
-        await (cancellation ??= handle.cancel());
+      try {
+        if (!received &&
+            !{RunStatus.completed, RunStatus.partial, RunStatus.failed, RunStatus.cancelled}.contains(handle.status)) {
+          await (cancellation ??= handle.cancel());
+          // Cancellation signals the SDK first. Keep this owner alive until the
+          // Runtime persists its terminal result and releases its resources.
+          if (handle.persistenceError == null) await handle.result;
+        } else if (cancellation != null) {
+          await cancellation;
+        }
+      } finally {
+        finished = true;
+        _permissionWaiting = false;
+        owner.permissions.onWaitingChanged = null;
+        await subscription.cancel();
+        if (summary == null) _context = handle.context;
+        _live = null;
+        owner.synchronize();
+        _changed();
       }
-      finished = true;
-      _permissionWaiting = false;
-      owner.permissions.onWaitingChanged = null;
-      await subscription.cancel();
-      if (cancellation != null) await cancellation;
-      if (summary == null) _context = handle.context;
-      _live = null;
-      owner.synchronize();
-      _changed();
     }
   }
 

@@ -78,6 +78,9 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     storage: ref.watch(assistantArchiveProvider(studySetId)).storage,
     executor: ref.watch(assistantMapEditExecutorProvider(studySetId)),
     notes: ref.watch(assistantNoteSaverProvider(studySetId)),
+    readTaskStatus: (runId) async =>
+        (await FileRunStore(Directory(ref.read(contentRepositoryProvider).resolveFile(studySetId, ''))).load(runId))
+            ?.status,
     online: assistantOnlineDefault(ref, studySetId),
     generateTitle: (_, question) => generateAssistantTitle(ref.read(quickTaskExecutorProvider(studySetId)), question),
     runFactory: (agent, conversation, question) async {

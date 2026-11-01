@@ -760,7 +760,9 @@ class _Tail extends ConsumerWidget {
       );
     }
 
-    void retry() => unawaited(controller.retry(m.id).catchError((Object _) {}));
+    final latest = ref.read(assistantControllerProvider).messages.lastOrNull?.id == m.id;
+    final canResume = latest && controller.canResumeTask;
+    void retry() => unawaited((canResume ? controller.resumeTask() : controller.retry(m.id)).catchError((Object _) {}));
     final copy = _ActionButton(
       key: ValueKey('assistant-copy-${m.id}'),
       icon: MMIcons.copy,
@@ -857,7 +859,13 @@ class _Tail extends ConsumerWidget {
       MessageStatus.interrupted => (
         l.assistantInterrupted,
         true,
-        [_ActionButton(label: l.assistantContinue, color: primary, onPressed: retry)],
+        [
+          _ActionButton(
+            label: latest && controller.canRetryTask ? l.assistantRetry : l.assistantContinue,
+            color: primary,
+            onPressed: retry,
+          ),
+        ],
       ),
       _ => switch (kind) {
         _ when m.diagnostics?.failure == 'secret_store' => (

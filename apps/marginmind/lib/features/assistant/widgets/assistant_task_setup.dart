@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
@@ -9,25 +11,31 @@ import '../assistant_routing.dart';
 import '../assistant_controller.dart';
 import '../assistant_tasks.dart';
 import '../assistant_services.dart';
+import '../assistant_settings.dart';
 import '../settings/ai_task_status.dart';
 import '../settings/model_route_picker.dart';
+import '../../../settings/settings_window.dart';
 
 final assistantTaskRouteProvider = FutureProvider.autoDispose.family<RoutingRowState, (TaskType, ModelReference?)>((
   ref,
   selection,
 ) async {
+  // Preview the current identity/credential evidence, independently of routing
+  // edits. Dispatch still resolves and checks credentials again.
+  ref.watch(assistantServicesProvider);
+  ref.watch(assistantKeysProvider);
+  ref.watch(assistantCapabilityProfilesProvider);
+  final resolver = ref.watch(assistantModelResolverProvider);
   final spec = assistantTaskSpecs.firstWhere((spec) => spec.type == selection.$1);
-  return ref
-      .read(assistantModelResolverProvider)
-      .inspect(
-        TaskRequest<String>(
-          spec: spec,
-          input: {'question': 'preflight'},
-          inputFingerprint: 'preflight',
-          modelOverride: selection.$2,
-        ),
-        await ref.watch(assistantRoutingProvider.future),
-      );
+  return resolver.inspect(
+    TaskRequest<String>(
+      spec: spec,
+      input: {'question': 'preflight'},
+      inputFingerprint: 'preflight',
+      modelOverride: selection.$2,
+    ),
+    await ref.watch(assistantRoutingProvider.future),
+  );
 });
 
 class AssistantTaskSetup {
@@ -143,17 +151,22 @@ class AssistantConversationRouteControl extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final conversation = ref.watch(assistantControllerProvider);
-    final ModelReference? selected;
+    ModelReference? selected;
+    var invalid = false;
     try {
       selected = conversationRoutingOverride(conversation.toJson(), TaskType.assistantChat);
-    } on ConfigurationFailure {
-      return RoutingIssueLine(text: context.l10n.aiTasksIssueInvalid);
+    } catch (_) {
+      invalid = true;
     }
     final route = ref.watch(assistantTaskRouteProvider((TaskType.assistantChat, selected)));
     final catalog = ref.watch(assistantServicesProvider).value;
     final row = route.value;
     final l = context.l10n;
-    final issue = row == null ? null : routingIssueText(l, row.issue, failureCode: row.failureCode);
+    final issue = invalid
+        ? l.aiTasksIssueInvalid
+        : row == null
+        ? null
+        : routingIssueText(l, row.issue, failureCode: row.failureCode);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -162,7 +175,7 @@ class AssistantConversationRouteControl extends ConsumerWidget {
           label: row?.effective == null || catalog == null
               ? l.aiTasksNotSet
               : routeModelLabel(catalog, row!.effective!),
-          tone: row?.issue == RoutingIssue.none
+          tone: !invalid && row?.issue == RoutingIssue.none
               ? selected == null
                     ? ModelRouteTone.inherited
                     : ModelRouteTone.explicit
@@ -193,7 +206,12 @@ class AssistantConversationRouteControl extends ConsumerWidget {
                   if (service != null && model != null) await controller.switchModel(service.configuration(model));
                 },
         ),
-        if (issue != null) RoutingIssueLine(text: issue),
+        if (issue != null || route.hasError)
+          RoutingIssueLine(
+            text: issue ?? l.aiTasksIssueConnection,
+            action: l.assistantOpenModelSettings,
+            onAction: () => showSettings(context, tab: SettingsTab.models),
+          ),
       ],
     );
   }
@@ -232,14 +250,25 @@ class _ActivityState extends ConsumerState<AssistantTaskActivityView> {
     final controls = conversation.running ? current?.owner?.controls : null;
     final l = context.l10n;
     if (controls == null) {
-      if (!controller.canResumeTask) return const SizedBox.shrink();
+      final resumable = controller.canResumeTask;
+      if (!resumable && !controller.canRetryTask) return const SizedBox.shrink();
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RoutingIssueLine(
             text: l.aiTasksRunUnfinished,
-            action: l.fullTranslationActionResume,
-            onAction: _acting ? null : () => _act(controller.resumeTask),
+            action: resumable ? l.fullTranslationActionResume : l.assistantRetry,
+            onAction: _acting
+                ? null
+                : () => _act(() async {
+                    // Keep pause/save controls usable while recovery runs.
+                    unawaited(
+                      (resumable ? controller.resumeTask() : controller.retry(conversation.messages.last.id))
+                          .catchError((Object _) {
+                            if (mounted) setState(() => _failed = true);
+                          }),
+                    );
+                  }),
           ),
           if (_failed) RoutingIssueLine(text: l.aiTasksIssueConnection),
         ],

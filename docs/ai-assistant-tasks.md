@@ -20,6 +20,14 @@ assistant_chat override. Dedicated actions preview their own route and may carry
 a per-message override. Conversation summaries persist explicitly selected active
 message IDs; replaced branches are excluded.
 
+The composer keeps its draft and model-repair controls visible even when a route
+is unset, unavailable or unknown. Its warning occupies bounded composer width,
+not an unconstrained toolbar Row. Route previews subscribe to service, key,
+capability-provider and routing changes; dispatch checks the current identity and
+credentials again. Host/quick entry points do not gate a skill on the unrelated
+legacy default model. Updating empty-conversation display metadata preserves a
+follow-settings route rather than creating a chat override.
+
 One AssistantTaskOwner supplies permission, policy, citation and proposal bindings
 to the Runtime's SDK agent. It copies trusted history only for the exact prior
 model identity, keeps retry checkpoints and mirrors evidence back to the existing
@@ -48,6 +56,15 @@ archive does not call a model; the latest unfinished answer has an explicit
 resume action. A resumed summary uses its stored source snapshot, not newly read
 or changed documents. Existing branch retry, references, confirmation and undo
 remain controller-owned.
+
+Ordinary chat/research/review terminal failed, partial or cancelled attempts offer
+an explicit branch retry. Nonterminal checkpoints and validated saved results
+resume the original record; summary workflows use their durable stage index.
+Task records retain the durable status, and older archives reconcile it through
+the study-set RunStore before showing a recovery action. Cancellation waits for
+Runtime terminal persistence before publishing that disposition. Both message
+footers and the run panel follow the same decision, and starting recovery leaves
+its live pause/save controls usable.
 
 ## Runtime ports and network ownership
 
@@ -83,7 +100,8 @@ App tests exercise all five production task routes plus Quick translation over a
 loopback SDK transport and FileRunStore, inline image/stream drafts, actual
 research search/fetch and review proposal tools, disk reopen without inference,
 same-owner configuration phases, pending Runtime result saves, narrow control UI,
-and existing controller confirmation/undo behavior.
+all composer readiness/warning states, service/key/identity refresh, immutable
+terminal retry decisions, and existing controller confirmation/undo behavior.
 
 No trusted production profiles are synthesized. No real provider credentials,
 model quality, physical device, native application UI or OS Keychain operation

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +21,22 @@ class _Controller extends AssistantController {
   final Conversation conversation;
   @override
   Conversation build() => conversation;
+}
+
+class _RetryController extends _Controller {
+  _RetryController(super.conversation);
+  int retries = 0;
+  final completion = Completer<void>();
+  @override
+  bool get canResumeTask => false;
+  @override
+  bool get canRetryTask => !state.running;
+  @override
+  Future<void> retry(String id, {bool tools = true}) {
+    retries++;
+    state = state.copyWith(messages: [for (final m in state.messages) m.copyWith(status: MessageStatus.running)]);
+    return completion.future;
+  }
 }
 
 class _Services extends AssistantServicesController {
@@ -60,6 +78,76 @@ class _Controls implements AssistantTaskControls {
 }
 
 void main() {
+  testWidgets('terminal retry starts a new attempt without disabling its live controls', (tester) async {
+    final conversation = Conversation(
+      id: 'conversation',
+      studySetId: 'study',
+      model: const AssistantModel(
+        provider: AssistantProvider.ollama,
+        model: 'fixture',
+        endpoint: 'http://localhost:11434/v1',
+      ),
+      messages: [
+        Message(id: 'answer', requestId: 'question', role: MessageRole.agent, status: MessageStatus.interrupted),
+      ],
+    );
+    final controller = _RetryController(conversation);
+    final container = ProviderContainer(
+      overrides: [
+        assistantControllerProvider.overrideWith(() => controller),
+        assistantServicesProvider.overrideWith(_Services.new),
+      ],
+    );
+    addTearDown(container.dispose);
+    addTearDown(() {
+      if (!controller.completion.isCompleted) controller.completion.complete();
+    });
+    final owner = AssistantTaskOwner(
+      conversationState: sdk.AgentState(sessionId: 'conversation'),
+      reader: Reader(),
+      scope: ReadScope(studySetId: 'study'),
+      requestId: 'question',
+      mapId: 'map',
+      baseRevision: 0,
+      parents: {'root': null},
+      online: false,
+      execute: (_) async => throw StateError('UI only'),
+    );
+    late _Controls controls;
+    void changed() => container
+        .read(assistantTaskActivityProvider('study').notifier)
+        .update(controls.context, TaskType.assistantChat, controls.status, owner: owner);
+    controls = _Controls(changed);
+    owner.controls = controls;
+    changed();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: MMTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: AssistantTaskActivityView('study')),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Resume'), findsNothing);
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    await tester.pump();
+    expect(controller.retries, 1);
+    final pause = find.byKey(const ValueKey('assistant-task-pause-resume'));
+    expect(tester.widget<TextButton>(pause).onPressed, isNotNull);
+    await tester.tap(pause);
+    await tester.pump();
+    expect(controls.pauses, 1);
+    controller.completion.complete();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('same owner controls expose pause, resume and pending save retry at narrow width', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 700));
     addTearDown(() => tester.binding.setSurfaceSize(null));
