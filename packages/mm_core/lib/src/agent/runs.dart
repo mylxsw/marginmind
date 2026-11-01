@@ -21,11 +21,41 @@ class RunContext {
     required Map<String, String> knowledgeVersions,
     this.parentRunId,
     this.branchId,
-  }) : knowledgeVersions = Map.unmodifiable(knowledgeVersions);
+    String? modelDisplayName,
+    String? serviceDisplayName,
+    this.phase = 0,
+    Map<String, dynamic> inputRange = const {},
+  }) : modelDisplayName = modelDisplayName ?? config.modelLabel ?? '',
+       serviceDisplayName = serviceDisplayName ?? config.serviceLabel ?? '',
+       inputRange = freezeAgentJson(inputRange),
+       knowledgeVersions = Map.unmodifiable(knowledgeVersions);
   final String runId;
   final String? parentRunId, branchId;
+  final String modelDisplayName, serviceDisplayName;
+  final int phase;
+  final Map<String, dynamic> inputRange;
   final ResolvedTaskConfig config;
   final Map<String, String> knowledgeVersions;
+
+  /// Internal search/repair stages inherit the parent snapshot and scope.
+  RunContext child(String id) => RunContext(
+    runId: id,
+    parentRunId: runId,
+    branchId: branchId,
+    config: ResolvedTaskConfig(
+      capabilities: config.capabilities,
+      policy: config.policy,
+      routingRevision: config.routingRevision,
+      source: RoutingSource.parentRun,
+      serviceLabel: config.serviceLabel,
+      modelLabel: config.modelLabel,
+    ),
+    knowledgeVersions: knowledgeVersions,
+    phase: phase,
+    inputRange: inputRange,
+    modelDisplayName: modelDisplayName,
+    serviceDisplayName: serviceDisplayName,
+  );
 }
 
 class ValidationIssue {
@@ -47,8 +77,11 @@ abstract interface class TaskValidator<T> {
   ValidationReport validate(T result, Map<String, dynamic> expectedInputManifest);
 }
 
+enum UsageQuality { reported, estimated, unknown }
+
 class RunUsage {
   const RunUsage({
+    this.quality = UsageQuality.unknown,
     this.modelCalls = 0,
     this.repairs = 0,
     this.inputTokens = 0,
@@ -56,6 +89,7 @@ class RunUsage {
     this.reasoningTokens,
     this.elapsed = Duration.zero,
   });
+  final UsageQuality quality;
   final int modelCalls, repairs, inputTokens, outputTokens;
   final int? reasoningTokens;
   final Duration elapsed;
@@ -106,9 +140,11 @@ class RunManifest {
     this.failureCode,
     this.resultReference,
     this.usage = const RunUsage(),
+    List<RunContext> configurationPhases = const [],
     List<String> evidenceIds = const [],
     Map<String, dynamic> checkpoint = const {},
-  }) : evidenceIds = List.unmodifiable(evidenceIds),
+  }) : configurationPhases = List.unmodifiable(configurationPhases.isEmpty ? [context] : configurationPhases),
+       evidenceIds = List.unmodifiable(evidenceIds),
        checkpoint = freezeAgentJson(checkpoint);
   final RunContext context;
   final TaskType taskType;
@@ -118,6 +154,8 @@ class RunManifest {
   final String? stage, failureCode, resultReference;
   final RunUsage usage;
   final List<String> evidenceIds;
+
+  final List<RunContext> configurationPhases;
 
   /// Versioned adapter-owned envelope. Never put protocol blocks in diagnostics.
   final Map<String, dynamic> checkpoint;
@@ -153,3 +191,27 @@ abstract interface class ProviderPolicyCompiler {
     required ModelCapabilityProfile capabilities,
   });
 }
+
+/// Read-only model usage/recovery port; routing does not access SDK checkpoints.
+abstract interface class RunReader {
+  Future<List<RunManifest>> resumable();
+  Future<Map<String, dynamic>?> loadResult(String runId);
+}
+
+class RunStoreConflict implements Exception {
+  const RunStoreConflict();
+}
+
+bool runMayResume(RunManifest run) => switch (run.status) {
+  RunStatus.created ||
+  RunStatus.validating ||
+  RunStatus.running ||
+  RunStatus.awaitingUser ||
+  RunStatus.paused ||
+  RunStatus.interrupted ||
+  RunStatus.partial => true,
+  // Checkpoints are adapter-owned. Keep failed tasks with saved progress in the
+  // deletion impact list conservatively; the adapter validates actual replay.
+  RunStatus.failed => run.checkpoint.isNotEmpty,
+  RunStatus.completed || RunStatus.cancelled => false,
+};

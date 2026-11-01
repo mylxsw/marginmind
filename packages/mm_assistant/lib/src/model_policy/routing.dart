@@ -254,19 +254,7 @@ abstract interface class RoutingUsageIndex {
 /// Conservative model-usage predicate for archive/RunStore composition. Partial
 /// runs can retry missing work; failed runs with checkpoints may replay through
 /// their adapter. This is an impact query, not authorization to execute a run.
-bool routingRunMayResume(RunManifest run) => switch (run.status) {
-  RunStatus.created ||
-  RunStatus.validating ||
-  RunStatus.running ||
-  RunStatus.awaitingUser ||
-  RunStatus.paused ||
-  RunStatus.interrupted ||
-  RunStatus.partial => true,
-  // Checkpoints are adapter-owned. Keep failed tasks with saved progress in the
-  // deletion impact list conservatively; the adapter validates actual replay.
-  RunStatus.failed => run.checkpoint.isNotEmpty,
-  RunStatus.completed || RunStatus.cancelled => false,
-};
+bool routingRunMayResume(RunManifest run) => runMayResume(run);
 
 /// Reads archive JSON and run manifests through indexes, without importing SDK
 /// storage or the Runtime. Corrupt/unknown archives fail the query rather than
