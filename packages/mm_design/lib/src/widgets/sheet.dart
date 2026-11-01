@@ -175,21 +175,15 @@ class MMSheet extends StatelessWidget {
         Flexible(child: SingleChildScrollView(child: child)),
         if (actions.isNotEmpty) ...[
           const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.only(top: 16),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: c.hairline, width: .5)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (footer != null) ...[Expanded(child: footer!), const SizedBox(width: 12)],
-                Expanded(
-                  flex: 2,
-                  child: Wrap(alignment: WrapAlignment.end, spacing: 8, runSpacing: 8, children: actions),
-                ),
-              ],
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (footer != null) ...[Expanded(child: footer!), const SizedBox(width: 12)],
+              Expanded(
+                flex: 2,
+                child: Wrap(alignment: WrapAlignment.end, spacing: 8, runSpacing: 8, children: actions),
+              ),
+            ],
           ),
         ],
       ],
