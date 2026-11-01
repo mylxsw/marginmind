@@ -31,14 +31,27 @@ class AiTaskFocusModel extends AiTaskFocus {
   final ModelReference model;
 }
 
-/// The contracts the rows are inspected with. Settings knows no requirement
-/// beyond each feature's class until a domain registers its [TaskSpec]; a
-/// domain override adds its declared capabilities (tools, structured output).
+/// Settings uses the same versioned contracts as production dispatch. Owner-bound
+/// task handlers stay in their domain factories; only immutable specs are shared.
 final aiTaskRoutingSpecsProvider = Provider<Map<TaskType, TaskSpec>>(
-  (ref) => {for (final type in TaskType.values) type: _settingsSpec(type)},
+  (ref) => Map.unmodifiable({
+    for (final spec in [
+      selectionTranslationSpec,
+      wordLookupSpec,
+      titleGenerationSpec,
+      ...assistantTaskSpecs,
+      documentTranslationSpec,
+      mapExpandSpec,
+      mapGenerateSpec,
+      studyNotesSpec,
+    ])
+      spec.type: spec,
+  }),
 );
 
-TaskSpec _settingsSpec(TaskType type) => TaskSpec(
+/// A category default has no domain-specific capabilities. Individual feature
+/// rows below it independently report their actual requirements.
+TaskSpec _categorySettingsSpec(TaskType type) => TaskSpec(
   type: type,
   inputSchema: 'settings',
   resultSchema: 'settings',
@@ -187,25 +200,12 @@ class AiTaskDraft extends ChangeNotifier {
   }
 }
 
-/// Saves [draft] through the routing controller. Until every business caller
-/// resolves through task routing, a usable heavy default is mirrored to the
-/// legacy catalog default so unmigrated paths follow it.
-Future<bool> saveAiTaskDraft(WidgetRef ref, AiTaskDraft draft) async {
-  final ok = await draft.save((config, revision) async {
-    await ref.read(assistantRoutingProvider.notifier).save(config, expectedRevision: revision);
-    return ref.read(assistantRoutingProvider).requireValue;
-  });
-  final heavy = draft.base?.defaultModel(TaskCategory.heavy);
-  if (!ok || heavy == null) return ok;
-  try {
-    final catalog = await ref.read(assistantServicesProvider.future);
-    final usable = catalog.enabledModels.any((m) => m.serviceId == heavy.serviceId && m.model == heavy.modelId);
-    if (usable && catalog.defaultModel != heavy) await ref.read(assistantServicesProvider.notifier).setDefault(heavy);
-  } catch (_) {
-    // The routing document is saved; the legacy mirror is retried next save.
-  }
-  return ok;
-}
+/// Saves only the revision-controlled routing document. The legacy catalog
+/// default remains migration input, never a mirror of new task preferences.
+Future<bool> saveAiTaskDraft(WidgetRef ref, AiTaskDraft draft) => draft.save((config, revision) async {
+  await ref.read(assistantRoutingProvider.notifier).save(config, expectedRevision: revision);
+  return ref.read(assistantRoutingProvider).requireValue;
+});
 
 /// A capability test of one model: running, or how it ended.
 enum _ProbeOutcome { running, reachable, unreachable, unsaved }
@@ -303,13 +303,12 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
       // Menus and thinking options read profiles synchronously; load them even
       // when no row resolves far enough to refresh them (nothing assigned yet).
       await ref.read(assistantCapabilityProfilesProvider).refresh();
-      // One at a time: each inspect refreshes the shared registry, which is
-      // briefly empty while it rebuilds; parallel lookups could read that gap.
+      // Resolve against the same draft; each feature retains its own contract.
       results = [
-        for (final type in TaskType.values) await resolver.inspect(request(specs[type] ?? _settingsSpec(type)), config),
+        for (final type in TaskType.values) await resolver.inspect(request(specs[type]!), config),
         for (final category in TaskCategory.values)
           await resolver.inspect(
-            request(_settingsSpec(TaskType.values.firstWhere((t) => t.category == category))),
+            request(_categorySettingsSpec(TaskType.values.firstWhere((t) => t.category == category))),
             defaults,
           ),
       ];
@@ -838,7 +837,10 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     final quickAlwaysOn =
         !explicit && type.category == TaskCategory.quick && fallback?.issue == RoutingIssue.thinkingAlwaysOn;
     // An inherited row repeats nothing the default row already says.
-    final ownIssue = explicit || row?.issue != fallback?.issue || row?.failureCode != fallback?.failureCode;
+    final ownIssue =
+        explicit ||
+        row?.issue != fallback?.issue ||
+        (row?.issue != RoutingIssue.unknown && row?.failureCode != fallback?.failureCode);
     final followNote = defaultModel == null || defaultBroken
         ? l.aiTasksNotSet
         : routeModelLabel(
