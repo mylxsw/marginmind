@@ -13,6 +13,7 @@ import 'assistant_routing.dart';
 import 'task_run_store.dart';
 import 'map_task_route.dart';
 import 'map_task_journal.dart';
+import 'map_task_lease.dart';
 
 /// One feature invocation pins a route before reading its model-dependent cache.
 class MapTaskSession {
@@ -20,7 +21,64 @@ class MapTaskSession {
   Map<String, dynamic>? workflow;
   bool explicitContinuation = false;
   int continuationRound = 0;
-  final _stages = <String, Map<String, dynamic>>{};
+  MapTaskLease? _lease;
+  Future<MapTaskLease>? _claim;
+  Future<void>? _releasing;
+  int _executions = 0;
+  final _ownedRuns = <RuntimeRunHandle<String>, Future<void>>{};
+
+  Future<void> _enter(RunContext root) async {
+    while (_releasing != null) {
+      await _releasing;
+    }
+    _executions++;
+    try {
+      _lease = await (_claim ??= journal.claimExecution(root.runId));
+    } catch (_) {
+      _executions--;
+      if (_executions == 0) _claim = null;
+      rethrow;
+    }
+  }
+
+  Future<void> _releaseIfIdle() async {
+    if (_releasing != null) {
+      await _releasing;
+      return;
+    }
+    if (_executions != 0 || _ownedRuns.isNotEmpty || _lease == null) return;
+    final release = _lease!.release();
+    _releasing = release;
+    try {
+      await release;
+      _lease = null;
+      _claim = null;
+    } finally {
+      _releasing = null;
+    }
+  }
+
+  void _own(RuntimeRunHandle<String> handle, String key) {
+    if (_ownedRuns.containsKey(handle)) return;
+    // This observer outlives an execute waiter. A cancellation can finish its
+    // durable save later, after that waiter and its preview have closed.
+    final events = handle.events.listen((event) {
+      if (event.stage == 'save_failed') {
+        saveFailed.add(key);
+        _changed();
+      }
+    });
+    final settled = handle.result.then((_) async {
+      await events.cancel();
+      _ownedRuns.remove(handle);
+      if (identical(_handles[key], handle)) saveFailed.remove(key);
+      _changed();
+      await _releaseIfIdle();
+    });
+    _ownedRuns[handle] = settled;
+    settled.ignore();
+  }
+
   final _chapters = <String, Map<String, dynamic>>{};
   final _handles = <String, RuntimeRunHandle<String>>{};
   final _running = <String, Future<String>>{};
@@ -57,25 +115,28 @@ class MapTaskSession {
       throw const ConfigurationFailure('mapSessionMismatch');
     }
     session._frozen = Future.value(context);
-    session._stages.addAll({
-      for (final e in (data['stages'] as Map).entries) e.key as String: Map<String, dynamic>.from(e.value),
-    });
     session._chapters.addAll({
       for (final e in (data['chapters'] as Map? ?? {}).entries) e.key as String: Map<String, dynamic>.from(e.value),
     });
-    session._rootStarted = session._stages.isNotEmpty;
     session.explicitContinuation = true;
     return session;
   }
 
   Future<void> saveWorkflow(Map<String, dynamic> value) async {
     workflow = value;
-    await freeze();
-    await journal.update(id!, (data) {
-      data['workflow'] = value;
-      data['continuations'] = continuationRound;
-    });
-    _changed();
+    final root = await freeze();
+    await _enter(root);
+    try {
+      await journal.update(id!, (data) {
+        data['workflow'] = value;
+        final rounds = data['continuations'] as int? ?? 0;
+        if (continuationRound > rounds) data['continuations'] = continuationRound;
+      });
+      _changed();
+    } finally {
+      _executions--;
+      await _releaseIfIdle();
+    }
   }
 
   List<MapLine>? chapterPoints(String key, String fingerprint) {
@@ -145,7 +206,9 @@ class MapTaskSession {
         final handle = _handles[key];
         if (handle == null) continue;
         try {
+          final settled = _ownedRuns[handle];
           await handle.resume();
+          if (settled != null) await settled;
           saveFailed.remove(key);
         } catch (_) {
           saveFailed.add(key);
@@ -154,6 +217,7 @@ class MapTaskSession {
     } finally {
       retryingSave = false;
       _changed();
+      await _releaseIfIdle();
     }
   }
 
@@ -161,7 +225,6 @@ class MapTaskSession {
   final String studySetId;
   final TaskSpec spec;
   Future<RunContext>? _frozen;
-  bool _rootStarted = false;
   Set<String> missingRangeIds = {};
   String _id() => List.generate(16, (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')).join();
 
@@ -240,24 +303,21 @@ class MapTaskSession {
       'payload': payload,
       'missing': missingRangeIds.toList()..sort(),
     });
-    if (explicitContinuation && spec.type == TaskType.mapExpand && payload['_mapHost'] != null) {
-      final host = mapTaskFingerprint({'instructions': instructions, 'host': payload['_mapHost']});
-      for (final entry in _stages.entries) {
-        final oldPayload = entry.value['payload'] as Map;
-        if (entry.key != key &&
-            mapTaskFingerprint({'instructions': entry.value['instructions'], 'host': oldPayload['_mapHost']}) == host) {
-          throw const ConfigurationFailure('mapStageSourceChanged');
-        }
-      }
-    }
-    final running = _running[key];
-    if (running != null) return cancel.bind(running);
-    final work = _execute(key, root, instructions, payload, cancel, validate);
-    _running[key] = work;
+    await _enter(root);
     try {
-      return await work;
+      cancel.check();
+      final running = _running[key];
+      if (running != null) return await cancel.bind(running);
+      final work = _execute(key, root, instructions, payload, cancel, validate);
+      _running[key] = work;
+      try {
+        return await work;
+      } finally {
+        if (identical(_running[key], work)) _running.remove(key);
+      }
     } finally {
-      if (identical(_running[key], work)) _running.remove(key);
+      _executions--;
+      await _releaseIfIdle();
     }
   }
 
@@ -289,24 +349,41 @@ class MapTaskSession {
       modelOverride: root.config.model,
       purpose: payload.containsKey('accepted') ? RunPurpose.schemaRepair : RunPurpose.task,
     );
-    var stage = _stages[key];
-    final existed = stage != null;
-    if (stage == null) {
-      final context = _rootStarted ? root.child(_id()) : root;
-      _rootStarted = true;
-      stage = {
-        'context': encodeRunContext(context),
-        'fingerprint': request.inputFingerprint,
-        'instructions': instructions,
-        'payload': payload,
-        'missing': missing.toList(),
-      };
-      _stages[key] = stage;
-      await journal.update(id!, (data) {
-        (data['stages'] as Map)[key] = stage;
-        data['continuations'] = continuationRound;
-      });
-    }
+    late Map<String, dynamic> stage;
+    late bool existed;
+    // Re-read and claim under both execution ownership and the journal's
+    // atomic transaction. Restored in-memory maps are never authoritative.
+    await journal.update(id!, (data) {
+      if (data['dismissed'] == true) throw const ConfigurationFailure('mapSessionMismatch');
+      final stages = data['stages'] as Map;
+      if (explicitContinuation && spec.type == TaskType.mapExpand && payload['_mapHost'] != null) {
+        final host = mapTaskFingerprint({'instructions': instructions, 'host': payload['_mapHost']});
+        for (final entry in stages.entries) {
+          final old = entry.value as Map;
+          if (entry.key != key &&
+              mapTaskFingerprint({'instructions': old['instructions'], 'host': (old['payload'] as Map)['_mapHost']}) ==
+                  host) {
+            throw const ConfigurationFailure('mapStageSourceChanged');
+          }
+        }
+      }
+      existed = stages.containsKey(key);
+      if (existed) {
+        stage = Map<String, dynamic>.from(stages[key]);
+      } else {
+        final context = stages.isEmpty ? root : root.child(_id());
+        stage = {
+          'context': encodeRunContext(context),
+          'fingerprint': request.inputFingerprint,
+          'instructions': instructions,
+          'payload': payload,
+          'missing': missing.toList(),
+        };
+        stages[key] = stage;
+      }
+      final rounds = data['continuations'] as int? ?? 0;
+      if (continuationRound > rounds) data['continuations'] = continuationRound;
+    });
     var context = decodeRunContext(Map<String, dynamic>.from(stage['context']));
     if (stage['fingerprint'] != request.inputFingerprint) throw const ConfigurationFailure('mapStageMismatch');
     // Runtime remains the authority for completion and usage, including a crash
@@ -335,11 +412,13 @@ class MapTaskSession {
       stage['context'] = encodeRunContext(context);
       await journal.update(id!, (data) {
         (data['stages'] as Map)[key] = stage;
-        data['continuations'] = continuationRound;
+        final rounds = data['continuations'] as int? ?? 0;
+        if (continuationRound > rounds) data['continuations'] = continuationRound;
       });
       _handles.remove(key);
       saved = null;
     }
+    cancel.check();
     var handle = _handles[key];
     var recovered = false;
     if (handle == null) {
@@ -363,6 +442,7 @@ class MapTaskSession {
         handle = assembly.runtime.start(request, context);
       }
       _handles[key] = handle;
+      _own(handle, key);
     }
     final retained = handle;
     final paused = Completer<void>();
@@ -415,10 +495,22 @@ class MapTaskSession {
     } finally {
       active = null;
       if (retained.persistenceError != null) saveFailure();
-      await subscription.cancel();
-      if (!saveFailed.contains(key) &&
-          !{RunStatus.completed, RunStatus.partial, RunStatus.failed, RunStatus.cancelled}.contains(retained.status)) {
-        await (cancellation ??= retained.cancel());
+      try {
+        if (!saveFailed.contains(key) &&
+            !{
+              RunStatus.completed,
+              RunStatus.partial,
+              RunStatus.failed,
+              RunStatus.cancelled,
+            }.contains(retained.status)) {
+          try {
+            await (cancellation ??= retained.cancel());
+          } catch (_) {
+            saveFailure();
+          }
+        }
+      } finally {
+        await subscription.cancel();
       }
     }
   }

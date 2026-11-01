@@ -39,6 +39,7 @@ class Fixture {
   late ProviderContainer container;
   List<Override> overrides = [];
   int calls = 0;
+  int statusCode = HttpStatus.ok;
   Future<void> Function()? beforeReply;
   String Function(Map<String, dynamic>) reply = (_) => 'saved result';
 
@@ -49,6 +50,7 @@ class Fixture {
       final body = Map<String, dynamic>.from(jsonDecode(await utf8.decoder.bind(request).join()));
       calls++;
       await beforeReply?.call();
+      request.response.statusCode = statusCode;
       request.response.headers.contentType = ContentType.json;
       request.response.write(
         jsonEncode({

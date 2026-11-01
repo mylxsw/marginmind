@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:mm_core/mm_core.dart';
+
+import 'map_task_lease.dart';
 
 /// Domain workflow index. Runtime owns paid results and usage; this journal
 /// owns the original command, frozen route, stable stage IDs and repair inputs.
@@ -25,15 +28,24 @@ class MapTaskJournal {
         await _noLink(dir.path);
         await dir.create();
       }
-      final lockFile = p.join(dir.path, '.lock');
-      await _noLink(lockFile);
-      final lock = await File(lockFile).open(mode: FileMode.append);
+      // A short transaction lease also coordinates isolates. POSIX FileLock
+      // alone is process-scoped and closing another descriptor can unlock it.
+      final deadline = DateTime.now().add(const Duration(seconds: 10));
+      late MapTaskLease transaction;
+      while (true) {
+        try {
+          transaction = await MapTaskLease.acquire(dir.path, '_transaction');
+          break;
+        } on ConfigurationFailure catch (error) {
+          if (error.code != 'mapTaskActive') rethrow;
+          if (DateTime.now().isAfter(deadline)) throw const ConfigurationFailure('mapJournalBusy');
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      }
       try {
-        await lock.lock(FileLock.blockingExclusive);
         return await action(dir);
       } finally {
-        await lock.unlock();
-        await lock.close();
+        await transaction.release();
       }
     } finally {
       done.complete();
@@ -61,6 +73,8 @@ class MapTaskJournal {
     }
     return data;
   }
+
+  Future<MapTaskLease> claimExecution(String id) => _locked((dir) => MapTaskLease.acquire(dir.path, id));
 
   Future<Map<String, dynamic>> load(String id) => _locked((dir) async => _read(await _file(dir, id)));
 

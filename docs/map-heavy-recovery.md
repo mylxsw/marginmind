@@ -21,6 +21,28 @@ repair for unresolved content; it does not regenerate accepted content. Frozen
 model, policy, prompt and knowledge versions remain attached to the same root.
 Changes to the original map or sources refuse continuation before new paid work.
 
+## Concurrent continuation
+
+Each root has one live execution owner, including across ProviderContainers,
+isolates and processes. The owner publishes a prepared nonempty directory by
+atomic rename under `ai-map-tasks/v1/owners`. Competing recovery instances receive
+`mapTaskActive` before dispatch. A later attempt re-reads the stage transactionally
+and reuses its recorded run ID/result instead of allocating another child.
+Known terminal retries retain earlier run IDs in `previousRuns` for accounting.
+
+Ownership lasts until all executing calls and Runtime handles have settled,
+including pending saves after a preview stops. Different roots and parallel
+stages inside the owning session can still run concurrently. A separate short
+journal transaction serializes only metadata I/O, including between isolates;
+it never holds a global lock while waiting for a model result.
+
+There is no expiry that can take a slow request away from a live process.
+Only an owner confirmed to have exited can be reclaimed. Unknown liveness,
+permission errors and PID reuse fail closed. A lost isolate in a still-live
+process therefore requires restarting that process before recovery. Reclaiming
+ownership does not authorize model replay: an unknown in-flight request still
+requires the continuation confirmation described above.
+
 ## Saving failures
 
 When Runtime publishes `save_failed`, the session retains the same pending handle
