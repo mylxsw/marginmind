@@ -40,6 +40,9 @@ void main() {
       final hide = find.byKey(const ValueKey('workspace-hide-sidebar'));
       final expandedCenter = tester.getCenter(hide).dy;
       expect(expandedCenter, 26);
+      for (final key in ['toolbar-layout-reader', 'toolbar-layout-split', 'toolbar-layout-map', 'toolbar-assistant']) {
+        expect(tester.getCenter(find.byKey(ValueKey(key))).dy, expandedCenter, reason: key);
+      }
       await tester.tap(hide);
       await tester.pumpAndSettle();
       final show = find.byKey(const ValueKey('workspace-show-sidebar'));
