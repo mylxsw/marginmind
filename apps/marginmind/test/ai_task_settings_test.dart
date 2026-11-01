@@ -198,6 +198,86 @@ RoutingConfig _stored(ProviderContainer container) => RoutingConfig(
 void main() {
   final l = AppLocalizationsZh();
 
+  test('all twelve settings routes use production contracts and capability requirements', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final specs = container.read(aiTaskRoutingSpecsProvider);
+    expect(specs.keys, unorderedEquals(TaskType.values));
+    expect(specs.length, 12);
+    expect(specs[TaskType.assistantChat], same(assistantChatSpec));
+    expect(specs[TaskType.mapGenerate], same(mapGenerateSpec));
+    expect(specs[TaskType.documentTranslate], same(documentTranslationSpec));
+    expect(specs[TaskType.studyNotes], same(studyNotesSpec));
+    final profiles = CapabilityProfiles()
+      ..put(
+        ModelCapabilityProfile(
+          identity: serviceCapabilityIdentity(_openai, _openai.models.single),
+          thinking: ThinkingCapability.switchable,
+          policies: {ReasoningPolicy.off: ReasoningRecipe.effortNone},
+          evidence: _evidence(),
+        ),
+      );
+    final resolver = TaskModelResolver(
+      catalog: () async => AssistantServices(services: [_openai]),
+      profiles: profiles,
+    );
+    const model = ModelReference('openai', 'gpt-4.1-2025-04-14');
+    for (final type in TaskType.values) {
+      final row = await resolver.inspect(
+        TaskRequest<Object?>(
+          spec: specs[type]!,
+          input: const {},
+          inputFingerprint: 'settings-contract',
+          modelOverride: model,
+        ),
+        RoutingConfig(document: {'version': 1, 'revision': 0}),
+      );
+      expect(
+        row.issue,
+        specs[type]!.requiredCapabilities.isEmpty ? RoutingIssue.none : RoutingIssue.unknown,
+        reason: type.key,
+      );
+      expect(specs[type]!.promptVersion, isNot('settings'));
+    }
+  });
+
+  testWidgets('known category defaults still show missing domain capabilities on feature rows', (tester) async {
+    const model = ModelReference('openai', 'gpt-4.1-2025-04-14');
+    final profiles = _FlakyProfiles()
+      ..put(
+        ModelCapabilityProfile(
+          identity: serviceCapabilityIdentity(_openai, _openai.models.single),
+          thinking: ThinkingCapability.switchable,
+          policies: {ReasoningPolicy.off: ReasoningRecipe.effortNone},
+          evidence: _evidence(),
+        ),
+      );
+    await _open(
+      tester,
+      prefs: _prefs(
+        services: [_openai],
+        routing: _routing(quick: model.toJson(), heavy: model.toJson()),
+      ),
+      secrets: FakeSecrets()..values[AssistantServicesStore.account('openai')] = 'fixture-key',
+      overrides: [assistantCapabilityProfilesProvider.overrideWithValue(profiles)],
+    );
+    // The class defaults resolve, but eight real feature contracts require
+    // tools/history replay. Keep their warnings even when they inherit.
+    expect(find.text('需验证兼容性'), findsNWidgets(8));
+  });
+
+  testWidgets('saving task defaults leaves the legacy catalog byte-for-byte unchanged', (tester) async {
+    final container = await _open(tester);
+    final prefs = container.read(sharedPreferencesProvider);
+    final before = prefs.getString(AssistantServicesStore.settingsKey);
+    await _choose(tester, '重型任务 · 默认模型', 'Claude Opus', index: 1);
+    await tester.tap(find.byKey(const ValueKey('ai-tasks-save')));
+    await tester.pumpAndSettle();
+    expect(_stored(container).defaultModel(TaskCategory.heavy), _proxyOpus);
+    expect(prefs.getString(AssistantServicesStore.settingsKey), before);
+    expect(container.read(assistantServicesProvider).value!.defaultModel, _haiku);
+  });
+
   group('routeModelLabel', () {
     test('adds the service only when the display name is ambiguous', () {
       final catalog = AssistantServices(services: [_anthropic, _proxy]);
@@ -286,7 +366,7 @@ void main() {
       expect(tester.widget<MMButton>(find.byKey(const ValueKey('ai-tasks-save'))).onPressed, isNull);
     });
 
-    testWidgets('binding a feature drafts, saves with the read revision and mirrors the heavy default', (tester) async {
+    testWidgets('binding a feature drafts and saves with the read revision', (tester) async {
       final container = await _open(tester);
       final name = aiTaskName(l, TaskType.titleGenerate);
       await tester.tap(_row(name));
