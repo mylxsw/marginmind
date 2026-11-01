@@ -2731,19 +2731,45 @@ class AppLocalizationsZh extends AppLocalizations {
   String get voiceTimeoutError => '语音服务响应超时，请重试。';
 
   @override
-  String get voiceEmptyError => '没有识别到语音，请再试一次。';
+  String get voiceEmptyError => '没有听到声音';
 
   @override
   String get voiceConnecting => '正在连接语音服务…';
 
   @override
-  String get voiceListening => '正在聆听，点击结束';
+  String get voiceListening => '正在录音';
 
   @override
-  String get voiceFinishing => '正在确认识别结果…';
+  String get voiceFinishing => '正在转文字…';
 
   @override
   String get voiceCancel => '取消语音输入';
+
+  @override
+  String get voiceDismiss => '关闭语音提示';
+
+  @override
+  String get voiceStart => '语音输入';
+
+  @override
+  String get voicePermissionNotice => '麦克风权限未开启';
+
+  @override
+  String get voiceConfigurationNotice => '语音服务尚未配置完整';
+
+  @override
+  String get voiceConnectionNotice => '语音连接中断';
+
+  @override
+  String get voiceRecordingNotice => '麦克风录音中断';
+
+  @override
+  String get voiceTimeoutNotice => '语音服务响应超时';
+
+  @override
+  String voiceNoticeWithText(String message) {
+    return '$message，已保留文字';
+  }
 
   @override
   String get voiceFinish => '结束录音';

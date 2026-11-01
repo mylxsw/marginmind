@@ -45,6 +45,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   TextEditingValue? _voiceDraft;
   String _voiceText = '';
   bool _applyingVoice = false;
+  bool _voiceNoticeDismissed = false;
 
   @override
   void initState() {
@@ -114,6 +115,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
       await showSettings(context, tab: SettingsTab.voice);
       return;
     }
+    _voiceNoticeDismissed = false;
     _voiceDraft = _text.value;
     _voiceText = '';
     if (_slash.isShowing) _slash.hide();
@@ -129,7 +131,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     if (draft != null) _text.value = draft;
   }
 
-  String? get _voiceError => switch (_voice.error) {
+  String? get _voiceErrorDetail => switch (_voice.error) {
     null => null,
     VoiceError.permission => _l.voicePermissionError,
     VoiceError.configuration => _l.voiceConfigurationError,
@@ -138,6 +140,23 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     VoiceError.timeout => _l.voiceTimeoutError,
     VoiceError.empty => _l.voiceEmptyError,
   };
+
+  String? get _voiceNotice {
+    final message = switch (_voice.error) {
+      null => null,
+      VoiceError.permission => _l.voicePermissionNotice,
+      VoiceError.configuration => _l.voiceConfigurationNotice,
+      VoiceError.connection => _l.voiceConnectionNotice,
+      VoiceError.recording => _l.voiceRecordingNotice,
+      VoiceError.timeout => _l.voiceTimeoutNotice,
+      VoiceError.empty => _l.voiceEmptyError,
+    };
+    if (message == null) return null;
+    return _voice.text.trim().isNotEmpty &&
+            const [VoiceError.connection, VoiceError.recording, VoiceError.timeout].contains(_voice.error)
+        ? _l.voiceNoticeWithText(message)
+        : message;
+  }
 
   /// `/` commands matching what follows the slash at the start of the input.
   List<AssistantSkill> get _commands {
@@ -409,7 +428,27 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                     ],
                   ),
                 ),
+              if (_voice.active || (!_voiceNoticeDismissed && _voiceNotice != null)) ...[
+                _VoiceToolbar(
+                  phase: _voice.phase,
+                  message: _voice.active
+                      ? switch (_voice.phase) {
+                          VoicePhase.connecting => l.voiceConnecting,
+                          VoicePhase.recording => l.voiceListening,
+                          _ => l.voiceFinishing,
+                        }
+                      : _voiceNotice!,
+                  detail: _voiceErrorDetail,
+                  error: _voice.error,
+                  onCancel: _cancelVoice,
+                  onRetry: () => unawaited(_toggleVoice()),
+                  onSettings: () => unawaited(showSettings(context, tab: SettingsTab.voice)),
+                  onDismiss: () => setState(() => _voiceNoticeDismissed = true),
+                ),
+                const SizedBox(height: 8),
+              ],
               AnimatedContainer(
+                key: const ValueKey('assistant-input-container'),
                 duration: MMMotion.quick,
                 curve: MMMotion.quickCurve,
                 decoration: BoxDecoration(
@@ -420,43 +459,6 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_voice.active || _voiceError != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 6, 6, 0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Semantics(
-                                liveRegion: true,
-                                child: Text(
-                                  _voice.active
-                                      ? switch (_voice.phase) {
-                                          VoicePhase.connecting => l.voiceConnecting,
-                                          VoicePhase.recording => l.voiceListening,
-                                          _ => l.voiceFinishing,
-                                        }
-                                      : _voiceError!,
-                                  key: const ValueKey('assistant-voice-status'),
-                                  style: t.footnote.copyWith(color: _voice.active ? c.secondaryLabel : c.critical),
-                                ),
-                              ),
-                            ),
-                            if (_voice.active)
-                              _BarButton(
-                                key: const ValueKey('assistant-voice-cancel'),
-                                icon: MMIcons.close,
-                                tooltip: l.voiceCancel,
-                                onPressed: _cancelVoice,
-                              ),
-                            if (!_voice.active && _voice.error != VoiceError.empty)
-                              _BarButton(
-                                icon: MMIcons.settings,
-                                tooltip: l.settingsVoice,
-                                onPressed: () => unawaited(showSettings(context, tab: SettingsTab.voice)),
-                              ),
-                          ],
-                        ),
-                      ),
                     if (configured && chips.isNotEmpty)
                       AssistantContextSummary(
                         key: ValueKey('composer-contexts-${conversation.id}-${conversation.messages.length}'),
@@ -549,12 +551,13 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                           _BarButton(
                             key: const ValueKey('assistant-voice'),
                             icon: _voice.phase == VoicePhase.recording ? MMIcons.stop : MMIcons.microphone,
-                            tooltip: _voice.phase == VoicePhase.recording ? l.voiceFinish : l.settingsVoice,
+                            tooltip: _voice.phase == VoicePhase.recording ? l.voiceFinish : l.voiceStart,
                             color: _voice.active ? c.research : null,
                             onPressed: configured && (!_voice.active || _voice.phase == VoicePhase.recording)
                                 ? () => unawaited(_toggleVoice())
                                 : null,
                           ),
+                          const SizedBox(width: 8),
                           _SendButton(
                             running: running,
                             enabled: canSend,
@@ -582,6 +585,152 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
         ),
       },
       child: composer,
+    );
+  }
+}
+
+/// Kept outside the input so recording does not change the editor's height.
+class _VoiceToolbar extends StatefulWidget {
+  const _VoiceToolbar({
+    required this.phase,
+    required this.message,
+    required this.detail,
+    required this.error,
+    required this.onCancel,
+    required this.onRetry,
+    required this.onSettings,
+    required this.onDismiss,
+  });
+
+  final VoicePhase phase;
+  final String message;
+  final String? detail;
+  final VoiceError? error;
+  final VoidCallback onCancel, onRetry, onSettings, onDismiss;
+
+  @override
+  State<_VoiceToolbar> createState() => _VoiceToolbarState();
+}
+
+class _VoiceToolbarState extends State<_VoiceToolbar> {
+  Timer? _timer;
+  int _seconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTimer();
+  }
+
+  @override
+  void didUpdateWidget(_VoiceToolbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.phase != oldWidget.phase) _updateTimer();
+  }
+
+  void _updateTimer() {
+    _timer?.cancel();
+    if (widget.phase != VoicePhase.recording) return;
+    _seconds = 0;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => setState(() => _seconds++));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final l = context.l10n;
+    final active = widget.phase != VoicePhase.idle;
+    final recording = widget.phase == VoicePhase.recording;
+    final needsSettings = widget.error == VoiceError.permission || widget.error == VoiceError.configuration;
+    final color = active ? c.research : (widget.error == VoiceError.empty ? c.secondaryLabel : c.caution);
+    return Container(
+      key: const ValueKey('assistant-voice-toolbar'),
+      constraints: const BoxConstraints(minHeight: 38),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: c.quaternaryFill,
+        border: Border.all(color: c.separator),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: SizedBox(
+              width: 14,
+              height: 14,
+              child: active && !recording
+                  ? CircularProgressIndicator(strokeWidth: 1.5, color: color)
+                  : recording
+                  ? Center(
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                      ),
+                    )
+                  : Icon(
+                      widget.error == VoiceError.empty ? MMIcons.microphone : MMIcons.warning,
+                      size: 14,
+                      color: color,
+                    ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Tooltip(
+              message: widget.detail ?? widget.message,
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  widget.message,
+                  key: const ValueKey('assistant-voice-status'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.mmText.footnote.copyWith(color: c.label),
+                ),
+              ),
+            ),
+          ),
+          if (recording) ...[
+            const SizedBox(width: 8),
+            Text(
+              '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}',
+              key: const ValueKey('assistant-voice-duration'),
+              style: context.mmText.footnote,
+            ),
+          ],
+          const SizedBox(width: 8),
+          if (active)
+            _BarButton(
+              key: const ValueKey('assistant-voice-cancel'),
+              label: l.cancel,
+              tooltip: l.voiceCancel,
+              color: c.research,
+              onPressed: widget.onCancel,
+            )
+          else ...[
+            _BarButton(
+              key: const ValueKey('assistant-voice-retry'),
+              label: needsSettings ? l.settingsVoice : l.assistantRetry,
+              tooltip: needsSettings ? l.settingsVoice : l.assistantRetry,
+              color: c.research,
+              onPressed: needsSettings ? widget.onSettings : widget.onRetry,
+            ),
+            _BarButton(
+              key: const ValueKey('assistant-voice-dismiss'),
+              icon: MMIcons.close,
+              tooltip: l.voiceDismiss,
+              onPressed: widget.onDismiss,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -2862,19 +2862,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceTimeoutError => 'The speech service timed out. Try again.';
 
   @override
-  String get voiceEmptyError => 'No speech recognized. Try again.';
+  String get voiceEmptyError => 'No speech detected';
 
   @override
   String get voiceConnecting => 'Connecting to speech service…';
 
   @override
-  String get voiceListening => 'Listening. Click to finish.';
+  String get voiceListening => 'Recording';
 
   @override
-  String get voiceFinishing => 'Finalizing transcription…';
+  String get voiceFinishing => 'Transcribing…';
 
   @override
   String get voiceCancel => 'Cancel voice input';
+
+  @override
+  String get voiceDismiss => 'Dismiss voice notice';
+
+  @override
+  String get voiceStart => 'Voice Input';
+
+  @override
+  String get voicePermissionNotice => 'Microphone access is off';
+
+  @override
+  String get voiceConfigurationNotice => 'Complete voice service settings';
+
+  @override
+  String get voiceConnectionNotice => 'Voice connection interrupted';
+
+  @override
+  String get voiceRecordingNotice => 'Microphone recording interrupted';
+
+  @override
+  String get voiceTimeoutNotice => 'Voice service timed out';
+
+  @override
+  String voiceNoticeWithText(String message) {
+    return '$message. Text kept';
+  }
 
   @override
   String get voiceFinish => 'Finish Recording';

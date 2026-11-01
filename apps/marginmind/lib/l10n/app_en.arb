@@ -1506,11 +1506,26 @@
   "voicePermissionError": "Microphone access denied. Allow access in System Settings.",
   "voiceRecordingError": "Recording interrupted. Check your microphone and try again.",
   "voiceTimeoutError": "The speech service timed out. Try again.",
-  "voiceEmptyError": "No speech recognized. Try again.",
+  "voiceEmptyError": "No speech detected",
   "voiceConnecting": "Connecting to speech service…",
-  "voiceListening": "Listening. Click to finish.",
-  "voiceFinishing": "Finalizing transcription…",
+  "voiceListening": "Recording",
+  "voiceFinishing": "Transcribing…",
   "voiceCancel": "Cancel voice input",
+  "voiceDismiss": "Dismiss voice notice",
+  "voiceStart": "Voice Input",
+  "voicePermissionNotice": "Microphone access is off",
+  "voiceConfigurationNotice": "Complete voice service settings",
+  "voiceConnectionNotice": "Voice connection interrupted",
+  "voiceRecordingNotice": "Microphone recording interrupted",
+  "voiceTimeoutNotice": "Voice service timed out",
+  "voiceNoticeWithText": "{message}. Text kept",
+  "@voiceNoticeWithText": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "voiceFinish": "Finish Recording",
   "voiceKeyPlaceholder": "Paste credential",
   "mapMultiSelect": "Multiple Selection",

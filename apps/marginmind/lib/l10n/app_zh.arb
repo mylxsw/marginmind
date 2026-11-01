@@ -910,11 +910,26 @@
   "voicePermissionError": "未获得麦克风权限，请在系统设置中允许访问。",
   "voiceRecordingError": "麦克风录音中断，请检查设备后重试。",
   "voiceTimeoutError": "语音服务响应超时，请重试。",
-  "voiceEmptyError": "没有识别到语音，请再试一次。",
+  "voiceEmptyError": "没有听到声音",
   "voiceConnecting": "正在连接语音服务…",
-  "voiceListening": "正在聆听，点击结束",
-  "voiceFinishing": "正在确认识别结果…",
+  "voiceListening": "正在录音",
+  "voiceFinishing": "正在转文字…",
   "voiceCancel": "取消语音输入",
+  "voiceDismiss": "关闭语音提示",
+  "voiceStart": "语音输入",
+  "voicePermissionNotice": "麦克风权限未开启",
+  "voiceConfigurationNotice": "语音服务尚未配置完整",
+  "voiceConnectionNotice": "语音连接中断",
+  "voiceRecordingNotice": "麦克风录音中断",
+  "voiceTimeoutNotice": "语音服务响应超时",
+  "voiceNoticeWithText": "{message}，已保留文字",
+  "@voiceNoticeWithText": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "voiceFinish": "结束录音",
   "voiceKeyPlaceholder": "粘贴密钥",
   "mapMultiSelect": "多选",

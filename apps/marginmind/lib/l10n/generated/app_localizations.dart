@@ -5093,7 +5093,7 @@ abstract class AppLocalizations {
   /// No description provided for @voiceEmptyError.
   ///
   /// In en, this message translates to:
-  /// **'No speech recognized. Try again.'**
+  /// **'No speech detected'**
   String get voiceEmptyError;
 
   /// No description provided for @voiceConnecting.
@@ -5105,13 +5105,13 @@ abstract class AppLocalizations {
   /// No description provided for @voiceListening.
   ///
   /// In en, this message translates to:
-  /// **'Listening. Click to finish.'**
+  /// **'Recording'**
   String get voiceListening;
 
   /// No description provided for @voiceFinishing.
   ///
   /// In en, this message translates to:
-  /// **'Finalizing transcription…'**
+  /// **'Transcribing…'**
   String get voiceFinishing;
 
   /// No description provided for @voiceCancel.
@@ -5119,6 +5119,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel voice input'**
   String get voiceCancel;
+
+  /// No description provided for @voiceDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss voice notice'**
+  String get voiceDismiss;
+
+  /// No description provided for @voiceStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Input'**
+  String get voiceStart;
+
+  /// No description provided for @voicePermissionNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is off'**
+  String get voicePermissionNotice;
+
+  /// No description provided for @voiceConfigurationNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete voice service settings'**
+  String get voiceConfigurationNotice;
+
+  /// No description provided for @voiceConnectionNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice connection interrupted'**
+  String get voiceConnectionNotice;
+
+  /// No description provided for @voiceRecordingNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone recording interrupted'**
+  String get voiceRecordingNotice;
+
+  /// No description provided for @voiceTimeoutNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice service timed out'**
+  String get voiceTimeoutNotice;
+
+  /// No description provided for @voiceNoticeWithText.
+  ///
+  /// In en, this message translates to:
+  /// **'{message}. Text kept'**
+  String voiceNoticeWithText(String message);
 
   /// No description provided for @voiceFinish.
   ///
