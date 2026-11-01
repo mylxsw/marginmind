@@ -151,8 +151,7 @@ abstract final class MMSizes {
   static const double browserAddress = 30;
   static const double browserAddressTouch = 36;
   static const double browserProgressTrack = 2;
-  static const double webConversionSheetWidth = 640;
-  static const double webConversionPreviewHeight = 88;
+  static const double webConversionSheetWidth = 1080;
 
   /// Maximum width of an editable value in a settings row.
   static const double settingsFieldWidth = 245;

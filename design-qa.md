@@ -600,3 +600,12 @@ final result: passed
 final result: passed
 
 按用户确认的删减版实现单栏表单、来源摘要、格式选择和正文预览，标题改为“保存到资料库”，不显示副标题及格式说明。18 项相关测试、最终布局复测、定向静态分析和 macOS Debug 构建通过。[设计对照与验证边界](docs/evidence/web-conversion-redesign/design-qa.md)。
+
+
+---
+
+# 保存到资料库：左右分栏（2026-11-01）
+
+final result: passed
+
+按方案一改为左预览、右设置，名称固定单行；放大正文预览并隐藏滚动条，保留滚动能力。18 项相关测试、定向静态分析及 macOS Debug 构建通过。[最新设计对照与验证边界](docs/evidence/web-conversion-split/design-qa.md)。

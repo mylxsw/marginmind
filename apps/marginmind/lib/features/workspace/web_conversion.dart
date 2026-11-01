@@ -143,7 +143,6 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   final _prepared = <WebCaptureMode, Future<PreparedWebDocument>>{};
   WebCaptureMode _mode = WebCaptureMode.readable;
   bool _edited = false;
-  Document? _source;
   @override
   void dispose() {
     _title.dispose();
@@ -158,14 +157,12 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
       builder: (context, snapshot) {
         final value = snapshot.connectionState == ConnectionState.done ? snapshot.data : null;
         if (value != null && !_edited) _title.text = value.package.document.title;
-        if (value != null) _source ??= value.package.document;
         final c = context.mmColors;
         final titleField = MMTextField(
           controller: _title,
           placeholder: l.convertTitlePlaceholder,
           semanticLabel: l.convertDocumentName,
-          maxLines: 2,
-          minLines: 1,
+          maxLines: 1,
           onChanged: (_) => setState(() => _edited = true),
         );
         final formats = [
@@ -173,51 +170,44 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
           (WebCaptureMode.original, l.convertPdf, MMIcons.pdf),
           (WebCaptureMode.markdown, l.convertMarkdown, MMIcons.markdown),
         ];
-        final segments = LayoutBuilder(
-          builder: (context, constraints) {
-            final options = [
-              for (final (mode, label, icon) in formats)
-                _FormatOption(
-                  label: label,
-                  icon: icon,
-                  selected: _mode == mode,
-                  onTap: () => setState(() => _mode = mode),
-                ),
-            ];
-            return constraints.maxWidth < 400
-                ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: MMSpacing.s, children: options)
-                : Row(
-                    spacing: MMSpacing.s,
-                    children: [for (final option in options) Expanded(child: option)],
-                  );
-          },
+        final segments = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: MMSpacing.s,
+          children: [
+            for (final (mode, label, icon) in formats)
+              _FormatOption(
+                label: label,
+                icon: icon,
+                selected: _mode == mode,
+                onTap: () => setState(() => _mode = mode),
+              ),
+          ],
         );
-        final preview = Container(
-          height: MMSizes.webConversionPreviewHeight,
-          padding: const EdgeInsets.all(MMSpacing.m),
-          decoration: BoxDecoration(
-            color: context.mmColors.quaternaryFill,
-            borderRadius: BorderRadius.circular(MMRadii.row),
-            border: Border.all(color: c.hairline, width: 0.5),
-          ),
-          child: snapshot.hasError
-              ? Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: MMSpacing.m,
-                  children: [
-                    Text(l.docSaveFailed, style: context.mmText.body),
-                    MMButton(
-                      label: l.webRetry,
-                      onPressed: () => setState(() {
-                        _prepared.remove(_mode);
-                      }),
+        final preview = Semantics(
+          label: l.convertPreview,
+          container: true,
+          child: SizedBox.expand(
+            key: const ValueKey('web-conversion-preview'),
+            child: snapshot.hasError
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(l.docSaveFailed, style: context.mmText.body),
+                        const SizedBox(height: MMSpacing.m),
+                        MMButton(
+                          label: l.webRetry,
+                          onPressed: () => setState(() {
+                            _prepared.remove(_mode);
+                          }),
+                        ),
+                      ],
                     ),
-                  ],
-                )
-              : value == null
-              ? const Center(child: CircularProgressIndicator())
-              : _Preview(value: value, mode: _mode),
+                  )
+                : value == null
+                ? const Center(child: CircularProgressIndicator())
+                : _Preview(value: value, mode: _mode),
+          ),
         );
         final save = MMButton(
           label: l.convertSave,
@@ -258,70 +248,52 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
             MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
             save,
           ],
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_source case final source?) ...[
-                _SourceSummary(document: source),
-                const SizedBox(height: MMSpacing.m),
-                Divider(height: 1, thickness: 0.5, color: c.hairline),
-                const SizedBox(height: MMSpacing.m),
-              ],
-              section(l.convertDocumentName, titleField),
-              const SizedBox(height: MMSpacing.l),
-              section(l.convertFormat, segments),
-              const SizedBox(height: MMSpacing.l),
-              section(l.convertPreview, preview),
-              const SizedBox(height: MMSpacing.m),
-              Divider(height: 1, thickness: 0.5, color: c.hairline),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final settings = Column(
+                key: const ValueKey('web-conversion-settings'),
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  section(l.convertDocumentName, titleField),
+                  const SizedBox(height: MMSpacing.xxl),
+                  section(l.convertFormat, segments),
+                ],
+              );
+              final split = constraints.maxWidth >= 720;
+              final previewHeight = (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom - 210)
+                  .clamp(220.0, 600.0);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (split)
+                    SizedBox(
+                      height: previewHeight,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(flex: 65, child: preview),
+                          const SizedBox(width: MMSpacing.xl),
+                          VerticalDivider(width: 1, thickness: 0.5, color: c.hairline),
+                          const SizedBox(width: MMSpacing.xl),
+                          Expanded(flex: 35, child: SingleChildScrollView(child: settings)),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    settings,
+                    const SizedBox(height: MMSpacing.xl),
+                    SizedBox(height: 300, child: preview),
+                  ],
+                  const SizedBox(height: MMSpacing.m),
+                  Divider(height: 1, thickness: 0.5, color: c.hairline),
+                ],
+              );
+            },
           ),
         );
       },
-    );
-  }
-}
-
-class _SourceSummary extends StatelessWidget {
-  const _SourceSummary({required this.document});
-  final Document document;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.mmColors;
-    final origin = document.origin;
-    final date = origin?.capturedAt.toLocal();
-    final dateLabel = date == null
-        ? ''
-        : '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.row)),
-          child: Icon(MMIcons.document, size: 22, color: c.secondaryLabel),
-        ),
-        const SizedBox(width: MMSpacing.m),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(document.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: context.mmText.headline),
-              if (origin != null) ...[
-                const SizedBox(height: MMSpacing.xs),
-                Text(
-                  '${Uri.tryParse(origin.url)?.host ?? ''} · $dateLabel',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.mmText.callout.copyWith(color: c.secondaryLabel),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
@@ -376,49 +348,69 @@ class _Preview extends StatelessWidget {
   final WebCaptureMode mode;
   @override
   Widget build(BuildContext context) {
-    if (mode == WebCaptureMode.original && value.preview != null) {
-      return Image.memory(value.preview!, fit: BoxFit.contain);
-    }
-    if (mode == WebCaptureMode.markdown) {
-      return SingleChildScrollView(child: Text(value.markdown ?? '', style: MMTypography.mono));
-    }
-    if (value.book.chapters.isEmpty) return const SizedBox.shrink();
+    final c = context.mmColors;
     final origin = value.package.document.origin;
+    final date = origin?.capturedAt.toLocal();
     final sourceHost = origin == null ? null : Uri.tryParse(origin.url)?.host;
-    final blocks = value.book.chapters.first.blocks.where((block) {
-      if (block.kind == book.BlockKind.heading && block.text.trim() == value.book.title.trim()) return false;
-      if (sourceHost != null && block.text.startsWith('$sourceHost · ')) return false;
-      return true;
-    });
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final block in blocks)
-            Padding(
-              padding: const EdgeInsets.only(bottom: MMSpacing.s),
-              child: block.kind == book.BlockKind.image && value.book.resources[block.resource] != null
-                  ? Image.memory(
-                      value.book.resources[block.resource]!,
-                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                    )
-                  : Text.rich(
-                      TextSpan(
-                        children: [
-                          for (final run in block.runs)
-                            TextSpan(
-                              text: run.text,
-                              style: TextStyle(
-                                fontWeight: run.strong ? FontWeight.bold : null,
-                                fontStyle: run.emphasis ? FontStyle.italic : null,
-                              ),
-                            ),
-                        ],
-                      ),
-                      style: block.kind == book.BlockKind.heading ? context.mmText.headline : context.mmText.body,
-                    ),
-            ),
-        ],
+    final dateLabel = date == null
+        ? ''
+        : '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final blocks = value.book.chapters.isEmpty
+        ? <book.BookBlock>[]
+        : value.book.chapters.first.blocks.where((block) {
+            if (block.kind == book.BlockKind.heading && block.text.trim() == value.book.title.trim()) return false;
+            if (sourceHost != null && block.text.startsWith('$sourceHost · ')) return false;
+            return true;
+          });
+    // Desktop scroll views add a scrollbar automatically. Disable its painting,
+    // while retaining wheel, trackpad, touch and keyboard scrolling.
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        key: ValueKey('web-conversion-preview-scroll-${mode.name}'),
+        primary: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (sourceHost != null) ...[
+              Text('$sourceHost · $dateLabel', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+              const SizedBox(height: MMSpacing.m),
+            ],
+            Text(value.package.document.title, style: context.mmText.title2.copyWith(fontSize: 20, height: 1.4)),
+            const SizedBox(height: MMSpacing.xl),
+            if (mode == WebCaptureMode.original && value.preview != null)
+              Image.memory(value.preview!, fit: BoxFit.fitWidth)
+            else if (mode == WebCaptureMode.markdown)
+              Text(value.markdown ?? '', style: MMTypography.mono.copyWith(color: c.label, height: 1.6))
+            else
+              for (final block in blocks)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: MMSpacing.l),
+                  child: block.kind == book.BlockKind.image && value.book.resources[block.resource] != null
+                      ? Image.memory(
+                          value.book.resources[block.resource]!,
+                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                        )
+                      : Text.rich(
+                          TextSpan(
+                            children: [
+                              for (final run in block.runs)
+                                TextSpan(
+                                  text: run.text,
+                                  style: TextStyle(
+                                    fontWeight: run.strong ? FontWeight.bold : null,
+                                    fontStyle: run.emphasis ? FontStyle.italic : null,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          style: block.kind == book.BlockKind.heading
+                              ? context.mmText.headline.copyWith(fontSize: 16, height: 1.5)
+                              : context.mmText.body.copyWith(fontSize: 15, height: 1.75),
+                        ),
+                ),
+          ],
+        ),
       ),
     );
   }
