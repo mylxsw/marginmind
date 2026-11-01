@@ -3498,7 +3498,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get browserConvertShort => 'Convert';
 
   @override
-  String get webReadyPrompt => 'Save for annotations, mind maps, and offline reading.';
+  String get webReadyPrompt => 'Convert to a document?';
 
   @override
   String get webStillLoading => 'Some content is still loading';
@@ -6149,6 +6149,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiTasksProbeUnsaved => 'Test result not saved';
+
+  @override
+  String get mapTaskSaveFailed => 'Result could not be saved. It is still held in this session.';
+
+  @override
+  String get mapTaskRetrySave => 'Retry saving';
+
+  @override
+  String get mapTaskContinue => 'Continue saved map task';
+
+  @override
+  String get mapTaskGenerate => 'Generate map';
+
+  @override
+  String get mapTaskExpand => 'Expand map';
+
+  @override
+  String get mapTaskContinueNotice =>
+      'Completed stages will be reused. Unsaved results will only be saved. An interrupted request with no recorded result may call the model again and incur a charge. Continue?';
+
+  @override
+  String get mapTaskCannotContinue =>
+      'Could not continue. Check that the original map and sources are unchanged and storage is available.';
 
   @override
   String get workspaceSearchTabs => 'Search tabs';

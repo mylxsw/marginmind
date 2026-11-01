@@ -1,3 +1,4 @@
+import 'package:marginmind/features/assistant/map_task_route.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 
 import 'dart:async';
@@ -728,8 +729,10 @@ void main() {
     await tester.pumpAndSettle();
     await empty;
     await tester.pumpAndSettle();
-    expect(app.container.read(p), isNull);
-    expect(find.text('这里暂时没有值得补充的方向，换个方向试试'), findsOneWidget);
+    expect(app.container.read(p)!.phase, ExpansionPhase.error);
+    expect(app.container.read(p)!.failure!.code, 'missingTarget');
+    expect(app.container.read(p)!.targetFailures.keys, contains('c3'));
+    c.discard();
     final partial = c.start(c.request(MindMap.defaultId, 'c3'));
     await tester.pumpAndSettle();
     models[1].output.add(const ExpansionDraft(id: 'd1', parentRef: 'c3', title: '有效结果'));
@@ -761,13 +764,9 @@ void main() {
     expect(app.container.read(expansionBusyProvider), isFalse);
   });
 
-  testWidgets('production factory validates credentials and owns its connection', (tester) async {
+  testWidgets('production expansion has no legacy default-model factory', (tester) async {
     final app = await openAssistantApp(tester);
-    final model = await app.container.read(ideaExpanderFactoryProvider)();
-    expect(model, isA<ModelIdeaExpander>());
-    model.close();
-    app.secrets.values.clear();
-    await expectLater(app.container.read(ideaExpanderFactoryProvider)(), throwsA(isA<ResearchFailure>()));
+    expect(app.container.read(ideaExpanderFactoryProvider), isNull);
   });
   testWidgets('local retry switches model; keep rejects concurrent submission', (tester) async {
     final first = ControlledExpander(), second = ControlledExpander();
@@ -804,7 +803,11 @@ void main() {
     await tester.tap(local);
     await pumpFor(tester);
     await tester.pumpAndSettle();
-    expect(app.container.read(assistantServicesProvider).value!.configuration!.model, 'local-model');
+    expect(
+      app.container.read(mapTaskChoicesProvider)[mapRouteKey('demo-1', TaskType.mapExpand)],
+      const ModelReference('local', 'local-model'),
+    );
+    expect(app.container.read(assistantServicesProvider).value!.configuration!.model, isNot('local-model'));
     second.output.add(const ExpansionDraft(id: 'd1', parentRef: 'c3', title: '本机结果'));
     unawaited(second.output.close());
     await tester.pumpAndSettle();

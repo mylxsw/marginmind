@@ -1,3 +1,5 @@
+import '../../assistant/map_task_route.dart';
+
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +10,6 @@ import 'package:mm_platform/mm_platform.dart';
 import '../../../app/providers.dart';
 import '../../../shared/document_icon.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
 import '../../workspace/workspace_controller.dart';
 import '../../workspace/reader_ocr.dart';
@@ -219,10 +220,10 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
     if (content.documents.any((doc) => _selectedDocs.contains(doc.id) && _scanned(doc))) return;
     _starting = true;
-    final credential = await ref.read(assistantCredentialStateProvider.future);
+    final configured = await ref.read(mapTaskReadyProvider((widget.studySetId, TaskType.mapGenerate)).future);
     if (!mounted) return;
     _starting = false;
-    if (credential != AssistantCredentialState.ready) {
+    if (!configured) {
       setState(() => _needsSetup = true);
       return;
     }
@@ -477,6 +478,11 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _heading(
+          l.aiTasksModel,
+          trailing: MapTaskRoute(studySetId: widget.studySetId, type: TaskType.mapGenerate),
+        ),
+        const SizedBox(height: MMSpacing.l),
         _heading(
           l.mapGenerateSource,
           trailing: MMButton(

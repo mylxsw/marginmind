@@ -1,3 +1,5 @@
+import '../../assistant/map_task_route.dart';
+
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +8,6 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/l10n.dart';
-import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
 import '../../workspace/workspace_controller.dart';
 import '../map_generation_controller.dart';
@@ -51,7 +52,7 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
   Future<void> _start() async {
     if (_starting || _documents.isEmpty) return;
     setState(() => _starting = true);
-    final configured = await ref.read(assistantConfiguredProvider.future);
+    final configured = await ref.read(mapTaskReadyProvider((widget.studySetId, TaskType.mapGenerate)).future);
     if (!mounted) return;
     if (!configured) {
       setState(() {
@@ -165,6 +166,16 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          Row(
+                            children: [
+                              Text(l.aiTasksModel),
+                              const SizedBox(width: MMSpacing.m),
+                              Expanded(
+                                child: MapTaskRoute(studySetId: widget.studySetId, type: TaskType.mapGenerate),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: MMSpacing.l),
                           if (_needsSetup) ...[const ModelSetupCard(inline: true), const SizedBox(height: MMSpacing.m)],
                           Text(l.mapUpdateDescription, style: text.callout.copyWith(color: colors.secondaryLabel)),
                           const SizedBox(height: MMSpacing.l),

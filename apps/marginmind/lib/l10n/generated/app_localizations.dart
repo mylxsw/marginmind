@@ -6293,7 +6293,7 @@ abstract class AppLocalizations {
   /// No description provided for @webReadyPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Save for annotations, mind maps, and offline reading.'**
+  /// **'Convert to a document?'**
   String get webReadyPrompt;
 
   /// No description provided for @webStillLoading.
@@ -10837,6 +10837,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Test result not saved'**
   String get aiTasksProbeUnsaved;
+
+  /// No description provided for @mapTaskSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Result could not be saved. It is still held in this session.'**
+  String get mapTaskSaveFailed;
+
+  /// No description provided for @mapTaskRetrySave.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry saving'**
+  String get mapTaskRetrySave;
+
+  /// No description provided for @mapTaskContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue saved map task'**
+  String get mapTaskContinue;
+
+  /// No description provided for @mapTaskGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate map'**
+  String get mapTaskGenerate;
+
+  /// No description provided for @mapTaskExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand map'**
+  String get mapTaskExpand;
+
+  /// No description provided for @mapTaskContinueNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed stages will be reused. Unsaved results will only be saved. An interrupted request with no recorded result may call the model again and incur a charge. Continue?'**
+  String get mapTaskContinueNotice;
+
+  /// No description provided for @mapTaskCannotContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not continue. Check that the original map and sources are unchanged and storage is available.'**
+  String get mapTaskCannotContinue;
 
   /// No description provided for @workspaceSearchTabs.
   ///

@@ -1,3 +1,5 @@
+import '../../assistant/map_task_route.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +9,6 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/document_icon.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
 import '../../workspace/workspace_controller.dart';
 import '../../workspace/reader_ocr.dart';
@@ -121,7 +122,7 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
     if (_scanned()) return;
     final docId = _documentId();
     if (docId.isEmpty) return;
-    final configured = await ref.read(assistantConfiguredProvider.future);
+    final configured = await ref.read(mapTaskReadyProvider((widget.studySetId, TaskType.mapGenerate)).future);
     if (!mounted) return;
     if (!configured) {
       setState(() => _needsSetup = true);

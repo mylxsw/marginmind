@@ -45,12 +45,12 @@ export 'src/model_policy/probe.dart';
 export 'src/quick_tasks.dart';
 export 'src/model_policy/maintained.dart';
 
+export 'src/map_tasks.dart';
 export 'src/assistant_tasks.dart';
 export 'src/assistant_summary.dart';
 export 'src/task_runtime/provider_steps.dart';
 export 'src/study_notes/tasks.dart';
 export 'src/study_notes/runtime_organizer.dart';
-
 export 'src/document_translation.dart';
 
 export 'src/assistant_summary_run.dart';

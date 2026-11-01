@@ -1,3 +1,5 @@
+import '../../assistant/map_task_route.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -6,7 +8,6 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/assistant_settings.dart';
 import '../../assistant/assistant_controller.dart';
 import '../../assistant/expansion_controller.dart';
 import '../../workspace/workspace_controller.dart';
@@ -75,9 +76,9 @@ class DocumentMapBanner extends ConsumerWidget {
           ? null
           : () async {
               navigation.dismiss();
-              final credential = await ref.read(assistantCredentialStateProvider.future);
+              final configured = await ref.read(mapTaskReadyProvider((studySetId, TaskType.mapGenerate)).future);
               if (!context.mounted) return;
-              if (credential != AssistantCredentialState.ready) {
+              if (!configured) {
                 await showGenerateMapSheet(
                   context,
                   ref,

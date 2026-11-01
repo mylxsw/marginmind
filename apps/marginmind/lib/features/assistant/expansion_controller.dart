@@ -7,9 +7,9 @@ import '../workspace/workspace_controller.dart';
 import 'assistant_controller.dart';
 import 'assistant_reader.dart';
 import 'assistant_scope.dart';
-import 'assistant_settings.dart';
 import 'assistant_writes.dart';
 import 'expansion_context.dart';
+import 'map_task_factory.dart';
 
 /// Shares the assistant's exclusive model slot, including across preview requests.
 final expansionBusyProvider = NotifierProvider<ExpansionBusy, bool>(ExpansionBusy.new);
@@ -20,17 +20,8 @@ class ExpansionBusy extends Notifier<bool> {
   void set(bool value) => state = value;
 }
 
-final ideaExpanderFactoryProvider = Provider<Future<IdeaExpander> Function()>(
-  (ref) => () async {
-    final model = ref.read(assistantDefaultModelProvider);
-    if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable);
-    final key = await assistantModelKey(ref.read(assistantSecretsProvider), model);
-    if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
-      throw const ResearchFailure(ResearchFailureKind.authentication);
-    }
-    return ModelIdeaExpander(connectAssistant(model, key ?? ''), model.model);
-  },
-);
+// Optional injection for deterministic UI tests; production uses the scoped factory.
+final ideaExpanderFactoryProvider = Provider<Future<IdeaExpander> Function()?>((ref) => null);
 
 final expansionControllerProvider = NotifierProvider.autoDispose.family<ExpansionController, ExpansionPreview?, String>(
   ExpansionController.new,
@@ -51,6 +42,7 @@ class ExpansionPreview {
     this.activeTargetId,
     this.planItems = const [],
     this.disabledPlan = const {},
+    this.targetFailures = const {},
   });
   final ExpansionRequest request;
   final int baseRevision;
@@ -62,6 +54,7 @@ class ExpansionPreview {
   final String? activeTargetId;
   final List<ExpansionPlanItem> planItems;
   final Set<int> disabledPlan;
+  final Map<String, ResearchFailure> targetFailures;
   Map<String, String> get moves {
     if (request.scope != ExpansionScope.group) return const {};
     final parent = drafts.where((d) => d.kept && d.parentRef == request.commonParentId).firstOrNull;
@@ -79,8 +72,10 @@ class ExpansionPreview {
     String? activeTargetId,
     List<ExpansionPlanItem>? planItems,
     Set<int>? disabledPlan,
+    Map<String, ResearchFailure>? targetFailures,
   }) => ExpansionPreview(
     request: request,
+    targetFailures: targetFailures ?? this.targetFailures,
     planItems: planItems ?? this.planItems,
     disabledPlan: disabledPlan ?? this.disabledPlan,
     baseRevision: baseRevision,
@@ -98,6 +93,15 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
   final String arg;
   CancellationToken? _cancel;
   final _expanders = <IdeaExpander>{};
+  MapTaskExecutor? _executor;
+  MapTaskSession? _taskSession;
+  Future<IdeaExpander> _newExpander() async {
+    final injected = ref.read(ideaExpanderFactoryProvider);
+    if (injected != null) return injected();
+    final session = _taskSession ??= MapTaskSession(ref, arg, mapExpandSpec);
+    return ModelIdeaExpander.runtime(_executor ??= session.execute, continuationRepairs: session.continuationRound);
+  }
+
   int _generation = 0, _call = 0;
   bool _disposed = false, _ownsBusy = false;
   final _excluded = <String>[];
@@ -156,11 +160,67 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
     );
   }
 
+  Future<void> continueTask(String id) async {
+    if ((state != null && !{ExpansionPhase.error, ExpansionPhase.stopped}.contains(state!.phase)) ||
+        ref.read(expansionBusyProvider) ||
+        ref.read(assistantControllerProvider.notifier).busy) {
+      throw StateError('Assistant is busy');
+    }
+    final session = await MapTaskSession.restore(ref, arg, mapExpandSpec, id);
+    final workflow = session.workflow!;
+    if (workflow['sourceRevision'] != mapTaskFingerprint(ref.read(workspaceProvider(arg).notifier).content.toJson())) {
+      throw const ConfigurationFailure('mapSourceRevisionChanged');
+    }
+    final request = _restoreExpansionRequest(Map<String, dynamic>.from(workflow['request']));
+    if (request.studySetId != arg) throw const ConfigurationFailure('mapSessionMismatch');
+    if (state != null) {
+      stop();
+      state = null;
+    }
+    _executor = session.execute;
+    _taskSession = session;
+    _excluded
+      ..clear()
+      ..addAll(List<String>.from(workflow['excluded']));
+    _call = workflow['callStart'] as int;
+    if (workflow['planning'] == true) {
+      await planMap(request, continuing: session);
+    } else {
+      state = ExpansionPreview(
+        request: request,
+        baseRevision: workflow['baseRevision'],
+        proposalId: workflow['proposalId'],
+        drafts: [for (final d in workflow['seedDrafts']) _restoreExpansionDraft(d)],
+      );
+      await _generate(request);
+    }
+  }
+
+  Future<void> _saveWorkflow(ExpansionRequest request, {bool planning = false}) async {
+    if (ref.read(ideaExpanderFactoryProvider) != null) return;
+    final session = _taskSession ??= MapTaskSession(ref, arg, mapExpandSpec);
+    _executor = session.execute;
+    session.explicitContinuation = true;
+    await session.saveWorkflow({
+      'request': _expansionRequestJson(request),
+      'planning': planning,
+      'proposalId': state!.proposalId,
+      'baseRevision': state!.baseRevision,
+      'sourceRevision': mapTaskFingerprint(ref.read(workspaceProvider(arg).notifier).content.toJson()),
+      'excluded': _excluded.toList(),
+      'callStart': _call,
+      'seedDrafts': [for (final d in state!.drafts) _expansionDraftJson(d)],
+    });
+  }
+
   Future<void> start(ExpansionRequest request) async {
     if (state != null || ref.read(assistantControllerProvider.notifier).busy || ref.read(expansionBusyProvider)) {
       throw StateError('Assistant is busy');
     }
     _excluded.clear();
+    _executor = null;
+    _taskSession = null;
+    _call = 0;
     final snapshot = ref.read(workspaceProvider(arg).notifier).content;
     state = ExpansionPreview(
       request: request,
@@ -170,16 +230,22 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
     await _generate(request);
   }
 
-  Future<void> planMap(ExpansionRequest request) async {
+  Future<void> planMap(ExpansionRequest request, {MapTaskSession? continuing}) async {
     if (state != null || ref.read(assistantControllerProvider.notifier).busy || ref.read(expansionBusyProvider)) {
       throw StateError('Assistant is busy');
     }
-    _excluded.clear();
+    if (continuing == null) {
+      _excluded.clear();
+      _executor = null;
+      _taskSession = null;
+      _call = 0;
+    }
     final workspace = ref.read(workspaceProvider(arg).notifier);
     state = ExpansionPreview(
       request: request,
       baseRevision: assistantMapRevision(workspace.content, request.mapId),
-      proposalId: 'expansion-${DateTime.now().microsecondsSinceEpoch}',
+      proposalId:
+          continuing?.workflow?['proposalId'] as String? ?? 'expansion-${DateTime.now().microsecondsSinceEpoch}',
       phase: ExpansionPhase.planning,
     );
     final epoch = ++_generation, cancel = _cancel = CancellationToken();
@@ -187,6 +253,7 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
     ref.read(expansionBusyProvider.notifier).set(true);
     IdeaExpander? expander;
     try {
+      await _saveWorkflow(request, planning: true);
       final snapshot = workspace.content;
       final reader = WorkspaceReader(
         content: () => snapshot,
@@ -197,7 +264,7 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
       final context = await ExpansionContextBuilder(reader)
           .build(snapshot, request, cancellation: cancel, rootTitle: ref.read(studySetProvider(arg))?.title);
       cancel.check();
-      expander = await ref.read(ideaExpanderFactoryProvider)();
+      expander = await _newExpander();
       _expanders.add(expander);
       cancel.check();
       final items = (await expander.plan(context, 8, cancel)).toList();
@@ -295,6 +362,7 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
     ref.read(expansionBusyProvider.notifier).set(true);
     ResearchFailure? failure;
     try {
+      await _saveWorkflow(request);
       final prefs = ref.read(sharedPreferencesProvider), key = 'expansion.$arg';
       if (remember) {
         await prefs.setString('$key.direction', request.direction.name);
@@ -326,6 +394,7 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
       Future<void> worker() async {
         while (index < targets.length && !cancel.isCancelled && epoch == _generation) {
           final target = targets[index++];
+          state = state!.copyWith(targetFailures: {...state!.targetFailures}..remove(target));
           IdeaExpander? expander;
           try {
             final r = this.request(
@@ -366,7 +435,7 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
               );
             }
             cancel.check();
-            expander = await ref.read(ideaExpanderFactoryProvider)();
+            expander = await _newExpander();
             _expanders.add(expander);
             cancel.check();
             final rejected = <String>{};
@@ -384,12 +453,21 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
             }
             // Audit the visible tree too: global deduplication can remove a
             // child that was valid within the model's smaller context.
+            if (depths.length == context.targets.length) {
+              throw const ResearchFailure(ResearchFailureKind.protocol, 'missingTarget');
+            }
             if (r.scope != ExpansionScope.group &&
                 depths.entries.any((e) => e.value > 0 && e.value < r.depth && !parentsWithChildren.contains(e.key))) {
               throw const ResearchFailure(ResearchFailureKind.protocol, 'incompleteDepth');
             }
           } catch (error) {
-            failure ??= error is ResearchFailure ? error : const ResearchFailure(ResearchFailureKind.unavailable);
+            final targetFailure = error is ResearchFailure
+                ? error
+                : const ResearchFailure(ResearchFailureKind.unavailable);
+            failure ??= targetFailure;
+            if (!_disposed && epoch == _generation) {
+              state = state!.copyWith(targetFailures: {...state!.targetFailures, target: targetFailure});
+            }
           } finally {
             expander?.close();
             _expanders.remove(expander);
@@ -438,6 +516,7 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
   void discard() {
     if (state?.isApplying == true) return;
     if (state != null) stop();
+    _taskSession?.dismiss().ignore();
     state = null;
   }
 
@@ -509,6 +588,8 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
   Future<void> regenerate([ExpansionRequest? settings]) async {
     if (!_reviewable || ref.read(assistantControllerProvider.notifier).busy) return;
     final old = state!, r = settings ?? old.request;
+    _taskSession = null;
+    _executor = null; // Explicit regeneration starts a new frozen run, retaining old run attribution.
     _excluded.addAll(old.drafts.map((d) => d.title));
     final next = request(
       r.mapId,
@@ -562,6 +643,7 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
       final receipt = await ref
           .read(assistantMapEditExecutorProvider(arg))
           .apply(proposal, proposal.operations.map((o) => o.id).toSet());
+      _taskSession?.dismiss().ignore();
       if (!_disposed) state = null;
       return receipt.nodeIds.length;
     } catch (_) {
@@ -570,3 +652,50 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
     }
   }
 }
+
+Map<String, dynamic> _expansionRequestJson(ExpansionRequest r) => {
+  'studySetId': r.studySetId,
+  'mapId': r.mapId,
+  'targetIds': r.targetIds,
+  'scope': r.scope.name,
+  'direction': r.direction.name,
+  'depth': r.depth,
+  'breadth': r.breadth,
+  'hint': r.hint,
+  'grounded': r.grounded,
+  'plan': r.plan,
+  'round': r.round,
+  'commonParentId': r.commonParentId,
+};
+ExpansionRequest _restoreExpansionRequest(Map<String, dynamic> j) => ExpansionRequest(
+  studySetId: j['studySetId'],
+  mapId: j['mapId'],
+  targetIds: List<String>.from(j['targetIds']),
+  scope: ExpansionScope.values.byName(j['scope']),
+  direction: ExpansionDirection.values.byName(j['direction']),
+  depth: j['depth'],
+  breadth: j['breadth'],
+  hint: j['hint'],
+  grounded: j['grounded'],
+  plan: Map<String, int>.from(j['plan']),
+  round: j['round'],
+  commonParentId: j['commonParentId'],
+);
+Map<String, dynamic> _expansionDraftJson(ExpansionDraft d) => {
+  'id': d.id,
+  'parentRef': d.parentRef,
+  'title': d.title,
+  'tag': d.tag.name,
+  'page': d.page,
+  'kept': d.kept,
+  'edited': d.edited,
+};
+ExpansionDraft _restoreExpansionDraft(Map j) => ExpansionDraft(
+  id: j['id'],
+  parentRef: j['parentRef'],
+  title: j['title'],
+  tag: ExpansionDirection.values.byName(j['tag']),
+  page: j['page'],
+  kept: j['kept'],
+  edited: j['edited'],
+);
