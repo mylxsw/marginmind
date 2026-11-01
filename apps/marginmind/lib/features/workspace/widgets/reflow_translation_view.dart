@@ -16,6 +16,9 @@ import '../reflow_session.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_compare_controls.dart';
+import '../full_translation.dart';
+import 'full_translation_capsule.dart';
+import 'full_translation_strip.dart';
 
 /// A lazy paragraph list centered on the source paragraph. Both directions use
 /// source identities, so translation length never changes the correspondence.
@@ -89,6 +92,8 @@ class _ReflowTranslationViewState extends ConsumerState<ReflowTranslationView> {
     final pair = ref.watch(readerCompareProvider(widget.studySetId))!;
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
     final document = workspace.content.document(pair.leftDocumentId)!;
+    final targetLang = (pair.right as AiCompareTarget).targetLang;
+    final fullState = ref.watch(fullTranslationProvider((widget.studySetId, document.id, targetLang)));
     final identity = '${document.id}:${document.revision}:${(pair.right as AiCompareTarget).targetLang}';
     if (_identity != identity) {
       _identity = identity;
@@ -202,6 +207,14 @@ class _ReflowTranslationViewState extends ConsumerState<ReflowTranslationView> {
                     translationLanguage: (pair.right as AiCompareTarget).targetLang,
                   ),
                 ),
+                if (fullState.job != null)
+                  Flexible(
+                    child: FullTranslationCapsule(
+                      studySetId: widget.studySetId,
+                      documentId: document.id,
+                      targetLang: targetLang,
+                    ),
+                  ),
                 if (state.failed)
                   MMIconButton(icon: MMIcons.history, tooltip: l.assistantRetry, onPressed: controller.retry),
                 MMIconButton(
@@ -212,6 +225,8 @@ class _ReflowTranslationViewState extends ConsumerState<ReflowTranslationView> {
               ],
             ),
           ),
+          if (fullState.job != null)
+            FullTranslationStrip(studySetId: widget.studySetId, documentId: document.id, targetLang: targetLang),
           Expanded(
             child: state.loading
                 ? const Center(child: CircularProgressIndicator())

@@ -122,12 +122,14 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     await tester.pump();
-    expect(compare.opened, 'c2');
+    expect(compare.opened, isNull);
+    expect(controller.requested, true);
     expect(controller.started, false);
     expect(find.byType(FullTranslationSheet), findsOneWidget);
     controller.gate.complete();
     await tester.pumpAndSettle();
     expect(controller.started, true);
+    expect(compare.opened, 'c2');
     expect(find.byType(FullTranslationSheet), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -180,7 +182,7 @@ void main() {
     expect(find.text('英文（检测）'), findsOneWidget);
     expect(find.text('中文'), findsOneWidget);
     expect(find.text('不发送：页眉页码 0 处'), findsOneWidget);
-    expect(find.text('译文保存在学习集内，不修改 PDF'), findsOneWidget);
+    expect(find.text('译文保存在学习集内，不修改原文'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('full-translation-source-language')));
     await tester.pumpAndSettle();

@@ -110,8 +110,9 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     }
 
     final counts = state.counts();
-    final documentPages =
-        ref.watch(workspaceContentProvider(widget.studySetId))?.document(widget.documentId)?.pageCount ?? 0;
+    final doc = ref.watch(workspaceContentProvider(widget.studySetId))?.document(widget.documentId);
+    final isText = doc?.contentManifest != null;
+    final documentPages = isText ? 0 : doc?.pageCount ?? 0;
     final pageCount = math.max(state.pageCount, documentPages);
     final currentReading = state.currentReadingPage ?? 1;
 
@@ -192,9 +193,13 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
             ],
           ),
           const SizedBox(height: 12),
-          _buildGrid(context, state, controller, pageCount, currentReading, c, l),
-          const SizedBox(height: 10),
-          _buildLegend(context, c, l),
+          if (isText)
+            LinearProgressIndicator(value: counts.pct / 100)
+          else ...[
+            _buildGrid(context, state, controller, pageCount, currentReading, c, l),
+            const SizedBox(height: 10),
+            _buildLegend(context, c, l),
+          ],
           const SizedBox(height: 12),
           _buildStats(context, counts, job, c, l),
           const SizedBox(height: 12),
@@ -484,7 +489,7 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
   ) {
     var skippedCount = 0;
     for (final p in state.paragraphs) {
-      if (state.inRange(p.page) && translationSkipReason(p, widget.targetLang) != null) {
+      if (state.inRange(p.unit) && translationSkipReason(p, widget.targetLang) != null) {
         skippedCount++;
       }
     }

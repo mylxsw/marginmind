@@ -6,22 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
-import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
-import '../../../app/providers.dart';
 
-import 'package:mm_assistant/mm_assistant.dart' show AssistantProvider;
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/l10n.dart';
 import '../../../shared/pdf_picker.dart';
-import '../../assistant/assistant_settings.dart';
 import '../reader_compare.dart';
 import 'reader_translation_view.dart';
 import 'reading_settings.dart';
-import '../translation_task_summary.dart';
-import 'full_translation_sheet.dart';
-import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -60,27 +54,6 @@ class ReaderCompareMenu extends ConsumerWidget {
     final others = content.documents.where((d) => left || d.id != current).toList();
     final ordered = left ? others : [...others.where(recommended), ...others.where((d) => !recommended(d))];
     final tooNarrow = MMSizeClass.of(context) == MMSizeClass.medium && MediaQuery.sizeOf(context).width < 874;
-    final model = MMPlatformCapabilities.current.assistant ? ref.watch(assistantDefaultModelProvider) : null;
-    final hasText = current == null
-        ? null
-        : ref.watch(compareDocumentInfoProvider((studySetId, current))).value?.hasText;
-    final fullState = current == null ? null : ref.watch(translationTaskSummaryProvider((studySetId, current))).value;
-    final targetLang = fullState?.isActive == true ? fullState!.targetLang : fullTranslationTargetLanguage(language);
-    final hasActiveFullJob = fullState?.isActive == true;
-    final cached = content.translationCaches.any(
-      (t) => t.documentId == current && t.targetLang == targetLang && t.paragraphs.isNotEmpty,
-    );
-    final reason = model == null
-        ? l.assistantConnectFirst
-        : !(ref.watch(sharedPreferencesProvider).getBool(assistantOnlineKey(studySetId)) ??
-                  ref.read(sharedPreferencesProvider).getBool('assistant.online') ??
-                  true) &&
-              model.provider != AssistantProvider.ollama
-        ? l.compareAiOffline
-        : hasText == false
-        ? l.compareAiNeedsOcr
-        : null;
-
     Future<void> select(String id) async {
       try {
         final hidden = await ref
@@ -109,27 +82,6 @@ class ReaderCompareMenu extends ConsumerWidget {
         try {
           if (value == 'exit') {
             ref.read(readerCompareProvider(studySetId).notifier).exit();
-          } else if (value == 'ai') {
-            try {
-              final hidden = await ref
-                  .read(readerCompareProvider(studySetId).notifier)
-                  .openAi(targetLang, readerWidth: ReaderCompareWidth.of(context));
-              if (hidden && context.mounted) {
-                MMHud.show(context, l.compareMapHiddenHud(describeShortcut(AppShortcuts.view2)));
-              }
-            } catch (_) {
-              if (context.mounted) MMHud.show(context, l.somethingWentWrong);
-            }
-          } else if (value == 'full-translation') {
-            if (current != null && current.isNotEmpty) {
-              unawaited(showFullTranslationSheet(context, studySetId: studySetId, documentId: current));
-            }
-          } else if (value == 'full-translation-task') {
-            if (current != null && current.isNotEmpty) {
-              unawaited(
-                showFullTranslationPanel(context, studySetId: studySetId, documentId: current, targetLang: targetLang),
-              );
-            }
           } else if (value == 'import') {
             final files = await ref.read(pdfPickerProvider)(l.documentFiles);
             if (files.isEmpty || !context.mounted) return;
@@ -180,29 +132,6 @@ class ReaderCompareMenu extends ConsumerWidget {
           ),
         if (!left) ...[
           MMDropdownItem<String>(value: 'import', child: _menuRow(context, MMIcons.add, l.importDocument)),
-          if (MMPlatformCapabilities.current.assistant) ...[
-            const PopupMenuDivider(),
-            _AiTranslationEntry(
-              label: l.compareAiTranslate(language == 'zh' ? l.languageEnglish : l.languageChinese),
-              reason: reason,
-              cached: cached,
-              tooNarrow: tooNarrow,
-              disabled: hasActiveFullJob,
-            ),
-            if (MMSizeClass.of(context) != MMSizeClass.compact &&
-                source?.format == DocumentFormat.pdf &&
-                current != null &&
-                current.isNotEmpty)
-              MMDropdownItem<String>(
-                value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
-                enabled: !tooNarrow,
-                child: _menuRow(
-                  context,
-                  MMIcons.layers,
-                  hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
-                ),
-              ),
-          ],
           if (pair != null) ...[
             const PopupMenuDivider(),
             MMDropdownItem<String>(
@@ -262,9 +191,7 @@ class ReaderCompareMenu extends ConsumerWidget {
                     child: Text(
                       translationLanguage == null
                           ? document!.title
-                          : translationLanguage == 'zh'
-                          ? l.languageCodeZh
-                          : l.languageCodeEn,
+                          : l.translationLanguageCodeName(translationLanguage!),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.mmText.callout.copyWith(fontWeight: FontWeight.w600),
@@ -286,67 +213,6 @@ class ReaderCompareMenu extends ConsumerWidget {
         child: Text(label, style: context.mmText.callout, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
     ],
-  );
-}
-
-/// Mount only inside the open popup. Opening a study set must never read
-/// Keychain credentials merely to draw its toolbar.
-class _AiTranslationEntry extends PopupMenuEntry<String> {
-  const _AiTranslationEntry({
-    required this.label,
-    required this.reason,
-    required this.cached,
-    required this.tooNarrow,
-    this.disabled = false,
-  });
-  final String label;
-  final String? reason;
-  final bool cached, tooNarrow, disabled;
-  @override
-  double get height => reason == null || cached ? 30 : 50;
-  @override
-  bool represents(String? value) => value == 'ai';
-  @override
-  State<_AiTranslationEntry> createState() => _AiTranslationEntryState();
-}
-
-class _AiTranslationEntryState extends State<_AiTranslationEntry> {
-  @override
-  Widget build(BuildContext context) => Consumer(
-    builder: (context, ref, _) {
-      final credential = !widget.cached && widget.reason == null
-          ? ref.watch(assistantCredentialStateProvider).value
-          : null;
-      final reason = widget.cached
-          ? null
-          : widget.reason ?? (credential == AssistantCredentialState.ready ? null : context.l10n.assistantConnectFirst);
-      final canClick = !widget.tooNarrow && !widget.disabled && reason == null;
-      return MMDropdownItem<String>(
-        value: 'ai',
-        enabled: canClick,
-        height: reason == null ? 30 : 50,
-        child: Opacity(
-          opacity: canClick ? 1 : .5,
-          child: Row(
-            children: [
-              const Icon(MMIcons.translate, size: 14),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(widget.label, style: context.mmText.callout),
-                    if (reason != null)
-                      Text(reason, style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
   );
 }
 

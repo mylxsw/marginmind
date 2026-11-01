@@ -496,9 +496,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('single document menu imports to the right, disables AI with reason, and exits from menu', (
-    tester,
-  ) async {
+  testWidgets('single document menu imports to the right and exits from menu', (tester) async {
     final fixture = compareFixture();
     final repository = InMemoryStudySetContentRepository({
       'demo-1': fixture.copyWith(documents: [fixture.documents.first]),
@@ -514,7 +512,7 @@ void main() {
     await tester.pumpAndSettle();
     await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
-    expect(find.text('Configure a model first'), findsOneWidget);
+    expect(find.textContaining('AI Translate into'), findsNothing);
     expect(find.text('Suggested'), findsNothing);
     final importItem = find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'import');
     await tester.tap(importItem);

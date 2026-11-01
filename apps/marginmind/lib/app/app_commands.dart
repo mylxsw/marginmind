@@ -14,8 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_core/mm_core.dart'
-    show CardKind, Document, DocumentFormat, DocumentRuntime, TextReadingPosition, QuoteBlock;
+import 'package:mm_core/mm_core.dart' show CardKind, Document, DocumentRuntime, TextReadingPosition, QuoteBlock;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -1170,7 +1169,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ...[
           () {
             final doc = workspace.content.document(workspaceState.activeDocumentId!);
-            if (doc == null || doc.format != DocumentFormat.pdf) return null;
+            if (doc == null) return null;
             final fullState = ref.watch(translationTaskSummaryProvider((workspaceId, doc.id))).value;
             final targetLang = fullState?.targetLang ?? 'zh';
             final hasActive = fullState?.isActive == true;

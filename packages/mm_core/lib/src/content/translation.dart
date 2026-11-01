@@ -54,6 +54,9 @@ class TranslationParagraph {
   final int? _page;
   final TextAnchor? textAnchor;
   int get page => _page ?? (throw StateError('Text translation has no page'));
+
+  /// Task coordinate: PDF page, or one-based source paragraph for flowing text.
+  int get unit => textAnchor == null ? page : index + 1;
   final int index;
   final bool heading;
   final List<PageRect> rects;

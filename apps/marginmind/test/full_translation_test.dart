@@ -35,8 +35,6 @@ final _captureLocale = ValueNotifier<Locale?>(null);
 Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
   final evidence = Platform.environment['TRANSLATION_EVIDENCE_DIR'];
   if (!{
-        'sheet-light',
-        'sheet-dark',
         'panel-running-light',
         'panel-running-dark',
         'checkpoint-expanded-light',
@@ -536,7 +534,14 @@ void main() {
       await tester.pumpWidget(buildSheet(dark: false));
       await tester.pumpAndSettle();
 
-      expect(find.text('翻译全文'), findsOneWidget);
+      expect(find.text('全文翻译'), findsOneWidget);
+      expect(find.textContaining('请先确认原文语言和目标语言'), findsOneWidget);
+      final sheetRect = tester.getRect(find.byType(FullTranslationSheet));
+      final actionRect = tester.getRect(find.widgetWithText(MMButton, '取消'));
+      expect(sheetRect.width, 560);
+      expect(sheetRect.height, lessThan(900));
+      expect(sheetRect.contains(actionRect.center), true);
+      expect(tester.takeException(), isNull);
       expect(find.text('分批确认'), findsOneWidget);
       expect(find.text('一次完成'), findsOneWidget);
       expect(find.textContaining('开始 · 第'), findsOneWidget);

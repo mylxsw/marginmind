@@ -1768,7 +1768,7 @@
   "appIconHomeHint": "更换主屏幕图标，系统可能显示确认提示。",
   "appIconChanging": "正在更换图标…",
   "appIconChangeFailed": "图标更换失败，请重试。",
-  "fullTranslationMenu": "翻译全文…",
+  "fullTranslationMenu": "全文翻译…",
   "fullTranslationTokensUsed": "已用 ",
   "fullTranslationTask": "全文翻译任务…",
   "fullTranslationTaskMenu": "全文翻译任务… {percent}%",
@@ -1777,7 +1777,7 @@
       "percent": { "type": "int" }
     }
   },
-  "fullTranslationCapsule": "翻译全文",
+  "fullTranslationCapsule": "全文翻译",
   "fullTranslationCapsuleRunning": "{percent}% 第 {batch} 批 · {done}/{total} 页",
   "@fullTranslationCapsuleRunning": {
     "placeholders": {
@@ -1840,7 +1840,13 @@
   "fullTranslationPlaceholderOutOfRange": "不在本次翻译范围",
   "fullTranslationPlaceholderUntranslated": "未翻译",
   "fullTranslationTranslatePage": "翻译此页",
-  "fullTranslationTitle": "翻译全文",
+  "fullTranslationViewSaved": "查看译文",
+  "fullTranslationConfirmIntro": "将按原文顺序逐段翻译整份文档，译文与原文对照显示。请先确认原文语言和目标语言。点击“开始翻译”后，原文将发送给你配置的 AI 模型，可能产生费用；可随时暂停，已译内容会保留。",
+  "fullTranslationSameLanguage": "原文语言和目标语言相同，请选择另一种目标语言。",
+  "fullTranslationStartFailed": "未能开始翻译，请检查模型连接后重试。已有译文会保留。",
+  "fullTranslationTextProgress": "{percent}% · {done}/{total} 段",
+  "@fullTranslationTextProgress": {"placeholders": {"percent": {"type": "int"}, "done": {"type": "int"}, "total": {"type": "int"}}},
+  "fullTranslationTitle": "全文翻译",
   "fullTranslationDocSubtitle": "{doc} · {pages} 页",
   "@fullTranslationDocSubtitle": {
     "placeholders": {
@@ -1876,7 +1882,7 @@
   "fullTranslationCkptFailed": "{count} 段未译",
   "fullTranslationNoteHint": "只用于之后的批次；已译段落不会自动重译。",
   "fullTranslationNoteConfigured": " · 已设置",
-  "fullTranslationFooterNote": "译文保存在学习集内，不修改 PDF",
+  "fullTranslationFooterNote": "译文保存在学习集内，不修改原文",
   "fullTranslationStartBatch": "开始 · 第 {from}–{to} 页",
   "@fullTranslationStartBatch": {
     "placeholders": {

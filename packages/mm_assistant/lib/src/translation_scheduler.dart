@@ -120,7 +120,7 @@ class TranslationScheduler {
     failure: _failure,
   );
   String keyOf(TranslationParagraph p) => _keys[p.fingerprint] ?? textKey(p.text, language);
-  int _page(TranslationParagraph p) => p.textAnchor == null ? p.page : p.index + 1;
+  int _page(TranslationParagraph p) => p.unit;
   bool get _gate =>
       !_closed &&
       !_closingRequested &&

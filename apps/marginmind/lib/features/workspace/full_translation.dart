@@ -54,7 +54,7 @@ FullTranslationEstimation estimateFullTranslation({
 }) {
   var paras = 0, chars = 0, reused = 0, reusedPages = 0, skipped = 0, same = 0, dupe = 0;
   for (var n = from; n <= to; n++) {
-    final onPage = paragraphs.where((p) => p.page == n).toList();
+    final onPage = paragraphs.where((p) => p.unit == n).toList();
     var pageAll = true, any = false;
     for (final p in onPage) {
       final skip = translationSkipReason(p, targetLang, marginFingerprints: marginFingerprints);
@@ -82,7 +82,7 @@ FullTranslationEstimation estimateFullTranslation({
   final seen = <String>{};
   var dupChars = 0;
   for (var n = from; n <= to; n++) {
-    final onPage = paragraphs.where((p) => p.page == n).toList();
+    final onPage = paragraphs.where((p) => p.unit == n).toList();
     for (final p in onPage) {
       final skip = translationSkipReason(p, targetLang, marginFingerprints: marginFingerprints);
       if (skip != null) continue;
@@ -98,7 +98,12 @@ FullTranslationEstimation estimateFullTranslation({
   }
 
   final uniqueChars = chars - dupChars;
-  final tokens = ((uniqueChars / 4 * 1) + (uniqueChars * 0.55) + (((paras - dupe) / 4).ceil() * 180)).round();
+  // Flowing text is requested one source paragraph at a time; it cannot use
+  // the PDF estimate of four paragraphs sharing one prompt. Keep the overhead
+  // consistent with the scheduler's fallback when a provider omits usage.
+  final isText = paragraphs.any((p) => p.textAnchor != null);
+  final overhead = isText ? (paras - dupe) * 512 : ((paras - dupe) / 4).ceil() * 180;
+  final tokens = (uniqueChars * .8 + overhead).round();
   final minutes = math.max(1, ((paras - dupe) * 2.4 / 2 / 60).round());
   return FullTranslationEstimation(
     paras: paras,
@@ -182,7 +187,7 @@ class FullTranslationState {
   bool get isDone => job?.state == TranslationJobState.done;
   bool get isStopped => job?.state == TranslationJobState.stopped;
 
-  int get pageCount => paragraphs.isEmpty ? 0 : paragraphs.map((p) => p.page).reduce(math.max);
+  int get pageCount => paragraphs.isEmpty ? 0 : paragraphs.map((p) => p.unit).reduce(math.max);
   int get from => job?.range.from ?? 1;
   int get to => job?.range.to ?? pageCount;
   bool inRange(int page) => job != null && page >= from && page <= to;
@@ -196,17 +201,17 @@ class FullTranslationState {
     }
     if (translationSkipReason(p, targetLang) != null) return TranslationSegmentState.skipped;
     final current = job;
-    if (current == null || !current.range.contains(p.page)) return TranslationSegmentState.none;
+    if (current == null || !current.range.contains(p.unit)) return TranslationSegmentState.none;
     if (current.failures.containsKey(p.fingerprint)) return TranslationSegmentState.failed;
     if (!current.isActive) return TranslationSegmentState.none;
     if (runningKeys.contains(key)) return TranslationSegmentState.running;
-    return current.batch.range.contains(p.page) ? TranslationSegmentState.queued : TranslationSegmentState.none;
+    return current.batch.range.contains(p.unit) ? TranslationSegmentState.queued : TranslationSegmentState.none;
   }
 
   Map<int, TranslationPageState> get pageStates {
     final grouped = <int, List<TranslationSegmentState>>{};
     for (final paragraph in paragraphs) {
-      (grouped[paragraph.page] ??= []).add(segmentState(paragraph));
+      (grouped[paragraph.unit] ??= []).add(segmentState(paragraph));
     }
     return {for (final entry in grouped.entries) entry.key: deriveTranslationPageState(entry.value)};
   }
@@ -225,7 +230,7 @@ class FullTranslationState {
   }
 
   TranslationPageState pageState(int page) {
-    final onPage = paragraphs.where((p) => p.page == page).toList();
+    final onPage = paragraphs.where((p) => p.unit == page).toList();
     if (onPage.isEmpty) return TranslationPageState.skipped;
     return deriveTranslationPageState(onPage.map(segmentState));
   }
@@ -236,7 +241,7 @@ class FullTranslationState {
     var total = 0, done = 0, fail = 0, run = 0, reused = 0, pagesDone = 0, pagesTotal = 0;
     final byPage = <int, List<TranslationParagraph>>{};
     for (final p in paragraphs) {
-      (byPage[p.page] ??= []).add(p);
+      (byPage[p.unit] ??= []).add(p);
     }
     for (var n = f; n <= t; n++) {
       final onPage = byPage[n] ?? const <TranslationParagraph>[];
@@ -484,7 +489,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
   Future<void> translatePage(int page) async {
     final scheduler = _scheduler;
     if (scheduler == null) return;
-    final onPage = state.paragraphs.where((p) => p.page == page).toList();
+    final onPage = state.paragraphs.where((p) => p.unit == page).toList();
     for (final p in onPage) {
       if (!state.values.containsKey(p.fingerprint) && !state.values.containsKey(textKey(p.text, targetLang))) {
         unawaited(scheduler.retry(p));

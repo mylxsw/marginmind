@@ -64,6 +64,7 @@ class FullTranslationCapsule extends ConsumerWidget {
     final pagesDone = counts.pagesDone;
     final pagesTotal = counts.pagesTotal;
     final fail = counts.fail;
+    final isText = state.paragraphs.any((p) => p.textAnchor != null);
 
     Color bg = c.quaternaryFill;
     Widget leading = const SizedBox.shrink();
@@ -136,6 +137,12 @@ class FullTranslationCapsule extends ConsumerWidget {
         text = l.fullTranslationCapsuleStopped(pagesDone, pagesTotal);
         semanticLabel = text;
         break;
+    }
+
+    if (isText &&
+        {TranslationJobState.running, TranslationJobState.paused, TranslationJobState.stopped}.contains(job.state)) {
+      text = l.fullTranslationTextProgress(pct, pagesDone, pagesTotal);
+      semanticLabel = '${l.fullTranslationPanelTitle}, $text';
     }
 
     return Semantics(

@@ -4719,7 +4719,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appIconChangeFailed => '图标更换失败，请重试。';
 
   @override
-  String get fullTranslationMenu => '翻译全文…';
+  String get fullTranslationMenu => '全文翻译…';
 
   @override
   String get fullTranslationTokensUsed => '已用 ';
@@ -4733,7 +4733,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get fullTranslationCapsule => '翻译全文';
+  String get fullTranslationCapsule => '全文翻译';
 
   @override
   String fullTranslationCapsuleRunning(int percent, int batch, int done, int total) {
@@ -4797,7 +4797,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullTranslationTranslatePage => '翻译此页';
 
   @override
-  String get fullTranslationTitle => '翻译全文';
+  String get fullTranslationViewSaved => '查看译文';
+
+  @override
+  String get fullTranslationConfirmIntro =>
+      '将按原文顺序逐段翻译整份文档，译文与原文对照显示。请先确认原文语言和目标语言。点击“开始翻译”后，原文将发送给你配置的 AI 模型，可能产生费用；可随时暂停，已译内容会保留。';
+
+  @override
+  String get fullTranslationSameLanguage => '原文语言和目标语言相同，请选择另一种目标语言。';
+
+  @override
+  String get fullTranslationStartFailed => '未能开始翻译，请检查模型连接后重试。已有译文会保留。';
+
+  @override
+  String fullTranslationTextProgress(int percent, int done, int total) {
+    return '$percent% · $done/$total 段';
+  }
+
+  @override
+  String get fullTranslationTitle => '全文翻译';
 
   @override
   String fullTranslationDocSubtitle(String doc, int pages) {
@@ -4867,7 +4885,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullTranslationNoteConfigured => ' · 已设置';
 
   @override
-  String get fullTranslationFooterNote => '译文保存在学习集内，不修改 PDF';
+  String get fullTranslationFooterNote => '译文保存在学习集内，不修改原文';
 
   @override
   String fullTranslationStartBatch(int from, int to) {

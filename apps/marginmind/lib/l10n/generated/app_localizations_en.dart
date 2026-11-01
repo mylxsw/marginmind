@@ -4942,7 +4942,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appIconChangeFailed => 'Could not change the icon. Please try again.';
 
   @override
-  String get fullTranslationMenu => 'Translate Entire Document…';
+  String get fullTranslationMenu => 'Full Translation…';
 
   @override
   String get fullTranslationTokensUsed => 'Used ';
@@ -4956,7 +4956,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get fullTranslationCapsule => 'Translate All';
+  String get fullTranslationCapsule => 'Full Translation';
 
   @override
   String fullTranslationCapsuleRunning(int percent, int batch, int done, int total) {
@@ -5020,7 +5020,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullTranslationTranslatePage => 'Translate This Page';
 
   @override
-  String get fullTranslationTitle => 'Translate Entire Document';
+  String get fullTranslationViewSaved => 'View Translation';
+
+  @override
+  String get fullTranslationConfirmIntro =>
+      'Translate the entire document paragraph by paragraph and read it alongside the original. Confirm the source and target languages first. Clicking “Start Translation” sends the text to your configured AI model and may incur charges. You can pause at any time; completed translations are saved.';
+
+  @override
+  String get fullTranslationSameLanguage => 'Source and target languages are the same. Choose another target language.';
+
+  @override
+  String get fullTranslationStartFailed =>
+      'Could not start translation. Check your model connection and try again. Existing translations are saved.';
+
+  @override
+  String fullTranslationTextProgress(int percent, int done, int total) {
+    return '$percent% · $done/$total paragraphs';
+  }
+
+  @override
+  String get fullTranslationTitle => 'Full Translation';
 
   @override
   String fullTranslationDocSubtitle(String doc, int pages) {
@@ -5091,7 +5110,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullTranslationNoteConfigured => ' · Configured';
 
   @override
-  String get fullTranslationFooterNote => 'Translations are saved in the study set without modifying the PDF';
+  String get fullTranslationFooterNote => 'Translations stay in this study set. The original is preserved.';
 
   @override
   String fullTranslationStartBatch(int from, int to) {

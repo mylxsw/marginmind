@@ -194,14 +194,10 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
   });
-  testWidgets('AI menu enters, progress, complete, cache, hover on either side and exit', (tester) async {
+  testWidgets('AI reader progress, cache, hover on either side and exit', (tester) async {
     final t = TestTranslator();
     final c = await setup(tester, t, render: true);
-    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
-    await tester.pumpAndSettle();
-    expect(find.text('AI Translate into English'), findsOneWidget);
-    expect(find.text('Coming soon'), findsNothing);
-    await tester.tap(find.text('AI Translate into English'));
+    await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
     await frames(tester);
     expect(find.byType(ReaderTranslationView), findsOneWidget);
     expect(find.text('Page 1 · Translating 0/2'), findsOneWidget);
@@ -342,9 +338,7 @@ void main() {
       prefs: {'assistant.online': false},
       data: compareFixture().copyWith(translationCaches: [cache]),
     );
-    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('AI Translate into English'));
+    await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
     await frames(tester);
     expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
     expect(t.calls, isEmpty);
@@ -515,15 +509,12 @@ void main() {
     await frames(tester);
   });
 
-  testWidgets('English source offers Chinese and requests only its current page', (tester) async {
+  testWidgets('English source on-demand reader requests only its current page', (tester) async {
     final t = TestTranslator();
     final c = await setup(tester, t);
     c.read(workspaceProvider('demo-1').notifier).openDocument('c2');
     await frames(tester);
-    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
-    await tester.pumpAndSettle();
-    expect(find.text('AI Translate into Chinese'), findsOneWidget);
-    await tester.tap(find.text('AI Translate into Chinese'));
+    await c.read(readerCompareProvider('demo-1').notifier).openAi('zh');
     await frames(tester);
     expect((c.read(readerCompareProvider('demo-1'))!.right as AiCompareTarget).targetLang, 'zh');
     expect(t.languages, ['zh', 'zh']);
@@ -533,34 +524,13 @@ void main() {
     await frames(tester);
   });
 
-  testWidgets('missing model, offline cloud model, scan each disable with reason', (tester) async {
+  testWidgets('comparison menu contains no immediate translation entry, even without a model', (tester) async {
     final t = TestTranslator();
     await setup(tester, t, selected: null);
     await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
-    expect(find.text('Configure a model first'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox());
-    await frames(tester);
-    await setup(
-      tester,
-      t,
-      selected: const AssistantModel(
-        provider: AssistantProvider.claude,
-        model: 'cloud',
-        endpoint: 'https://example.com',
-      ),
-      prefs: {'assistant.online': false},
-    );
-    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
-    await tester.pumpAndSettle();
-    expect(find.text('Offline'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox());
-    await frames(tester);
-    await setup(tester, t, hasText: false);
-    await frames(tester);
-    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
-    await tester.pumpAndSettle();
-    expect(find.text('Recognize text first'), findsOneWidget);
+    expect(find.textContaining('AI Translate into'), findsNothing);
+    expect(t.calls, isEmpty);
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
   });

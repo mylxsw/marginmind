@@ -106,6 +106,47 @@ void main() {
     }
     await model.close();
   });
+  test('43 unresolved parents trigger one corrected request with a fresh parser', () async {
+    final invalid = [
+      for (var i = 0; i < 43; i++) jsonEncode({'ref': 'a$i', 'parent': 'p1', 'title': 'Point $i'}),
+    ].join('\n');
+    final client = ScriptClient([answer(invalid), answer('$topic\n{"ref":"b","parent":"a","title":"Child"}')]);
+    final model = generator(client);
+    final result = await model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList();
+    expect(client.calls, 2);
+    expect(result, hasLength(2));
+    expect(result.last.parentId, 'new:${result.first.id}');
+    expect(
+      (client.requests.last.first as SystemMessage).content,
+      contains('previous response had no resolvable parents'),
+    );
+    await model.close();
+  });
+  test('out-of-order descendants resolve without another request or arbitrary reparenting', () async {
+    final client = ScriptClient([
+      answer(
+        '{"ref":"c","parent":"b","title":"Grandchild"}\n'
+        '{"ref":"b","parent":"a","title":"Child"}\n$topic',
+      ),
+    ]);
+    final model = generator(client);
+    final result = await model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList();
+    expect(client.calls, 1);
+    expect(result.map((p) => p.title), ['Topic', 'Child', 'Grandchild']);
+    expect(result[2].parentId, 'new:${result[1].id}');
+    await model.close();
+  });
+  test('persistent missing parents stop after one repair; cycles never become a draft', () async {
+    const cycle = '{"ref":"a","parent":"b","title":"A"}\n{"ref":"b","parent":"a","title":"B"}';
+    final client = ScriptClient([answer(cycle), answer(cycle)]);
+    final model = generator(client);
+    await expectLater(
+      model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList(),
+      throwsA(isA<MapGenerationFailure>().having((e) => e.rejections, 'rejections', {'unknownParent': 2})),
+    );
+    expect(client.calls, 2);
+    await model.close();
+  });
   test('retrying a partially failed chapter gets fresh reference and title state', () async {
     final client = ScriptClient([answer(point, stop: 'length'), answer(point)]);
     final model = generator(client), input = chapter();

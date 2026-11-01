@@ -2445,7 +2445,7 @@
   "appIconHomeHint": "Changes the Home Screen icon. iOS may show a confirmation.",
   "appIconChanging": "Changing icon…",
   "appIconChangeFailed": "Could not change the icon. Please try again.",
-  "fullTranslationMenu": "Translate Entire Document…",
+  "fullTranslationMenu": "Full Translation…",
   "fullTranslationTokensUsed": "Used ",
   "fullTranslationTask": "Full Translation…",
   "fullTranslationTaskMenu": "Full Translation… {percent}%",
@@ -2454,7 +2454,7 @@
       "percent": { "type": "int" }
     }
   },
-  "fullTranslationCapsule": "Translate All",
+  "fullTranslationCapsule": "Full Translation",
   "fullTranslationCapsuleRunning": "{percent}% Batch {batch} · {done}/{total} pages",
   "@fullTranslationCapsuleRunning": {
     "placeholders": {
@@ -2517,7 +2517,13 @@
   "fullTranslationPlaceholderOutOfRange": "Not in translation range",
   "fullTranslationPlaceholderUntranslated": "Untranslated",
   "fullTranslationTranslatePage": "Translate This Page",
-  "fullTranslationTitle": "Translate Entire Document",
+  "fullTranslationViewSaved": "View Translation",
+  "fullTranslationConfirmIntro": "Translate the entire document paragraph by paragraph and read it alongside the original. Confirm the source and target languages first. Clicking “Start Translation” sends the text to your configured AI model and may incur charges. You can pause at any time; completed translations are saved.",
+  "fullTranslationSameLanguage": "Source and target languages are the same. Choose another target language.",
+  "fullTranslationStartFailed": "Could not start translation. Check your model connection and try again. Existing translations are saved.",
+  "fullTranslationTextProgress": "{percent}% · {done}/{total} paragraphs",
+  "@fullTranslationTextProgress": {"placeholders": {"percent": {"type": "int"}, "done": {"type": "int"}, "total": {"type": "int"}}},
+  "fullTranslationTitle": "Full Translation",
   "fullTranslationDocSubtitle": "{doc} · {pages} pages",
   "@fullTranslationDocSubtitle": {
     "placeholders": {
@@ -2565,7 +2571,7 @@
   },
   "fullTranslationNoteHint": "Applies only to subsequent batches; translated paragraphs won't be retranslated.",
   "fullTranslationNoteConfigured": " · Configured",
-  "fullTranslationFooterNote": "Translations are saved in the study set without modifying the PDF",
+  "fullTranslationFooterNote": "Translations stay in this study set. The original is preserved.",
   "fullTranslationStartBatch": "Start · Pages {from}–{to}",
   "@fullTranslationStartBatch": {
     "placeholders": {

@@ -30,7 +30,12 @@ Future<void> showFullTranslationSheet(
   final container = ProviderScope.containerOf(context);
   final info = await container.read(compareDocumentInfoProvider((studySetId, documentId)).future);
   if (!context.mounted) return;
-  final language = targetLang ?? fullTranslationTargetLanguage(info.language);
+  final saved = container.read(sharedPreferencesProvider).getString('settings.translationLanguage');
+  final language =
+      targetLang ??
+      (TranslationLanguage.fromCode(saved) != null && saved != info.language
+          ? saved!
+          : fullTranslationTargetLanguage(info.language));
   return showMMSheet<void>(
     context: context,
     width: MMSizes.fullTranslationSheetWidth,
@@ -67,6 +72,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
   int _pageCount = 1;
   bool _initialized = false;
   bool _starting = false;
+  String? _startError;
 
   @override
   void initState() {
@@ -107,23 +113,31 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     return f != null && t != null && f >= 1 && t <= _pageCount && f <= t;
   }
 
-  Future<void> _start(Document doc, FullTranslationEstimation estimation, String modelName) async {
+  Future<void> _start(
+    Document doc,
+    FullTranslationEstimation estimation,
+    String modelName, {
+    bool viewSaved = false,
+  }) async {
     if (!_isValidRange) return;
     final f = _rangeAll ? 1 : _from;
     final t = _rangeAll ? _pageCount : _to;
-    final firstTo = _mode == TranslationMode.batch ? math.min(t, f + _batchSize - 1) : t;
+    final firstTo = doc.contentManifest == null && _mode == TranslationMode.batch ? math.min(t, f + _batchSize - 1) : t;
     final l = context.l10n;
-    final hudMessage = _mode == TranslationMode.batch
+    final hudMessage = doc.contentManifest == null && _mode == TranslationMode.batch
         ? l.fullTranslationHudStartBatch(f, firstTo)
         : l.fullTranslationHudStartAll;
     final readerWidth = ReaderCompareWidth.of(context);
     final language = _targetLang;
     final sourceLanguage = _sourceChoice ?? _sourceLang;
-    final mode = _mode;
+    final mode = doc.contentManifest != null ? TranslationMode.all : _mode;
     final batchSize = _batchSize;
 
     if (_starting) return;
-    setState(() => _starting = true);
+    setState(() {
+      _starting = true;
+      _startError = null;
+    });
     final prefs = ref.read(sharedPreferencesProvider);
     final compareController = ref.read(readerCompareProvider(widget.studySetId).notifier);
     final controller = ref.read(fullTranslationProvider((widget.studySetId, widget.documentId, language)).notifier);
@@ -131,24 +145,33 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     try {
       await prefs.setString('translation.full.mode', mode.name);
       if (!mounted) return;
+      if (!viewSaved) {
+        await controller.startJob(
+          from: f,
+          to: t,
+          mode: mode,
+          batchSize: batchSize,
+          note: note,
+          sourceLang: sourceLanguage,
+          modelName: modelName,
+          estimatedTokens: estimation.tokens,
+        );
+      }
+      if (!mounted) return;
+      // Install the job before mounting the translation view. Otherwise the
+      // view can issue an unconfirmed current-page request with stale settings.
       await compareController.openAi(language, documentId: widget.documentId, readerWidth: readerWidth);
       if (!mounted) return;
-      await controller.startJob(
-        from: f,
-        to: t,
-        mode: mode,
-        batchSize: batchSize,
-        note: note,
-        sourceLang: sourceLanguage,
-        modelName: modelName,
-        estimatedTokens: estimation.tokens,
-      );
-      if (!mounted) return;
-      compareController.pdf(widget.documentId).jumpToPage(f);
-      MMHud.show(context, hudMessage);
+      if (doc.contentManifest == null) compareController.pdf(widget.documentId).jumpToPage(f);
+      if (!viewSaved) MMHud.show(context, hudMessage);
       Navigator.of(context).pop();
     } catch (_) {
-      if (mounted) setState(() => _starting = false);
+      if (mounted) {
+        setState(() {
+          _starting = false;
+          _startError = context.l10n.fullTranslationStartFailed;
+        });
+      }
     }
   }
 
@@ -159,6 +182,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     final content = ref.watch(workspaceContentProvider(widget.studySetId));
     final doc = content?.document(widget.documentId);
     if (doc == null) return const SizedBox.shrink();
+    final isText = doc.contentManifest != null;
 
     final info = ref.watch(compareDocumentInfoProvider((widget.studySetId, widget.documentId))).value;
     _sourceLang = info?.language;
@@ -166,10 +190,13 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     final ocr = ref.watch(readerOcrProvider(docPath));
     final paragraphsAsync = ref.watch(translationParagraphsProvider((widget.studySetId, widget.documentId)));
     final paragraphs = paragraphsAsync.value ?? const <TranslationParagraph>[];
+    if (isText && paragraphs.isNotEmpty) {
+      _sourceLang = detectTranslationLanguage(paragraphs.take(8).map((p) => p.text).join(' ')) ?? _sourceLang;
+    }
 
     if (!_initialized && paragraphs.isNotEmpty) {
       _initialized = true;
-      _pageCount = paragraphs.map((p) => p.page).fold(doc.pageCount, math.max);
+      _pageCount = paragraphs.map((p) => p.unit).fold(isText ? 0 : doc.pageCount, math.max);
       if (_toController.text == '1' && _pageCount > 1) {
         _toController.text = '$_pageCount';
       }
@@ -211,19 +238,21 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         : null;
 
     final nothing = estimation != null && estimation.paras == 0;
+    final viewSaved = _rangeAll && nothing && estimation.reused > 0;
     final disabled =
         _starting ||
         fullState.loading ||
         fullState.loadError != null ||
         !valid ||
-        nothing ||
-        isScanned ||
-        noModel ||
-        badKey;
+        (!viewSaved &&
+            (nothing || isScanned || noModel || badKey || credentialState != AssistantCredentialState.ready)) ||
+        (_sourceChoice ?? _sourceLang) == _targetLang;
     final firstTo = _mode == TranslationMode.batch ? math.min(t, f + _batchSize - 1) : t;
-    final primaryLabel = nothing
+    final primaryLabel = viewSaved
+        ? l.fullTranslationViewSaved
+        : nothing
         ? l.fullTranslationNothingToTranslate
-        : _mode == TranslationMode.batch
+        : !isText && _mode == TranslationMode.batch
         ? l.fullTranslationStartBatch(f, firstTo)
         : l.fullTranslationStartAll;
 
@@ -243,7 +272,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
           },
         ),
       );
-    } else if (noModel || badKey) {
+    } else if (!viewSaved && (noModel || badKey)) {
       blockedBanner = _buildBanner(
         icon: MMIcons.ai,
         title: badKey ? l.fullTranslationBlockedBadKeyTitle : l.fullTranslationBlockedNoModelTitle,
@@ -256,7 +285,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
           },
         ),
       );
-    } else if (isOffline) {
+    } else if (!viewSaved && isOffline) {
       blockedBanner = _buildBanner(
         icon: MMIcons.wifiOff,
         title: l.fullTranslationBlockedOfflineTitle,
@@ -272,7 +301,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
           if (!_noteFocus.hasFocus)
             const SingleActivator(LogicalKeyboardKey.enter): () {
               if (!_noteFocus.hasFocus && !disabled && estimation != null) {
-                _start(doc, estimation, modelName);
+                _start(doc, estimation, modelName, viewSaved: viewSaved);
               }
             },
         },
@@ -281,7 +310,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
           child: MMSheet(
             title: l.fullTranslationTitle,
             icon: MMIcons.layers,
-            subtitle: l.fullTranslationDocSubtitle(doc.title, _pageCount),
+            subtitle: isText ? doc.title : l.fullTranslationDocSubtitle(doc.title, _pageCount),
             footer: Text(
               l.fullTranslationFooterNote,
               maxLines: 2,
@@ -293,12 +322,20 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
               MMButton(
                 label: primaryLabel,
                 variant: MMButtonVariant.primary,
-                onPressed: disabled || estimation == null ? null : () => _start(doc, estimation, modelName),
+                onPressed: disabled || estimation == null
+                    ? null
+                    : () => _start(doc, estimation, modelName, viewSaved: viewSaved),
               ),
             ],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text(l.fullTranslationConfirmIntro, style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+                const SizedBox(height: 16),
+                if (_startError != null) ...[
+                  Text(_startError!, style: context.mmText.callout.copyWith(color: c.critical)),
+                  const SizedBox(height: 12),
+                ],
                 if (blockedBanner != null) ...[blockedBanner, const SizedBox(height: 16)],
                 _buildFormRow(
                   label: l.language,
@@ -343,95 +380,101 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildFormRow(
-                  label: l.fullTranslationRange,
-                  child: Row(
-                    children: [
-                      MMSegmentedControl<bool>(
-                        value: _rangeAll,
-                        onChanged: (val) {
-                          setState(() {
-                            _rangeAll = val;
-                            if (val) {
-                              _fromController.text = '1';
-                              _toController.text = '$_pageCount';
-                            }
-                          });
-                        },
-                        segments: [
-                          MMSegment(value: true, label: l.fullTranslationRangeAll),
-                          MMSegment(value: false, label: l.fullTranslationRangePages),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      _numberField(_fromController),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Text('–', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
-                      ),
-                      _numberField(_toController),
-                      if (!valid) ...[
-                        const SizedBox(width: 8),
-                        Text('1–$_pageCount', style: context.mmText.footnote.copyWith(color: c.critical)),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _buildFormRow(
-                  label: l.fullTranslationMode,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _ModeCard(
-                          title: l.fullTranslationModeBatch,
-                          desc: l.fullTranslationModeBatchDesc,
-                          selected: _mode == TranslationMode.batch,
-                          onTap: () => setState(() => _mode = TranslationMode.batch),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _ModeCard(
-                          title: l.fullTranslationModeAll,
-                          desc: l.fullTranslationModeAllDesc,
-                          selected: _mode == TranslationMode.all,
-                          onTap: () => setState(() => _mode = TranslationMode.all),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_mode == TranslationMode.batch) ...[
+                if ((_sourceChoice ?? _sourceLang) == _targetLang) ...[
+                  const SizedBox(height: 8),
+                  Text(l.fullTranslationSameLanguage, style: context.mmText.footnote.copyWith(color: c.critical)),
+                ],
+                if (!isText) ...[
                   const SizedBox(height: 12),
                   _buildFormRow(
-                    label: l.fullTranslationBatchSize,
-                    child: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 12,
-                      runSpacing: 6,
+                    label: l.fullTranslationRange,
+                    child: Row(
                       children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: MMSegmentedControl<int>(
-                            value: _batchSize,
-                            onChanged: (val) => setState(() => _batchSize = val),
-                            segments: [
-                              for (final size in [5, 10, 20, 50])
-                                MMSegment(value: size, label: l.fullTranslationBatchPages(size)),
-                            ],
+                        MMSegmentedControl<bool>(
+                          value: _rangeAll,
+                          onChanged: (val) {
+                            setState(() {
+                              _rangeAll = val;
+                              if (val) {
+                                _fromController.text = '1';
+                                _toController.text = '$_pageCount';
+                              }
+                            });
+                          },
+                          segments: [
+                            MMSegment(value: true, label: l.fullTranslationRangeAll),
+                            MMSegment(value: false, label: l.fullTranslationRangePages),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        _numberField(_fromController),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Text('–', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+                        ),
+                        _numberField(_toController),
+                        if (!valid) ...[
+                          const SizedBox(width: 8),
+                          Text('1–$_pageCount', style: context.mmText.footnote.copyWith(color: c.critical)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildFormRow(
+                    label: l.fullTranslationMode,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _ModeCard(
+                            title: l.fullTranslationModeBatch,
+                            desc: l.fullTranslationModeBatchDesc,
+                            selected: _mode == TranslationMode.batch,
+                            onTap: () => setState(() => _mode = TranslationMode.batch),
                           ),
                         ),
-                        Text(
-                          l.fullTranslationBatchCount(valid ? ((t - f + 1) / _batchSize).ceil() : 0),
-                          style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ModeCard(
+                            title: l.fullTranslationModeAll,
+                            desc: l.fullTranslationModeAllDesc,
+                            selected: _mode == TranslationMode.all,
+                            onTap: () => setState(() => _mode = TranslationMode.all),
+                          ),
                         ),
                       ],
                     ),
                   ),
+                  if (_mode == TranslationMode.batch) ...[
+                    const SizedBox(height: 12),
+                    _buildFormRow(
+                      label: l.fullTranslationBatchSize,
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 6,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: MMSegmentedControl<int>(
+                              value: _batchSize,
+                              onChanged: (val) => setState(() => _batchSize = val),
+                              segments: [
+                                for (final size in [5, 10, 20, 50])
+                                  MMSegment(value: size, label: l.fullTranslationBatchPages(size)),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            l.fullTranslationBatchCount(valid ? ((t - f + 1) / _batchSize).ceil() : 0),
+                            style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 12),
                 _buildFormRow(

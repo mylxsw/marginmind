@@ -518,10 +518,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final fullState = ref.read(translationTaskSummaryProvider((studySetId, doc.id))).value;
     final targetLang = fullState?.targetLang ?? 'zh';
     final hasActiveFullJob = fullState?.isActive == true;
-    final canFullTranslate =
-        doc.format == DocumentFormat.pdf &&
-        MMPlatformCapabilities.current.assistant &&
-        MMSizeClass.of(context) != MMSizeClass.compact;
+    final canFullTranslate = MMPlatformCapabilities.current.assistant && MMSizeClass.of(context) != MMSizeClass.compact;
 
     showMMMenu(
       context,

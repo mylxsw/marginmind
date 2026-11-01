@@ -8858,10 +8858,40 @@ abstract class AppLocalizations {
   /// **'Translate This Page'**
   String get fullTranslationTranslatePage;
 
+  /// No description provided for @fullTranslationViewSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'View Translation'**
+  String get fullTranslationViewSaved;
+
+  /// No description provided for @fullTranslationConfirmIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate the entire document paragraph by paragraph and read it alongside the original. Confirm the source and target languages first. Clicking “Start Translation” sends the text to your configured AI model and may incur charges. You can pause at any time; completed translations are saved.'**
+  String get fullTranslationConfirmIntro;
+
+  /// No description provided for @fullTranslationSameLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Source and target languages are the same. Choose another target language.'**
+  String get fullTranslationSameLanguage;
+
+  /// No description provided for @fullTranslationStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start translation. Check your model connection and try again. Existing translations are saved.'**
+  String get fullTranslationStartFailed;
+
+  /// No description provided for @fullTranslationTextProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% · {done}/{total} paragraphs'**
+  String fullTranslationTextProgress(int percent, int done, int total);
+
   /// No description provided for @fullTranslationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Translate Entire Document'**
+  /// **'Full Translation'**
   String get fullTranslationTitle;
 
   /// No description provided for @fullTranslationDocSubtitle.

@@ -7,7 +7,8 @@ Allowed forms:
 {"op":"move","node":"N1","parent":"a"}
 {"op":"remove","node":"N1","why":"Reason"}
 No extra keys. ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
-parent is ROOT, a supplied N alias or an earlier topic ref. Emit parents before descendants, at most depth new levels.
+parent is the literal "ROOT", a supplied N alias or a ref emitted in THIS response. Input point ids are evidence, not output parents.
+Use new topic refs (a, b, ...) and emit parents before descendants, at most depth new levels.
 Never rename, move or remove protected nodes; additions beneath them are allowed. Preserve user content. Removal requires a concrete reason.
 Use concise, descriptive titles. Avoid duplicate and existing titles.
 Use only supplied document, node and annotation aliases and grounded pages. Never emit real IDs or invent quotations.

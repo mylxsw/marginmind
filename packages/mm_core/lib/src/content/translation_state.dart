@@ -29,8 +29,7 @@ TranslationSegmentState deriveTranslationSegmentState(
   if (job == null ||
       job.documentId != paragraph.documentId ||
       job.targetLang != targetLang ||
-      paragraph.textAnchor != null ||
-      !job.range.contains(paragraph.page)) {
+      !job.range.contains(paragraph.unit)) {
     return TranslationSegmentState.none;
   }
   if (job.failures.containsKey(paragraph.fingerprint)) return TranslationSegmentState.failed;
@@ -38,7 +37,7 @@ TranslationSegmentState deriveTranslationSegmentState(
   if (job.state == TranslationJobState.done && runningKeys.contains(key)) return TranslationSegmentState.running;
   if (!job.isActive) return TranslationSegmentState.none;
   if (runningKeys.contains(key)) return TranslationSegmentState.running;
-  if (job.batch.range.contains(paragraph.page)) return TranslationSegmentState.queued;
+  if (job.batch.range.contains(paragraph.unit)) return TranslationSegmentState.queued;
   return TranslationSegmentState.none;
 }
 

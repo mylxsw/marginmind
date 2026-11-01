@@ -101,9 +101,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Full Translation… 25%'));
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(tester.widget<FullTranslationPanel>(find.byType(FullTranslationPanel)).targetLang, 'en');
+    expect(find.text('Full Translation… 25%'), findsNothing);
+    expect(find.textContaining('AI Translate into'), findsNothing);
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();
 
@@ -147,7 +146,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(FullTranslationCapsule), findsOneWidget);
-    expect(find.text('翻译全文'), findsOneWidget);
+    expect(find.text('全文翻译'), findsOneWidget);
     tester.view.physicalSize = const Size(500, 900);
     await tester.pumpAndSettle();
     expect(find.byType(FullTranslationCapsule), findsNothing);
@@ -169,7 +168,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('document-row-c2')), buttons: kSecondaryMouseButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Translate Entire Document…'));
+    await tester.tap(find.text('Full Translation…'));
     await tester.pumpAndSettle();
     final sheet = tester.widget<FullTranslationSheet>(find.byType(FullTranslationSheet));
     expect(sheet.documentId, 'c2');

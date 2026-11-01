@@ -33,7 +33,7 @@ List<TranslationParagraph> reflowParagraphs(ReflowDocument book) {
   return List.unmodifiable(result);
 }
 
-int translationGroup(TranslationParagraph p) => p.textAnchor == null ? p.page : p.index + 1;
+int translationGroup(TranslationParagraph p) => p.unit;
 
 ReadingPosition paragraphPosition(TranslationParagraph p) => switch (p.textAnchor) {
   final a? => TextReadingPosition(revision: a.revision, chapterId: a.chapterId, offset: a.start),

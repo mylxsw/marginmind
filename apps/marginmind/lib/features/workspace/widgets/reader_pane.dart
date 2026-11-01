@@ -432,11 +432,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
     final canFullTranslate =
-        MMPlatformCapabilities.current.assistant &&
-        MMSizeClass.of(context) != MMSizeClass.compact &&
-        document?.format == DocumentFormat.pdf;
+        MMPlatformCapabilities.current.assistant && MMSizeClass.of(context) != MMSizeClass.compact && document != null;
     final fullState = canFullTranslate
-        ? ref.watch(translationTaskSummaryProvider((widget.studySetId, document!.id))).value
+        ? ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id))).value
         : null;
     final hasActiveFullJob = fullState?.isActive == true;
 
@@ -653,10 +651,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                 ? showFullTranslationPanel(
                     context,
                     studySetId: widget.studySetId,
-                    documentId: document!.id,
+                    documentId: document.id,
                     targetLang: fullState!.targetLang,
                   )
-                : showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document!.id),
+                : showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document.id),
           ),
           icon: MMIcons.layers,
           id: 'full-translation',
@@ -794,9 +792,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final targetLang = fullState?.targetLang ?? 'zh';
     final hasActiveFullJob = fullState?.isActive == true;
     final canFullTranslate =
-        MMPlatformCapabilities.current.assistant &&
-        MMSizeClass.of(context) != MMSizeClass.compact &&
-        document?.format == DocumentFormat.pdf;
+        MMPlatformCapabilities.current.assistant && MMSizeClass.of(context) != MMSizeClass.compact && document != null;
     final marginButton = MMToolbarButton(
       key: const ValueKey('reader-margin'),
       compact: compact,

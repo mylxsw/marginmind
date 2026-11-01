@@ -7,7 +7,7 @@ import 'full_translation.dart';
 import 'translation_schedulers.dart';
 
 /// Menu/sidebar observation. Reading this never extracts document paragraphs or
-/// creates a scheduler. Both languages are checked so a user-selected language
+/// creates a scheduler. All supported languages are checked so a user-selected language
 /// remains discoverable from every entry point.
 class TranslationTaskSummary {
   const TranslationTaskSummary(this.job, this.percent);
@@ -29,7 +29,7 @@ final translationTaskSummaryProvider = StreamProvider.autoDispose.family<Transla
   void emit() {
     if (disposed) return;
     final summaries = <TranslationTaskSummary>[];
-    for (final lang in ['zh', 'en']) {
+    for (final lang in TranslationLanguage.values.map((language) => language.code)) {
       final live = registry.peek(key.$2, lang);
       if (live != null) {
         final job = live.job;
@@ -67,7 +67,7 @@ final translationTaskSummaryProvider = StreamProvider.autoDispose.family<Transla
   unawaited(() async {
     try {
       final store = await ref.read(translationStoreProvider(key.$1).future);
-      for (final lang in ['zh', 'en']) {
+      for (final lang in TranslationLanguage.values.map((language) => language.code)) {
         final job = await store.loadJob(key.$2, lang);
         if (disposed) return;
         if (job == null || changedLanguages.contains(lang)) continue;
