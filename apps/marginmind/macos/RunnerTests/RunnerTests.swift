@@ -518,7 +518,7 @@ class RunnerTests: XCTestCase {
       window.sendEvent(event)
       XCTAssertTrue(target.events.last === event)
     }
-    XCTAssertTrue(window.isMovable)
+    XCTAssertFalse(window.isMovable)
     eventView.isHidden = false
     window.observeToolbarFullScreenTransitions()
     let notifications = NotificationCenter.default
@@ -629,6 +629,34 @@ class RunnerTests: XCTestCase {
     XCTAssertNil(released)
     detached.mouseDown(with: target.events[0])
     detached.scrollWheel(with: wheel)
+  }
+
+  func testAutomaticWindowGesturesStayDisabledOutsideExplicitFlutterActions() throws {
+    let window = MainFlutterWindow(contentRect: NSRect(x: 100, y: 100, width: 1000, height: 800),
+      styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
+    defer { window.close() }
+    window.configureFlutterWindowGestures()
+    XCTAssertFalse(window.isMovable)
+    XCTAssertFalse(window.isMovableByWindowBackground)
+    for y: CGFloat in [780, 755, 720, 400] {
+      let event = try XCTUnwrap(NSEvent.mouseEvent(with: .leftMouseUp, location: NSPoint(x: 500, y: y),
+        modifierFlags: [], timestamp: 1, windowNumber: window.windowNumber,
+        context: nil, eventNumber: 1, clickCount: 2, pressure: 0))
+      XCTAssertFalse(window.permitsNativeWindowZoom(sender: nil, event: event))
+      window.withExplicitWindowGesture {
+        XCTAssertTrue(window.permitsNativeWindowZoom(sender: nil, event: event))
+      }
+      XCTAssertFalse(window.permitsNativeWindowZoom(sender: nil, event: event))
+      XCTAssertTrue(window.permitsNativeWindowZoom(sender: window.standardWindowButton(.zoomButton), event: event))
+    }
+    XCTAssertFalse(window.permitsNativeWindowZoom(sender: nil, event: nil))
+    var result: Any?
+    window.handleWindowGesture(FlutterMethodCall(methodName: "configure", arguments: nil)) { result = $0 }
+    XCTAssertEqual(result as? Bool, true)
+    XCTAssertFalse(window.isMovable)
+    window.handleWindowGesture(FlutterMethodCall(methodName: "unknown", arguments: nil)) { result = $0 }
+    XCTAssertTrue(result as AnyObject === FlutterMethodNotImplemented as AnyObject)
   }
 
 }

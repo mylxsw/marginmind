@@ -41,7 +41,7 @@ double _tabWidth(BuildContext context, String title) {
     textScaler: MediaQuery.textScalerOf(context),
     locale: Localizations.localeOf(context),
   )..layout();
-  final width = math.min(224.0, painter.width.ceilToDouble() + (context.mmTouchPlatform ? 87 : 66));
+  final width = math.min(224.0, painter.width.ceilToDouble() + (context.mmTouchPlatform ? 103 : 82));
   painter.dispose();
   return width;
 }
@@ -76,7 +76,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
         final count = state.tabs.open.length;
         final titles = [for (final tab in state.tabs.open) workspaceTabTitle(context, state, tab)];
         final widths = [for (final title in titles) _tabWidth(context, title)];
-        final tabsWidth = count == 0 ? 0.0 : widths.fold(0.0, (total, width) => total + width) + (count - 1) * 4 + 24;
+        final tabsWidth = count == 0 ? 0.0 : widths.fold(0.0, (total, width) => total + width) + 24;
         final overflow = tabsWidth > bounds.maxWidth;
         // Same size MMDropdownButton gives its icon button; a squeezed strip drops the
         // open-tabs menu rather than overflow (the tab list still scrolls).
@@ -94,10 +94,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && activeIndex >= 0 && _scroll.hasClients) {
               final center =
-                  12 +
-                  widths.take(activeIndex).fold(0.0, (total, width) => total + width) +
-                  activeIndex * 4 +
-                  widths[activeIndex] / 2;
+                  12 + widths.take(activeIndex).fold(0.0, (total, width) => total + width) + widths[activeIndex] / 2;
               final target = (center - _scroll.position.viewportDimension / 2).clamp(
                 0.0,
                 _scroll.position.maxScrollExtent,
@@ -125,17 +122,24 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
           },
           proxyDecorator: (child, index, animation) => child,
           itemCount: count,
-          itemExtentBuilder: (index, _) => widths[index] + (index < count - 1 ? 4 : 0),
+          itemExtentBuilder: (index, _) => widths[index],
           itemBuilder: (context, i) => Padding(
             key: ValueKey('workspace-tab-item-${state.tabs.open[i].id}'),
-            padding: EdgeInsets.only(right: i < count - 1 ? 4 : 0),
-            child: Center(
+            padding: EdgeInsets.only(
+              top: math.min(6, math.max(0, bounds.maxHeight - (context.mmTouchPlatform ? 44 : 30))),
+            ),
+            child: Align(
+              alignment: Alignment.bottomCenter,
               child: _WorkspaceTab(
                 key: ValueKey('workspace-tab-${state.tabs.open[i].id}'),
                 index: i,
                 tab: state.tabs.open[i],
                 title: titles[i],
                 selected: state.tabs.open[i].id == state.tabs.activeId,
+                showSeparator:
+                    i < count - 1 &&
+                    state.tabs.open[i].id != state.tabs.activeId &&
+                    state.tabs.open[i + 1].id != state.tabs.activeId,
                 width: widths[i],
                 onSelect: () => owner.activateTab(state.tabs.open[i]),
                 onClose: () => owner.closeTab(state.tabs.open[i].id),
@@ -149,7 +153,6 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
             if (overflow)
               Expanded(child: tabs)
             else ...[
-              const Expanded(child: MMWindowDragRegion()),
               SizedBox(width: tabsWidth, child: tabs),
               const Expanded(child: MMWindowDragRegion(key: ValueKey('workspace-tab-drag-area'))),
             ],
@@ -198,6 +201,7 @@ class _WorkspaceTab extends StatefulWidget {
     required this.tab,
     required this.title,
     required this.selected,
+    required this.showSeparator,
     required this.width,
     required this.onSelect,
     required this.onClose,
@@ -205,7 +209,7 @@ class _WorkspaceTab extends StatefulWidget {
   final int index;
   final WorkspaceTab tab;
   final String title;
-  final bool selected;
+  final bool selected, showSeparator;
   final double width;
   final VoidCallback onSelect, onClose;
   @override
@@ -231,7 +235,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         onFocusChange: (value) => setState(() => _focused = value),
         child: SizedBox(
           width: widget.width,
-          height: touch ? 44 : 30,
+          height: double.infinity,
           child: MMInteractive(
             isButton: false,
             canRequestFocus: false,
@@ -240,104 +244,105 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
             builder: (context, interaction) => AnimatedContainer(
               key: ValueKey('workspace-tab-surface-${widget.tab.id}'),
               duration: interaction.pressed ? Duration.zero : MMAppearance.duration(context, MMMotion.quick),
-              decoration: BoxDecoration(
-                color: interaction.pressed
+              decoration: ShapeDecoration(
+                color: widget.selected
+                    ? c.windowBackground
+                    : interaction.pressed
                     ? c.pressed
-                    : widget.selected
-                    ? c.card
                     : _hovered
                     ? c.hover
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(touch ? 8 : 6),
-                boxShadow: widget.selected && c.brightness == Brightness.light
-                    ? const [BoxShadow(color: Color(0x0C000000), blurRadius: 3, offset: Offset(0, 1))]
-                    : null,
+                shape: _ChromeTabShape(side: _focused ? BorderSide(color: c.accent, width: 1.5) : BorderSide.none),
               ),
-              foregroundDecoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(touch ? 8 : 6),
-                border: Border.all(
-                  color: _focused
-                      ? c.accent
-                      : widget.selected
-                      ? c.border
-                      : Colors.transparent,
-                  width: .5,
-                ),
-              ),
-              child: Row(
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  Expanded(
-                    child: _dragHandle(
-                      context,
-                      SizedBox(
-                        height: touch ? 44 : 30,
-                        child: MMInteractive(
-                          selected: widget.selected,
-                          semanticLabel: widget.title,
-                          onTap: widget.onSelect,
-                          builder: (context, interaction) => Padding(
-                            padding: EdgeInsets.only(left: touch ? 12 : 10, right: 4),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _tabIcon(widget.tab),
-                                  size: touch ? 15 : 14,
-                                  color: widget.selected ? c.accent : c.icon,
-                                ),
-                                SizedBox(width: touch ? 8 : 6),
-                                Expanded(
-                                  child: LayoutBuilder(
-                                    builder: (context, bounds) {
-                                      final text = Text(
-                                        widget.title,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: type,
-                                      );
-                                      final painter = TextPainter(
-                                        text: TextSpan(text: widget.title, style: type),
-                                        maxLines: 1,
-                                        ellipsis: '…',
-                                        textDirection: Directionality.of(context),
-                                        textScaler: MediaQuery.textScalerOf(context),
-                                        locale: Localizations.localeOf(context),
-                                      )..layout(maxWidth: bounds.maxWidth);
-                                      final truncated = painter.didExceedMaxLines;
-                                      painter.dispose();
-                                      return truncated
-                                          ? Tooltip(
-                                              message: widget.title,
-                                              triggerMode: TooltipTriggerMode.manual,
-                                              child: text,
-                                            )
-                                          : text;
-                                    },
+                  if (widget.showSeparator && !_hovered)
+                    Positioned(
+                      right: 0,
+                      top: 10,
+                      bottom: 10,
+                      child: ColoredBox(color: c.separator, child: const SizedBox(width: 1)),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _dragHandle(
+                            context,
+                            SizedBox(
+                              height: touch ? 44 : 30,
+                              child: MMInteractive(
+                                selected: widget.selected,
+                                semanticLabel: widget.title,
+                                onTap: widget.onSelect,
+                                builder: (context, interaction) => Padding(
+                                  padding: EdgeInsets.only(left: touch ? 12 : 10, right: 4),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        _tabIcon(widget.tab),
+                                        size: touch ? 15 : 14,
+                                        color: widget.selected ? c.label : c.icon,
+                                      ),
+                                      SizedBox(width: touch ? 8 : 6),
+                                      Expanded(
+                                        child: LayoutBuilder(
+                                          builder: (context, bounds) {
+                                            final text = Text(
+                                              widget.title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: type,
+                                            );
+                                            final painter = TextPainter(
+                                              text: TextSpan(text: widget.title, style: type),
+                                              maxLines: 1,
+                                              ellipsis: '…',
+                                              textDirection: Directionality.of(context),
+                                              textScaler: MediaQuery.textScalerOf(context),
+                                              locale: Localizations.localeOf(context),
+                                            )..layout(maxWidth: bounds.maxWidth);
+                                            final truncated = painter.didExceedMaxLines;
+                                            painter.dispose();
+                                            return truncated
+                                                ? Tooltip(
+                                                    message: widget.title,
+                                                    triggerMode: TooltipTriggerMode.manual,
+                                                    child: text,
+                                                  )
+                                                : text;
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        IgnorePointer(
+                          ignoring: !showClose,
+                          child: AnimatedOpacity(
+                            opacity: showClose ? 1 : 0,
+                            alwaysIncludeSemantics: true,
+                            duration: MMAppearance.duration(context, MMMotion.quick),
+                            child: MMIconButton(
+                              key: ValueKey('close-workspace-tab-${widget.tab.id}'),
+                              icon: MMIcons.close,
+                              iconSize: 11,
+                              size: touch ? 44 : 28,
+                              tooltip: '${context.l10n.closeTab} · ${widget.title}',
+                              onPressed: widget.onClose,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
                     ),
                   ),
-                  IgnorePointer(
-                    ignoring: !showClose,
-                    child: AnimatedOpacity(
-                      opacity: showClose ? 1 : 0,
-                      alwaysIncludeSemantics: true,
-                      duration: MMAppearance.duration(context, MMMotion.quick),
-                      child: MMIconButton(
-                        key: ValueKey('close-workspace-tab-${widget.tab.id}'),
-                        icon: MMIcons.close,
-                        iconSize: 11,
-                        size: touch ? 44 : 28,
-                        tooltip: '${context.l10n.closeTab} · ${widget.title}',
-                        onPressed: widget.onClose,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
                 ],
               ),
             ),
@@ -362,4 +367,44 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     },
     child: child,
   );
+}
+
+/// Rounded shoulders and concave feet join the active tab to the content.
+class _ChromeTabShape extends ShapeBorder {
+  const _ChromeTabShape({this.side = BorderSide.none});
+  final BorderSide side;
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    const foot = 8.0;
+    const shoulder = 10.0;
+    final l = rect.left, r = rect.right, t = rect.top, b = rect.bottom;
+    return Path()
+      ..moveTo(l, b)
+      ..quadraticBezierTo(l + foot, b, l + foot, b - foot)
+      ..lineTo(l + foot, t + shoulder)
+      ..quadraticBezierTo(l + foot, t, l + foot + shoulder, t)
+      ..lineTo(r - foot - shoulder, t)
+      ..quadraticBezierTo(r - foot, t, r - foot, t + shoulder)
+      ..lineTo(r - foot, b - foot)
+      ..quadraticBezierTo(r - foot, b, r, b)
+      ..close();
+  }
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
+      getOuterPath(rect.deflate(side.width), textDirection: textDirection);
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    if (side.style == BorderStyle.solid) {
+      canvas.drawPath(getOuterPath(rect.deflate(side.width / 2)), side.toPaint());
+    }
+  }
+
+  @override
+  ShapeBorder scale(double t) => _ChromeTabShape(side: side.scale(t));
 }

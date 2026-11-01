@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/workspace_sidebar.dart';
 import 'package:marginmind/features/workspace/widgets/browser_pane.dart';
+import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_browser.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/document_import.dart';
@@ -30,6 +31,8 @@ void main() {
     final sidebar = tester.element(find.byType(WorkspaceSidebar));
     unawaited(showAddWebPage(sidebar, sidebar as WidgetRef, 'demo-1'));
     await tester.pumpAndSettle();
+    expect(find.text('Web address'), findsNothing);
+    expect(tester.widget<TextField>(find.byType(TextField).last).decoration!.hintText, 'https://');
     await tester.tap(find.widgetWithText(MMButton, 'Open'));
     await tester.pumpAndSettle();
     expect(find.text('Enter a URL'), findsOneWidget);
@@ -39,10 +42,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Only http and https are supported'), findsOneWidget);
     await tester.enterText(field, 'example.com');
-    await tester.tap(find.widgetWithText(MMButton, 'Open'));
+    await tester.pump();
+    expect(find.text('Only http and https are supported'), findsNothing);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     final owner = container.read(workspaceBrowserProvider('demo-1').notifier);
     expect(container.read(workspaceBrowserProvider('demo-1')).visible, isTrue);
+    final browserReader = find.byType(ReaderPane);
+    expect(
+      find.descendant(of: browserReader, matching: find.byKey(const ValueKey('map-more'))).hitTestable(),
+      findsNothing,
+    );
     final imports = container.read(documentImportsProvider('demo-1').notifier);
     final task = imports.add('Pending.epub');
     await tester.pump();

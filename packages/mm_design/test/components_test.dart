@@ -134,7 +134,7 @@ void main() {
     expect(find.text('memory'), findsOneWidget, reason: 'the owner decides what Esc does');
   });
 
-  testWidgets('sheet opens from the top and closes on Esc', (tester) async {
+  testWidgets('sheet opens centered and closes on Esc', (tester) async {
     await tester.pumpWidget(
       harness(
         Builder(
@@ -154,6 +154,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
     expect(find.text('New Study Set'), findsOneWidget);
+    expect(tester.getCenter(find.byType(MMSheet)), const Offset(400, 300));
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(find.text('New Study Set'), findsNothing);

@@ -6,6 +6,64 @@ import UserNotifications
 
 class MainFlutterWindow: NSWindow {
   private weak var toolbarPointerTarget: FlutterToolbarEventView?
+  private var windowGestureChannel: FlutterMethodChannel?
+  private var flutterOwnsWindowGestures = false
+  private var explicitWindowGesture = false
+
+  func configureFlutterWindowGestures() {
+    // Transparent title bars can start AppKit gestures outside the forwarding
+    // surface. Keep automatic movement off; Flutter opts in for a title drag.
+    flutterOwnsWindowGestures = true
+    isMovableByWindowBackground = false
+    isMovable = false
+  }
+
+  func withExplicitWindowGesture(_ action: () -> Void) {
+    let previous = explicitWindowGesture
+    explicitWindowGesture = true
+    defer { explicitWindowGesture = previous }
+    action()
+  }
+
+  func permitsNativeWindowZoom(sender: Any?, event: NSEvent?) -> Bool {
+    if !flutterOwnsWindowGestures || explicitWindowGesture { return true }
+    if let button = standardWindowButton(.zoomButton), let sender = sender as AnyObject?, sender === button {
+      return true
+    }
+    if sender is NSMenuItem { return true }
+    guard let event, event.windowNumber == windowNumber,
+          [.leftMouseDown, .leftMouseUp, .leftMouseDragged].contains(event.type) else { return false }
+    if let button = standardWindowButton(.zoomButton) {
+      let local = button.convert(event.locationInWindow, from: nil)
+      if !button.isHidden && button.bounds.contains(local) { return true }
+    }
+    return false
+  }
+
+  override func zoom(_ sender: Any?) {
+    guard permitsNativeWindowZoom(sender: sender, event: NSApp.currentEvent) else { return }
+    super.zoom(sender)
+  }
+
+  func handleWindowGesture(_ call: FlutterMethodCall, result: FlutterResult) {
+    switch call.method {
+    case "configure":
+      configureFlutterWindowGestures()
+    case "startDragging":
+      guard let event = currentEvent ?? NSApp.currentEvent, event.windowNumber == windowNumber,
+            [.leftMouseDown, .leftMouseDragged].contains(event.type) else { result(false); return }
+      let previous = isMovable
+      isMovable = true
+      defer { isMovable = previous }
+      withExplicitWindowGesture { performDrag(with: event) }
+    case "toggleZoom":
+      withExplicitWindowGesture { zoom(nil) }
+    default:
+      result(FlutterMethodNotImplemented)
+      return
+    }
+    result(true)
+  }
 
   override func sendEvent(_ event: NSEvent) {
     switch event.type {
@@ -78,6 +136,7 @@ class MainFlutterWindow: NSWindow {
   }
 
   func installFlutterToolbar(eventTarget: NSResponder) {
+    configureFlutterWindowGestures()
     let nativeToolbar = FlutterWindowToolbar(identifier: "marginmind.flutterToolbar")
     nativeToolbar.eventTarget = eventTarget
     nativeToolbar.delegate = nativeToolbar
@@ -154,6 +213,13 @@ class MainFlutterWindow: NSWindow {
 
     installFlutterToolbar(eventTarget: flutterViewController)
     RegisterGeneratedPlugins(registry: flutterViewController)
+    let gestures = FlutterMethodChannel(name: "marginmind/window_gestures",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
+    windowGestureChannel = gestures
+    gestures.setMethodCallHandler { [weak self] call, result in
+      guard let self else { result(false); return }
+      self.handleWindowGesture(call, result: result)
+    }
     let browser = BrowserFactory(messenger: flutterViewController.engine.binaryMessenger)
     browserFactory = browser
     flutterViewController.registrar(forPlugin: "MarginMindBrowser").register(browser, withId: "marginmind/browser")

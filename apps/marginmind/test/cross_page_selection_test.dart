@@ -56,8 +56,8 @@ void main() {
     expect(decoded.annotations.single.toJson(), annotation.toJson());
     controller.revealCard(card.id);
     await tester.pumpAndSettle();
-    expect(referenceState(tester).reveal!.page, 1);
-    expect(referenceState(tester).reveal!.rects, _selection.pages.first.rects);
+    expect(container.read(workspaceProvider('demo-1')).reveal!.page, 1);
+    expect(container.read(workspaceProvider('demo-1')).reveal!.rects, _selection.pages.first.rects);
     final markdown = controller.export(opml: false, rootTitle: 'Book', source: (doc, page) => '${doc.title}:$page');
     final opml = controller.export(opml: true, rootTitle: 'Book', source: (doc, page) => '${doc.title}:$page');
     expect(markdown, contains('End of first page Start of second page'));
@@ -77,7 +77,7 @@ void main() {
     await tester.tap(find.text(l.revealSource));
     await tester.pumpAndSettle();
     expect(container.read(navigationProvider), isA<WorkspaceRoute>());
-    expect(referenceState(tester).reveal!.page, 1);
+    expect(container.read(workspaceProvider('demo-1')).reveal!.page, 1);
     await settleHud(tester);
   });
 

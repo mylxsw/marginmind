@@ -143,6 +143,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   final _prepared = <WebCaptureMode, Future<PreparedWebDocument>>{};
   WebCaptureMode _mode = WebCaptureMode.readable;
   bool _edited = false;
+  Document? _source;
   @override
   void dispose() {
     _title.dispose();
@@ -152,39 +153,58 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final compact = MMBottomSheet.contains(context);
     return FutureBuilder<PreparedWebDocument>(
       future: _prepared.putIfAbsent(_mode, () => widget.prepare(_mode)),
       builder: (context, snapshot) {
         final value = snapshot.connectionState == ConnectionState.done ? snapshot.data : null;
         if (value != null && !_edited) _title.text = value.package.document.title;
+        if (value != null) _source ??= value.package.document;
+        final c = context.mmColors;
         final titleField = MMTextField(
           controller: _title,
           placeholder: l.convertTitlePlaceholder,
-          semanticLabel: l.convertTitlePlaceholder,
+          semanticLabel: l.convertDocumentName,
+          maxLines: 2,
+          minLines: 1,
           onChanged: (_) => setState(() => _edited = true),
         );
-        final segments = MMSegmentedControl<WebCaptureMode>(
-          expand: true,
-          value: _mode,
-          segments: [
-            MMSegment(value: WebCaptureMode.readable, label: l.convertReadable),
-            MMSegment(value: WebCaptureMode.original, label: l.convertPdf),
-            MMSegment(value: WebCaptureMode.markdown, label: l.convertMarkdown),
-          ],
-          onChanged: (mode) => setState(() => _mode = mode),
+        final formats = [
+          (WebCaptureMode.readable, l.convertReadable, MMIcons.document),
+          (WebCaptureMode.original, l.convertPdf, MMIcons.pdf),
+          (WebCaptureMode.markdown, l.convertMarkdown, MMIcons.markdown),
+        ];
+        final segments = LayoutBuilder(
+          builder: (context, constraints) {
+            final options = [
+              for (final (mode, label, icon) in formats)
+                _FormatOption(
+                  label: label,
+                  icon: icon,
+                  selected: _mode == mode,
+                  onTap: () => setState(() => _mode = mode),
+                ),
+            ];
+            return constraints.maxWidth < 400
+                ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: MMSpacing.s, children: options)
+                : Row(
+                    spacing: MMSpacing.s,
+                    children: [for (final option in options) Expanded(child: option)],
+                  );
+          },
         );
         final preview = Container(
-          width: compact ? double.infinity : MMSizes.webConversionPreviewWidth,
-          height: compact ? MMSizes.webConversionPreviewCompactHeight : MMSizes.webConversionPreviewHeight,
+          height: MMSizes.webConversionPreviewHeight,
           padding: const EdgeInsets.all(MMSpacing.m),
           decoration: BoxDecoration(
             color: context.mmColors.quaternaryFill,
-            borderRadius: BorderRadius.circular(MMRadii.card),
+            borderRadius: BorderRadius.circular(MMRadii.row),
+            border: Border.all(color: c.hairline, width: 0.5),
           ),
           child: snapshot.hasError
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              ? Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: MMSpacing.m,
                   children: [
                     Text(l.docSaveFailed, style: context.mmText.body),
                     MMButton(
@@ -200,7 +220,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
               : _Preview(value: value, mode: _mode),
         );
         final save = MMButton(
-          label: l.save,
+          label: l.convertSave,
           variant: MMButtonVariant.primary,
           onPressed: value == null || _title.text.trim().isEmpty
               ? null
@@ -222,45 +242,130 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
                   );
                 },
         );
+        Widget section(String label, Widget child) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(label, style: context.mmText.body.copyWith(color: c.secondaryLabel)),
+            const SizedBox(height: MMSpacing.s),
+            child,
+          ],
+        );
         return MMSheet(
           title: l.convertTitle,
+          titleStyle: context.mmText.title3.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
           actions: [
             MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
-            if (!compact) save,
+            save,
           ],
-          child: compact
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    titleField,
-                    const SizedBox(height: MMSpacing.m),
-                    segments,
-                    const SizedBox(height: MMSpacing.m),
-                    preview,
-                    const SizedBox(height: MMSpacing.m),
-                    save,
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    preview,
-                    const SizedBox(width: MMSpacing.l),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          titleField,
-                          const SizedBox(height: MMSpacing.m),
-                          segments,
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_source case final source?) ...[
+                _SourceSummary(document: source),
+                const SizedBox(height: MMSpacing.m),
+                Divider(height: 1, thickness: 0.5, color: c.hairline),
+                const SizedBox(height: MMSpacing.m),
+              ],
+              section(l.convertDocumentName, titleField),
+              const SizedBox(height: MMSpacing.l),
+              section(l.convertFormat, segments),
+              const SizedBox(height: MMSpacing.l),
+              section(l.convertPreview, preview),
+              const SizedBox(height: MMSpacing.m),
+              Divider(height: 1, thickness: 0.5, color: c.hairline),
+            ],
+          ),
         );
       },
+    );
+  }
+}
+
+class _SourceSummary extends StatelessWidget {
+  const _SourceSummary({required this.document});
+  final Document document;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final origin = document.origin;
+    final date = origin?.capturedAt.toLocal();
+    final dateLabel = date == null
+        ? ''
+        : '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(MMRadii.row)),
+          child: Icon(MMIcons.document, size: 22, color: c.secondaryLabel),
+        ),
+        const SizedBox(width: MMSpacing.m),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(document.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: context.mmText.headline),
+              if (origin != null) ...[
+                const SizedBox(height: MMSpacing.xs),
+                Text(
+                  '${Uri.tryParse(origin.url)?.host ?? ''} · $dateLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.mmText.callout.copyWith(color: c.secondaryLabel),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FormatOption extends StatelessWidget {
+  const _FormatOption({required this.label, required this.icon, required this.selected, required this.onTap});
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return Semantics(
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      child: MMInteractive(
+        semanticLabel: label,
+        selected: selected,
+        onTap: onTap,
+        builder: (context, state) => Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? c.accentTint : (state.hovered || state.pressed ? c.hover : c.quaternaryFill),
+            borderRadius: BorderRadius.circular(MMRadii.row),
+            border: Border.all(color: selected || state.focused ? c.accent : c.hairline, width: selected ? 1 : 0.5),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: selected ? c.accent : c.secondaryLabel),
+              const SizedBox(width: 10),
+              Expanded(child: Text(label, style: context.mmText.headline)),
+              const SizedBox(width: 8),
+              Icon(
+                selected ? MMIcons.radioSelected : MMIcons.radio,
+                size: 16,
+                color: selected ? c.accent : c.secondaryLabel,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -278,11 +383,18 @@ class _Preview extends StatelessWidget {
       return SingleChildScrollView(child: Text(value.markdown ?? '', style: MMTypography.mono));
     }
     if (value.book.chapters.isEmpty) return const SizedBox.shrink();
+    final origin = value.package.document.origin;
+    final sourceHost = origin == null ? null : Uri.tryParse(origin.url)?.host;
+    final blocks = value.book.chapters.first.blocks.where((block) {
+      if (block.kind == book.BlockKind.heading && block.text.trim() == value.book.title.trim()) return false;
+      if (sourceHost != null && block.text.startsWith('$sourceHost · ')) return false;
+      return true;
+    });
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final block in value.book.chapters.first.blocks)
+          for (final block in blocks)
             Padding(
               padding: const EdgeInsets.only(bottom: MMSpacing.s),
               child: block.kind == book.BlockKind.image && value.book.resources[block.resource] != null

@@ -399,7 +399,7 @@ void main() {
     expect(find.byType(ReaderPane), findsOneWidget);
     controller.revealCard(excerpt.$2.id);
     await tester.pumpAndSettle();
-    expect(referenceState(tester).reveal!.textAnchors.single.quote, '原文');
+    expect(container.read(workspaceProvider('demo-1')).reveal!.textAnchors.single.quote, '原文');
     await controller.toggleBookmark();
     expect(controller.content.bookmarks.single.position, isA<TextReadingPosition>());
     await controller.toggleBookmark();

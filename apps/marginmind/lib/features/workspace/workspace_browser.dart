@@ -103,7 +103,7 @@ String browserUrlError(BuildContext context, BrowserUrlError code) => switch (co
 
 Future<void> showAddWebPage(BuildContext context, WidgetRef ref, String studySetId) async {
   if (!MMPlatformCapabilities.current.webBrowser) return;
-  final url = await showMMSheet<Uri>(context: context, builder: (_) => const _AddressDialog());
+  final url = await showMMSheet<Uri>(context: context, width: 540, builder: (_) => const _AddressDialog());
   if (url != null && context.mounted) ref.read(workspaceBrowserProvider(studySetId).notifier).open(url);
 }
 
@@ -148,7 +148,13 @@ class _AddressDialogState extends State<_AddressDialog> {
     final open = MMButton(label: context.l10n.open, variant: MMButtonVariant.primary, onPressed: _open);
     return MMSheet(
       title: context.l10n.addWebTitle,
-      titleTrailing: compact ? open : null,
+      titleTrailing: compact
+          ? open
+          : MMIconButton(
+              icon: MMIcons.close,
+              tooltip: context.l10n.cancel,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
       actions: [
         MMButton(label: context.l10n.cancel, onPressed: () => Navigator.of(context).pop()),
         if (!compact) open,
@@ -157,20 +163,46 @@ class _AddressDialogState extends State<_AddressDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(MMIcons.web, size: MMSizes.dropdownIcon, color: context.mmColors.secondaryLabel),
-              const SizedBox(width: MMSpacing.s),
-              Expanded(
-                child: MMTextField(
-                  controller: _text,
-                  focusNode: _focus,
-                  placeholder: context.l10n.webUrlPlaceholder,
-                  autofocus: true,
-                  onSubmitted: (_) => _open(),
+          ListenableBuilder(
+            listenable: _focus,
+            builder: (context, _) => GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _focus.requestFocus,
+              child: Container(
+                height: context.mmTouchPlatform ? MMSizes.touchTarget : 40,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: context.mmColors.quaternaryFill,
+                  borderRadius: BorderRadius.circular(MMRadii.field),
+                  border: Border.all(color: _focus.hasFocus ? context.mmColors.accent : context.mmColors.hairline),
+                ),
+                child: Row(
+                  children: [
+                    Icon(MMIcons.web, size: 18, color: context.mmColors.secondaryLabel),
+                    Container(
+                      height: 20,
+                      width: MMSizes.hairline,
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      color: context.mmColors.separator,
+                    ),
+                    Expanded(
+                      child: MMTextField(
+                        controller: _text,
+                        focusNode: _focus,
+                        semanticLabel: context.l10n.webUrlLabel,
+                        placeholder: 'https://',
+                        plain: true,
+                        autofocus: true,
+                        onChanged: (_) {
+                          if (_error != null) setState(() => _error = null);
+                        },
+                        onSubmitted: (_) => _open(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
           Text(
             _error == null ? ' ' : browserUrlError(context, _error!),

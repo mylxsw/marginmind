@@ -5,6 +5,7 @@ import '../foundation/adaptive.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import 'dialog_scope.dart';
 
 /// Search field: magnifier, placeholder, clear button. Esc clears the text,
 /// a second Esc gives focus back.
@@ -241,6 +242,8 @@ class _MMTextFieldState extends State<MMTextField> {
     final c = context.mmColors;
     final t = context.mmText;
     final focused = _focus.hasFocus && widget.enabled;
+    final dialog = MMDialogScope.contains(context);
+    final fieldHeight = context.mmTouchPlatform ? MMSizes.touchTarget : (dialog ? 36.0 : MMSizes.field);
     // Keep the input's role separate from surrounding controls.
     final input = Material(
       type: MaterialType.transparency,
@@ -269,9 +272,9 @@ class _MMTextFieldState extends State<MMTextField> {
       ),
     );
     final field = Container(
-      height: widget.maxLines == 1 ? (context.mmTouchPlatform ? MMSizes.touchTarget : MMSizes.field) : null,
+      height: widget.maxLines == 1 ? fieldHeight : null,
       constraints: BoxConstraints(
-        minHeight: context.mmTouchPlatform ? MMSizes.touchTarget : MMSizes.field,
+        minHeight: fieldHeight,
         maxWidth: widget._settings ? MMSizes.settingsFieldWidth : double.infinity,
       ),
       padding: EdgeInsets.symmetric(
@@ -284,7 +287,7 @@ class _MMTextFieldState extends State<MMTextField> {
           : BoxDecoration(
               color: widget._settings && !focused ? Colors.transparent : c.quaternaryFill,
               borderRadius: BorderRadius.circular(MMRadii.field),
-              border: Border.all(color: focused ? c.accent : Colors.transparent),
+              border: Border.all(color: focused ? c.accent : (dialog ? c.hairline : Colors.transparent)),
               boxShadow: c.flat
                   ? null
                   : focused

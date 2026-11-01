@@ -3326,6 +3326,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get webUrlPlaceholder => '网址';
 
   @override
+  String get webUrlLabel => '网页地址';
+
+  @override
   String get webUrlEmpty => '请输入网址';
 
   @override
@@ -3512,7 +3515,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerSelectionEnd => '选区终点';
 
   @override
-  String get convertTitle => '转换为文档';
+  String get convertTitle => '保存到资料库';
+
+  @override
+  String get convertDocumentName => '文档名称';
+
+  @override
+  String get convertFormat => '保存格式';
+
+  @override
+  String get convertPreview => '正文预览';
+
+  @override
+  String get convertSave => '保存文档';
 
   @override
   String get convertTitlePlaceholder => '标题';

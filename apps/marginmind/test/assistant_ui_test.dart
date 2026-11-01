@@ -270,13 +270,9 @@ void main() {
     // p.24 goes back to the passage.
     await tester.tap(find.text('p.24'));
     await tester.pumpAndSettle();
-    expect(
-      (app.container.read(workspaceProvider('demo-1')).tabs.current.reference!.anchor!.target as PdfTarget)
-          .pages
-          .first
-          .page,
-      24,
-    );
+    expect(app.container.read(workspaceProvider('demo-1')).reveal!.page, 24);
+    expect(app.container.read(workspaceProvider('demo-1')).tabs.current.reference, isNull);
+    expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
     app.container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
     await tester.pumpAndSettle();
     // Copy keeps the page as text.

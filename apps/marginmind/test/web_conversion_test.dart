@@ -87,13 +87,13 @@ void main() {
       );
       await tester.tap(find.text('Convert'));
       await tester.pumpAndSettle();
-      expect(find.text('Convert to Document'), findsOneWidget);
+      expect(find.text('Save to Library'), findsOneWidget);
       expect(requested, [WebCaptureMode.readable]);
       final title = find.byType(TextField);
       expect(tester.widget<TextField>(title).controller!.text, 'Article');
       await tester.enterText(title, '');
       await tester.pump();
-      expect(tester.widget<MMButton>(find.widgetWithText(MMButton, 'Save')).onPressed, isNull);
+      expect(tester.widget<MMButton>(find.widgetWithText(MMButton, 'Save Document')).onPressed, isNull);
       await tester.enterText(title, 'Edited');
       await tester.tap(find.text('PDF'));
       await tester.pumpAndSettle();
@@ -104,7 +104,7 @@ void main() {
       await tester.tap(find.text('Markdown'));
       await tester.pumpAndSettle();
       expect(find.textContaining('# Heading'), findsOneWidget);
-      await tester.tap(find.widgetWithText(MMButton, 'Save'));
+      await tester.tap(find.widgetWithText(MMButton, 'Save Document'));
       await tester.pumpAndSettle();
       expect(saved!.package.document.title, 'Edited');
       expect(saved!.package.document.origin!.mode, WebCaptureMode.markdown);
@@ -154,7 +154,7 @@ void main() {
     var context = tester.element(find.byType(BrowserPane));
     final first = container.read(browserConverterProvider)!(context, 'demo-1', session);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(MMButton, 'Save'));
+    await tester.tap(find.widgetWithText(MMButton, 'Save Document'));
     await tester.pumpAndSettle();
     await first;
     final controller = container.read(workspaceProvider('demo-1').notifier);
@@ -199,7 +199,7 @@ void main() {
     final update = container.read(browserConverterProvider)!(context, 'demo-1', session);
     await tester.pumpAndSettle();
     await update;
-    expect(find.text('Convert to Document'), findsNothing);
+    expect(find.text('Save to Library'), findsNothing);
     final updated = controller.content.document(document.id)!;
     expect(updated.revision, isNot(document.revision));
     expect(controller.content.documents.where((d) => d.origin != null).length, 1);
@@ -319,7 +319,7 @@ void main() {
       ),
       (_) {},
     );
-    await tester.tap(find.widgetWithText(MMButton, 'Save'));
+    await tester.tap(find.widgetWithText(MMButton, 'Save Document'));
     await tester.pump(const Duration(seconds: 1));
     await flow;
     expect(container.read(workspaceProvider('demo-1').notifier).content.documents.length, count);

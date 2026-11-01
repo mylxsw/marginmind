@@ -67,6 +67,18 @@ try:
             svg = base64.b64decode(next(v for k,v in result['resources'].items() if k.endswith('.svg')))
             assert b'SVG_SECRET' not in svg and b'foreignObject' not in svg and b'<rect' in svg
             assert 'resources/image-1.png' in result['html']
+            if original:
+                page.evaluate('globalThis.testCapture.preparePrint()')
+                page.emulate_media(media='print')
+                assert page.locator('nav').is_hidden()
+                host = page.locator('#testCapture_print')
+                assert host.is_visible()
+                assert host.bounding_box()['width'] <= 800
+                page.emulate_media(media='screen')
+                assert host.is_hidden()
+                assert page.locator('nav').is_visible()
+                page.evaluate('globalThis.testCapture.cancel()')
+                assert page.locator('#testCapture_print').count() == 0
             assert page.evaluate('scrollY') == 150
             assert requests.count('/page') == 1, requests
         page.evaluate(script)

@@ -258,7 +258,7 @@ void main() {
         await controller.setMapStructure(structure);
         await controller.setMapPalette(palette);
         await tester.pumpAndSettle();
-        // Shows the style popover, which fits the whole map beside it.
+        // Shows the style popover while preserving the current map view.
         await toggleMapStyle(tester);
         await tester.pumpAndSettle();
         await _save(tester, '${structure.name}-${palette.name}-${dark ? 'dark' : 'light'}');

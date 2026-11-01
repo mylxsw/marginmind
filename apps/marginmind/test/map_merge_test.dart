@@ -197,20 +197,21 @@ void main() {
     await tester.tap(find.text('Second passage'));
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
-    expect(referenceState(tester).activeDocumentId, original.documents.last.id);
-    expect(referenceState(tester).reveal?.page, 7);
+    expect(container.read(workspaceProvider('demo-1')).activeDocumentId, original.documents.last.id);
+    expect(container.read(workspaceProvider('demo-1')).reveal?.page, 7);
     expect(
-      referenceState(tester).reveal!.rects,
+      container.read(workspaceProvider('demo-1')).reveal!.rects,
       controller.content.annotation(merged.segments.last.annotationId!)!.rects,
     );
     controller.revealCard(merged.id);
     await tester.pumpAndSettle();
-    expect(referenceState(tester).activeDocumentId, original.documents.first.id);
-    expect(referenceState(tester).reveal?.page, 2);
+    expect(container.read(workspaceProvider('demo-1')).activeDocumentId, original.documents.first.id);
+    expect(container.read(workspaceProvider('demo-1')).reveal?.page, 2);
     controller.tapHighlight(merged.segments.last.annotationId!);
     expect(
-      referenceState(tester).reveal!.rects,
-      controller.content.annotation(merged.segments.last.annotationId!)!.rects,
+      state().reveal!.rects,
+      controller.content.annotation(merged.segments.first.annotationId!)!.rects,
+      reason: 'clicking a highlight selects its card without changing the reader location',
     );
     expect(state().flashCardId, merged.id);
     await controller.undo();

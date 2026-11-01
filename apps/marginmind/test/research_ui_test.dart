@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -12,8 +13,14 @@ import 'helpers.dart';
 const _claim = '一个明显随机的数字，竟能让估计相差将近一倍。';
 const _docId = 'c1';
 const _rect = PageRect(10, 100, 200, 88);
-Future<({WorkspaceController workspace, ResearchPanelController panel})> _open(WidgetTester tester) async {
-  final container = await pumpApp(tester, content: InMemoryStudySetContentRepository({'demo-1': demoContent()}));
+Future<({WorkspaceController workspace, ResearchPanelController panel})> _open(
+  WidgetTester tester, {
+  StudySetContent? content,
+}) async {
+  final container = await pumpApp(
+    tester,
+    content: InMemoryStudySetContentRepository({'demo-1': content ?? demoContent()}),
+  );
   container.read(navigationProvider.notifier).openStudySet('demo-1');
   await tester.pumpAndSettle();
   return (
@@ -30,6 +37,44 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets('each research attachment locates its own source in the main reader', (tester) async {
+    final note = ResearchNote(
+      id: 'multiple',
+      title: 'Multiple sources',
+      question: 'Why?',
+      body: 'Answer',
+      createdAt: testNow,
+      updatedAt: testNow,
+    );
+    final data = demoContent().copyWith(
+      researchNotes: [note],
+      noteAttachments: [
+        for (final (id, documentId, page) in [('first', 'c1', 2), ('second', 'c2', 3)])
+          NoteAttachment(
+            id: id,
+            noteId: note.id,
+            target: PdfTarget(
+              documentId: documentId,
+              pages: [
+                AnnotationPage(page: page, rects: const [_rect]),
+              ],
+            ),
+          ),
+      ],
+    );
+    final app = await _open(tester, content: data);
+    app.panel.showNote(note.id);
+    await _settle(tester);
+    final second = find.byKey(const ValueKey('place-second'));
+    await _tap(tester, find.descendant(of: second, matching: find.widgetWithText(MMButton, 'Locate')));
+    final state = ProviderScope.containerOf(tester.element(second)).read(workspaceProvider('demo-1'));
+    expect(state.activeDocumentId, 'c2');
+    expect(state.reveal!.page, 3);
+    expect(state.reveal!.rects, [_rect]);
+    expect(state.tabs.current.reference, isNull);
+    await settleHud(tester);
+  });
+
   testWidgets('PDF-only note opts into review without creating a visible card; undo restores opt-out', (tester) async {
     final app = await _open(tester);
     final now = DateTime(2026);
