@@ -6293,7 +6293,7 @@ abstract class AppLocalizations {
   /// No description provided for @webReadyPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Convert to a document?'**
+  /// **'Save for annotations, mind maps, and offline reading.'**
   String get webReadyPrompt;
 
   /// No description provided for @webStillLoading.
@@ -10837,6 +10837,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Test result not saved'**
   String get aiTasksProbeUnsaved;
+
+  /// No description provided for @workspaceSearchTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tabs'**
+  String get workspaceSearchTabs;
+
+  /// No description provided for @workspaceNoMatchingTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching tabs'**
+  String get workspaceNoMatchingTabs;
+
+  /// No description provided for @webSaveDocumentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as a document'**
+  String get webSaveDocumentTitle;
+
+  /// No description provided for @workspaceScrollTabsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll tabs left'**
+  String get workspaceScrollTabsLeft;
+
+  /// No description provided for @workspaceScrollTabsRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll tabs right'**
+  String get workspaceScrollTabsRight;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

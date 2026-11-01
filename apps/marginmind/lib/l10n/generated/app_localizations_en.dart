@@ -3498,7 +3498,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get browserConvertShort => 'Convert';
 
   @override
-  String get webReadyPrompt => 'Convert to a document?';
+  String get webReadyPrompt => 'Save for annotations, mind maps, and offline reading.';
 
   @override
   String get webStillLoading => 'Some content is still loading';
@@ -6149,4 +6149,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiTasksProbeUnsaved => 'Test result not saved';
+
+  @override
+  String get workspaceSearchTabs => 'Search tabs';
+
+  @override
+  String get workspaceNoMatchingTabs => 'No matching tabs';
+
+  @override
+  String get webSaveDocumentTitle => 'Save as a document';
+
+  @override
+  String get workspaceScrollTabsLeft => 'Scroll tabs left';
+
+  @override
+  String get workspaceScrollTabsRight => 'Scroll tabs right';
 }

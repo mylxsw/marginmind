@@ -3359,7 +3359,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get browserConvertShort => '转换';
 
   @override
-  String get webReadyPrompt => '转换为文档？';
+  String get webReadyPrompt => '保存后可批注、整理脑图，随时回看。';
 
   @override
   String get webStillLoading => '部分内容仍在加载';
@@ -5912,4 +5912,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiTasksProbeUnsaved => '测试结果未保存';
+
+  @override
+  String get workspaceSearchTabs => '搜索标签页';
+
+  @override
+  String get workspaceNoMatchingTabs => '没有匹配的标签页';
+
+  @override
+  String get webSaveDocumentTitle => '保存为文档';
+
+  @override
+  String get workspaceScrollTabsLeft => '向左滚动标签页';
+
+  @override
+  String get workspaceScrollTabsRight => '向右滚动标签页';
 }

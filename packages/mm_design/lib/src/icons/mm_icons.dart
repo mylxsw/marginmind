@@ -22,6 +22,7 @@ abstract final class MMIcons {
 
   static const context = LucideIcons.textQuote;
   static const regenerate = LucideIcons.refreshCw;
+  static const webConvert = LucideIcons.fileInput;
   static const grip = LucideIcons.gripVertical;
   static const studyNote = LucideIcons.notebookText;
   static const share = LucideIcons.share;

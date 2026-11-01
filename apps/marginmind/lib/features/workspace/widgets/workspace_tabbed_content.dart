@@ -1,3 +1,5 @@
+import '../workspace_browser.dart';
+import 'browser_pane.dart';
 import 'workspace_menu.dart';
 import 'workspace_toolbar.dart';
 
@@ -23,6 +25,7 @@ class WorkspaceTabbedContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(workspaceProvider(studySetId).select((s) => s.tabs));
 
+    final browser = ref.watch(workspaceBrowserProvider(studySetId));
     final state = ref.read(workspaceProvider(studySetId));
     final tabs = state.tabs.open;
     if (tabs.isEmpty) return Center(child: Text(context.l10n.workspaceNoTabs, style: context.mmText.body));
@@ -51,6 +54,14 @@ class WorkspaceTabbedContent extends ConsumerWidget {
                   useGeometry: false,
                   menuEntries: workspaceMenuEntries(context, ref, studySetId),
                   child: switch (tab.kind) {
+                    WorkspaceTabKind.browser => switch (browser.page(tab.browserId)) {
+                      final page? => BrowserPane(
+                        studySetId: studySetId,
+                        session: page.session,
+                        visible: tab.id == state.tabs.activeId,
+                      ),
+                      null => const SizedBox.shrink(),
+                    },
                     WorkspaceTabKind.documentMap => documentMap,
                     WorkspaceTabKind.note => StudyNoteView(studySetId: studySetId, noteId: tab.noteId!),
                     WorkspaceTabKind.vocabulary => VocabularyScreen(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
@@ -10,17 +11,10 @@ import '../../../app/app_commands.dart';
 import '../workspace_browser.dart';
 
 class BrowserPane extends ConsumerStatefulWidget {
-  const BrowserPane({
-    super.key,
-    required this.studySetId,
-    required this.session,
-    required this.visible,
-    required this.documentSwitcher,
-  });
+  const BrowserPane({super.key, required this.studySetId, required this.session, required this.visible});
   final String studySetId;
   final BrowserSession session;
   final bool visible;
-  final Widget documentSwitcher;
   @override
   ConsumerState<BrowserPane> createState() => _BrowserPaneState();
 }
@@ -80,7 +74,7 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
             if (session.canGoBack) {
               unawaited(session.back());
             } else {
-              owner.close();
+              owner.close(session.id);
             }
             return true;
           },
@@ -101,28 +95,86 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                 (converter ?? previewBrowserCapture)(context, widget.studySetId, session);
               }
 
+              final page = browser.page(session.id);
+              final updating = page?.replacingDocumentId != null;
+              final nativeWindows = defaultTargetPlatform == TargetPlatform.windows;
               final commands = browserCommands(
                 l,
                 session,
-                close: owner.close,
+                close: () => owner.close(session.id),
                 convert: convert,
                 converting: browser.converting,
-                updating: browser.replacingDocumentId != null,
+                updating: updating,
               );
               final reload = MMIconButton(
-                icon: session.loading ? MMIcons.close : MMIcons.history,
+                icon: session.loading ? MMIcons.stop : MMIcons.regenerate,
                 tooltip: session.loading ? l.browserStop : l.browserReload,
                 onPressed: commands[session.loading ? BrowserCommand.stop : BrowserCommand.reload]!.onInvoke,
               );
-              final convertButton = MMButton(
+              final convertButton = MMIconButton(
                 key: const ValueKey('browser-convert'),
-                label: browser.replacingDocumentId != null
-                    ? l.browserUpdate
-                    : compact
-                    ? l.browserConvertShort
-                    : l.browserConvert,
-                variant: session.canCapture ? MMButtonVariant.primary : MMButtonVariant.secondary,
+                icon: MMIcons.webConvert,
+                tooltip: updating ? l.browserUpdate : l.browserConvert,
                 onPressed: browser.converting ? null : commands[BrowserCommand.convert]!.onInvoke,
+              );
+              final prompt = Container(
+                key: const ValueKey('browser-ready-prompt'),
+                width: (constraints.maxWidth - 24).clamp(0.0, 330.0),
+                padding: const EdgeInsets.all(MMSpacing.m),
+                decoration: BoxDecoration(
+                  color: context.mmColors.surface,
+                  borderRadius: BorderRadius.circular(MMRadii.dropdown),
+                  border: Border.all(color: context.mmColors.border, width: .5),
+                  boxShadow: context.mmColors.glassShadow,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(MMIcons.webConvert, size: 20, color: context.mmColors.accent),
+                        const SizedBox(width: MMSpacing.s),
+                        Expanded(
+                          child: Text(
+                            updating ? l.browserUpdate : l.webSaveDocumentTitle,
+                            style: context.mmText.headline,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: MMSpacing.s),
+                    Text(
+                      session.phase == BrowserPhase.slow
+                          ? l.webStillLoading
+                          : updating
+                          ? l.webUpdatePrompt
+                          : l.webReadyPrompt,
+                      style: context.mmText.bodySecondary,
+                    ),
+                    const SizedBox(height: MMSpacing.m),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: MMSpacing.s,
+                        runSpacing: MMSpacing.s,
+                        children: [
+                          MMButton(
+                            label: updating ? l.webUpdateAction : l.browserConvert,
+                            variant: MMButtonVariant.primary,
+                            onPressed: browser.converting ? null : convert,
+                          ),
+                          MMButton(
+                            label: session.phase == BrowserPhase.slow ? l.webKeepWaiting : l.webLater,
+                            variant: MMButtonVariant.plain,
+                            onPressed: session.dismissPrompt,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               );
               return Column(
                 children: [
@@ -130,7 +182,6 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                     padding: const EdgeInsets.all(MMSpacing.s),
                     child: Row(
                       children: [
-                        if (compact) MMIconButton(icon: MMIcons.close, tooltip: l.browserClose, onPressed: owner.close),
                         if (!compact) ...[
                           MMIconButton(
                             icon: MMIcons.chevronLeft,
@@ -196,10 +247,6 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                         ),
                         const SizedBox(width: MMSpacing.s),
                         convertButton,
-                        if (!compact) ...[
-                          MMIconButton(icon: MMIcons.close, tooltip: l.browserClose, onPressed: owner.close),
-                          widget.documentSwitcher,
-                        ],
                       ],
                     ),
                   ),
@@ -208,41 +255,10 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                       browserUrlError(context, _error!),
                       style: context.mmText.footnote.copyWith(color: context.mmColors.critical),
                     ),
-                  if (session.prompt)
-                    // Keep the nonmodal prompt above the native surface: child HWNDs
-                    // cannot be composited under a Flutter overlay on Windows.
-                    Container(
-                      key: const ValueKey('browser-ready-prompt'),
-                      padding: const EdgeInsets.all(MMSpacing.m),
-                      decoration: BoxDecoration(
-                        color: context.mmColors.fill,
-                        borderRadius: BorderRadius.circular(MMRadii.dropdown),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              session.phase == BrowserPhase.slow
-                                  ? l.webStillLoading
-                                  : browser.replacingDocumentId != null
-                                  ? l.webUpdatePrompt
-                                  : l.webReadyPrompt,
-                              style: context.mmText.headline,
-                            ),
-                          ),
-                          MMButton(
-                            label: session.phase == BrowserPhase.slow ? l.webKeepWaiting : l.webLater,
-                            onPressed: session.dismissPrompt,
-                          ),
-                          const SizedBox(width: MMSpacing.s),
-                          MMButton(
-                            label: browser.replacingDocumentId != null ? l.webUpdateAction : l.webConvertAction,
-                            variant: MMButtonVariant.primary,
-                            onPressed: browser.converting ? null : convert,
-                          ),
-                        ],
-                      ),
-                    ),
+                  if (session.prompt && nativeWindows)
+                    // WebView2 child HWNDs cannot sit beneath Flutter overlays.
+                    // Reserve a short row on Windows; other hosts float the prompt.
+                    Align(alignment: Alignment.centerRight, child: prompt),
                   Expanded(
                     child: Stack(
                       children: [
@@ -274,6 +290,8 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                               ),
                             ),
                           ),
+                        if (widget.visible && session.prompt && !nativeWindows)
+                          Positioned(top: 8, right: 12, child: prompt),
                       ],
                     ),
                   ),

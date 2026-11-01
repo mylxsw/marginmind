@@ -1802,7 +1802,7 @@
   "browserClose": "Close Page",
   "browserConvert": "Convert to Document…",
   "browserConvertShort": "Convert",
-  "webReadyPrompt": "Convert to a document?",
+  "webReadyPrompt": "Save for annotations, mind maps, and offline reading.",
   "webStillLoading": "Some content is still loading",
   "webLater": "Later",
   "webErrorTitle": "Can’t Open Page",
@@ -3156,5 +3156,10 @@
   "aiTaskStudyNotes": "Study Note Organizing",
   "aiTaskReviewCards": "Review Cards & Questions",
   "aiTasksProfilesUnavailable": "Couldn't load model capabilities",
-  "aiTasksProbeUnsaved": "Test result not saved"
+  "aiTasksProbeUnsaved": "Test result not saved",
+  "workspaceSearchTabs": "Search tabs",
+  "workspaceNoMatchingTabs": "No matching tabs",
+  "webSaveDocumentTitle": "Save as a document",
+  "workspaceScrollTabsLeft": "Scroll tabs left",
+  "workspaceScrollTabsRight": "Scroll tabs right"
 }

@@ -1206,7 +1206,7 @@
   "browserClose": "关闭网页",
   "browserConvert": "转换为文档…",
   "browserConvertShort": "转换",
-  "webReadyPrompt": "转换为文档？",
+  "webReadyPrompt": "保存后可批注、整理脑图，随时回看。",
   "webStillLoading": "部分内容仍在加载",
   "webLater": "稍后",
   "webErrorTitle": "无法打开页面",
@@ -2447,5 +2447,10 @@
   "aiTaskStudyNotes": "学习笔记整理与改写",
   "aiTaskReviewCards": "复习卡与问题生成",
   "aiTasksProfilesUnavailable": "无法读取模型能力",
-  "aiTasksProbeUnsaved": "测试结果未保存"
+  "aiTasksProbeUnsaved": "测试结果未保存",
+  "workspaceSearchTabs": "搜索标签页",
+  "workspaceNoMatchingTabs": "没有匹配的标签页",
+  "webSaveDocumentTitle": "保存为文档",
+  "workspaceScrollTabsLeft": "向左滚动标签页",
+  "workspaceScrollTabsRight": "向右滚动标签页"
 }
