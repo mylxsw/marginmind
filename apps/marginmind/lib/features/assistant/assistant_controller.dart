@@ -44,6 +44,7 @@ class AssistantDependencies {
     this.online = true,
     this.generateTitle,
     this.defaultModel,
+    this.readTaskStatus,
   });
   final String studySetId;
 
@@ -54,6 +55,7 @@ class AssistantDependencies {
   final AssistantModel? Function()? defaultModel;
   AssistantModel get initialModel => defaultModel?.call() ?? model;
   final sdk.StateStorage storage;
+  final Future<RunStatus?> Function(String runId)? readTaskStatus;
   final AssistantRunFactory runFactory;
   final MapEditExecutor executor;
   final NoteSaver notes;
@@ -164,8 +166,13 @@ class AssistantController extends Notifier<Conversation> {
   }
 
   Message _message(String id, [_Session? session]) => (session ?? _open).view.messages.firstWhere((m) => m.id == id);
-  Future<void> send(String text, {List<ContextItem> contexts = const [], String? skill}) =>
-      _start(text, contexts: contexts, skill: skill);
+  Future<void> send(
+    String text, {
+    List<ContextItem> contexts = const [],
+    String? skill,
+    ModelReference? taskModel,
+    List<String>? summaryMessageIds,
+  }) => _start(text, contexts: contexts, skill: skill, taskModel: taskModel, summaryMessageIds: summaryMessageIds);
 
   /// Asks [text] in the open conversation. With [replacing] (an answer and
   /// its question) the new pair takes their place instead of following the
@@ -174,6 +181,8 @@ class AssistantController extends Notifier<Conversation> {
     String text, {
     List<ContextItem> contexts = const [],
     String? skill,
+    ModelReference? taskModel,
+    List<String>? summaryMessageIds,
     (Message, Message)? replacing,
     bool tools = true,
   }) {
@@ -189,6 +198,9 @@ class AssistantController extends Notifier<Conversation> {
       text: text,
       contexts: contexts,
       skill: skill,
+      taskModel: taskModel ?? replacing?.$1.taskModel,
+      toolsEnabled: tools,
+      summaryMessageIds: summaryMessageIds ?? replacing?.$1.summaryMessageIds,
     );
     final answer = Message(
       id: _id(),
@@ -200,7 +212,10 @@ class AssistantController extends Notifier<Conversation> {
     final view = session.view;
     final List<Message> messages;
     if (replacing case (final oldQuestion, final oldAnswer)) {
+      final before = (session.agent.metadata['assistant.before.v1'] as Map?)?[oldQuestion.requestId] as Map?;
+      final identity = (before?['metadata'] as Map?)?['assistant.taskModel.v1'];
       session.agent = forkAssistantHistory(session.agent, oldQuestion.requestId);
+      session.agent.metadata['assistant.taskModel.v1'] = identity;
       final replaced = session.agent.metadata.putIfAbsent('assistant.replaced', () => <dynamic>[]) as List;
       replaced.add(oldAnswer.toJson());
       (session.agent.metadata.putIfAbsent('assistant.viewBranches.v1', () => <dynamic>[]) as List).add(view.toJson());
@@ -240,8 +255,12 @@ class AssistantController extends Notifier<Conversation> {
       'host': Uri.tryParse(session.view.model.endpoint)?.host ?? '',
       'tools': <dynamic>[],
     };
-    AssistantDiagnostics diagnosticView() =>
-        AssistantDiagnostics.fromJson(Map<String, dynamic>.from(allDiagnostics[question.requestId]));
+    AssistantDiagnostics diagnosticView() => AssistantDiagnostics.fromJson(
+      Map<String, dynamic>.from(
+        (session.agent.metadata['assistant.diagnostics'] as Map?)?[question.requestId] ??
+            allDiagnostics[question.requestId],
+      ),
+    );
     _replace(session, _message(answerId, session).copyWith(diagnostics: diagnosticView()));
     try {
       final modelIdentity = jsonEncode(session.view.model.toJson()..remove('supportsTools'));
@@ -268,6 +287,7 @@ class AssistantController extends Notifier<Conversation> {
         return;
       }
       session.run = run;
+      if (run is AssistantTaskOwner) run.saveConversation = () => _persist(session);
       run.permissions.onRequest = (request) async {
         if (!active()) return false;
         final decision = Completer<bool>();
@@ -380,9 +400,13 @@ class AssistantController extends Notifier<Conversation> {
       }
     } catch (error) {
       if (active()) {
-        final kind = assistantFailureKind(error);
+        final kind = error is ConfigurationFailure ? ResearchFailureKind.invalidRequest : assistantFailureKind(error);
         final diagnostics = (session.agent.metadata['assistant.diagnostics'] as Map?)?[question.requestId] as Map?;
-        diagnostics?['failure'] = error is ResearchFailure && error.code == 'secret_store' ? 'secret_store' : kind.name;
+        diagnostics?['failure'] = error is ConfigurationFailure
+            ? error.code
+            : error is ResearchFailure && error.code == 'secret_store'
+            ? 'secret_store'
+            : kind.name;
         final status = assistantFailureStatus(error);
         if (status != null) diagnostics?['httpStatus'] = status;
         for (final tool in diagnostics?['tools'] as List? ?? []) {
@@ -429,6 +453,55 @@ class AssistantController extends Notifier<Conversation> {
         await _persist(session);
       }
     }
+  }
+
+  Map? get _lastTaskRecord {
+    final last = state.messages.lastOrNull;
+    if (busy || state.readOnly || last?.role != MessageRole.agent || last!.status == MessageStatus.done) return null;
+    return (_open.agent.metadata['assistant.taskRecords.v1'] as Map?)?[last.requestId] as Map?;
+  }
+
+  bool get canResumeTask {
+    final record = _lastTaskRecord;
+    if (record == null) return false;
+    if ({TaskType.conversationSummarize.key, TaskType.documentSummarize.key}.contains(record['type'])) return true;
+    return !{'failed', 'partial', 'cancelled', 'unavailable'}.contains(record['status']);
+  }
+
+  bool get canRetryTask => _lastTaskRecord != null && !canResumeTask;
+
+  Future<void> _refreshTaskStatus(sdk.AgentState agent, Conversation view) async {
+    final last = view.messages.lastOrNull;
+    if (last == null || last.status == MessageStatus.done || _deps.readTaskStatus == null) return;
+    final record = (agent.metadata['assistant.taskRecords.v1'] as Map?)?[last.requestId] as Map?;
+    final runId = (record?['context'] as Map?)?['runId'];
+    if (record == null || runId is! String) return;
+    try {
+      record['status'] = (await _deps.readTaskStatus!(runId))?.name ?? 'unavailable';
+    } catch (_) {
+      record['status'] = 'unknown';
+    }
+  }
+
+  Future<void> resumeTask() {
+    if (!canResumeTask) throw StateError('No resumable task in this branch');
+    final session = _open;
+    final answer = session.view.messages.last;
+    final question = session.view.messages.firstWhere(
+      (m) => m.role == MessageRole.user && m.requestId == answer.requestId,
+    );
+    _replace(session, answer.copyWith(status: MessageStatus.running));
+    final epoch = ++session.epoch;
+    _busy = session;
+    final future = _send(session, question, answer.id, epoch, tools: question.toolsEnabled);
+    session.running = future;
+    return future.whenComplete(() {
+      if (identical(session.running, future)) session.running = null;
+      if (identical(_busy, session) && session.running == null) {
+        _busy = null;
+        if (!_disposed) _publishBackground();
+      }
+    });
   }
 
   /// Stops the open conversation's answer; one answering out of view goes on.
@@ -610,6 +683,8 @@ class AssistantController extends Notifier<Conversation> {
     }
     view = view.copyWith(messages: messages);
     if (_disposed || (_busy?.view.id == id)) return;
+    await _refreshTaskStatus(loaded, view);
+    if (_disposed) return;
     _show(_Session(loaded..isRunning = false, view));
     await _persist();
   }
@@ -675,6 +750,19 @@ class AssistantController extends Notifier<Conversation> {
     return true;
   }
 
+  /// Legacy display metadata may follow settings while an empty conversation
+  /// follows task routing. This is not an explicit assistant_chat override.
+  Future<void> refreshDefaultModel(AssistantModel model) async {
+    if (state.readOnly || state.messages.isNotEmpty || busy) return;
+    try {
+      if (conversationRoutingOverride(state.toJson(), TaskType.assistantChat) != null) return;
+    } catch (_) {
+      return;
+    }
+    _set(_open, state.copyWith(model: model));
+    await _persist(_open);
+  }
+
   /// Changes the conversation's model. From an answer's recovery action,
   /// [retryMessageId] also re-asks that answer's original question.
   Future<void> switchModel(AssistantModel model, {String? retryMessageId}) async {
@@ -686,11 +774,39 @@ class AssistantController extends Notifier<Conversation> {
     }
     await _stop(session);
     if (_disposed || !identical(session, _open)) return;
-    _set(session, session.view.copyWith(model: model));
+    _set(
+      session,
+      session.view.copyWith(
+        model: model,
+        archiveFields: {
+          ...session.view.archiveFields,
+          'taskRouting': {
+            'version': 1,
+            'assistantChat': {'serviceId': model.serviceId ?? 'legacy-${model.provider.name}', 'modelId': model.model},
+          },
+        },
+      ),
+    );
     await _persist(session);
     if (retryMessageId != null && !_disposed && identical(session, _open)) {
       await retry(retryMessageId);
     }
+  }
+
+  Future<void> followTaskSettings() async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
+    await stop();
+    final session = _open;
+    _set(
+      session,
+      session.view.copyWith(
+        archiveFields: {
+          ...session.view.archiveFields,
+          'taskRouting': {'version': 1, 'assistantChat': null},
+        },
+      ),
+    );
+    await _persist(session);
   }
 
   Future<void> setOnline(bool enabled) async {

@@ -14,6 +14,9 @@ import '../workspace/workspace_controller.dart';
 import 'assistant_controller.dart';
 import 'assistant_reader.dart';
 import 'assistant_scope.dart';
+import 'widgets/assistant_task_setup.dart';
+
+import 'package:mm_assistant/mm_assistant.dart' show assistantSpecFor;
 
 /// The skills the quick actions and the `/` menu offer, in their order.
 enum AssistantSkill { explain, translate, verify, summarize, quiz, organize, papers, videos }
@@ -195,7 +198,7 @@ String mapTitle(WidgetRef ref, String studySetId, String mapId) {
 /// Sends [text] with the outgoing contexts. A leading `/command` picks its
 /// skill; alone it sends the skill's own question. Ignored while an answer
 /// is being written in any conversation (one run at a time per study set).
-void assistantSend(WidgetRef ref, String studySetId, AppLocalizations l, String text, {String? skill}) {
+Future<void> assistantSend(WidgetRef ref, String studySetId, AppLocalizations l, String text, {String? skill}) async {
   final controller = ref.read(assistantControllerProvider.notifier);
   if (controller.busy) return;
   var question = text.trim();
@@ -213,8 +216,23 @@ void assistantSend(WidgetRef ref, String studySetId, AppLocalizations l, String 
   if (question.isEmpty) return;
   final ui = ref.read(assistantUiProvider(studySetId));
   final contexts = outgoingContexts(ui, ref.read(assistantAutoContextsProvider(studySetId)));
+  AssistantTaskSetup? setup;
+  if (skill == 'summarize' || skill == 'verify' || skill == 'papers' || skill == 'videos' || skill == 'quiz') {
+    final conversation = ref.read(assistantControllerProvider);
+    setup = await showAssistantTaskSetup(ref.context, assistantSpecFor(skill, contexts), conversation);
+    if (setup == null ||
+        !ref.context.mounted ||
+        controller.busy ||
+        ref.read(assistantControllerProvider).id != conversation.id) {
+      return;
+    }
+  }
   try {
-    unawaited(controller.send(question, contexts: contexts, skill: skill).catchError((Object _) {}));
+    unawaited(
+      controller
+          .send(question, contexts: contexts, skill: skill, taskModel: setup?.model, summaryMessageIds: setup?.messages)
+          .catchError((Object _) {}),
+    );
   } on Object {
     return; // Too long or busy: the draft stays.
   }

@@ -127,34 +127,12 @@ SearchProvider webSearchProvider({
   String accountId = '',
   ServiceHttpFactory httpFactory = serviceHttp,
   ResearchHttp? searxngHttp,
+  SearchProvider? nativeSearch,
 }) {
   if (hasNativeWebSearch(model)) {
-    final endpoint = model.provider == AssistantProvider.claude || model.provider == AssistantProvider.responses
-        ? serviceEndpoint(
-            AssistantService(
-              id: '',
-              protocol: model.provider == AssistantProvider.claude ? ServiceProtocol.anthropic : ServiceProtocol.openai,
-              name: '',
-              endpoint: model.endpoint,
-            ),
-            model.provider == AssistantProvider.claude ? 'messages' : 'responses',
-          )
-        : Uri.parse(model.endpoint);
-    return switch (model.provider) {
-      AssistantProvider.claude => ProviderWebSearch(
-        AnthropicProvider(apiKey: modelKey, model: model.model, endpoint: endpoint, http: httpFactory(endpoint, false)),
-      ),
-      AssistantProvider.responses => ProviderWebSearch(
-        OpenAiResponsesProvider(
-          apiKey: modelKey,
-          model: model.model,
-          endpoint: endpoint,
-          http: httpFactory(endpoint, false),
-        ),
-      ),
-      AssistantProvider.gemini => GeminiWebSearch(model, modelKey, httpFactory: httpFactory),
-      _ => const UnavailableWebSearch(),
-    };
+    // Model-backed discovery needs a parent-derived Runtime substep. Never
+    // silently create an untracked provider request here.
+    return nativeSearch ?? const UnavailableWebSearch();
   }
   return configuredWebSearchProvider(
     settings: settings,

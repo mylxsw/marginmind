@@ -283,7 +283,12 @@ void main() {
       for (final backend in WebSearchBackend.values) {
         final settings = WebSearchSettings(backend: backend, endpoint: 'invalid fallback address');
         final p = webSearchProvider(settings: settings, model: m, modelKey: 'key');
-        expect(p, protocol == ServiceProtocol.gemini ? isA<GeminiWebSearch>() : isA<ProviderWebSearch>());
+        expect(p, isA<UnavailableWebSearch>());
+        final controlled = const UnavailableWebSearch();
+        expect(
+          webSearchProvider(settings: settings, model: m, modelKey: 'key', nativeSearch: controlled),
+          same(controlled),
+        );
       }
     }
     for (final protocol in [ServiceProtocol.openai, ServiceProtocol.ollama]) {
