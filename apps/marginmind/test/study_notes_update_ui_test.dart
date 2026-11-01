@@ -12,6 +12,7 @@ import 'package:marginmind/features/study_notes/note_session.dart';
 import 'package:marginmind/features/study_notes/note_updates.dart';
 import 'package:marginmind/features/study_notes/note_view.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_assistant/mm_assistant.dart' show RoutingRowState, RoutingIssue;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
@@ -123,6 +124,13 @@ Future<(ProviderContainer, PlacementSession)> openAiUpdate(WidgetTester tester, 
     content: InMemoryStudySetContentRepository({'demo-1': updateFixture(ai: true)}),
     overrides: [
       noteAiAvailableProvider.overrideWith((ref) async => true),
+      noteRoutingRowProvider.overrideWith(
+        (ref, model) async => const RoutingRowState(
+          effective: ModelReference('fixture', 'model'),
+          source: RoutingSource.functionBinding,
+          issue: RoutingIssue.none,
+        ),
+      ),
       noteSessionFactoryProvider.overrideWithValue(({studySetId, sessionId, modelOverride}) async => session),
     ],
   );

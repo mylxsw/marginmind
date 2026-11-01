@@ -28,7 +28,7 @@ final noteRoutingRowProvider = FutureProvider.family<RoutingRowState, ModelRefer
 
 final noteAiAvailableProvider = FutureProvider<bool>((ref) async {
   try {
-    return (await ref.watch(noteRoutingRowProvider(null).future)).effective != null;
+    return (await ref.watch(noteRoutingRowProvider(null).future)).ready;
   } catch (_) {
     return false;
   }
@@ -37,7 +37,7 @@ final noteAiAvailableProvider = FutureProvider<bool>((ref) async {
 class NoteModelRoute extends ConsumerWidget {
   const NoteModelRoute({super.key, required this.selected, required this.onChanged});
   final ModelReference? selected;
-  final ValueChanged<ModelReference?> onChanged;
+  final ValueChanged<ModelReference?>? onChanged;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;

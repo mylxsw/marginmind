@@ -141,6 +141,13 @@ Future<ProviderContainer> openAi(
       if (size.width < 600) touchPlatformProvider.overrideWithValue(true),
       if (size.width < 600) phoneProvider.overrideWithValue(true),
       noteAiAvailableProvider.overrideWith((ref) async => true),
+      noteRoutingRowProvider.overrideWith(
+        (ref, model) async => const RoutingRowState(
+          effective: ModelReference('fixture', 'model'),
+          source: RoutingSource.functionBinding,
+          issue: RoutingIssue.none,
+        ),
+      ),
       noteSessionFactoryProvider.overrideWithValue(
         ({studySetId, sessionId, modelOverride}) => (factory ?? () async => FakeNoteSession(fake))(),
       ),
