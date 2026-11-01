@@ -326,17 +326,7 @@ Map<ShortcutActivator, ReaderZoomIntent> get readerZoomShortcuts => {
 };
 
 /// Selection commands share their intents between menus and the floating toolbar.
-enum ReaderSelectionCommand {
-  translate,
-  marginNote,
-  excerpt,
-  highlight,
-  copy,
-  note,
-  locateCard,
-  deleteHighlight,
-  assistant,
-}
+enum ReaderSelectionCommand { translate, marginNote, excerpt, highlight, copy, locateCard, deleteHighlight, assistant }
 
 class AddVocabularyIntent extends Intent {
   const AddVocabularyIntent();
@@ -797,7 +787,6 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ReaderSelectionCommand.marginNote: l.marginNoteAction,
         ReaderSelectionCommand.excerpt: highlightOpen ? l.addToMapAction : l.excerptAction,
         ReaderSelectionCommand.highlight: l.highlightAction,
-        ReaderSelectionCommand.note: l.excerptWithNote,
         ReaderSelectionCommand.locateCard: l.locateCard,
         ReaderSelectionCommand.deleteHighlight: l.deleteHighlight,
       }.entries)
@@ -968,11 +957,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         editable ? () => workspace.addTopicAndEdit(l.newTopicName) : null,
         shortcut: AppShortcuts.addTopic,
       ),
-      AppCommand(
-        l.addNote,
-        editable ? () => workspace.addNoteAndEdit(l.newNoteText) : null,
-        shortcut: AppShortcuts.addNote,
-      ),
+      AppCommand(l.addNote, editable ? () => workspace.addNoteAndEdit() : null, shortcut: AppShortcuts.addNote),
       AppCommand(
         l.revealSource,
         activeNote != null

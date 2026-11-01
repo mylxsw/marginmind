@@ -224,7 +224,6 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
             case ReaderSelectionCommand.translate:
             case ReaderSelectionCommand.marginNote:
             case ReaderSelectionCommand.highlight:
-            case ReaderSelectionCommand.note:
               return;
           }
         }
@@ -239,12 +238,6 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
       }
       if (command == ReaderSelectionCommand.assistant) {
         await _ask(pending.documentId, pending.selection.pages, pending.selection.text, pending.selection.textAnchors);
-        return;
-      }
-      if (command == ReaderSelectionCommand.note) {
-        // The note is typed on its card in the map; the selection is done.
-        await controller.excerptSourceAndEditNote(pending.documentId, pending.selection, selectedColor);
-        await pdf.clearSelection();
         return;
       }
       if (command == ReaderSelectionCommand.copy) {
@@ -337,12 +330,11 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
           ),
           if (!isArea && MMPlatformCapabilities.current.assistant)
             MMMenuItem(l.vocabularyTranslate, capabilities.translate ? _translate : null),
-          MMMenuItem(
-            isHighlight ? l.deleteHighlight : l.addNote,
-            capabilities.excerpt
-                ? () => _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
-                : null,
-          ),
+          if (isHighlight)
+            MMMenuItem(
+              l.deleteHighlight,
+              capabilities.annotate ? () => _run(ReaderSelectionCommand.deleteHighlight) : null,
+            ),
           MMMenuItem(
             l.marginNoteAction,
             capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
@@ -428,16 +420,11 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       tooltip: '${l.marginNoteAction}（C）',
                       onPressed: capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
                     ),
-                  if (!compact)
+                  if (!compact && isHighlight)
                     MMToolbarButton(
-                      icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
-                      tooltip: isHighlight
-                          ? (annotation?.kind == AnnotationKind.underline ? l.deleteUnderline : l.deleteHighlight)
-                          : l.addNote,
-                      onPressed: (isHighlight ? capabilities.annotate : capabilities.excerpt)
-                          ? () =>
-                                _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
-                          : null,
+                      icon: MMIcons.trash,
+                      tooltip: annotation?.kind == AnnotationKind.underline ? l.deleteUnderline : l.deleteHighlight,
+                      onPressed: capabilities.annotate ? () => _run(ReaderSelectionCommand.deleteHighlight) : null,
                     ),
                   if (!compact)
                     MMToolbarButton(

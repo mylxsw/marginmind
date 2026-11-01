@@ -20,6 +20,7 @@ class MMInlineTextField extends StatelessWidget {
     required this.onCancel,
     this.onTapOutside,
     this.semanticLabel,
+    this.hintText,
     this.multiline = false,
     this.maxLines,
   });
@@ -36,6 +37,7 @@ class MMInlineTextField extends StatelessWidget {
   /// A pointer went down outside the field while it had focus.
   final VoidCallback? onTapOutside;
   final String? semanticLabel;
+  final String? hintText;
 
   /// ⇧Enter inserts a line break instead of submitting.
   final bool multiline;
@@ -97,7 +99,7 @@ class MMInlineTextField extends StatelessWidget {
             cursorWidth: 1.5,
             cursorColor: c.accent,
             onTapOutside: onTapOutside == null ? null : (_) => onTapOutside!(),
-            decoration: const InputDecoration.collapsed(hintText: null),
+            decoration: InputDecoration.collapsed(hintText: hintText),
           ),
         ),
       ),

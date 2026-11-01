@@ -53,7 +53,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final documents = state.tabs.active?.kind == WorkspaceTabKind.documentMap;
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
-      toolbarExtent: touch ? 52 : 40,
+      toolbarExtent: MMSizes.windowTitlebarHeight,
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
@@ -65,19 +65,33 @@ class WorkspaceDesktopShell extends ConsumerWidget {
         children: [
           MMToolbar.content(
             semanticLabel: l.workspaceDocumentMapTab,
-            height: touch ? 52 : 40,
+            height: MMSizes.windowTitlebarHeight,
             child: Container(
-              padding: EdgeInsets.only(left: MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0),
-              key: const ValueKey('workspace-tab-row'),
-              height: touch ? 52 : 40,
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: c.separator)),
-                color: Color.lerp(c.windowBackground, c.sidebarOpaque, .35),
+              padding: EdgeInsets.only(
+                left: switch (MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0) {
+                  final inset when inset > 0 => inset + 8,
+                  _ => 0,
+                },
               ),
+              key: const ValueKey('workspace-tab-row'),
+              height: MMSizes.windowTitlebarHeight,
+              decoration: BoxDecoration(
+                color: touch ? Color.lerp(c.windowBackground, c.sidebarOpaque, .35) : c.windowBackground,
+              ),
+              foregroundDecoration: touch
+                  ? BoxDecoration(
+                      border: Border(bottom: BorderSide(color: c.separator)),
+                    )
+                  : null,
               child: Row(
                 children: [
                   if (!sidebarVisible || touch)
-                    MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: onShowSidebar),
+                    MMIconButton(
+                      key: const ValueKey('workspace-show-sidebar'),
+                      icon: MMIcons.sidebar,
+                      tooltip: l.showSidebar,
+                      onPressed: onShowSidebar,
+                    ),
                   Expanded(child: WorkspaceTabStrip(studySetId: studySetId)),
                   if (documents) ...[
                     Container(
@@ -207,15 +221,17 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   );
                   final body = WorkspaceTabbedContent(studySetId: studySetId, documentMap: documentMap);
                   final panel = Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                    padding: touch ? const EdgeInsets.fromLTRB(4, 8, 8, 8) : EdgeInsets.zero,
                     child: ClipRRect(
                       key: const ValueKey('workspace-right-sidebar'),
-                      borderRadius: BorderRadius.circular(MMRadii.sidebar),
+                      borderRadius: touch ? BorderRadius.circular(MMRadii.sidebar) : BorderRadius.zero,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: c.sidebarOpaque,
-                          border: Border.all(color: c.separator),
-                          borderRadius: BorderRadius.circular(MMRadii.sidebar),
+                          border: touch
+                              ? Border.all(color: c.separator)
+                              : Border(left: BorderSide(color: c.separator, width: .5)),
+                          borderRadius: touch ? BorderRadius.circular(MMRadii.sidebar) : BorderRadius.zero,
                         ),
                         child: RightPanelView(studySetId: studySetId),
                       ),
@@ -252,7 +268,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;
     final width = box.maxWidth - (hasPanel && box.maxWidth >= 700 ? math.min(360.0, box.maxWidth) : 0);
-    final height = box.maxHeight - (MMInput.of(context).touchPlatform ? 52 : 40);
+    final height = box.maxHeight - MMSizes.windowTitlebarHeight;
     final vertical = context.mmTablet && height > width;
     return MMSplitView.effectiveMode(
       layout,

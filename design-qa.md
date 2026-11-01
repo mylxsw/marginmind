@@ -1,3 +1,11 @@
+# 桌面扁平化框架：方案二（2026-11-01）
+
+final result: passed
+
+侧栏贴边，以轻微底色差区分导航与内容；移除顶部 Tab 栏色差和横线，保留 Tab 自身样式及现有两层工具栏。90 项相关测试、静态分析、macOS Debug 构建及原生 PDF/脑图检查通过。对照与边界见 [本轮验收](docs/evidence/flat-workspace/design-qa.md)。
+
+---
+
 # 实心控件白色前景（2026-11-01）
 
 final result: passed

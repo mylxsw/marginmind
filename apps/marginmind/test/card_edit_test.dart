@@ -123,8 +123,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('node-bar-note')));
       await tester.pumpAndSettle();
       expect(find.byType(MMSheet), findsNothing);
-      expect(_text(tester).text, 'New note');
-      expect(_text(tester).selection, const TextSelection(baseOffset: 0, extentOffset: 8));
+      expect(_text(tester).text, '');
+      expect(_text(tester).selection, const TextSelection.collapsed(offset: 0));
       final height = tester.getSize(_field).height;
 
       await _type(tester, '第一行');
@@ -148,6 +148,23 @@ void main() {
       final before = _json(demoContent());
       await controller.undo();
       await tester.pumpAndSettle();
+      expect(_json(await repo.load('demo-1')), before);
+      expect(container.read(workspaceProvider('demo-1')).canUndo, isFalse);
+      await settleHud(tester);
+    });
+
+    testWidgets('leaving a new empty note removes it without an undo step', (tester) async {
+      final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
+      final container = await openFirstSet(tester, content: repo);
+      final before = _json(await repo.load('demo-1'));
+      await _select(tester, find.text('遗忘的规律'));
+      await tester.tap(find.byKey(const ValueKey('node-bar-note')));
+      await tester.pumpAndSettle();
+      expect(_text(tester).text, '');
+      expect(tester.widget<MMInlineTextField>(_field).hintText, 'New note');
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(_field, findsNothing);
       expect(_json(await repo.load('demo-1')), before);
       expect(container.read(workspaceProvider('demo-1')).canUndo, isFalse);
       await settleHud(tester);
@@ -194,7 +211,7 @@ void main() {
 
       // The menu bar's Add Note opens the field too.
       await key(tester, LogicalKeyboardKey.keyN, primary: true, alt: true);
-      expect(_text(tester).text, 'New note');
+      expect(_text(tester).text, '');
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       await settleHud(tester);
@@ -207,7 +224,7 @@ void main() {
       await tester.tap(find.text('Add Note'));
       await tester.pumpAndSettle();
       expect(find.byType(MMSheet), findsNothing);
-      expect(_text(tester).text, 'New note');
+      expect(_text(tester).text, '');
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       await settleHud(tester);
@@ -348,7 +365,7 @@ void main() {
 
       // ⌥⌘N: a note under the selection, multi-line with ⇧Enter.
       await key(tester, LogicalKeyboardKey.keyN, primary: true, alt: true);
-      expect(_text(tester).text, 'New note');
+      expect(_text(tester).text, '');
       await _type(tester, '一');
       await _shiftEnter(tester);
       await _type(tester, '一\n二');

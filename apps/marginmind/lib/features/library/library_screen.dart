@@ -314,7 +314,7 @@ class _LibrarySidebar extends ConsumerWidget {
 
     return MMSidebar(
       topTrailing: MMIconButton(
-        icon: MMIcons.sidebar,
+        icon: MMIcons.sidebarClose,
         tooltip: AppShortcuts.tip(l.hideSidebar, AppShortcuts.toggleSidebar),
         onPressed: controller.toggleSidebar,
       ),

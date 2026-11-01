@@ -16,6 +16,17 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
 
+  testWidgets('right-clicking the document does not show a context menu', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(MaterialApp(home: MMPdfView(filePath: 'document.pdf', controller: controller)));
+    await _waitReady(tester, controller);
+    await tester.tapAt(tester.getCenter(find.byType(PdfViewer)), buttons: kSecondaryMouseButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Select all'), findsNothing);
+    expect(find.byKey(const Key('contextMenu')), findsNothing);
+  });
+
   testWidgets('scrolled highlights, underlines and margin notes stay inside the viewport', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(800, 600);

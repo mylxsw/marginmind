@@ -64,7 +64,7 @@ class ReaderAnnotationTools extends StatelessWidget {
             ),
             if (!textOnly) ...[
               tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
-              tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
+              tool(MMIcons.inkAnnotations, l.toolPen, AnnotationTool.ink),
               const MMToolbarDivider(),
               MMToolbarButton(
                 compact: compact,
