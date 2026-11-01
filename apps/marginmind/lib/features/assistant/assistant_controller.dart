@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -199,12 +200,11 @@ class AssistantController extends Notifier<Conversation> {
     final view = session.view;
     final List<Message> messages;
     if (replacing case (final oldQuestion, final oldAnswer)) {
+      session.agent = forkAssistantHistory(session.agent, oldQuestion.requestId);
       final replaced = session.agent.metadata.putIfAbsent('assistant.replaced', () => <dynamic>[]) as List;
       replaced.add(oldAnswer.toJson());
-      messages = [
-        for (final m in view.messages)
-          if (m.id == oldQuestion.id) question else if (m.id == oldAnswer.id) answer else m,
-      ];
+      (session.agent.metadata.putIfAbsent('assistant.viewBranches.v1', () => <dynamic>[]) as List).add(view.toJson());
+      messages = [...view.messages.takeWhile((m) => m.id != oldQuestion.id), question, answer];
     } else {
       messages = [...view.messages, question, answer];
     }
@@ -244,6 +244,17 @@ class AssistantController extends Notifier<Conversation> {
         AssistantDiagnostics.fromJson(Map<String, dynamic>.from(allDiagnostics[question.requestId]));
     _replace(session, _message(answerId, session).copyWith(diagnostics: diagnosticView()));
     try {
+      final modelIdentity = jsonEncode(session.view.model.toJson()..remove('supportsTools'));
+      if (session.agent.metadata['assistant.configuration.v1'] != modelIdentity) {
+        if (session.agent.history.messages.isNotEmpty) {
+          (session.agent.metadata.putIfAbsent('runtime.history.v1', () => <dynamic>[]) as List).add(
+            session.agent.history.messages.map((m) => m.toJson()).toList(),
+          );
+          session.agent.history.messages.clear();
+          session.agent.history.episodicMemories.clear();
+        }
+        session.agent.metadata['assistant.configuration.v1'] = modelIdentity;
+      }
       await _persist(session); // Do not contact provider if question cannot be saved.
       if (!active()) return;
       final view = session.view;
@@ -358,6 +369,10 @@ class AssistantController extends Notifier<Conversation> {
         _replace(session, answer);
         final reads = session.agent.metadata.putIfAbsent('assistant.reads', () => <String, dynamic>{}) as Map;
         reads[question.requestId] = run.citations.items.map((c) => c.toJson()).toList();
+        (session.agent.metadata.putIfAbsent('assistant.messageEvidence.v1', () => <String, dynamic>{})
+            as Map)[answerId] = {
+          for (final citation in answer.citations) citation.marker: citation.evidenceId,
+        };
         await _persist(session);
       }
       if (active()) {

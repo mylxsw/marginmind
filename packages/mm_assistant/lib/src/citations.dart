@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:dart_agent_core/dart_agent_core.dart';
 import 'package:mm_core/mm_core.dart';
 
@@ -21,9 +24,12 @@ class Citation {
   final String? snapshotFile;
   final String? documentId, sourceId, paragraphId, url;
   final int? page, version;
+  String get evidenceId =>
+      sha256.convert(utf8.encode(jsonEncode([documentId, page, sourceId, version, paragraphId, quote]))).toString();
   bool get external => sourceId != null;
   Map<String, dynamic> toJson() => {
     'marker': marker,
+    'evidenceId': evidenceId,
     'documentId': documentId,
     'page': page,
     'sourceId': sourceId,
@@ -52,17 +58,39 @@ class Citation {
   );
 }
 
-/// Created per request, never reused across turns. Search hits cannot register.
+/// Per-request view of a persistent evidence ledger. Search hits cannot register.
 class CitationRegistry {
-  CitationRegistry({this.primaryDocumentId, required this.online});
+  CitationRegistry({this.primaryDocumentId, required this.online, this.persistentState}) {
+    final saved = persistentState?['assistant.evidence.v1'] as Map?;
+    if (saved != null) {
+      _next = saved['next'] as int;
+      for (final item in saved['items'] as List) {
+        final citation = Citation.fromJson(Map<String, dynamic>.from(item));
+        _items[citation.marker] = citation;
+      }
+    }
+    _persist();
+  }
+  final Map<String, dynamic>? persistentState;
+  void _persist() {
+    persistentState?['assistant.evidence.v1'] = {'next': _next, 'items': items.map((c) => c.toJson()).toList()};
+  }
+
   final String? primaryDocumentId;
   final bool online;
   final _items = <String, Citation>{};
   int _next = 1;
   List<Citation> get items => List.unmodifiable(_items.values);
   String page(ReadPage p) {
-    final key = p.documentId == primaryDocumentId ? '[page:${p.page}]' : '[source:${_next++}]';
+    final pageKey = '[page:${p.page}]';
+    final previous = _items[pageKey];
+    final key =
+        p.documentId == primaryDocumentId &&
+            (previous == null || (previous.documentId == p.documentId && previous.quote == p.text))
+        ? pageKey
+        : '[source:${_next++}]';
     _items[key] = Citation(marker: key, documentId: p.documentId, page: p.page, quote: p.text);
+    _persist();
     return key;
   }
 
@@ -87,11 +115,14 @@ class CitationRegistry {
       fetchedAt: s.fetchedAt,
       snapshotFile: s.snapshotFile,
     );
+    _persist();
     return key;
   }
 
-  String clean(String text) =>
-      text.replaceAllMapped(RegExp(r'\[(?:page|source):[^\]]*\]'), (m) => _items.containsKey(m[0]) ? m[0]! : '');
+  String clean(String text) => text.replaceAllMapped(
+    RegExp(r'\[(?:page|source):[^\]]*\]'),
+    (m) => _items.containsKey(m[0]) && (online || !_items[m[0]]!.external) ? m[0]! : '',
+  );
   List<Citation> used(String text) => List.unmodifiable(_items.values.where((c) => text.contains(c.marker)));
 }
 
@@ -127,6 +158,12 @@ ModelMessage withText(ModelMessage m, String text) => ModelMessage(
   usage: m.usage,
   timestamp: m.timestamp,
   responseId: m.responseId,
+  thought: m.thought,
+  thoughtSignature: m.thoughtSignature,
+  metadata: m.metadata,
+  imageOutputs: m.imageOutputs,
+  videoOutputs: m.videoOutputs,
+  audioOutputs: m.audioOutputs,
   // Preserve protocol blocks (e.g. Claude tool_use) but sanitize text blocks.
   contentBlocks: [
     for (final b in m.contentBlocks)

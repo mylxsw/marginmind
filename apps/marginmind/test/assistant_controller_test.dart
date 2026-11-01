@@ -95,6 +95,22 @@ void main() {
     container.dispose();
   });
   Conversation view() => container.read(assistantControllerProvider);
+  test('retry earlier answer sends only its complete prefix and archives later branch', () async {
+    client = ScriptClient([answer('first-old'), answer('second-old'), answer('replacement')]);
+    await controller.send('first-question');
+    final firstAnswer = view().messages.last.id;
+    await controller.send('second-question');
+    await controller.retry(firstAnswer);
+    final sent = jsonEncode(client.requests.last.map((m) => m.toJson()).toList());
+    expect(sent, contains('first-question'));
+    expect(sent, isNot(contains('first-old')));
+    expect(sent, isNot(contains('second-question')));
+    expect(sent, isNot(contains('second-old')));
+    expect(view().messages.map((m) => m.text), ['first-question', 'replacement']);
+    final saved = (await storage.loadOrCreate(view().id, null)).metadata;
+    expect(saved['assistant.branches.v1'], isNotEmpty);
+    expect(jsonEncode(saved['assistant.viewBranches.v1']), contains('second-old'));
+  });
   test('tool narration never enters body; timestamps and raw failures survive persistence', () async {
     client = ScriptClient([
       sdk.ModelMessage(
