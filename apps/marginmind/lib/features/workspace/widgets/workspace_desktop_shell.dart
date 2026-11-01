@@ -29,14 +29,12 @@ class WorkspaceDesktopShell extends ConsumerWidget {
   const WorkspaceDesktopShell({
     super.key,
     required this.studySetId,
-    required this.searchFocus,
     required this.sidebarVisible,
     required this.onShowSidebar,
     required this.onDismissSidebar,
     required this.layout,
   });
   final String studySetId;
-  final FocusNode searchFocus;
   final bool sidebarVisible;
   final VoidCallback onShowSidebar, onDismissSidebar;
   final MMSplitMode layout;
@@ -61,7 +59,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
       sidebarVisible: sidebarVisible,
       sidebarOverlay: touch,
       onSidebarDismiss: onDismissSidebar,
-      sidebar: WorkspaceSidebar(studySetId: studySetId, searchFocus: searchFocus, onDismiss: onDismissSidebar),
+      sidebar: WorkspaceSidebar(studySetId: studySetId, onDismiss: onDismissSidebar),
       contentBuilder: (context, constraints) {
         final hasPanel = state.panel != null;
         final panelWidth = math.min(360.0, constraints.maxWidth);

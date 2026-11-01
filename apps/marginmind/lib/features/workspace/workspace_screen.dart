@@ -49,7 +49,6 @@ class WorkspaceScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
-  final _searchFocus = FocusNode();
   final _paneChrome = WorkspacePaneChromeController();
   final _chrome = WorkspaceChromeController();
   late final PhoneReaderControlsController _phoneControls;
@@ -92,7 +91,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
 
   @override
   void dispose() {
-    _searchFocus.dispose();
     _paneChrome.dispose();
     _phoneControls.dispose();
     _chrome.dispose();
@@ -105,14 +103,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final touchPlatform = MMInput.of(context).touchPlatform;
     _phoneCompact = usePhoneReaderControls(context);
     Widget surface(Widget child) => MMFlatSurface(child: child);
-    ref.listen(focusRequestsProvider, (_, next) {
-      if (next?.$1 != FocusTarget.search) return;
-      touchPlatform ? _setDrawer(true) : ref.read(provider.notifier).showSidebar();
-      // The field takes focus once the sidebar is back in the tree.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _searchFocus.requestFocus();
-      });
-    });
     // On touch the sidebar commands (and the drawer's own hide button) move
     // the drawer; opening a document puts it away.
     ref.listen(provider.select((s) => s.sidebarVisible), (_, _) {
@@ -355,7 +345,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     if (!phone) {
       return WorkspaceDesktopShell(
         studySetId: widget.studySetId,
-        searchFocus: _searchFocus,
         sidebarVisible: touchPlatform ? _drawer : sidebarVisible,
         onShowSidebar: touchPlatform ? () => _setDrawer(true) : controller.showSidebar,
         onDismissSidebar: touchPlatform ? () => _setDrawer(false) : controller.toggleSidebar,
@@ -697,7 +686,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onDragStart: WindowChrome.onDragStart,
         onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
         showsWindowButtons: WindowChrome.showsWindowButtons,
-        sidebar: phoneDrawer ? null : WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
+        sidebar: phoneDrawer ? null : WorkspaceSidebar(studySetId: widget.studySetId),
         contentBuilder: (context, constraints) => WorkspaceLayoutGeometryScope(
           geometry: WorkspaceLayoutGeometry.resolve(
             size: constraints.biggest,
@@ -909,7 +898,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
-      sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
+      sidebar: WorkspaceSidebar(studySetId: widget.studySetId),
       toolbar: toolbar,
       body: body,
     );
@@ -919,11 +908,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     open: _drawer,
     onChanged: _setDrawer,
     dismissLabel: context.l10n.phoneNavigationCloseDrawer,
-    drawer: WorkspaceSidebar(
-      studySetId: widget.studySetId,
-      searchFocus: _searchFocus,
-      onDismiss: () => _setDrawer(false),
-    ),
+    drawer: WorkspaceSidebar(studySetId: widget.studySetId, onDismiss: () => _setDrawer(false)),
     child: child,
   );
 }
