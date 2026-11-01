@@ -11,7 +11,7 @@ import '../workspace/workspace_controller.dart';
 import 'note_text_source.dart';
 import 'note_organize_sheet.dart';
 import 'note_session.dart';
-import '../assistant/assistant_settings.dart';
+import 'note_model_route.dart';
 import '../../settings/settings_window.dart';
 
 String noteTemplateLabel(AppLocalizations l, NoteTemplate template) => switch (template) {
@@ -21,13 +21,22 @@ String noteTemplateLabel(AppLocalizations l, NoteTemplate template) => switch (t
 };
 
 class _NoteGenerationRequest {
-  const _NoteGenerationRequest(this.title, this.scope, this.settings, this.template, this.materials, this.preview);
+  const _NoteGenerationRequest(
+    this.title,
+    this.scope,
+    this.settings,
+    this.template,
+    this.materials,
+    this.preview,
+    this.modelOverride,
+  );
   final String title;
   final NoteScope scope;
   final NoteSettings settings;
   final NoteTemplate template;
   final NoteMaterials materials;
   final bool preview;
+  final ModelReference? modelOverride;
 }
 
 Future<void> showNoteSetupSheet(
@@ -52,6 +61,7 @@ Future<void> showNoteSetupSheet(
     template: request.template,
     materials: request.materials,
     previewOutline: request.preview,
+    modelOverride: request.modelOverride,
     existingId: existingId,
   );
 }
@@ -128,10 +138,11 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
   late final DateTime _now;
   bool _ai = false;
   NoteSettings? _remembered;
+  ModelReference? _modelOverride;
   NoteDepth _lastAiDepth = NoteDepth.deep;
   NoteTextSource _text = const NoteTextSource();
   Future<void> _configure() async {
-    final ready = await ref.read(assistantConfiguredProvider.future);
+    final ready = await ref.read(noteAiAvailableProvider.future);
     if (!mounted) return;
     final owner = ref.read(workspaceProvider(widget.studySetId).notifier);
     final text = await loadNoteTextSource(ref, widget.studySetId, owner.content, const WholeSet());
@@ -248,7 +259,8 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
           text: text,
         );
         if (!mounted) return;
-        Navigator.of(context).pop(_NoteGenerationRequest(title, _scope, _settings, _template, materials, preview));
+        Navigator.of(context)
+            .pop(_NoteGenerationRequest(title, _scope, _settings, _template, materials, preview, _modelOverride));
         return;
       }
       StudyNote? note;
@@ -375,6 +387,11 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (_settings.depth != NoteDepth.none)
+                  NoteModelRoute(
+                    selected: _modelOverride,
+                    onChanged: (model) => setState(() => _modelOverride = model),
+                  ),
                 row(l.noteScope, [
                   scope('scope-selected', l.noteSelected, SelectedAnnotations(state.selectedAnnotationIds.toList())),
                   scope('scope-whole', l.noteWhole, const WholeSet()),
@@ -519,7 +536,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                           (n, m) =>
                               n + m.text.runes.length + m.context.before.runes.length + m.context.after.runes.length,
                         ),
-                        ref.watch(assistantDefaultModelProvider)?.model ?? '',
+                        ref.watch(noteRoutingRowProvider(_modelOverride)).value?.modelLabel ?? '',
                       ),
                       style: context.mmText.footnote,
                     ),
