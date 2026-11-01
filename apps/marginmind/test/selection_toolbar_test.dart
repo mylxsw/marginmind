@@ -194,62 +194,13 @@ void main() {
       }
     }
   }
-  for (final outcome in ['save', 'cancel', 'empty']) {
-    testWidgets('note $outcome edits on the card, preserves quote and atomic undo', (tester) async {
-      final container = await pumpApp(tester);
-      container.read(navigationProvider.notifier).openStudySet('demo-1');
-      await tester.pumpAndSettle();
-      final controller = container.read(workspaceProvider('demo-1').notifier);
-      final before = controller.content;
-      await controller.onSelectionCommitted('c1', selection);
-      await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: find.byType(SelectionToolbar), matching: find.byIcon(MMIcons.addNote)));
-      await tester.pumpAndSettle();
-      // No dialog: the empty note card is already on the map, open for typing.
-      expect(find.byType(MMSheet), findsNothing);
-      expect(find.byType(SelectionToolbar), findsNothing);
-      final state = container.read(workspaceProvider('demo-1'));
-      expect(state.pending, isNull);
-      expect(state.editingCardId, isNotNull);
-      expect(controller.content.card(state.editingCardId!)!.kind, CardKind.note);
-      if (outcome == 'save') {
-        tester.testTextInput.enterText('My own words');
-        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      } else if (outcome == 'cancel') {
-        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      } else {
-        tester.testTextInput.enterText('  ');
-        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      }
-      await tester.pumpAndSettle();
-      expect(container.read(workspaceProvider('demo-1')).editingCardId, isNull);
-      if (outcome == 'save') {
-        expect(controller.content.annotations.last.quote, selection.text);
-        expect(controller.content.cards.last.title, 'My own words');
-        expect(controller.content.cards.last.kind, CardKind.note);
-        final excerpt = controller.content.cardForAnnotation(controller.content.annotations.last.id)!;
-        expect(controller.content.node(controller.content.cards.last.id)!.parentId, excerpt.id);
-        await controller.undo();
-      }
-      expect(controller.content.cards.length, before.cards.length);
-      expect(controller.content.annotations.length, before.annotations.length);
-      await settleHud(tester);
-    });
-  }
-  testWidgets('adding a note with the reader alone brings the map back to type on', (tester) async {
+  testWidgets('reader selection does not offer add note', (tester) async {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    final controller = container.read(workspaceProvider('demo-1').notifier);
-    controller.setLayout(MMSplitMode.primary);
-    await controller.onSelectionCommitted('c1', selection);
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
     await tester.pumpAndSettle();
-    await tester.tap(find.descendant(of: find.byType(SelectionToolbar), matching: find.byIcon(MMIcons.addNote)));
-    await tester.pumpAndSettle();
-    expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
-    expect(container.read(workspaceProvider('demo-1')).editingCardId, isNotNull);
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await tester.pumpAndSettle();
+    expect(find.descendant(of: find.byType(SelectionToolbar), matching: find.byIcon(MMIcons.addNote)), findsNothing);
   });
   testWidgets('the toolbar steps aside for the page pill', (tester) async {
     final container = await pumpApp(tester);
@@ -303,20 +254,7 @@ void main() {
     final noteShortcut = command(l.addNote).shortcut! as SingleActivator;
     expect(noteShortcut.trigger, AppShortcuts.addNote.trigger);
     expect(noteShortcut.alt, isTrue);
-    command(l.excerptWithNote).onSelected!();
-    await tester.pumpAndSettle();
-    // The note is typed on its card in the map, where selection keys stay out of the way.
-    expect(container.read(workspaceProvider('demo-1')).editingCardId, isNotNull);
-    expect(find.byType(SelectionToolbar), findsNothing);
-    expect(command(l.excerptAction).onSelected, isNull);
-    expect(command(l.highlightAction).onSelected, isNull);
-    tester.testTextInput.enterText('EH');
-    expect(controller.content.annotations.length, 2);
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await tester.pumpAndSettle();
-    expect(controller.content.annotations.length, 1);
-    await controller.onSelectionCommitted('c1', selection);
-    await tester.pumpAndSettle();
+    expect(flatten(menu.menus).where((item) => item.label == l.excerptWithNote), isEmpty);
     command(l.excerptAction).onSelected!();
     await tester.pumpAndSettle();
     expect(controller.content.annotations.length, 2);

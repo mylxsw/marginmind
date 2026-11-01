@@ -4,6 +4,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/note_text.dart';
+import '../../../shared/l10n.dart';
 
 /// The text typed into a card's field, and its format (a note may have
 /// turned into Markdown while it was edited).
@@ -162,6 +163,7 @@ mixin CardFieldHost<T extends StatefulWidget> on State<T> {
       multiline: kind == CardKind.note,
       maxLines: maxLines,
       semanticLabel: label,
+      hintText: kind == CardKind.note ? context.l10n.newNoteText : null,
       onSubmitted: () => endField(f, commit: true, refocus: true),
       onCancel: () => endField(f, commit: false, refocus: true),
       onTapOutside: () => endField(f, commit: true, refocus: false),

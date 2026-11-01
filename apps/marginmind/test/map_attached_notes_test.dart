@@ -30,7 +30,7 @@ void attachedNoteTests({bool native = false}) {
       final controller = container.read(provider.notifier);
       controller.selectCard(parent);
       await tester.pumpAndSettle();
-      await controller.addNoteAndEdit('');
+      await controller.addNoteAndEdit();
       await tester.pumpAndSettle();
       final noteId = container.read(provider).editingCardId!;
       expect(find.byKey(ValueKey(noteId)), findsNothing, reason: 'no separate map node for a note');
