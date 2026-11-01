@@ -205,7 +205,9 @@ class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
     _doubleTap =
         onDoubleTap != null &&
         last != null &&
-        _minTapTime?.isActive == false &&
+        // Mouse clicks already arrive as distinct press/release sequences.
+        // The touch debounce interval would discard very fast double clicks.
+        (event.kind == PointerDeviceKind.mouse || _minTapTime?.isActive == false) &&
         event.kind == last.kind &&
         event.buttons == kPrimaryButton &&
         (event.position - last.position).distance <= kDoubleTapSlop;

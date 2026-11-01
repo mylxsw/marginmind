@@ -6,6 +6,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  for (final kind in [PointerDeviceKind.mouse, PointerDeviceKind.touch]) {
+    testWidgets('10ms double tap uses the correct minimum interval for $kind', (tester) async {
+      var opens = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: MMInteractive(
+              immediateTap: true,
+              onTap: () {},
+              onDoubleTap: () => opens++,
+              builder: (_, _) => const SizedBox(width: 200, height: 100),
+            ),
+          ),
+        ),
+      );
+      final target = find.byType(MMInteractive);
+      await tester.tap(target, kind: kind);
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.tap(target, kind: kind);
+      expect(opens, kind == PointerDeviceKind.mouse ? 1 : 0);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   testWidgets('mouse double click follows the host interval while touch keeps its own timing', (tester) async {
     var opens = 0;
     await tester.pumpWidget(

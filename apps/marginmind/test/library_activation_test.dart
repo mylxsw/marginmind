@@ -17,6 +17,18 @@ import 'helpers.dart';
 
 void main() {
   for (final mode in LibraryViewMode.values) {
+    testWidgets('$mode opens with a fast 10ms mouse double click', (tester) async {
+      final container = await pumpApp(tester);
+      container.read(libraryViewProvider.notifier).setViewMode(mode);
+      await tester.pumpAndSettle();
+      final title = find.text('交互设计原则笔记').last;
+      await tester.tap(title, kind: PointerDeviceKind.mouse);
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.tap(title, kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    });
+
     testWidgets('$mode opens with a 400ms mouse double click using the system interval', (tester) async {
       final container = await pumpApp(tester, overrides: [systemAppearanceProvider.overrideWith(_MacAppearance.new)]);
       container.read(libraryViewProvider.notifier).setViewMode(mode);
