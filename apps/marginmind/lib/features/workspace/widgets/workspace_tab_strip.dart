@@ -1,4 +1,3 @@
-import '../../../app/document_commands.dart';
 import '../workspace_browser.dart';
 
 import 'dart:math' as math;
@@ -80,7 +79,6 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
     ref.watch(workspaceProvider(studySetId).select((s) => s.tabs));
     ref.watch(workspaceContentProvider(studySetId));
     final browser = ref.watch(workspaceBrowserProvider(studySetId));
-    final canAddWeb = ref.watch(canAddWebPageProvider);
     final state = ref.read(workspaceProvider(studySetId));
     final owner = ref.read(workspaceProvider(studySetId).notifier);
     return LayoutBuilder(
@@ -89,16 +87,12 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
         final titles = [for (final tab in state.tabs.open) workspaceTabTitle(context, state, tab, browser: browser)];
         final naturalWidths = [for (final title in titles) _tabWidth(context, title)];
         final naturalTotal = naturalWidths.fold(0.0, (total, width) => total + width) + 24;
-        final addWidth = canAddWeb && bounds.maxWidth >= 100 ? (context.mmTouchPlatform ? 44.0 : 28.0) : 0.0;
-        final overflow = naturalTotal + addWidth > bounds.maxWidth;
+        final overflow = naturalTotal > bounds.maxWidth;
         const menuWidth = 56.0;
         final showMenu = overflow && bounds.maxWidth >= menuWidth;
         final arrows = overflow && bounds.maxWidth >= 260;
         final arrowWidth = context.mmTouchPlatform ? 44.0 : 28.0;
-        final available = math.max(
-          0.0,
-          bounds.maxWidth - addWidth - (showMenu ? menuWidth : 0) - (arrows ? arrowWidth * 2 : 0),
-        );
+        final available = math.max(0.0, bounds.maxWidth - (showMenu ? menuWidth : 0) - (arrows ? arrowWidth * 2 : 0));
         final perTab = count == 0 ? 224.0 : (available - 24) / count;
         final widths = [for (final width in naturalWidths) overflow ? math.min(width, math.max(120.0, perTab)) : width];
         final tabsWidth = count == 0 ? 0.0 : widths.fold(0.0, (total, width) => total + width) + 24;
@@ -193,14 +187,6 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
                 icon: MMIcons.chevronRight,
                 tooltip: context.l10n.workspaceScrollTabsRight,
                 onPressed: () => _scrollBy(1),
-              ),
-            if (addWidth > 0)
-              MMIconButton(
-                key: const ValueKey('workspace-new-web-tab'),
-                size: addWidth,
-                icon: MMIcons.add,
-                tooltip: context.l10n.addWebTitle,
-                onPressed: () => showAddWebPage(context, ref, studySetId),
               ),
             if (showMenu)
               SizedBox(
