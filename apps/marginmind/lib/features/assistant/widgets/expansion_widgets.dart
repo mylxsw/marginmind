@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_assistant/mm_assistant.dart' show ModelReference;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
