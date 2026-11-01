@@ -100,12 +100,14 @@ class MMSidebarSection extends StatefulWidget {
     super.key,
     required this.title,
     required this.children,
+    this.titleTrailing,
     this.trailing,
     this.showTrailingOnHover = false,
   });
 
   final String title;
   final List<Widget> children;
+  final Widget? titleTrailing;
   final Widget? trailing;
 
   /// Reveal the action over the whole section, keeping its space reserved.
@@ -131,7 +133,25 @@ class _MMSidebarSectionState extends State<MMSidebarSection> {
           child: Row(
             children: [
               Expanded(
-                child: Semantics(header: true, child: Text(widget.title, style: context.mmText.subheadline)),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Semantics(
+                        header: true,
+                        child: Text(
+                          widget.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.mmText.subheadline,
+                        ),
+                      ),
+                    ),
+                    if (widget.titleTrailing != null) ...[
+                      const SizedBox(width: 6),
+                      widget.titleTrailing!,
+                    ],
+                  ],
+                ),
               ),
               if (widget.trailing != null)
                 Focus(
@@ -299,6 +319,38 @@ class MMBadge extends StatelessWidget {
         style: context.mmText.subheadline.copyWith(
           color: prominent ? c.accent : c.label,
           fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact pill tag marking a Beta feature in menus and section headers.
+class MMBetaBadge extends StatelessWidget {
+  const MMBetaBadge({super.key, this.label = 'Beta', this.inverted = false});
+
+  final String label;
+  final bool inverted;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final bg = inverted ? c.onAccent.withValues(alpha: 0.22) : c.researchTint;
+    final fg = inverted ? c.onAccent : c.research;
+    return ExcludeSemantics(
+      child: Container(
+        height: 16,
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
+        child: Text(
+          label,
+          style: context.mmText.footnote.copyWith(
+            fontSize: 10,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            color: fg,
+          ),
         ),
       ),
     );

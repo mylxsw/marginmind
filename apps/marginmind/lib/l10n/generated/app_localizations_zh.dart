@@ -5542,4 +5542,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String workspaceCurrentContent(String title) {
     return '当前内容：$title';
   }
+
+  @override
+  String get settingsAdvancedGroup => '高级';
+
+  @override
+  String get settingsEnableBetaFeatures => '启用 Beta 功能';
 }

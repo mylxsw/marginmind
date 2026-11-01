@@ -10141,6 +10141,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current content: {title}'**
   String workspaceCurrentContent(String title);
+
+  /// No description provided for @settingsAdvancedGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get settingsAdvancedGroup;
+
+  /// No description provided for @settingsEnableBetaFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Beta Features'**
+  String get settingsEnableBetaFeatures;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

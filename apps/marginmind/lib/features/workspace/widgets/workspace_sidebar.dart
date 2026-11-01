@@ -15,6 +15,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
+import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../translation_task_summary.dart';
 import 'full_translation_sheet.dart';
@@ -100,6 +101,7 @@ class WorkspaceSidebar extends ConsumerWidget {
       );
     }
 
+    final betaEnabled = ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled));
     final mapGen = ref.watch(mapGenerationControllerProvider(studySetId));
 
     final maps = [
@@ -109,31 +111,33 @@ class WorkspaceSidebar extends ConsumerWidget {
             key: ValueKey('sidebar-map-${map.id}'),
             icon: MMIcons.mindMap,
             label: map.title.isEmpty ? l.mainMap : map.title,
-            trailing: () {
-              final isGenerating =
-                  mapGen != null &&
-                  mapGen.request.mapId == map.id &&
-                  (mapGen.phase == MapGenerationPhase.reading || mapGen.phase == MapGenerationPhase.streaming);
-              if (isGenerating) {
-                return SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
-                );
-              }
-              final hasUpdates = ref.watch(mapHasUpdatesProvider((studySetId, map.id)));
-              if (hasUpdates) {
-                return Semantics(
-                  label: l.mapHasUpdates,
-                  child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(color: c.research, shape: BoxShape.circle),
-                  ),
-                );
-              }
-              return null;
-            }(),
+            trailing: !betaEnabled
+                ? null
+                : () {
+                    final isGenerating =
+                        mapGen != null &&
+                        mapGen.request.mapId == map.id &&
+                        (mapGen.phase == MapGenerationPhase.reading || mapGen.phase == MapGenerationPhase.streaming);
+                    if (isGenerating) {
+                      return SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
+                      );
+                    }
+                    final hasUpdates = ref.watch(mapHasUpdatesProvider((studySetId, map.id)));
+                    if (hasUpdates) {
+                      return Semantics(
+                        label: l.mapHasUpdates,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(color: c.research, shape: BoxShape.circle),
+                        ),
+                      );
+                    }
+                    return null;
+                  }(),
             selected:
                 state.tagFilter == null &&
                 state.tabs.active?.kind == WorkspaceTabKind.documentMap &&
@@ -143,8 +147,9 @@ class WorkspaceSidebar extends ConsumerWidget {
             onContextMenu: (position) => _mapMenu(context, ref, map, position),
           ),
     ];
-    final orderedNotes = (content?.studyNotes ?? <StudyNote>[]).toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final orderedNotes = !betaEnabled
+        ? <StudyNote>[]
+        : ((content?.studyNotes ?? <StudyNote>[]).toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)));
     final notes = [
       for (final note in orderedNotes)
         if (matches(note.title))
@@ -372,7 +377,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         documents: [for (final row in docs) phoneRow(row, mapDestination: false)],
         maps: [for (final row in maps) phoneRow(row, mapDestination: true)],
         notes: [for (final row in notes) phoneRow(row)],
-        showNotes: matches(l.phoneNavigationNotes) || notes.isNotEmpty,
+        showNotes: betaEnabled && (matches(l.phoneNavigationNotes) || notes.isNotEmpty),
         learning: [
           if (matches(l.sectionCards))
             MMPhoneNavigationRow(
@@ -408,7 +413,9 @@ class WorkspaceSidebar extends ConsumerWidget {
         onAddDocument: () => pickAndImportDocuments(context, ref, studySetId),
         onAddWebPage: ref.watch(canAddWebPageProvider) ? () => dispatchAddWebPage(context, ref, studySetId) : null,
         onAddMap: () => showNewMapSheet(context, ref, studySetId),
-        onGenerateMap: () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId),
+        onGenerateMap: betaEnabled
+            ? () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId)
+            : null,
         onAddNote: () => showNoteSetupSheet(context, ref, studySetId),
       );
     }
@@ -489,24 +496,41 @@ class WorkspaceSidebar extends ConsumerWidget {
           MMSidebarSection(
             title: l.sectionMaps,
             showTrailingOnHover: true,
-            trailing: MMDropdownButton<String>(
-              key: const ValueKey('add-map-menu'),
-              tooltip: l.newMap,
-              width: MMSizes.dropdownWideWidth,
-              icon: const Icon(MMIcons.add),
-              onSelected: (value) => value == 'generate'
-                  ? showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId)
-                  : showNewMapSheet(context, ref, studySetId),
-              itemBuilder: (_) => [
-                MMDropdownItem(value: 'new', child: Text(l.newMap)),
-                MMDropdownItem(value: 'generate', child: Text(l.mapGenerateMenu)),
-              ],
-            ),
+            trailing: betaEnabled
+                ? MMDropdownButton<String>(
+                    key: const ValueKey('add-map-menu'),
+                    tooltip: l.newMap,
+                    width: MMSizes.dropdownWideWidth,
+                    icon: const Icon(MMIcons.add),
+                    onSelected: (value) => value == 'generate'
+                        ? showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId)
+                        : showNewMapSheet(context, ref, studySetId),
+                    itemBuilder: (_) => [
+                      MMDropdownItem(value: 'new', child: Text(l.newMap)),
+                      MMDropdownItem(
+                        value: 'generate',
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(l.mapGenerateMenu)),
+                            const SizedBox(width: MMSpacing.xs),
+                            const MMBetaBadge(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : MMIconButton(
+                    key: const ValueKey('add-map-menu'),
+                    icon: MMIcons.add,
+                    tooltip: l.newMap,
+                    onPressed: () => showNewMapSheet(context, ref, studySetId),
+                  ),
             children: maps,
           ),
-        if (notes.isNotEmpty || query.isEmpty)
+        if (betaEnabled && (notes.isNotEmpty || query.isEmpty))
           MMSidebarSection(
             title: l.notesTitle,
+            titleTrailing: const MMBetaBadge(),
             trailing: MMIconButton(
               icon: MMIcons.add,
               tooltip: l.organizeStudyNote,
@@ -555,6 +579,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final targetLang = fullState?.targetLang ?? 'zh';
     final hasActiveFullJob = fullState?.isActive == true;
     final canFullTranslate = MMPlatformCapabilities.current.assistant && MMSizeClass.of(context) != MMSizeClass.compact;
+    final betaEnabled = ref.read(settingsProvider).betaFeaturesEnabled;
 
     showMMMenu(
       context,
@@ -574,10 +599,12 @@ class WorkspaceSidebar extends ConsumerWidget {
               () => showFullTranslationSheet(context, studySetId: studySetId, documentId: doc.id),
             ),
         ],
-        MMMenuItem(
-          l.mapGenerateDocumentMenu,
-          () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: doc.id),
-        ),
+        if (betaEnabled)
+          MMMenuItem(
+            l.mapGenerateDocumentMenu,
+            () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: doc.id),
+            badge: const MMBetaBadge(),
+          ),
 
         MMMenuItem(l.renameEllipsis, () async {
           final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);

@@ -60,6 +60,7 @@ class ReadingSettings {
 class AppSettings {
   const AppSettings({
     this.mapFollowDocument = true,
+    this.betaFeaturesEnabled = false,
     this.bookReading = const ReadingSettings(),
     this.articleReading = const ReadingSettings(font: ReaderFont.serif, paged: false),
     this.appearance = AppearancePreference.system,
@@ -74,6 +75,7 @@ class AppSettings {
   });
 
   final bool mapFollowDocument;
+  final bool betaFeaturesEnabled;
   final ReadingSettings bookReading, articleReading;
   ReadingSettings reading(DocumentFormat format) => ReadingSettings.isArticle(format) ? articleReading : bookReading;
   final AppearancePreference appearance;
@@ -101,6 +103,7 @@ class AppSettings {
 
   AppSettings copyWith({
     bool? mapFollowDocument,
+    bool? betaFeaturesEnabled,
     ReadingSettings? bookReading,
     ReadingSettings? articleReading,
     AppearancePreference? appearance,
@@ -114,6 +117,7 @@ class AppSettings {
     SelectionTranslationDirection? selectionTranslationDirection,
   }) => AppSettings(
     mapFollowDocument: mapFollowDocument ?? this.mapFollowDocument,
+    betaFeaturesEnabled: betaFeaturesEnabled ?? this.betaFeaturesEnabled,
     bookReading: bookReading ?? this.bookReading,
     articleReading: articleReading ?? this.articleReading,
     appearance: appearance ?? this.appearance,
@@ -130,6 +134,7 @@ class AppSettings {
 
 /// Application preferences, persisted in SharedPreferences.
 class SettingsController extends Notifier<AppSettings> {
+  static const betaFeaturesEnabledKey = 'settings.betaFeaturesEnabled';
   static const _readerStyleKey = 'settings.readerStyle';
   static const _appearanceKey = 'settings.appearance';
   static const _languageKey = 'settings.language';
@@ -149,6 +154,7 @@ class SettingsController extends Notifier<AppSettings> {
     );
     return AppSettings(
       mapFollowDocument: prefs.getBool('settings.mapFollowDocument') ?? true,
+      betaFeaturesEnabled: prefs.getBool(betaFeaturesEnabledKey) ?? false,
       bookReading: reading('settings.reading.book'),
       articleReading: reading('settings.reading.article', article: true).font == ReaderFont.original
           ? reading('settings.reading.article', article: true).copyWith(font: ReaderFont.serif)
@@ -220,6 +226,11 @@ class SettingsController extends Notifier<AppSettings> {
   Future<void> setMapFollowDocument(bool value) async {
     state = state.copyWith(mapFollowDocument: value);
     await ref.read(sharedPreferencesProvider).setBool('settings.mapFollowDocument', value);
+  }
+
+  Future<void> setBetaFeaturesEnabled(bool value) async {
+    state = state.copyWith(betaFeaturesEnabled: value);
+    await ref.read(sharedPreferencesProvider).setBool(betaFeaturesEnabledKey, value);
   }
 
   Future<void> setReaderStyle(MMReaderStyle value) async {

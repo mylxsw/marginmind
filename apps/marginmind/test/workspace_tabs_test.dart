@@ -40,6 +40,7 @@ Future<ProviderContainer> openTabs(
   final container = await pumpApp(
     tester,
     size: size,
+    prefs: const {'settings.betaFeaturesEnabled': true},
     content: repository ?? InMemoryStudySetContentRepository({'demo-1': data}),
     overrides: [
       if (touch) touchPlatformProvider.overrideWithValue(true),

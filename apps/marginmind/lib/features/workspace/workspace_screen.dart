@@ -132,6 +132,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     ref.listen(provider.select((s) => s.tagFilter), (_, next) {
       if (touchPlatform && next != null) _setDrawer(false);
     });
+    ref.listen(settingsProvider.select((s) => s.betaFeaturesEnabled), (_, enabled) {
+      if (!enabled) {
+        final owner = ref.read(provider.notifier);
+        final current = ref.read(provider);
+        for (final tab in current.tabs.open) {
+          if (tab.kind == WorkspaceTabKind.note) owner.closeTab(tab.id);
+        }
+        if (current.tabs.current.reference?.kind == WorkspaceReferenceKind.note) {
+          owner.closePanel();
+        }
+      }
+    });
 
     ref.watch(
       provider.select(
@@ -351,6 +363,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     }
     final phoneDrawer = phone && compact;
     final mergedToolbar = !compact || touchPlatform;
+    final betaEnabled = ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled));
     final leading = sidebarVisible && !touchPlatform
         ? null
         : MMIconButton(
@@ -367,6 +380,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       bool selected = false,
       Color? tint,
       int priority = 0,
+      Widget? badge,
     }) => MMToolbarItem(
       id: id,
       priority: priority,
@@ -391,6 +405,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             }, size: MMSizes.dropdownIcon),
             const SizedBox(width: MMSpacing.s),
             Expanded(child: Text(label)),
+            if (badge != null) ...[
+              const SizedBox(width: MMSpacing.xs),
+              badge,
+            ],
             if (selected) const Icon(MMIcons.check, size: MMSizes.dropdownIcon),
           ],
         ),
@@ -433,7 +451,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
     ];
     final globalMenuEntries = <PopupMenuEntry<VoidCallback>>[
-      if (noteOpen) ...[
+      if (betaEnabled && noteOpen) ...[
         MMDropdownItem(
           value: state.activeDocumentId == null ? null : () => controller.showNoteReference(NoteReference.document),
           enabled: state.activeDocumentId != null,
@@ -441,12 +459,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
         MMDropdownItem(value: () => controller.showNoteReference(NoteReference.map), child: Text(l.paneMap)),
       ],
-      action(
-        'organize-note',
-        MMIcons.organizeNote,
-        AppShortcuts.tip(l.organizeNotes, AppShortcuts.organizeStudyNote),
-        () => showNoteSetupSheet(context, ref, widget.studySetId),
-      ).menuEntry,
+      if (betaEnabled)
+        action(
+          'organize-note',
+          MMIcons.organizeNote,
+          AppShortcuts.tip(l.organizeNotes, AppShortcuts.organizeStudyNote),
+          () => showNoteSetupSheet(context, ref, widget.studySetId),
+          badge: const MMBetaBadge(),
+        ).menuEntry,
     ];
     Widget paneChrome(Widget child, {required bool primary}) => !mergedToolbar && !noteOpen
         ? child
@@ -561,12 +581,13 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             selected: state.panel == RightPanel.assistant,
             onPressed: () => toggleAssistant(ref, widget.studySetId),
           ),
-        MMDropdownButton<VoidCallback>(
-          key: const ValueKey('workspace-more'),
-          tooltip: l.moreTools,
-          itemBuilder: (_) => globalMenuEntries,
-          onSelected: (command) => command(),
-        ),
+        if (globalMenuEntries.isNotEmpty)
+          MMDropdownButton<VoidCallback>(
+            key: const ValueKey('workspace-more'),
+            tooltip: l.moreTools,
+            itemBuilder: (_) => globalMenuEntries,
+            onSelected: (command) => command(),
+          ),
       ],
     );
     final body = ExcerptViewScope(
@@ -820,11 +841,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                         onClosed: () => _chrome.release('phone-menu'),
                                         onSelected: (action) => action(),
                                         itemBuilder: (_) => [
-                                          MMDropdownItem(
-                                            key: const ValueKey('workspace-command-organize-note'),
-                                            value: () => showNoteSetupSheet(context, ref, widget.studySetId),
-                                            child: Text(l.organizeNotes),
-                                          ),
+                                          if (betaEnabled)
+                                            MMDropdownItem(
+                                              key: const ValueKey('workspace-command-organize-note'),
+                                              value: () => showNoteSetupSheet(context, ref, widget.studySetId),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Flexible(child: Text(l.organizeNotes)),
+                                                  const SizedBox(width: MMSpacing.xs),
+                                                  const MMBetaBadge(),
+                                                ],
+                                              ),
+                                            ),
                                           MMDropdownItem(
                                             enabled: ref.read(studySetProvider(widget.studySetId)) != null,
                                             value: () => controller.activateTab(WorkspaceTab.review),

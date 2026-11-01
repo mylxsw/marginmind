@@ -16,6 +16,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
+import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../../../settings/highlight_palette.dart';
 import '../../../shared/card_image.dart';
@@ -347,6 +348,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     switch (command) {
       case MindMapCommand.generateFromDocument:
+        if (!ref.read(settingsProvider).betaFeaturesEnabled) return;
         final state = ref.read(workspaceProvider(widget.studySetId));
         if (state.mapView == MapViewMode.outline) {
           controller.setMapView(MapViewMode.map);
@@ -524,15 +526,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
           const MMMenuDivider(),
         ],
         if (card != null) ...[
-          MMMenuItem(
-            l.organizeSelection,
-            () => showNoteSetupSheet(
-              context,
-              ref,
-              widget.studySetId,
-              branch: BranchScope(ref.read(workspaceProvider(widget.studySetId)).activeMapId, card.id),
+          if (ref.read(settingsProvider).betaFeaturesEnabled)
+            MMMenuItem(
+              l.organizeSelection,
+              () => showNoteSetupSheet(
+                context,
+                ref,
+                widget.studySetId,
+                branch: BranchScope(ref.read(workspaceProvider(widget.studySetId)).activeMapId, card.id),
+              ),
+              badge: const MMBetaBadge(),
             ),
-          ),
           MMMenuItem(l.exportBranch, () => showMapExportSheet(context, ref, widget.studySetId, branchId: card.id)),
           MMMenuItem(l.cardTags, () => showCardTagsSheet(context, ref, widget.studySetId, card.id)),
           MMMenuItem(
@@ -1312,7 +1316,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                             child: menuLabel(l.removeFromMap, const Icon(MMIcons.trash)),
                                           ),
                                       ],
-                                      trailingMenuEntries: [generateMapMenuItem(context, ref, widget.studySetId)],
+                                      trailingMenuEntries: [
+                                        if (ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled)))
+                                          generateMapMenuItem(context, ref, widget.studySetId),
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -1414,7 +1421,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                         )
                       : MapDiffPanel(studySetId: widget.studySetId, onApply: _keepMapGeneration),
                 ),
-              if (expansion == null &&
+              if (ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled)) &&
+                  expansion == null &&
                   mapGen == null &&
                   content.nodes.every((n) => n.mapId != state.activeMapId) &&
                   state.mapView == MapViewMode.map)

@@ -56,6 +56,7 @@ class DocumentMapNavigation extends Notifier<DocumentMapNotice> {
     final prefs = ref.read(sharedPreferencesProvider);
     final maps = content.maps.where((m) => m.generation?.sources.any((s) => s.documentId == id) ?? false).toList();
     if (maps.isEmpty) {
+      if (!ref.read(settingsProvider).betaFeaturesEnabled) return;
       final seen = prefs.getStringList('$_key.seen') ?? [];
       if (!seen.contains(id)) {
         // Persist at presentation time: closing, acting, or switching away all

@@ -69,7 +69,11 @@ Future<ProviderContainer> openNote(
   final container = await pumpApp(
     tester,
     size: size,
-    prefs: {'settings.appearance': appearance, 'settings.language': language},
+    prefs: {
+      'settings.appearance': appearance,
+      'settings.language': language,
+      'settings.betaFeaturesEnabled': true,
+    },
     content: InMemoryStudySetContentRepository({'demo-1': content ?? noteFixture()}),
     overrides: [
       if (touch) touchPlatformProvider.overrideWithValue(true),

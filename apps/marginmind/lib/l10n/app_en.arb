@@ -3023,5 +3023,7 @@
     }
   },
   "workspaceCurrentContent": "Current content: {title}",
-  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}}
+  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}},
+  "settingsAdvancedGroup": "Advanced",
+  "settingsEnableBetaFeatures": "Enable Beta Features"
 }

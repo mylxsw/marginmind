@@ -19,7 +19,7 @@ void main() {
           final container = await pumpApp(
             tester,
             size: Size(width, 852),
-            prefs: {'settings.language': language},
+            prefs: {'settings.language': language, 'settings.betaFeaturesEnabled': true},
             overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
           );
           container.read(navigationProvider.notifier).openStudySet('demo-1');

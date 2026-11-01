@@ -269,7 +269,7 @@ void main() {
     var reads = 0;
     final c = await pumpApp(
       tester,
-      prefs: {'settings.language': 'zh'},
+      prefs: {'settings.language': 'zh', 'settings.betaFeaturesEnabled': true},
       overrides: [
         assistantCredentialStateProvider.overrideWith((ref) async {
           reads++;

@@ -97,7 +97,7 @@ Future<ProviderContainer> openWorkspace(
     tester,
     size: const Size(1280, 820),
     content: content ?? InMemoryStudySetContentRepository({'demo-1': defaultContent}),
-    prefs: {'settings.language': 'zh', ...prefs},
+    prefs: {'settings.language': 'zh', 'settings.betaFeaturesEnabled': true, ...prefs},
     overrides: [
       assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),

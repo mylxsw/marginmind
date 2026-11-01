@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../app/app_commands.dart';
+import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../reader_margin.dart';
 import '../workspace_controller.dart';
@@ -358,6 +359,7 @@ class _Annotations extends ConsumerWidget {
     if (annotations.isEmpty && entries.isEmpty) return _Empty(label: l.noAnnotations);
     final reviewCount = entries.where((e) => e.needsReview).length;
     final owner = ref.read(workspaceProvider(studySetId).notifier);
+    final betaEnabled = ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled));
     final selectedIds = ref.watch(workspaceProvider(studySetId).select((s) => s.selectedAnnotationIds));
     final eligible = visibleAnnotations.where((a) => a.quote.trim().isNotEmpty).map((a) => a.id).toSet();
     final allSelected = eligible.isNotEmpty && eligible.every(selectedIds.contains);
@@ -386,13 +388,14 @@ class _Annotations extends ConsumerWidget {
                   ),
                 ),
               ),
-            MMButton(
-              key: const ValueKey('annotations-select-all'),
-              label: allSelected ? l.noteDeselectAll : l.noteSelectAll,
-              onPressed: () => owner.selectAnnotations(
-                allSelected ? selectedIds.difference(eligible) : {...selectedIds, ...eligible},
+            if (betaEnabled)
+              MMButton(
+                key: const ValueKey('annotations-select-all'),
+                label: allSelected ? l.noteDeselectAll : l.noteSelectAll,
+                onPressed: () => owner.selectAnnotations(
+                  allSelected ? selectedIds.difference(eligible) : {...selectedIds, ...eligible},
+                ),
               ),
-            ),
           ],
         ),
         Expanded(
@@ -427,11 +430,11 @@ class _Annotations extends ConsumerWidget {
                   ? l.inkAnnotations
                   : (text.isEmpty ? (entry.note == null ? l.toolArea : l.marginNoteAction) : text);
               final selected = entry.highlight != null
-                  ? selectedIds.contains(entry.highlight!.id)
+                  ? betaEnabled && selectedIds.contains(entry.highlight!.id)
                   : entry.note != null && popup.contains(entry.note!.id);
               final row = MMInteractive(
                 key: ValueKey(entry.id),
-                onTap: () => !entry.needsReview && entry.highlight?.quote.trim().isNotEmpty == true
+                onTap: () => betaEnabled && !entry.needsReview && entry.highlight?.quote.trim().isNotEmpty == true
                     ? owner.selectAnnotation(entry.highlight!.id, !selected)
                     : _open(context, ref, entry),
                 // A tooltip's own long-press recognizer would consume the Delete menu.
@@ -449,7 +452,7 @@ class _Annotations extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (entry.highlight?.quote.trim().isNotEmpty == true)
+                      if (betaEnabled && entry.highlight?.quote.trim().isNotEmpty == true)
                         Padding(
                           padding: const EdgeInsets.only(top: MMSpacing.xs, right: MMSpacing.s),
                           child: MMCheckbox(
@@ -532,7 +535,7 @@ class _Annotations extends ConsumerWidget {
             },
           ),
         ),
-        if (selectedIds.isNotEmpty)
+        if (betaEnabled && selectedIds.isNotEmpty)
           Padding(
             padding: const EdgeInsets.all(MMSpacing.s),
             child: Wrap(

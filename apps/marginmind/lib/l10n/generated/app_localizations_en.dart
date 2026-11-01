@@ -5767,4 +5767,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String workspaceCurrentContent(String title) {
     return 'Current content: $title';
   }
+
+  @override
+  String get settingsAdvancedGroup => 'Advanced';
+
+  @override
+  String get settingsEnableBetaFeatures => 'Enable Beta Features';
 }

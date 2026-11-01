@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
+import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../../workspace/reader_ocr.dart';
 import '../../workspace/widgets/reader_ocr_controls.dart';
@@ -22,6 +23,7 @@ class _MapOcrBannerState extends ConsumerState<MapOcrBanner> {
   String? _dismissed;
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled))) return widget.fallback;
     final preview = ref.watch(mapGenerationControllerProvider(widget.studySetId));
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
     final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? workspace.content;

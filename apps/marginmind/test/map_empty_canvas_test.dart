@@ -43,7 +43,11 @@ Future<ProviderContainer> _open(
     content: InMemoryStudySetContentRepository({
       'demo-1': StudySetContent.empty.copyWith(documents: [document]),
     }),
-    prefs: {'settings.language': language, 'settings.appearance': dark ? 'dark' : 'light'},
+    prefs: {
+      'settings.language': language,
+      'settings.appearance': dark ? 'dark' : 'light',
+      'settings.betaFeaturesEnabled': true,
+    },
     overrides: [assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready)],
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');

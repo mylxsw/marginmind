@@ -134,6 +134,7 @@ Future<ProviderContainer> openAi(
   final container = await pumpApp(
     tester,
     size: size,
+    prefs: const {'settings.betaFeaturesEnabled': true},
     content: InMemoryStudySetContentRepository({'demo-1': aiFixture()}),
     overrides: [
       if (size.width < 600) touchPlatformProvider.overrideWithValue(true),

@@ -2324,5 +2324,7 @@
     }
   },
   "workspaceCurrentContent": "当前内容：{title}",
-  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}}
+  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}},
+  "settingsAdvancedGroup": "高级",
+  "settingsEnableBetaFeatures": "启用 Beta 功能"
 }

@@ -4,6 +4,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
+import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../../assistant/assistant_settings.dart';
 import '../../assistant/assistant_controller.dart';
@@ -56,6 +57,7 @@ class DocumentMapBanner extends ConsumerWidget {
         ),
       );
     }
+    if (!ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled))) return const SizedBox.shrink();
     final document = content.document(notice.documentId ?? '');
     if (document == null) return const SizedBox.shrink();
     final activeMapId = ref.watch(workspaceProvider(studySetId).select((s) => s.activeMapId));

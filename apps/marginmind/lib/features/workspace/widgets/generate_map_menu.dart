@@ -43,6 +43,8 @@ MMDropdownItem<VoidCallback> generateMapMenuItem(BuildContext context, WidgetRef
         ),
         const SizedBox(width: MMSpacing.s),
         Expanded(child: Text(label)),
+        const SizedBox(width: MMSpacing.xs),
+        const MMBetaBadge(),
       ],
     ),
   );

@@ -625,56 +625,59 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ).values,
       );
     }
-    file.add(
-      AppCommand(
-        l.organizeStudyNote,
-        inWorkspace ? () => showNoteSetupSheet(context, ref, workspaceId) : null,
-        shortcut: AppShortcuts.organizeStudyNote,
-      ),
-    );
-    final activeNote = workspace?.content.studyNote(workspaceState?.activeNoteId ?? '');
-    file.add(
-      AppCommand(
-        l.exportStudyNote,
-        activeNote == null ? null : () => showNoteExportSheet(context, ref, workspaceId!, activeNote.id),
-      ),
-    );
-    file.add(
-      AppCommand(
-        l.notePreviewUpdate,
-        activeNote == null || (ref.watch(noteChangesProvider((workspaceId!, activeNote.id)))?.count ?? 0) == 0
-            ? null
-            : () {
-                ref.read(noteUpdateRequestedProvider(activeNote.id).notifier).request();
-              },
-      ),
-    );
-    file.add(
-      AppCommand(
-        l.noteRegenerate,
-        activeNote == null ? null : () => showNoteReorganization(context, ref, workspaceId!, activeNote.id),
-      ),
-    );
-    file.add(
-      AppCommand(
-        l.noteShowAi,
-        activeNote == null ? null : () => ref.read(noteAiMarkersProvider(activeNote.id).notifier).toggle(),
-      ),
-    );
-    file.add(
-      AppCommand(
-        l.noteAddAllReview,
-        activeNote == null || !activeNote.sections.any((s) => s.question != null)
-            ? null
-            : () => workspace!.addNoteReviews(activeNote.id),
-      ),
-    );
-    file.add(
-      AppCommand(
-        '${l.noteShareTitle}…',
-        activeNote == null ? null : () => showNoteShareSheet(context, workspace!.content, activeNote),
-      ),
-    );
+    final betaEnabled = ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled));
+    final activeNote = betaEnabled ? workspace?.content.studyNote(workspaceState?.activeNoteId ?? '') : null;
+    if (betaEnabled) {
+      file.add(
+        AppCommand(
+          l.organizeStudyNote,
+          inWorkspace ? () => showNoteSetupSheet(context, ref, workspaceId) : null,
+          shortcut: AppShortcuts.organizeStudyNote,
+        ),
+      );
+      file.add(
+        AppCommand(
+          l.exportStudyNote,
+          activeNote == null ? null : () => showNoteExportSheet(context, ref, workspaceId!, activeNote.id),
+        ),
+      );
+      file.add(
+        AppCommand(
+          l.notePreviewUpdate,
+          activeNote == null || (ref.watch(noteChangesProvider((workspaceId!, activeNote.id)))?.count ?? 0) == 0
+              ? null
+              : () {
+                  ref.read(noteUpdateRequestedProvider(activeNote.id).notifier).request();
+                },
+        ),
+      );
+      file.add(
+        AppCommand(
+          l.noteRegenerate,
+          activeNote == null ? null : () => showNoteReorganization(context, ref, workspaceId!, activeNote.id),
+        ),
+      );
+      file.add(
+        AppCommand(
+          l.noteShowAi,
+          activeNote == null ? null : () => ref.read(noteAiMarkersProvider(activeNote.id).notifier).toggle(),
+        ),
+      );
+      file.add(
+        AppCommand(
+          l.noteAddAllReview,
+          activeNote == null || !activeNote.sections.any((s) => s.question != null)
+              ? null
+              : () => workspace!.addNoteReviews(activeNote.id),
+        ),
+      );
+      file.add(
+        AppCommand(
+          '${l.noteShareTitle}…',
+          activeNote == null ? null : () => showNoteShareSheet(context, workspace!.content, activeNote),
+        ),
+      );
+    }
     file.add(AppCommand(l.exportMap, inWorkspace ? () => showMapExportSheet(context, ref, workspaceId) : null));
     Future<void> undoOrRedo({required bool redo}) async {
       // A focused text field keeps ⌘Z for its own text.
@@ -991,7 +994,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
     ];
     final mapLabels = {
-      MindMapCommand.generateFromDocument: l.mapGenerateMenu,
+      if (betaEnabled) MindMapCommand.generateFromDocument: l.mapGenerateMenu,
       MindMapCommand.expandIdeas: l.mapIdeaMenu,
       MindMapCommand.siblingAfter: l.addSiblingAfter,
       MindMapCommand.siblingBefore: l.addSiblingBefore,

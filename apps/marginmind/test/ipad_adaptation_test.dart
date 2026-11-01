@@ -39,7 +39,11 @@ void main() {
       final container = await pumpApp(
         t,
         size: const Size(834, 1194),
-        prefs: {'settings.appearance': dark ? 'dark' : 'light', 'settings.language': 'zh'},
+        prefs: {
+          'settings.appearance': dark ? 'dark' : 'light',
+          'settings.language': 'zh',
+          'settings.betaFeaturesEnabled': true,
+        },
         overrides: [
           touchPlatformProvider.overrideWithValue(true),
           phoneProvider.overrideWithValue(false),

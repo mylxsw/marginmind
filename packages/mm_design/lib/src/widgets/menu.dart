@@ -25,6 +25,7 @@ class MMMenuItem extends MMMenuEntry {
     this.shortcut,
     this.checked,
     this.disabledReason,
+    this.badge,
   });
 
   final String label;
@@ -42,6 +43,9 @@ class MMMenuItem extends MMMenuEntry {
 
   /// Shown right-aligned in secondary text, e.g. "⌘L".
   final String? shortcut;
+
+  /// Optional inline tag shown beside [label] (e.g. [MMBetaBadge]).
+  final Widget? badge;
 }
 
 class MMMenuDivider extends MMMenuEntry {
@@ -358,11 +362,21 @@ class _MenuRow extends StatelessWidget {
                 if (item.checked != null)
                   SizedBox(width: 20, child: item.checked! ? Icon(MMIcons.check, size: 14, color: fg) : null),
                 Expanded(
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.body.copyWith(color: fg),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.body.copyWith(color: fg),
+                        ),
+                      ),
+                      if (item.badge != null) ...[
+                        const SizedBox(width: 6),
+                        item.badge!,
+                      ],
+                    ],
                   ),
                 ),
                 if (item.shortcut != null) ...[
@@ -397,6 +411,7 @@ class _ActionSheet extends StatelessWidget {
             label: e.label,
             checked: e.checked,
             destructive: e.destructive,
+            badge: e.badge,
             onTap: e.onSelected == null ? null : () => onSelected(e.onSelected),
           ),
           MMMenuHeader(:final label) => Padding(
@@ -470,6 +485,7 @@ class _ActionSheetRow extends StatelessWidget {
     this.checked,
     this.destructive = false,
     this.bold = false,
+    this.badge,
   });
 
   final String label;
@@ -477,6 +493,7 @@ class _ActionSheetRow extends StatelessWidget {
   final bool? checked;
   final bool destructive;
   final bool bold;
+  final Widget? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -498,15 +515,26 @@ class _ActionSheetRow extends StatelessWidget {
             children: [
               SizedBox(width: 20, child: checked ?? false ? Icon(MMIcons.check, size: 16, color: fg) : null),
               Expanded(
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.mmText.title3.copyWith(
-                    color: fg,
-                    fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.mmText.title3.copyWith(
+                          color: fg,
+                          fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    if (badge != null) ...[
+                      const SizedBox(width: 6),
+                      badge!,
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(width: 20),

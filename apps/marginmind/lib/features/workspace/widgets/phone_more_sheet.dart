@@ -417,21 +417,24 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _PhoneSheetRow(
-                  key: const ValueKey('phone-row-organize-notes'),
-                  icon: MMIcons.organizeNote,
-                  title: l.organizeNotes,
-                  hasChevron: true,
-                  onTap: () {
-                    _close();
-                    if (widget.onOrganizeNotes != null) {
-                      widget.onOrganizeNotes!();
-                    } else {
-                      showNoteSetupSheet(widget.workspaceContext ?? context, ref, widget.studySetId);
-                    }
-                  },
-                ),
-                Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
+                if (ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled))) ...[
+                  _PhoneSheetRow(
+                    key: const ValueKey('phone-row-organize-notes'),
+                    icon: MMIcons.organizeNote,
+                    title: l.organizeNotes,
+                    badge: const MMBetaBadge(),
+                    hasChevron: true,
+                    onTap: () {
+                      _close();
+                      if (widget.onOrganizeNotes != null) {
+                        widget.onOrganizeNotes!();
+                      } else {
+                        showNoteSetupSheet(widget.workspaceContext ?? context, ref, widget.studySetId);
+                      }
+                    },
+                  ),
+                  Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
+                ],
                 _PhoneSheetRow(
                   key: const ValueKey('phone-row-review'),
                   icon: MMIcons.review,
@@ -557,6 +560,7 @@ class _PhoneSheetRow extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
+    this.badge,
     this.value,
     this.enabled = true,
     this.hasChevron = false,
@@ -565,6 +569,7 @@ class _PhoneSheetRow extends StatelessWidget {
 
   final IconData icon;
   final String title;
+  final Widget? badge;
   final String? value;
   final bool enabled;
   final bool hasChevron;
@@ -592,15 +597,25 @@ class _PhoneSheetRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  title,
-                  style: context.mmText.body.copyWith(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w500,
-                    color: enabled ? c.label : disabledColor,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: context.mmText.body.copyWith(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w500,
+                          color: enabled ? c.label : disabledColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (badge != null) ...[
+                      const SizedBox(width: MMSpacing.xs),
+                      badge!,
+                    ],
+                  ],
                 ),
               ),
               if (value != null) ...[

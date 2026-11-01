@@ -372,6 +372,21 @@ class _GeneralPage extends ConsumerWidget {
             ],
           ),
         ],
+        const SizedBox(height: MMSpacing.m),
+        MMSettingsHeader(l.settingsAdvancedGroup),
+        MMSettingsGroup(
+          children: [
+            MMSettingsRow(
+              label: l.settingsEnableBetaFeatures,
+              trailing: MMSwitch(
+                key: const ValueKey('settings-beta-features'),
+                value: settings.betaFeaturesEnabled,
+                semanticLabel: l.settingsEnableBetaFeatures,
+                onChanged: controller.setBetaFeaturesEnabled,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

@@ -29,7 +29,7 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
     required this.onAddDocument,
     this.onAddWebPage,
     required this.onAddMap,
-    required this.onGenerateMap,
+    this.onGenerateMap,
     required this.onAddNote,
   });
 
@@ -37,8 +37,8 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
   final String? mapId;
   final FocusNode searchFocus;
   final ValueChanged<String> onSearch;
-  final VoidCallback onDismiss, onAddDocument, onAddMap, onGenerateMap, onAddNote;
-  final VoidCallback? onAddWebPage;
+  final VoidCallback onDismiss, onAddDocument, onAddMap, onAddNote;
+  final VoidCallback? onAddWebPage, onGenerateMap;
   final List<Widget> documents, maps, notes, learning, results;
   final List<MMPhoneNavigationRow> tags;
   final bool searching, showNotes;
@@ -97,15 +97,26 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
       if (!widget.searching || widget.maps.isNotEmpty)
         MMPhoneNavigationGroup(
           title: l.sectionMaps,
-          trailing: MMDropdownButton<VoidCallback>(
-            tooltip: l.newMap,
-            icon: const Icon(MMIcons.add),
-            onSelected: (action) => action(),
-            itemBuilder: (_) => [
-              MMDropdownItem(value: widget.onAddMap, child: Text(l.newMap)),
-              MMDropdownItem(value: widget.onGenerateMap, child: Text(l.mapGenerateMenu)),
-            ],
-          ),
+          trailing: widget.onGenerateMap == null
+              ? MMIconButton(icon: MMIcons.add, tooltip: l.newMap, onPressed: widget.onAddMap)
+              : MMDropdownButton<VoidCallback>(
+                  tooltip: l.newMap,
+                  icon: const Icon(MMIcons.add),
+                  onSelected: (action) => action(),
+                  itemBuilder: (_) => [
+                    MMDropdownItem(value: widget.onAddMap, child: Text(l.newMap)),
+                    MMDropdownItem(
+                      value: widget.onGenerateMap!,
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(l.mapGenerateMenu)),
+                          const SizedBox(width: MMSpacing.xs),
+                          const MMBetaBadge(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
           children: widget.maps,
         ),
       if (widget.showNotes || widget.learning.isNotEmpty)
@@ -117,10 +128,17 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
                 item: MMSidebarItem(
                   icon: MMIcons.studyNote,
                   label: l.phoneNavigationNotes,
-                  trailing: Icon(
-                    _notesExpanded ? MMIcons.chevronDown : MMIcons.chevronRight,
-                    size: MMPhoneNavigation.iconSize,
-                    color: c.secondaryLabel,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const MMBetaBadge(),
+                      const SizedBox(width: MMSpacing.xs),
+                      Icon(
+                        _notesExpanded ? MMIcons.chevronDown : MMIcons.chevronRight,
+                        size: MMPhoneNavigation.iconSize,
+                        color: c.secondaryLabel,
+                      ),
+                    ],
                   ),
                   onTap: widget.notes.isEmpty
                       ? widget.onAddNote
@@ -130,7 +148,12 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
             if (_notesExpanded || widget.searching) ...widget.notes,
             if (_notesExpanded && !widget.searching)
               MMPhoneNavigationRow(
-                item: MMSidebarItem(icon: MMIcons.add, label: l.organizeStudyNote, onTap: widget.onAddNote),
+                item: MMSidebarItem(
+                  icon: MMIcons.add,
+                  label: l.organizeStudyNote,
+                  trailing: const MMBetaBadge(),
+                  onTap: widget.onAddNote,
+                ),
               ),
             ...widget.learning,
           ],
