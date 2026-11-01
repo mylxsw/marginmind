@@ -56,6 +56,9 @@ void main() {
       expect(paintedColor(MMIcons.select), colors.accent);
       await tester.tap(find.byKey(const ValueKey('reader-more')));
       await tester.pumpAndSettle();
+      // Reader styles live in the More › Appearance submenu.
+      await tester.tap(find.byKey(const ValueKey('reader-appearance')));
+      await tester.pumpAndSettle();
       expect(find.text('White'), findsOneWidget);
       expect(find.byKey(const ValueKey('reader-margin')), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -173,10 +176,14 @@ void main() {
       ]) {
         await tester.tap(menu);
         await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('reader-appearance')));
+        await tester.pumpAndSettle();
         await tester.tap(find.text(label));
         await tester.pumpAndSettle();
         expect(container.read(settingsProvider).readerStyle, style);
         await tester.tap(menu);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('reader-appearance')));
         await tester.pumpAndSettle();
         expect(find.text(label), findsOneWidget);
         expect(find.byIcon(MMIcons.check), findsWidgets);

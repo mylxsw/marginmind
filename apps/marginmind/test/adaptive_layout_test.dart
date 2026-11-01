@@ -326,6 +326,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('reader-zoom-slider')), findsOneWidget);
       expect(find.text('Fit Width'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('reader-appearance')));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Dark'));
       await tester.pumpAndSettle();
       expect(container.read(settingsProvider).readerStyle, MMReaderStyle.dark);
@@ -375,7 +377,10 @@ void main() {
         tester.getRect(find.byTooltip('Zoom In').last).bottom,
         lessThanOrEqualTo(iphone.size.height - iphone.safe.bottom),
       );
-      await tester.tap(find.text('Source').first);
+      // The phone reader switch names the source pane "Reading".
+      await tester.tap(
+        find.descendant(of: find.byKey(const ValueKey('workspace-pane-switch')), matching: find.text('Reading')),
+      );
       await tester.pumpAndSettle();
       expect(state().layout, MMSplitMode.primary);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);

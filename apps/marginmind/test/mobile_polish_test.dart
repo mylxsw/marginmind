@@ -22,9 +22,11 @@ void main() {
       tester.view.display.size = device.size;
       addTearDown(tester.view.display.resetSize);
       final container = await pumpDevice(tester, device);
+      // A compact phone shows the large "Library" title for all study sets (GUL-635).
+      final compactPhone = device.size.width < device.size.height;
       final title = find.descendant(
         of: find.byWidgetPredicate((w) => w is MMToolbar || w is PreferredSize),
-        matching: find.text('All Study Sets'),
+        matching: find.text(compactPhone ? 'Library' : 'All Study Sets'),
       );
       expect(title, findsOneWidget);
       expect(tester.renderObject<RenderParagraph>(title).didExceedMaxLines, isFalse);

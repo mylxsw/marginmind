@@ -30,9 +30,11 @@ void main() {
       ],
     );
     final repo = InMemoryStudySetContentRepository({'demo-1': before});
+    // The sidebar update dot is a Beta map generation feature.
     final container = await pumpApp(
       tester,
       content: repo,
+      prefs: const {'settings.betaFeaturesEnabled': true},
       overrides: [assistantPageTextProvider.overrideWithValue((path, page) async => 'Page $page text')],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');

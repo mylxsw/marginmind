@@ -15,6 +15,7 @@ import 'package:marginmind/features/workspace/widgets/vocabulary_add_button.dart
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:marginmind/settings/settings_window.dart';
+import 'package:marginmind/shared/assistant_icon.dart';
 import 'package:marginmind/shared/l10n.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
@@ -109,8 +110,13 @@ void main() {
         MMIcons.addNote,
         MMIcons.network,
         MMIcons.translate,
-        MMIcons.ai,
+        // The assistant button draws the app's AssistantIcon instead of a glyph.
+        null,
       ]);
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('selection-assistant')), matching: find.byType(AssistantIcon)),
+        findsOneWidget,
+      );
       await screenshot(tester, 'selection-toolbar-${dark ? 'dark' : 'light'}', target: toolbar);
       await tester.tap(find.descendant(of: toolbar, matching: find.byType(AnnotationColorButton)));
       await tester.pumpAndSettle();
