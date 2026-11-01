@@ -46,6 +46,8 @@ Map<String, dynamic> encodeRunContext(RunContext c) {
       'parameters': policy.parameters,
     },
     'routingRevision': c.config.routingRevision,
+    'serviceLabel': c.config.serviceLabel,
+    'modelLabel': c.config.modelLabel,
     'source': c.config.source.name,
   };
 }
@@ -72,6 +74,8 @@ RunContext decodeRunContext(Map<String, dynamic> j) {
     knowledgeVersions: Map<String, String>.from(j['knowledgeVersions']),
     config: ResolvedTaskConfig(
       routingRevision: j['routingRevision'],
+      serviceLabel: j['serviceLabel'] ?? j['serviceDisplayName'],
+      modelLabel: j['modelLabel'] ?? j['modelDisplayName'],
       source: RoutingSource.values.byName(j['source']),
       capabilities: ModelCapabilityProfile(
         identity: id,

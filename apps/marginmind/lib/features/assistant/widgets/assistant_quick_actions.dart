@@ -45,7 +45,12 @@ Future<bool?> showAssistantQuickActions(
   pageBuilder: (_, _, _) => inScope(
     context,
     _QuickActionsLayer(
-      placement: QuickActionsPlacement(toolbar: toolbar, selection: selection, viewport: viewport),
+      placement: QuickActionsPlacement(
+        toolbar: toolbar,
+        selection: selection,
+        viewport: viewport,
+        maxWidth: origin == PanelOrigin.reader ? AssistantQuickActions.readerWidth : 408,
+      ),
       menuBuilder: (open, showExpansion, closeExpansion) => AssistantQuickActions(
         studySetId: studySetId,
         pending: pending,
@@ -229,6 +234,8 @@ enum _QuickAction {
 }
 
 class AssistantQuickActions extends ConsumerStatefulWidget {
+  static const readerWidth = 340.0;
+
   const AssistantQuickActions({
     super.key,
     required this.studySetId,
@@ -429,7 +436,11 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
         ? (question.skill == AssistantSkill.organize.name ? l.assistantAnswerToMap : _action?.title(l) ?? question.text)
         : l.assistantQuickTitle;
     return SizedBox(
-      width: widget.origin == PanelOrigin.map && _menu ? QuickActionsSidePlacement.menuWidth : 408,
+      width: widget.origin == PanelOrigin.reader
+          ? AssistantQuickActions.readerWidth
+          : _menu
+          ? QuickActionsSidePlacement.menuWidth
+          : 408,
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): () {
@@ -538,6 +549,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                                     },
                                     child: _ActionRow(
                                       key: const ValueKey('quick-expand-ideas'),
+                                      hasSubmenu: true,
                                       verticalPadding: 10,
                                       icon: MMIcons.expandIdeas,
                                       title: widget.expansionTargets != null && widget.expansionTargets!.length > 1
@@ -677,6 +689,7 @@ class _ActionRow extends StatelessWidget {
     required this.title,
     this.onTap,
     this.selected = false,
+    this.hasSubmenu = false,
     this.focusNode,
     this.verticalPadding = 8,
   });
@@ -686,6 +699,7 @@ class _ActionRow extends StatelessWidget {
   final String title;
   final VoidCallback? onTap;
   final bool selected;
+  final bool hasSubmenu;
   final FocusNode? focusNode;
 
   @override
@@ -710,7 +724,7 @@ class _ActionRow extends StatelessWidget {
               Icon(icon, size: 16, color: selected ? c.research : c.icon),
               const SizedBox(width: 10),
               Expanded(child: Text(title, style: t.body)),
-              Icon(MMIcons.chevronRight, size: 11, color: c.secondaryLabel),
+              if (hasSubmenu) Icon(MMIcons.chevronRight, size: 11, color: c.secondaryLabel),
             ],
           ),
         ),

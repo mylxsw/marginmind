@@ -83,7 +83,13 @@ class AssistantServicesStore {
   }
 
   Future<void> save(AssistantServices value) async {
-    if (!await prefs.setString(settingsKey, jsonEncode(value.toJson()))) throw StateError('Settings write failed');
+    try {
+      if (!await prefs.setString(settingsKey, jsonEncode(value.toJson()))) throw StateError('Settings write failed');
+    } catch (_) {
+      // The preferences cache changes before the platform confirms persistence.
+      await prefs.reload();
+      rethrow;
+    }
   }
 
   Future<AssistantModel> resolve(AssistantModel old, {bool quick = false}) async {
@@ -96,7 +102,7 @@ class AssistantServicesStore {
     final model = service.models.where((m) => m.id == old.model && m.enabled).firstOrNull;
     if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable, 'select_model');
     final current = service.configuration(model);
-    return quick ? quickModelFor(service, current) : current;
+    return current; // Task routing owns quick/heavy selection, never model names.
   }
 }
 
@@ -117,10 +123,22 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
   Future<AssistantServices> build() => ref.watch(assistantServicesStoreProvider).load();
   Future<void> _change(Future<AssistantServices> Function(AssistantServices value) operation) {
     final next = _tail.then((_) async {
-      final value = await future;
-      final result = await operation(value);
-      await ref.read(assistantServicesStoreProvider).save(result);
-      state = AsyncData(result);
+      final store = ref.read(assistantServicesStoreProvider);
+      try {
+        final value = await store.load();
+        final result = await operation(value);
+        await store.save(result);
+        state = AsyncData(result);
+      } catch (error, stack) {
+        // A credential fence may already have committed. Show durable state,
+        // never the stale pre-operation service or a failed preferences cache.
+        try {
+          state = AsyncData(await store.load());
+        } catch (loadError, loadStack) {
+          state = AsyncError(loadError, loadStack);
+        }
+        Error.throwWithStackTrace(error, stack);
+      }
     });
     _tail = next.catchError((Object _) {});
     return next;
@@ -130,30 +148,59 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
 
   /// Merge only edited fields into the latest service inside the write queue.
   /// A pending settings save must not restore stale models or enabled state.
-  Future<void> updateDetails(String id, {String? name, String? endpoint, String? key}) => _change((value) async {
-    var service = _service(value, id);
-    if (key != null) await _writeKey(service, key);
-    if (name != null) service = service.copyWith(name: name);
-    if (endpoint != null) service = serviceWithEndpoint(service, endpoint);
-    return value.upsert(service);
+  Future<void> updateDetails(String id, {String? name, String? endpoint, String? key}) {
+    AssistantServices edit(AssistantServices value, AssistantService original) {
+      var service = _service(value, id).copyWith(enabled: original.enabled);
+      if (name != null) service = service.copyWith(name: name);
+      if (endpoint != null) service = serviceWithEndpoint(service, endpoint);
+      return value.upsert(service);
+    }
+
+    if (key == null) return _change((value) async => edit(value, _service(value, id)));
+    return _changeCredentials(id, (value, original) async {
+      await _writeKey(original, key);
+      return edit(value, original);
+    });
+  }
+
+  /// Persist a disabled, newer identity before touching Keychain. Failed or
+  /// partial credential mutations leave this fence in place until the user
+  /// retries and explicitly enables the service. No credential rollback needed.
+  Future<void> _changeCredentials(
+    String id,
+    Future<AssistantServices> Function(AssistantServices value, AssistantService original) operation,
+  ) => _change((value) async {
+    final original = _service(value, id);
+    final fenced = value.upsert(original.copyWith(enabled: false, revision: original.revision + 1));
+    await ref.read(assistantServicesStoreProvider).save(fenced);
+    state = AsyncData(fenced);
+    try {
+      var result = await operation(fenced, original);
+      final selected = value.defaultModel;
+      if (selected != null &&
+          result.enabledModels.any((m) => m.serviceId == selected.serviceId && m.model == selected.modelId)) {
+        result = result.select(selected);
+      }
+      return result;
+    } finally {
+      ref.read(assistantKeysProvider.notifier).changed();
+    }
   });
 
   Future<void> setEnabled(String id, bool enabled) =>
       _change((v) async => v.upsert(_service(v, id).copyWith(enabled: enabled)));
   Future<void> setDefault(ModelReference model) => _change((v) async => v.select(model));
   AssistantService _service(AssistantServices value, String id) => value.services.firstWhere((s) => s.id == id);
-  Future<void> remove(String id) => _change((v) async {
-    final service = _service(v, id);
+  Future<void> remove(String id) => _changeCredentials(id, (v, service) async {
     await ref.read(assistantSecretsProvider).delete(AssistantServicesStore.account(id));
     if (id == AssistantServicesStore.legacyId(service.provider)) {
       await ref.read(assistantSecretsProvider).delete(legacyAssistantAccount(service.provider));
     }
-    ref.read(assistantKeysProvider.notifier).changed();
     return v.remove(id);
   });
-  Future<void> saveKey(String id, String key) => _change((v) async {
-    await _writeKey(_service(v, id), key);
-    return v;
+  Future<void> saveKey(String id, String key) => _changeCredentials(id, (v, original) async {
+    await _writeKey(original, key);
+    return v.upsert(_service(v, id).copyWith(enabled: original.enabled));
   });
 
   Future<void> _writeKey(AssistantService service, String key) async {
@@ -166,7 +213,6 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
     } else {
       await secrets.writeVerified(account, key.trim());
     }
-    ref.read(assistantKeysProvider.notifier).changed();
   }
 
   Future<void> upsertModel(String id, ServiceModel model) => _change((v) async {
@@ -288,4 +334,5 @@ AssistantService serviceWithEndpoint(AssistantService service, String endpoint) 
       ? service.responses
       : _openAiHost(endpoint) || (service.responses && !_openAiHost(service.endpoint)),
   models: service.models,
+  revision: service.revision,
 );

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:mm_core/mm_core.dart' show ModelReference;
 export 'package:mm_core/mm_core.dart' show ModelReference;
 
@@ -38,9 +40,11 @@ class AssistantService {
     this.enabled = true,
     this.localEnabled = false,
     this.responses = false,
+    this.revision = 0,
     List<ServiceModel> models = const [],
   }) : models = List.unmodifiable(models);
   final String id, name, endpoint;
+  final int revision;
   final ServiceProtocol protocol;
   final bool enabled, localEnabled, responses;
   final List<ServiceModel> models;
@@ -51,6 +55,7 @@ class AssistantService {
     ServiceProtocol.openai => responses ? AssistantProvider.responses : AssistantProvider.compatible,
   };
   AssistantService copyWith({
+    int? revision,
     String? name,
     String? endpoint,
     bool? enabled,
@@ -64,6 +69,7 @@ class AssistantService {
     enabled: enabled ?? this.enabled,
     localEnabled: localEnabled ?? this.localEnabled,
     responses: responses,
+    revision: revision ?? this.revision,
     models: models ?? this.models,
   );
   AssistantModel configuration(ServiceModel model) => AssistantModel(
@@ -82,6 +88,7 @@ class AssistantService {
     'enabled': enabled,
     'localEnabled': localEnabled,
     'responses': responses,
+    'revision': revision,
     'models': models.map((m) => m.toJson()).toList(),
   };
   factory AssistantService.fromJson(Map<String, dynamic> j) => AssistantService(
@@ -92,12 +99,13 @@ class AssistantService {
     enabled: j['enabled'] ?? true,
     localEnabled: j['localEnabled'] ?? false,
     responses: j['responses'] ?? false,
+    revision: j['revision'] ?? 0,
     models: (j['models'] as List).map((m) => ServiceModel.fromJson(Map<String, dynamic>.from(m))).toList(),
   );
 }
 
 class AssistantServices {
-  AssistantServices({List<AssistantService> services = const [], ModelReference? defaultModel})
+  AssistantServices({List<AssistantService> services = const [], ModelReference? defaultModel, this.revision = 0})
     : services = List.unmodifiable(services) {
     final ids = <String>{};
     for (final service in services) {
@@ -115,6 +123,7 @@ class AssistantServices {
         : ModelReference(available.first.serviceId!, available.first.model);
   }
   final List<AssistantService> services;
+  final int revision;
   late final ModelReference? defaultModel;
   Map<String, List<AssistantModel>> get enabledModelsByService => {
     for (final s in services)
@@ -128,24 +137,38 @@ class AssistantServices {
   AssistantModel? get configuration => enabledModels
       .where((m) => m.serviceId == defaultModel?.serviceId && m.model == defaultModel?.modelId)
       .firstOrNull;
-  AssistantServices upsert(AssistantService service) => AssistantServices(
-    services: services.any((s) => s.id == service.id)
-        ? [for (final s in services) s.id == service.id ? service : s]
-        : [...services, service],
+  AssistantServices upsert(AssistantService service) {
+    final old = services.where((s) => s.id == service.id).firstOrNull;
+    // Revision is owned by the catalog, never by a stale editor draft.
+    final before = old?.toJson();
+    before?.remove('revision');
+    final after = service.toJson()..remove('revision');
+    final changed = old == null || service.revision > old.revision || jsonEncode(before) != jsonEncode(after);
+    final nextRevision = [revision, ...services.map((s) => s.revision)].reduce((a, b) => a > b ? a : b) + 1;
+    final updated = service.copyWith(revision: changed ? nextRevision : old.revision);
+    return AssistantServices(
+      services: old == null ? [...services, updated] : [for (final s in services) s.id == service.id ? updated : s],
+      defaultModel: defaultModel,
+      revision: changed ? nextRevision : revision,
+    );
+  }
+
+  AssistantServices remove(String id) => AssistantServices(
+    services: services.where((s) => s.id != id).toList(),
     defaultModel: defaultModel,
+    revision: [revision, ...services.map((s) => s.revision)].reduce((a, b) => a > b ? a : b) + 1,
   );
-  AssistantServices remove(String id) =>
-      AssistantServices(services: services.where((s) => s.id != id).toList(), defaultModel: defaultModel);
   AssistantServices select(ModelReference reference) {
     if (!enabledModels.any((m) => m.serviceId == reference.serviceId && m.model == reference.modelId)) {
       throw ArgumentError('Model is not enabled');
     }
-    return AssistantServices(services: services, defaultModel: reference);
+    return AssistantServices(services: services, defaultModel: reference, revision: revision);
   }
 
   Map<String, dynamic> toJson() => {
     'version': 1,
     'services': services.map((s) => s.toJson()).toList(),
+    'revision': revision,
     'default': defaultModel?.toJson(),
   };
   factory AssistantServices.fromJson(Map<String, dynamic> j) {
@@ -154,18 +177,14 @@ class AssistantServices {
     return AssistantServices(
       services: (j['services'] as List).map((s) => AssistantService.fromJson(Map<String, dynamic>.from(s))).toList(),
       defaultModel: d == null ? null : ModelReference(d['serviceId'], d['modelId']),
+      revision: j['revision'] ?? 0,
     );
   }
 }
 
-AssistantModel quickModelFor(AssistantService service, AssistantModel current) =>
-    !service.enabled || current.serviceId != service.id
-    ? current
-    : service.models
-              .where((m) => m.enabled && RegExp(r'haiku|mini|flash|small', caseSensitive: false).hasMatch(m.id))
-              .map(service.configuration)
-              .firstOrNull ??
-          current;
+/// Compatibility only. New tasks use TaskModelResolver; names never select models.
+@Deprecated('Resolve the declared TaskType through TaskModelResolver')
+AssistantModel quickModelFor(AssistantService service, AssistantModel current) => current;
 
 class WebSearchSettings {
   const WebSearchSettings({this.backend = WebSearchBackend.none, this.endpoint = ''});

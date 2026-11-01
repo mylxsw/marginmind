@@ -46,6 +46,69 @@ class SdkAgentRuntime implements AgentRuntime {
     return handle;
   }
 
+  /// Explicit terminal retry creates a child; never mutates/replays the parent.
+  /// Domains must supply a missing-range projector and validator missing IDs.
+  /// Failures without a known missing range require domain reconciliation first.
+  Future<RuntimeRunHandle<T>> retryUnfinished<T>(
+    TaskRequest<T> original,
+    RunContext parent, {
+    required String childRunId,
+  }) async {
+    final saved = await store.load(parent.runId);
+    if (saved == null ||
+        !{RunStatus.partial, RunStatus.failed}.contains(saved.status) ||
+        !runMayResume(saved) ||
+        saved.inputFingerprint != original.inputFingerprint ||
+        saved.taskType != original.spec.type ||
+        saved.schemaVersion != original.spec.schemaVersion ||
+        saved.promptVersion != original.spec.promptVersion ||
+        childRunId == parent.runId) {
+      throw const ConfigurationFailure('retryCheckpointMismatch');
+    }
+    if (await store.load(childRunId) != null) throw const RunStoreConflict();
+    final definition = tasks.resolve<T>(original.spec);
+    final encoded = saved.checkpoint['pending'] as Map?;
+    var missing = Set<String>.from(encoded?['missingInputIds'] ?? const []);
+    if (missing.isEmpty && saved.status == RunStatus.failed) {
+      missing = definition.reconcileUnfinished?.call(original.input, saved.checkpoint) ?? {};
+    }
+    if (missing.isEmpty || definition.retryInput == null) {
+      throw const ConfigurationFailure('retryRequiresMissingRange');
+    }
+    final input = definition.retryInput!(original.input, Set.unmodifiable(missing));
+    if (!definition.validateInput(input).complete) throw const ConfigurationFailure('invalidRetryInput');
+    final child = decodeRunContext({
+      ...encodeRunContext(saved.context.child(childRunId)),
+      'inputRange': {'ids': missing.toList()..sort()},
+    });
+    final request = TaskRequest<T>(
+      spec: original.spec,
+      input: input,
+      inputFingerprint: jsonEncode([saved.inputFingerprint, saved.revision, missing.toList()..sort()]),
+      reasoning: original.reasoning,
+      purpose: original.purpose,
+    );
+    if (!_active.add(childRunId)) throw StateError('Run already active');
+    final handle = RuntimeRunHandle<T>._(this, request, child, definition);
+    try {
+      // Keep application proposal/write receipts, but no model calls to replay.
+      final previous = handle._decodeState(saved.checkpoint);
+      handle._state.metadata.addAll(previous.metadata);
+      handle._state.metadata['runtime.retryParent.v1'] = {
+        'runId': parent.runId,
+        'revision': saved.revision,
+        'missingInputIds': missing.toList(),
+      };
+      await handle._save(RunStatus.created);
+      handle._recovered = true;
+      handle._paused = true;
+    } catch (_) {
+      _active.remove(childRunId);
+      rethrow;
+    }
+    return handle;
+  }
+
   /// Recovery never dispatches a model call. An explicit resume is required.
   Future<RuntimeRunHandle<T>> recover<T>(TaskRequest<T> request, RunContext context) async {
     final saved = await store.load(context.runId);
@@ -108,6 +171,8 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
   Duration _elapsedBefore = Duration.zero;
   int _sequence = -1;
   bool _inflight = false;
+  int _toolCallsInFlight = 0;
+  bool _changingConfiguration = false;
   RunStatus _status = RunStatus.created;
   RunResult<T>? _pending;
   Map<String, dynamic>? _encoded;
@@ -243,6 +308,20 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
   }
 
   Future<void> _execute() async {
+    while (true) {
+      final phase = _context.phase;
+      try {
+        await _executePhase();
+        return;
+      } catch (_) {
+        if (_context.phase == phase || _cancelled) rethrow;
+        // The old SDK invocation has unwound. Never replay its queued calls.
+      }
+    }
+  }
+
+  Future<void> _executePhase() async {
+    final phase = _context.phase;
     final spec = request.spec;
     final bundles = spec.category == TaskCategory.quick
         ? <KnowledgeBundle>[]
@@ -252,7 +331,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
         definition.createBindings?.call(_context, _state, request.input) ??
         TaskBindings(tools: definition.tools, hooks: definition.hooks);
     final tools = bindings.tools.where((t) => allowed.contains(t.name)).toList();
-    final hook = _RuntimeHook<T>(this, allowed);
+    final hook = _RuntimeHook<T>(this, allowed, _context.phase);
     final agent = sdk.StatefulAgent(
       name: spec.type.key,
       state: _state,
@@ -265,7 +344,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
         for (final b in bundles) b.instructions,
       ],
       tools: tools,
-      hooks: [hook, ...bindings.hooks],
+      hooks: [hook, ...bindings.hooks, _RuntimeToolCompletionHook<T>(this)],
       disableSubAgents: true,
       withGeneralPrinciples: false,
       maxTurns: spec.category == TaskCategory.quick ? 1 : definition.maxTurns,
@@ -281,6 +360,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
       await _save(RunStatus.running);
       final responses = await agent.run([sdk.UserMessage.text(input)], cancelToken: _cancel, useStream: false);
       if (_cancelled) throw const ResearchFailure(ResearchFailureKind.cancelled);
+      if (phase != _context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
       final text = responses.whereType<sdk.ModelMessage>().lastOrNull?.textOutput ?? '';
       T? value;
       ValidationReport validation;
@@ -393,6 +473,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
 
   @override
   Future<void> pause() async {
+    if (_changingConfiguration) throw StateError('Configuration save in progress');
     if (_result.isCompleted || _pending != null) return;
     _paused = true;
     await _save(RunStatus.paused);
@@ -400,6 +481,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
 
   @override
   Future<void> resume() async {
+    if (_changingConfiguration) throw StateError('Configuration save in progress');
     if (_result.isCompleted) return;
     if (_pending != null) {
       await _flush();
@@ -414,6 +496,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
 
   @override
   Future<void> cancel() async {
+    if (_changingConfiguration) throw StateError('Configuration save in progress');
     if (_result.isCompleted) return;
     if (_pending != null) {
       await _flush();
@@ -433,32 +516,51 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
 
   /// Explicit UI action for future dispatch. Completed phases retain attribution.
   Future<void> useConfiguration(RunContext next) async {
-    if (!_paused ||
+    if (_changingConfiguration ||
+        !_paused ||
         _inflight ||
+        _toolCallsInFlight > 0 ||
         _result.isCompleted ||
         _pending != null ||
         next.runId != _context.runId ||
         next.phase != _context.phase + 1) {
       throw StateError('Configuration changes require a paused run and next phase');
     }
-    _context = next;
-    _phases.add(next);
-    // Signatures are bound to model identity; never send old blocks to a new model.
-    (_state.metadata.putIfAbsent('runtime.configurationHistory.v1', () => <dynamic>[]) as List).add(
-      _state.history.toJson(),
-    );
-    _state.history.messages.clear();
-    await _save(RunStatus.paused);
+    _changingConfiguration = true;
+    final previousContext = _context;
+    final previousState = _state;
+    final previousPhases = _phases;
+    try {
+      _state = sdk.AgentState.fromJson(jsonDecode(jsonEncode(_state.toJson())));
+      _state.isRunning = false;
+      _context = next;
+      _phases = [..._phases, next];
+      // Signatures are bound to model identity; never send old blocks to a new model.
+      (_state.metadata.putIfAbsent('runtime.configurationHistory.v1', () => <dynamic>[]) as List).add(
+        _state.history.toJson(),
+      );
+      _state.history.messages.clear();
+      await _save(RunStatus.paused);
+    } catch (_) {
+      _context = previousContext;
+      _state = previousState;
+      _phases = previousPhases;
+      rethrow;
+    } finally {
+      _changingConfiguration = false;
+    }
   }
 }
 
 class _RuntimeHook<T> extends sdk.AgentHook {
-  _RuntimeHook(this.handle, this.allowed);
+  _RuntimeHook(this.handle, this.allowed, this.phase);
+  final int phase;
   final RuntimeRunHandle<T> handle;
   final Set<String> allowed;
   @override
   Future<sdk.ModelCallHookResult> beforeModelCall(sdk.ModelCallHookContext context) async {
     await handle._ready();
+    _checkPhase();
     final request = context.request;
     final tools = request.tools.where((t) => allowed.contains(t.name)).toList();
     // Conservative fallback when tokenizer/capacity is unavailable. The limit
@@ -486,15 +588,32 @@ class _RuntimeHook<T> extends sdk.AgentHook {
       return const sdk.ToolCallHookResult.abort(error: ConfigurationFailure('toolNotAllowed'));
     }
     await handle._ready();
+    _checkPhase();
+    handle._toolCallsInFlight++;
     return const sdk.ToolCallHookResult.proceed();
+  }
+
+  void _checkPhase() {
+    if (phase != handle.context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
+  }
+}
+
+/// Runs after application hooks, including proposal/confirmation bookkeeping.
+class _RuntimeToolCompletionHook<T> extends sdk.AgentHook {
+  _RuntimeToolCompletionHook(this.handle);
+  final RuntimeRunHandle<T> handle;
+  @override
+  Future<sdk.ToolResultHookResult> afterToolCall(sdk.ToolResultHookContext context) async {
+    handle._toolCallsInFlight--;
+    return sdk.ToolResultHookResult.proceed(result: context.result);
   }
 }
 
 /// Single owner for transport retry. Every attempt revalidates the exact service
 /// revision and compiles policy. SDK repair/empty-response retries are rejected.
 class _RuntimeClient<T> implements sdk.LLMClient {
-  _RuntimeClient(this.handle) : initialIdentity = handle._context.config.capabilities.identity;
-  final CapabilityIdentity initialIdentity;
+  _RuntimeClient(this.handle) : phase = handle.context.phase;
+  final int phase;
   final RuntimeRunHandle<T> handle;
   @override
   Future<sdk.ModelMessage> generate(
@@ -507,6 +626,7 @@ class _RuntimeClient<T> implements sdk.LLMClient {
   }) async {
     for (var attempt = 0; ; attempt++) {
       await handle._ready();
+      if (phase != handle.context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
       final context = handle._context;
       validateTaskCapabilities(handle.request.spec, context.config.capabilities);
       final policy = const DefaultProviderPolicyCompiler().compile(
@@ -517,7 +637,9 @@ class _RuntimeClient<T> implements sdk.LLMClient {
       );
       if (jsonEncode(policy.parameters) != jsonEncode(context.config.policy.parameters) ||
           policy.effective != context.config.policy.effective ||
-          (handle.request.modelOverride != null && handle.request.modelOverride != context.config.model)) {
+          (handle._phases.length == 1 &&
+              handle.request.modelOverride != null &&
+              handle.request.modelOverride != context.config.model)) {
         throw const ConfigurationFailure('policySnapshotMismatch');
       }
       final RuntimeModelBinding binding;
@@ -529,6 +651,7 @@ class _RuntimeClient<T> implements sdk.LLMClient {
         await handle._ready();
         continue;
       }
+      if (phase != handle.context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
       if (binding.serviceRevision != policy.identity.serviceRevision) {
         handle._paused = true;
         await handle._save(RunStatus.paused, failure: 'serviceChanged');
@@ -560,9 +683,7 @@ class _RuntimeClient<T> implements sdk.LLMClient {
         await handle._save(RunStatus.running);
         final response = await Future.any<sdk.ModelMessage>([
           client.generate(
-            initialIdentity == policy.identity
-                ? messages
-                : [...messages.whereType<sdk.SystemMessage>(), sdk.UserMessage.text(jsonEncode(handle.request.input))],
+            messages,
             tools: tools,
             toolChoice: toolChoice,
             modelConfig: policyModelConfig(policy, maxTokens: context.config.capabilities.outputTokens),

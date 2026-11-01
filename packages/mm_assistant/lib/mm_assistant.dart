@@ -39,3 +39,5 @@ export 'src/task_runtime/history.dart';
 export 'src/task_runtime/runtime.dart';
 export 'src/task_runtime/registry.dart';
 export 'src/knowledge/registry.dart';
+export 'src/model_policy/routing.dart';
+export 'src/model_policy/probe.dart';

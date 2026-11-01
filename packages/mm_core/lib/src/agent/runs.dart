@@ -21,11 +21,13 @@ class RunContext {
     required Map<String, String> knowledgeVersions,
     this.parentRunId,
     this.branchId,
-    this.modelDisplayName = '',
-    this.serviceDisplayName = '',
+    String? modelDisplayName,
+    String? serviceDisplayName,
     this.phase = 0,
     Map<String, dynamic> inputRange = const {},
-  }) : inputRange = freezeAgentJson(inputRange),
+  }) : modelDisplayName = modelDisplayName ?? config.modelLabel ?? '',
+       serviceDisplayName = serviceDisplayName ?? config.serviceLabel ?? '',
+       inputRange = freezeAgentJson(inputRange),
        knowledgeVersions = Map.unmodifiable(knowledgeVersions);
   final String runId;
   final String? parentRunId, branchId;
@@ -45,6 +47,8 @@ class RunContext {
       policy: config.policy,
       routingRevision: config.routingRevision,
       source: RoutingSource.parentRun,
+      serviceLabel: config.serviceLabel,
+      modelLabel: config.modelLabel,
     ),
     knowledgeVersions: knowledgeVersions,
     phase: phase,
@@ -197,3 +201,17 @@ abstract interface class RunReader {
 class RunStoreConflict implements Exception {
   const RunStoreConflict();
 }
+
+bool runMayResume(RunManifest run) => switch (run.status) {
+  RunStatus.created ||
+  RunStatus.validating ||
+  RunStatus.running ||
+  RunStatus.awaitingUser ||
+  RunStatus.paused ||
+  RunStatus.interrupted ||
+  RunStatus.partial => true,
+  // Checkpoints are adapter-owned. Keep failed tasks with saved progress in the
+  // deletion impact list conservatively; the adapter validates actual replay.
+  RunStatus.failed => run.checkpoint.isNotEmpty,
+  RunStatus.completed || RunStatus.cancelled => false,
+};

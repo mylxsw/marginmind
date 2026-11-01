@@ -28,7 +28,7 @@ ServiceHttpFactory fake(http.Response Function(http.Request) reply) =>
     );
 http.Response json(Object data, [int status = 200]) => http.Response(jsonEncode(data), status);
 void main() {
-  test('immutable ordered defaults, CRUD, serialization and same service quick model', () {
+  test('legacy catalog defaults, CRUD, revisions and identity-only quick compatibility', () {
     final a = service(ServiceProtocol.openai), b = service(ServiceProtocol.anthropic);
     var value = AssistantServices(services: [a, b]);
     expect(value.configuration!.model, 'large');
@@ -38,7 +38,7 @@ void main() {
     expect(value.configuration!.serviceId, a.id);
     value = value.upsert(a.copyWith(models: [a.models.first.copyWith(enabled: false), a.models.last]));
     expect(value.configuration!.model, 'mini');
-    expect(quickModelFor(a, a.configuration(a.models.first)).model, 'mini');
+    expect(quickModelFor(a, a.configuration(a.models.first)).model, 'large');
     expect(quickModelFor(b, a.configuration(a.models.first)).model, 'large');
     expect(quickModelFor(a.copyWith(enabled: false), a.configuration(a.models.first)).model, 'large');
     expect(value.remove(a.id).configuration, isNull);
@@ -54,7 +54,8 @@ void main() {
       throwsArgumentError,
     );
     expect(() => AssistantServices.fromJson({'version': 2}), throwsFormatException);
-    expect(AssistantServices().upsert(a).services, [a]);
+    expect(AssistantServices().upsert(a).services.single.id, a.id);
+    expect(AssistantServices().upsert(a).services.single.revision, 1);
     expect(
       AssistantServices(services: [service(ServiceProtocol.ollama).copyWith(localEnabled: false)]).configuration,
       isNull,
@@ -138,7 +139,7 @@ void main() {
       expect(list.first.name, 'Chat');
       expect(list.first.tools, ToolCapability.supported);
       expect(list[2].supportsTools, false);
-      expect((await catalog.probe(s, const ServiceModel(id: 'unknown'), 'secret')).tools, ToolCapability.supported);
+      expect((await catalog.probe(s, const ServiceModel(id: 'unknown'), 'secret')).tools, ToolCapability.unknown);
       expect(await catalog.probe(s, list.first, 'secret'), same(list.first));
       expect(await catalog.check(s, 'secret'), ConnectionStatus.ok);
     });
@@ -152,7 +153,7 @@ void main() {
         return json({'ok': true});
       }),
     );
-    expect((await probe.probe(s, s.models.first, 'k')).tools, ToolCapability.supported);
+    expect((await probe.probe(s, s.models.first, 'k')).tools, ToolCapability.unknown);
     for (final status in [400, 401, 403, 500]) {
       final c = ServiceCatalog(
         httpFactory: fake(

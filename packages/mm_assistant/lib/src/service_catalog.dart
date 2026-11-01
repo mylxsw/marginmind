@@ -260,7 +260,7 @@ class ServiceCatalog {
     };
     try {
       await _request(service, key, operation, cancel, body: body);
-      return model.copyWith(tools: ToolCapability.supported);
+      return model; // Acceptance alone is not evidence that tool calling works.
     } on ResearchFailure catch (e) {
       if (e.kind == ResearchFailureKind.cancelled) rethrow;
       // Only an explicit tool rejection is a negative capability result.

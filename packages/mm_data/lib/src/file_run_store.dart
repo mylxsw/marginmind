@@ -120,7 +120,7 @@ class FileRunStore implements RunStore, RunReader {
       if (file is! File || !file.path.endsWith('.json')) continue;
       final j = await _read(file);
       final m = decodeRunManifest(Map<String, dynamic>.from(j!['manifest']));
-      if (!{RunStatus.completed, RunStatus.partial, RunStatus.failed, RunStatus.cancelled}.contains(m.status)) {
+      if (runMayResume(m)) {
         results.add(m);
       }
     }

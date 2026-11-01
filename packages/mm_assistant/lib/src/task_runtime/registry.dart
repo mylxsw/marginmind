@@ -13,10 +13,20 @@ class TaskDefinition<T> {
     required this.validator,
     required this.validateInput,
     this.createBindings,
+    this.retryInput,
+    this.reconcileUnfinished,
     this.tools = const [],
     this.hooks = const [],
     this.maxTurns = 8,
   });
+
+  /// Domain projection of ONLY the validator's missing IDs. Never include
+  /// completed items. The old run and its receipts remain immutable.
+  final Map<String, dynamic> Function(Map<String, dynamic> original, Set<String> missingIds)? retryInput;
+
+  /// For failed runs without validator missing IDs, the domain reconciles
+  /// checkpoint progress/receipts before declaring any range safe to retry.
+  final Set<String> Function(Map<String, dynamic> original, Map<String, dynamic> checkpoint)? reconcileUnfinished;
   final TaskSpec spec;
   final String instructions;
   final T Function(String) decode;

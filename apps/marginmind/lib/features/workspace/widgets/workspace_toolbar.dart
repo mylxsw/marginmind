@@ -87,7 +87,7 @@ class WorkspaceToolbar extends StatelessWidget {
               ? MMSizes.thumbDock
               : context.mmTouchPlatform
               ? MMSizes.tabletPaneHeaderHeight
-              : MMSizes.paneHeaderHeight,
+              : MMSizes.desktopPaneHeaderHeight,
           child: Padding(
             padding: EdgeInsets.only(
               left:

@@ -5,6 +5,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
+import '../../../shared/document_icon.dart';
 import '../../../shared/l10n.dart';
 import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
@@ -342,12 +343,7 @@ class _SourceTopic extends StatelessWidget {
     final l = context.l10n;
     final origin = document.origin;
     final source = origin == null ? document.format.name.toUpperCase() : Uri.parse(origin.url).host;
-    final icon = origin != null || document.format == DocumentFormat.web
-        ? MMIcons.web
-        : switch (document.format) {
-            DocumentFormat.epub || DocumentFormat.mobi || DocumentFormat.azw3 => MMIcons.ebook,
-            _ => MMIcons.document,
-          };
+    final icon = documentIcon(document);
     return Column(
       children: [
         Text(l.mapEmptySourceStart, style: t.callout.copyWith(fontSize: 14, color: c.secondaryLabel)),
