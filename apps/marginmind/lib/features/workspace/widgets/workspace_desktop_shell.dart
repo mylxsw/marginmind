@@ -50,10 +50,11 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final owner = ref.read(workspaceProvider(studySetId).notifier);
     final c = context.mmColors;
     final touch = MMInput.of(context).touchPlatform;
+    final toolbarHeight = touch ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight;
     final documents = state.tabs.active?.kind == WorkspaceTabKind.documentMap;
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
-      toolbarExtent: MMSizes.windowTitlebarHeight,
+      toolbarExtent: toolbarHeight,
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
@@ -69,7 +70,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
           children: [
             MMToolbar.content(
               semanticLabel: l.workspaceDocumentMapTab,
-              height: MMSizes.windowTitlebarHeight,
+              height: toolbarHeight,
               child: Container(
                 padding: EdgeInsets.only(
                   left: switch (MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0) {
@@ -78,7 +79,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   },
                 ),
                 key: const ValueKey('workspace-tab-row'),
-                height: MMSizes.windowTitlebarHeight,
+                height: toolbarHeight,
                 decoration: BoxDecoration(
                   color: touch ? Color.lerp(c.windowBackground, c.sidebarOpaque, .35) : c.windowBackground,
                 ),
@@ -303,7 +304,8 @@ class WorkspaceDesktopShell extends ConsumerWidget {
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;
     final width = box.maxWidth - (hasPanel && box.maxWidth >= 700 ? math.min(360.0, box.maxWidth) : 0);
-    final height = box.maxHeight - MMSizes.windowTitlebarHeight;
+    final height =
+        box.maxHeight - (context.mmTouchPlatform ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight);
     final vertical = context.mmTablet && height > width;
     return MMSplitView.effectiveMode(
       layout,

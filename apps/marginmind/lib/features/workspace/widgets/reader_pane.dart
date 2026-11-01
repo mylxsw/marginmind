@@ -1262,7 +1262,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             children: [
               Positioned.fill(
                 top: !MMInput.of(context).touchPlatform && WorkspaceToolbarScope.maybeOf(context) != null
-                    ? MMSizes.paneHeaderHeight
+                    ? MMSizes.desktopPaneHeaderHeight
                     : 0,
                 child: MMChromeInsets(
                   insets: EdgeInsets.only(

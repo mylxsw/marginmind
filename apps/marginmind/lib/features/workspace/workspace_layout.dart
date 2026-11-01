@@ -106,7 +106,7 @@ class WorkspaceLayoutGeometry {
     required this.readerRect,
     required this.mapRect,
     required this.split,
-    this.headerHeight = MMSizes.paneHeaderHeight,
+    this.headerHeight = MMSizes.desktopPaneHeaderHeight,
   });
   final double sidebarExtent;
   final double headerHeight;
@@ -180,7 +180,7 @@ class WorkspaceLayoutGeometry {
       readerRect: reader,
       mapRect: map,
       split: split,
-      headerHeight: tablet ? MMSizes.tabletPaneHeaderHeight : MMSizes.paneHeaderHeight,
+      headerHeight: tablet ? MMSizes.tabletPaneHeaderHeight : MMSizes.desktopPaneHeaderHeight,
     );
   }
 }
