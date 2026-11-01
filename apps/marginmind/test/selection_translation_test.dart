@@ -107,7 +107,6 @@ void main() {
         MMIcons.underline,
         MMIcons.copy,
         MMIcons.quoteBubble,
-        MMIcons.addNote,
         MMIcons.network,
         MMIcons.translate,
         // The assistant button draws the app's AssistantIcon instead of a glyph.
