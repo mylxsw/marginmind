@@ -1011,6 +1011,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerStyleGreen => '浅绿';
 
   @override
+  String get readerZoomLabel => '缩放';
+
+  @override
+  String get readerZoomDragHint => '按住百分比向上拖动放大，向下拖动缩小';
+
+  @override
   String get readerZoom => '页面';
 
   @override

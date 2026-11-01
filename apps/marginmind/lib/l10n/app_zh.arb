@@ -334,6 +334,8 @@
   "readerStyleDark": "深色",
   "readerStylePaper": "纸质",
   "readerStyleGreen": "浅绿",
+  "readerZoomLabel": "缩放",
+  "readerZoomDragHint": "按住百分比向上拖动放大，向下拖动缩小",
   "readerZoom": "页面",
   "readerAppearance": "阅读外观",
   "readerTheme": "阅读主题",

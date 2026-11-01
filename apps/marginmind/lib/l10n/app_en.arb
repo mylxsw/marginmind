@@ -527,6 +527,8 @@
   "readerStyleDark": "Dark",
   "readerStylePaper": "Paper",
   "readerStyleGreen": "Light Green",
+  "readerZoomLabel": "Zoom",
+  "readerZoomDragHint": "Drag the percentage up to zoom in, down to zoom out",
   "readerZoom": "Page",
   "readerAppearance": "Reading Appearance",
   "readerTheme": "Reading Theme",

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -11,7 +12,6 @@ import 'package:mm_design/mm_design.dart';
 import 'package:marginmind/features/workspace/widgets/reading_settings.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/app_commands.dart';
-import 'package:marginmind/features/workspace/widgets/reader_zoom_control.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/workspace/reflow_session.dart';
 import 'package:marginmind/features/workspace/widgets/reflow_reader.dart';
@@ -284,9 +284,11 @@ void main() {
     expect(tester.widget<InteractiveViewer>(fixed).transformationController!.value.getMaxScaleOnAxis(), 2);
     await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
-    final slider = find.descendant(of: find.byType(ReaderZoomSlider), matching: find.byType(Slider));
-    final sourceSlider = tester.widget<Slider>(slider);
-    sourceSlider.onChanged!(0);
+    final percentage = find.byKey(const ValueKey('reader-zoom-percentage'));
+    final delta = math.log(session.zoom / session.widthZoom) / math.ln2 * 160;
+    final drag = await tester.startGesture(tester.getCenter(percentage), kind: PointerDeviceKind.mouse);
+    await drag.moveBy(Offset(0, delta));
+    await drag.up();
     await tester.pumpAndSettle();
     expect(session.zoom, session.widthZoom);
     await tester.tapAt(const Offset(10, 300));

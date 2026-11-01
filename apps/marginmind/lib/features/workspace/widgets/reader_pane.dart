@@ -751,7 +751,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         PopupMenuItem<VoidCallback>(
           enabled: false,
           child: document?.contentManifest != null
-              ? ReaderZoomSlider.source(
+              ? ReaderZoomControl.source(
                   ratio: () {
                     final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
                     return session.zoom / session.widthZoom;
@@ -763,7 +763,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   },
                   enabled: capabilities.zoom && !crop.editing,
                 )
-              : ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
+              : ReaderZoomControl(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
         ),
         MMDropdownSubmenu<VoidCallback>.items(
           key: const ValueKey('reader-page-fit'),
@@ -883,7 +883,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
     final zoomItems = <PopupMenuEntry<Object>>[
       if (document?.contentManifest != null)
-        ReaderZoomSlider.source(
+        ReaderZoomControl.source(
           ratio: () =>
               ref.read(reflowSessionProvider((widget.studySetId, document!.id))).zoom /
               ref.read(reflowSessionProvider((widget.studySetId, document.id))).widthZoom,
@@ -895,7 +895,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           enabled: capabilities.zoom && !crop.editing,
         )
       else
-        ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
+        ReaderZoomControl(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
       for (final entry in [
         (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
         (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),

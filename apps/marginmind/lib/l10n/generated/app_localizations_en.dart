@@ -1054,6 +1054,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerStyleGreen => 'Light Green';
 
   @override
+  String get readerZoomLabel => 'Zoom';
+
+  @override
+  String get readerZoomDragHint => 'Drag the percentage up to zoom in, down to zoom out';
+
+  @override
   String get readerZoom => 'Page';
 
   @override
