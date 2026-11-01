@@ -134,20 +134,6 @@ class ReaderBookmarks extends ConsumerWidget {
                             onContextMenu: (position) => showMMMenu(context, position: position, entries: entries),
                           ),
                         ),
-                        Builder(
-                          builder: (context) => MMToolbarButton(
-                            icon: MMIcons.more,
-                            tooltip: l.readerEntryActions,
-                            onPressed: () {
-                              final box = context.findRenderObject()! as RenderBox;
-                              showMMMenu(
-                                context,
-                                position: box.localToGlobal(Offset(0, box.size.height)),
-                                entries: entries,
-                              );
-                            },
-                          ),
-                        ),
                       ],
                     );
                   },

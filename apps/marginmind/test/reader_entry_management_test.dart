@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/app/app.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/reader_sidebar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -38,6 +39,38 @@ Future<void> form(WidgetTester tester, String title, String page) async {
 }
 
 void main() {
+  testWidgets('touch outline and bookmark entries open menus on long press without more buttons', (tester) async {
+    final container = await pumpApp(tester, overrides: [touchPlatformProvider.overrideWithValue(true)]);
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    owner.openDocument('c1');
+    await tester.pumpAndSettle();
+    container
+        .read(readerPdfProvider('demo-1'))
+        .debugReport(pageCount: 164, outline: const [MMPdfOutlineItem(title: 'Touch chapter', page: 2)]);
+    owner.showReaderPanel(ReaderPanelMode.outline);
+    await tester.pumpAndSettle();
+    expect(sidebar(find.byIcon(MMIcons.more)), findsNothing);
+    await tester.longPress(sidebar(find.text('Touch chapter')));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Outline Entry…'), findsOneWidget);
+    await tester.tap(find.text('Edit Outline Entry…'));
+    await tester.pumpAndSettle();
+    await form(tester, 'Renamed chapter', '2');
+    expect(owner.content.outlineOn('c1')!.items.single.title, 'Renamed chapter');
+    await owner.addBookmark('c1', 2, 'Touch bookmark');
+    owner.showReaderPanel(ReaderPanelMode.bookmarks);
+    await tester.pumpAndSettle();
+    expect(sidebar(find.byIcon(MMIcons.more)), findsNothing);
+    await tester.longPress(sidebar(find.text('Touch bookmark')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete Bookmark'));
+    await tester.pumpAndSettle();
+    expect(owner.content.bookmarksOn('c1'), isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('personal bookmarks: add, validate page, edit, reorder by mouse, sort, undo', (tester) async {
     final r = await openReader(tester);
     r.controller.showReaderPanel(ReaderPanelMode.bookmarks);

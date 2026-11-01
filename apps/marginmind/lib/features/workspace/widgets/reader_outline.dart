@@ -268,11 +268,10 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                         ),
                       ];
                       final row = MMContextMenuRegion(
-                        longPressEnabled: false,
                         onSecondaryTapUp: (details) =>
                             showMMMenu(context, position: details.globalPosition, entries: menu),
                         child: MMInteractive(
-                          tooltip: '${entry.title}\n${l.outlineDragHint}',
+                          semanticLabel: entry.title,
                           onTap: entry.page > 0 ? () => widget.pdf.jumpToPage(entry.page) : () {},
                           selected: selected,
                           builder: (context, state) => Container(
@@ -325,6 +324,7 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                                 Expanded(
                                   child: Tooltip(
                                     message: entry.title,
+                                    triggerMode: TooltipTriggerMode.manual,
                                     child: Text(
                                       entry.title,
                                       maxLines: 1,
@@ -338,20 +338,6 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                                 ),
                                 if (entry.page > 0)
                                   Padding(padding: const EdgeInsets.only(left: 4), child: MMCount(entry.page)),
-                                Builder(
-                                  builder: (context) => MMToolbarButton(
-                                    icon: MMIcons.more,
-                                    tooltip: l.readerEntryActions,
-                                    onPressed: () {
-                                      final box = context.findRenderObject()! as RenderBox;
-                                      showMMMenu(
-                                        context,
-                                        position: box.localToGlobal(Offset(0, box.size.height)),
-                                        entries: menu,
-                                      );
-                                    },
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -397,17 +383,8 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                                 ),
                               ),
                             );
-                            if (MMInput.of(context).touchPlatform) {
-                              return LongPressDraggable<_OutlineDrag>(
-                                data: _OutlineDrag(widget.document.id, entry.id),
-                                feedback: feedback,
-                                dragAnchorStrategy: pointerDragAnchorStrategy,
-                                onDragUpdate: _scrollWhileDragging,
-                                onDragEnd: (_) => _stopDrag(),
-                                childWhenDragging: Opacity(opacity: 0.35, child: row),
-                                child: row,
-                              );
-                            }
+                            // Touch long press opens the entry menu; mouse drag still reorders.
+                            if (MMInput.of(context).touchPlatform) return row;
                             return Draggable<_OutlineDrag>(
                               data: _OutlineDrag(widget.document.id, entry.id),
                               feedback: feedback,
