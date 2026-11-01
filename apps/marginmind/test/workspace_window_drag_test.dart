@@ -25,6 +25,26 @@ void main() {
     () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null),
   );
 
+  testWidgets('macOS sidebar controls keep the native window-button center when toggled and resized', (tester) async {
+    await openTabs(tester);
+    for (final size in [const Size(1536, 1092), const Size(1000, 800)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      final hide = find.byKey(const ValueKey('workspace-hide-sidebar'));
+      final expandedCenter = tester.getCenter(hide).dy;
+      expect(expandedCenter, 26);
+      await tester.tap(hide);
+      await tester.pumpAndSettle();
+      final show = find.byKey(const ValueKey('workspace-show-sidebar'));
+      expect(tester.getCenter(show).dy, expandedCenter);
+      expect(tester.getRect(show).left, greaterThanOrEqualTo(MMSizes.windowButtonsWidth));
+      await tester.tap(show);
+      await tester.pumpAndSettle();
+      expect(tester.getCenter(hide).dy, expandedCenter);
+    }
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
   testWidgets('tab-row empty space drags and zooms the window; content toolbars do neither', (tester) async {
     await openTabs(tester);
     final gap = find.byKey(const ValueKey('workspace-tab-drag-area'));

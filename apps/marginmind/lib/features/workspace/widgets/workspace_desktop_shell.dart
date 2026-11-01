@@ -49,7 +49,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final owner = ref.read(workspaceProvider(studySetId).notifier);
     final c = context.mmColors;
     final touch = MMInput.of(context).touchPlatform;
-    final toolbarHeight = touch ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight;
+    final toolbarHeight = _titlebarHeight(context);
     final documents = state.tabs.active?.kind == WorkspaceTabKind.documentMap;
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
@@ -332,11 +332,16 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     );
   }
 
+  // AppKit's unified toolbar and the expanded sidebar both center controls
+  // at y=26. The collapsed button must use that same 52-point title row.
+  double _titlebarHeight(BuildContext context) => context.mmTouchPlatform || WindowChrome.showsWindowButtons
+      ? MMSizes.windowTitlebarHeight
+      : MMSizes.desktopWindowTitlebarHeight;
+
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;
     final width = box.maxWidth - (hasPanel && box.maxWidth >= 700 ? math.min(360.0, box.maxWidth) : 0);
-    final height =
-        box.maxHeight - (context.mmTouchPlatform ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight);
+    final height = box.maxHeight - _titlebarHeight(context);
     final vertical = context.mmTablet && height > width;
     return MMSplitView.effectiveMode(
       layout,
