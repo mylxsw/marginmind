@@ -44,10 +44,11 @@ abstract final class MMIcons {
   static const IconData trash = LucideIcons.trash;
   static const IconData editNote = LucideIcons.squarePen;
   static const IconData vocabulary = LucideIcons.bookA;
-  static const IconData ebook = CupertinoIcons.book;
-  static const IconData markdown = LucideIcons.hash;
+  static const IconData ebook = LucideIcons.book;
+  static const IconData mobi = LucideIcons.bookOpenText;
+  static const IconData markdown = LucideIcons.fileCode;
   static const IconData readingSettings = LucideIcons.aLargeSmall;
-  static const IconData document = CupertinoIcons.doc_text; // doc.text
+  static const IconData document = LucideIcons.fileText;
   static const IconData collections = LucideIcons.libraryBig;
   static const IconData studySet = CupertinoIcons.book_fill; // books.vertical.fill
   static const organizeNote = LucideIcons.notebookPen;
