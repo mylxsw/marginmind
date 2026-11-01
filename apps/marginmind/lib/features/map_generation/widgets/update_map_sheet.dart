@@ -230,8 +230,8 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
                             tooltip: l.mapUpdateScope,
                             onSelected: (v) => setState(() => _onlyNew = v),
                             itemBuilder: (_) => [
-                              MMDropdownItem(value: true, icon: MMIcons.addDocument, child: Text(l.mapUpdateScopeNew)),
-                              MMDropdownItem(value: false, icon: MMIcons.collections, child: Text(l.mapUpdateScopeAll)),
+                              MMDropdownItem(value: true, child: Text(l.mapUpdateScopeNew)),
+                              MMDropdownItem(value: false, child: Text(l.mapUpdateScopeAll)),
                             ],
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

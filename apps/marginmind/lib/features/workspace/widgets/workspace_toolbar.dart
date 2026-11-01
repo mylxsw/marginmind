@@ -118,7 +118,8 @@ class WorkspaceToolbar extends StatelessWidget {
                         ? MMSpacing.m
                         : MMToolbarSpacing.group,
                     menuIcon: menuIcon,
-                    cascadingMenu: menuIcon != null,
+                    cascadingMenu:
+                        menuIcon != null || menuEntries.any((entry) => entry is MMDropdownSubmenu<VoidCallback>),
                     menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                     trailingIds: {
                       ...trailingItems.map((item) => item.id),

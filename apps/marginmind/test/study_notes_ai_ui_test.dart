@@ -1,3 +1,5 @@
+import 'package:marginmind/features/study_notes/note_model_route.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -9,7 +11,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/app.dart' show touchPlatformProvider, phoneProvider;
 import 'package:marginmind/app/providers.dart';
-import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/study_notes/note_session.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_assistant/mm_assistant.dart';
@@ -139,8 +140,17 @@ Future<ProviderContainer> openAi(
     overrides: [
       if (size.width < 600) touchPlatformProvider.overrideWithValue(true),
       if (size.width < 600) phoneProvider.overrideWithValue(true),
-      assistantConfiguredProvider.overrideWith((ref) async => true),
-      noteSessionFactoryProvider.overrideWithValue(factory ?? () async => FakeNoteSession(fake)),
+      noteAiAvailableProvider.overrideWith((ref) async => true),
+      noteRoutingRowProvider.overrideWith(
+        (ref, model) async => const RoutingRowState(
+          effective: ModelReference('fixture', 'model'),
+          source: RoutingSource.functionBinding,
+          issue: RoutingIssue.none,
+        ),
+      ),
+      noteSessionFactoryProvider.overrideWithValue(
+        ({studySetId, sessionId, modelOverride}) => (factory ?? () async => FakeNoteSession(fake))(),
+      ),
     ],
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');

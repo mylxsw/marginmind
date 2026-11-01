@@ -4,6 +4,8 @@ import 'dart:ui' show ImageFilter;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:mm_assistant/mm_assistant.dart';
 
 import 'package:flutter/material.dart';
@@ -13,8 +15,8 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../shared/l10n.dart';
 import '../../app/providers.dart';
-import '../assistant/assistant_settings.dart';
 import 'note_session.dart';
+import 'note_model_route.dart';
 import 'note_updates.dart';
 import 'note_update_sources.dart';
 import 'note_organize_sheet.dart';
@@ -86,9 +88,9 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     setState(() => _updateBusy = true);
     NoteSession? session;
     try {
-      final local = note.settings.depth == NoteDepth.none || !(ref.read(assistantConfiguredProvider).value ?? false);
+      final local = note.settings.depth == NoteDepth.none;
       if (!local && changes.materials.items.isNotEmpty) {
-        session = await ref.read(noteSessionFactoryProvider)();
+        session = await ref.read(noteSessionFactoryProvider)(studySetId: widget.studySetId);
         if (!mounted || widget.noteId != noteId || generation != _updateGeneration) return;
         _updateSession = session;
       }
@@ -379,7 +381,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(assistantConfiguredProvider);
+    ref.watch(noteAiAvailableProvider);
     ref.watch(noteAiMarkersProvider(widget.noteId));
     final provider = workspaceProvider(widget.studySetId);
     ref.listen(provider.select((s) => s.pending), (_, pending) {
@@ -503,7 +505,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                               tooltip: l.readerOutline,
                               itemBuilder: (_) => [
                                 for (final section in note.sections)
-                                  MMDropdownItem(value: section.id, icon: MMIcons.section, child: Text(section.title)),
+                                  MMDropdownItem(value: section.id, child: Text(section.title)),
                               ],
                               onSelected: _jump,
                               child: _toolbarLabel(l.readerOutline),
@@ -514,7 +516,6 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             itemBuilder: (_) => [
                               for (final template in NoteTemplate.values)
                                 MMDropdownItem(
-                                  icon: MMIcons.template,
                                   value: template,
                                   child: Row(
                                     children: [
@@ -525,7 +526,13 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                                             : null,
                                       ),
                                       const SizedBox(width: MMSpacing.s),
-                                      Text(noteTemplateLabel(l, template)),
+                                      Flexible(
+                                        child: Text(
+                                          noteTemplateLabel(l, template),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -1312,7 +1319,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         ),
         MMMenuItem(
           context.l10n.noteExplain,
-          ref.read(assistantConfiguredProvider).value == true && !_aiBusy ? () => _explain(note, block) : null,
+          ref.read(noteAiAvailableProvider).value == true && !_aiBusy ? () => _explain(note, block) : null,
           icon: MMIcons.explain,
         ),
         const MMMenuDivider(),
@@ -1352,9 +1359,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                 NoteRewrite.concise => context.l10n.noteConcise,
                 NoteRewrite.expand => context.l10n.noteExpand,
               },
-              ref.read(assistantConfiguredProvider).value == true && !_aiBusy
-                  ? () => _rewrite(note, block, mode)
-                  : null,
+              ref.read(noteAiAvailableProvider).value == true && !_aiBusy ? () => _rewrite(note, block, mode) : null,
               icon: MMIcons.editNote,
             ),
         if (block.origin != NoteOrigin.user)
@@ -1368,7 +1373,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         }, icon: MMIcons.mindMap),
         MMMenuItem(
           context.l10n.noteCreateReview,
-          ref.read(assistantConfiguredProvider).value == true && !_aiBusy ? () => _createAiReview(note, block) : null,
+          ref.read(noteAiAvailableProvider).value == true && !_aiBusy ? () => _createAiReview(note, block) : null,
           icon: MMIcons.review,
         ),
       ],
@@ -1397,6 +1402,22 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     _ => '',
   };
 
+  Future<String> _editSessionId(String attempt, {bool release = false}) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final storageKey = 'studyNotes.pendingEdits.${widget.studySetId}';
+    final raw = prefs.getString(storageKey);
+    final saved = raw == null ? <String, dynamic>{} : Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    final key = sha256.convert(utf8.encode(attempt)).toString();
+    final id = saved[key] as String? ?? newId();
+    if (release) {
+      saved.remove(key);
+    } else {
+      saved[key] = id;
+    }
+    if (!await prefs.setString(storageKey, jsonEncode(saved))) throw StateError('Note edit save failed');
+    return id;
+  }
+
   Future<void> _createAiReview(StudyNote note, StudyNoteBlock block) async {
     if (_aiBusy) return;
     final section = note.sections.where((s) => s.blocks.any((b) => b.id == block.id)).firstOrNull;
@@ -1409,8 +1430,10 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     }
     setState(() => _aiBusy = true);
     NoteSession? session;
+    final attempt = 'review:${note.id}:${block.id}:${_blockText(block)}';
     try {
-      session = await ref.read(noteSessionFactoryProvider)();
+      final sessionId = await _editSessionId(attempt);
+      session = await ref.read(noteSessionFactoryProvider)(studySetId: widget.studySetId, sessionId: sessionId);
       if (!mounted) return;
       _editSession = session;
       final question = await session.reviewQuestion(
@@ -1421,7 +1444,10 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           ],
         ),
       );
-      if (mounted) await _review(annotation, question);
+      if (mounted) {
+        await _review(annotation, question);
+        await _editSessionId(attempt, release: true);
+      }
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.noteFailed);
     } finally {
@@ -1435,8 +1461,10 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     if (_aiBusy) return;
     setState(() => _aiBusy = true);
     NoteSession? session;
+    final attempt = '${note.id}:${block.id}:${mode.name}:${jsonEncode(block.toJson())}';
     try {
-      session = await ref.read(noteSessionFactoryProvider)();
+      final sessionId = await _editSessionId(attempt);
+      session = await ref.read(noteSessionFactoryProvider)(studySetId: widget.studySetId, sessionId: sessionId);
       if (!mounted) return;
       _editSession = session;
       final text = await session.rewrite(_blockText(block), mode);
@@ -1454,6 +1482,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         text: block is PointsBlock ? null : text,
         items: block is PointsBlock ? text.split('\n') : null,
       );
+      await _editSessionId(attempt, release: true);
       if (mounted) _undoHud(context.l10n.noteAiEdited);
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.noteFailed);
@@ -1477,8 +1506,10 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     if (material == null) return;
     setState(() => _aiBusy = true);
     NoteSession? session;
+    final attempt = 'explain:${note.id}:${quote.id}:${material.text}';
     try {
-      session = await ref.read(noteSessionFactoryProvider)();
+      final sessionId = await _editSessionId(attempt);
+      session = await ref.read(noteSessionFactoryProvider)(studySetId: widget.studySetId, sessionId: sessionId);
       if (!mounted) return;
       _editSession = session;
       final text = await session.explain(material);
@@ -1505,6 +1536,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           ],
         ),
       );
+      await _editSessionId(attempt, release: true);
       if (mounted) _undoHud(context.l10n.noteGenerated);
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.noteFailed);

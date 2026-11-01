@@ -813,9 +813,9 @@ void main() {
       await tester.pumpAndSettle();
       final item = find.byKey(const ValueKey('map-generate-menu-item'));
       expect(find.descendant(of: item, matching: find.text('生成脑图')), findsOneWidget);
-      expect(tester.widget<MMDropdownItem<VoidCallback>>(item).enabled, isTrue);
+      expect(tester.widget<MenuItemButton>(item).onPressed, isNotNull);
       final icon = find.descendant(of: item, matching: find.byIcon(MMIcons.generateMap));
-      expect(IconTheme.of(tester.element(icon)).color, tester.element(icon).mmColors.label);
+      expect(IconTheme.of(tester.element(icon)).color, Theme.of(tester.element(icon)).colorScheme.onSurfaceVariant);
       final menu = find.byWidgetPredicate((w) => w is MMAdaptiveToolbar && w.menuKey == const ValueKey('map-more'));
       final entries = tester.widget<MMAdaptiveToolbar>(menu).menuEntries;
       for (final label in ['添加子主题', '在后面添加同级节点', '添加关联线', '添加概要', '添加笔记', '插入图片…', '标签…', '显示详情']) {
@@ -848,7 +848,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('map-more')));
       await tester.pump();
       expect(find.descendant(of: item, matching: find.text('生成中')), findsOneWidget);
-      expect(tester.widget<MMDropdownItem<VoidCallback>>(item).enabled, isFalse);
+      expect(tester.widget<MenuItemButton>(item).onPressed, isNull);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pump();
 
@@ -858,7 +858,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('map-more')));
       await tester.pumpAndSettle();
       expect(find.descendant(of: item, matching: find.text('审阅中')), findsOneWidget);
-      expect(tester.widget<MMDropdownItem<VoidCallback>>(item).enabled, isFalse);
+      expect(tester.widget<MenuItemButton>(item).onPressed, isNull);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
     });

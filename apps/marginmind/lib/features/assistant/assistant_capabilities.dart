@@ -16,6 +16,25 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
   static const settingsKey = 'assistant.capability-profiles.v1';
   static final _queues = Expando<Future<void>>();
   Map<String, Map<String, dynamic>> _rows = {};
+  String? _serviceSnapshot;
+
+  void _discard() {
+    clear();
+    _rows = {};
+    _serviceSnapshot = null;
+  }
+
+  // Preferences change synchronously before platform persistence completes.
+  // Fence the published snapshot even while a queued refresh is still waiting.
+  void _validateSnapshot() {
+    if (_serviceSnapshot != prefs.getString(AssistantServicesStore.settingsKey)) _discard();
+  }
+
+  @override
+  ModelCapabilityProfile lookup(CapabilityIdentity identity) {
+    _validateSnapshot();
+    return super.lookup(identity);
+  }
 
   Future<T> _serial<T>(Future<T> Function() action) {
     final next = (_queues[prefs] ?? Future<void>.value()).then((_) => action());
@@ -27,6 +46,7 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
 
   /// Independent remote acceptance evidence. It never grants semantic support.
   Map<String, dynamic>? probeObservation(CapabilityIdentity identity) {
+    _validateSnapshot();
     final probe = _rows[_key(identity)]?['probe'];
     return probe == null ? null : freezeAgentJson(Map<String, dynamic>.from(probe as Map));
   }
@@ -39,8 +59,15 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
       _serial(() => _refresh(probed: identity, reasoning: reasoning));
 
   Future<void> _refresh({CapabilityIdentity? probed, ReasoningPolicy? reasoning}) async {
-    clear();
-    _rows = {};
+    try {
+      await _buildAndPublish(probed: probed, reasoning: reasoning);
+    } catch (_) {
+      _discard();
+      rethrow;
+    }
+  }
+
+  Future<void> _buildAndPublish({CapabilityIdentity? probed, ReasoningPolicy? reasoning}) async {
     final raw = prefs.getString(settingsKey);
     final previous = <String, Map<String, dynamic>>{};
     if (raw != null) {
@@ -103,6 +130,7 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
       }
     }
     final catalog = await services.load();
+    final serviceSnapshot = prefs.getString(AssistantServicesStore.settingsKey);
     final rows = <String, Map<String, dynamic>>{};
     final profiles = <ModelCapabilityProfile>[];
     for (final service in catalog.services) {
@@ -138,6 +166,7 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
       try {
         if (!await prefs.setString(settingsKey, encoded)) throw StateError('Capability persistence failed');
       } catch (_) {
+        _discard();
         await prefs.reload();
         rethrow;
       }
@@ -145,9 +174,13 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
     // An edit while the platform write was pending makes this refresh stale.
     // Stale identity rows are harmless on disk and pruned by the next refresh.
     final latest = await services.load();
-    if (jsonEncode(latest.toJson()) != jsonEncode(catalog.toJson())) {
+    if (prefs.getString(AssistantServicesStore.settingsKey) != serviceSnapshot ||
+        jsonEncode(latest.toJson()) != jsonEncode(catalog.toJson())) {
       throw const ConfigurationFailure('serviceConfigurationChanged');
     }
+    // Publish the fully validated snapshot without yielding to another caller.
+    clear();
+    _serviceSnapshot = serviceSnapshot;
     _rows = rows;
     for (final profile in profiles) {
       super.put(profile);

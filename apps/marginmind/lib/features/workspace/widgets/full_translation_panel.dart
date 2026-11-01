@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../shared/l10n.dart';
 import '../../../app/providers.dart';
 import '../full_translation.dart';
+import '../../assistant/settings/ai_task_status.dart';
 import '../reader_compare.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
@@ -189,7 +190,23 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
                   ),
                 ],
               ),
-              Text(stateLine, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+              if (job.runContext != null)
+                RunStatusCapsule(
+                  status: switch (job.state) {
+                    TranslationJobState.running => RunStatus.running,
+                    TranslationJobState.review => RunStatus.awaitingUser,
+                    TranslationJobState.done => job.failures.isEmpty ? RunStatus.completed : RunStatus.partial,
+                    TranslationJobState.stopped => RunStatus.cancelled,
+                    TranslationJobState.paused when job.pauseReason == TranslationPauseReason.quit =>
+                      RunStatus.interrupted,
+                    _ => RunStatus.paused,
+                  },
+                  done: counts.done,
+                  total: counts.total,
+                  unfinished: counts.fail,
+                )
+              else
+                Text(stateLine, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
             ],
           ),
           const SizedBox(height: 12),
@@ -514,7 +531,14 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
         const SizedBox(height: 4),
         _detailRow(
           l.fullTranslationDetailModelCalls,
-          l.fullTranslationDetailCalls(job.model.isNotEmpty ? job.model : 'AI', job.usage.requests),
+          l.fullTranslationDetailCalls(
+            job.runContext?.modelDisplayName.isNotEmpty == true
+                ? job.runContext!.modelDisplayName
+                : job.model.isNotEmpty
+                ? job.model
+                : 'AI',
+            job.usage.requests,
+          ),
           c,
           context,
         ),
