@@ -428,7 +428,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     ),
                   if (!compact)
                     MMToolbarButton(
-                      icon: MMIcons.network,
+                      icon: MMIcons.mindMap,
                       tooltip: hasCard ? l.locateCard : l.addToMapAction,
                       onPressed: capabilities.excerpt
                           ? () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)

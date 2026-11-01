@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -9,6 +10,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_research/mm_research.dart';
 
 import 'runtime.dart';
+import 'model_policy/compiler.dart';
 import 'compatible_stream.dart';
 
 enum AssistantProvider { claude, responses, compatible, ollama, gemini }
@@ -66,7 +68,24 @@ AssistantConnection connectAssistant(
   HttpClientAdapter? adapter,
   bool retryRequests = true,
   bool perRequestBudget = false,
+  ProviderCallPolicy? callPolicy,
 }) {
+  if (callPolicy != null) {
+    final protocol = switch (config.provider) {
+      AssistantProvider.claude => ModelProtocol.anthropicMessages,
+      AssistantProvider.responses => ModelProtocol.responses,
+      AssistantProvider.gemini => ModelProtocol.gemini,
+      AssistantProvider.ollama => ModelProtocol.ollamaChat,
+      AssistantProvider.compatible => ModelProtocol.chatCompletions,
+    };
+    final identity = callPolicy.identity;
+    if (identity.model != ModelReference(config.serviceId ?? '', config.model) ||
+        identity.protocol != protocol ||
+        identity.adapterVersion != modelPolicyAdapterVersion ||
+        identity.endpointFingerprint != modelEndpointFingerprint(protocol, config.endpoint)) {
+      throw const ConfigurationFailure('policyConnectionMismatch');
+    }
+  }
   suppressAssistantDiagnostics();
   final timeout = requestTimeout ?? budget?.duration ?? const Duration(minutes: 2);
   if (timeout <= Duration.zero) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
@@ -167,6 +186,15 @@ AssistantConnection connectAssistant(
             DioException(requestOptions: options, error: const ResearchFailure(ResearchFailureKind.invalidRequest)),
           );
           return;
+        }
+        if (callPolicy != null) {
+          try {
+            final data = options.data is String ? jsonDecode(options.data as String) : options.data;
+            verifyPolicyPayload(callPolicy, Map<String, dynamic>.from(data as Map));
+          } catch (error) {
+            handler.reject(DioException(requestOptions: options, error: error));
+            return;
+          }
         }
         options.followRedirects = false;
         options.validateStatus = (code) => code == 200;

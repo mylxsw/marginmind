@@ -40,6 +40,7 @@ class WorkspaceToolbar extends StatelessWidget {
     required this.label,
     this.menuIcon,
     this.overflowLabel,
+    this.leadingPadding,
   });
   final List<MMToolbarItem> items;
   final List<MMToolbarItem> trailingItems;
@@ -48,6 +49,7 @@ class WorkspaceToolbar extends StatelessWidget {
   final String label;
   final Widget? menuIcon;
   final String? overflowLabel;
+  final double? leadingPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -76,71 +78,78 @@ class WorkspaceToolbar extends StatelessWidget {
       ...actions.where((item) => item.id == 'assistant'),
       ...trailingItems,
     ];
-    final toolbar = ColoredBox(
-      color: phone ? context.mmColors.surface : context.mmColors.windowBackground,
-      child: MMToolbar.content(
-        semanticLabel: label,
-        height: phone ? MMSizes.thumbDock : MMSizes.paneHeaderHeight,
-        child: Padding(
-          padding: EdgeInsets.only(
-            left:
-                (phone
-                    ? 6
-                    : context.mmTablet
-                    ? 16
-                    : 12) +
-                inset,
-            right: phone
-                ? 6
-                : context.mmTablet
-                ? 16
-                : 12,
-          ),
-          child: Row(
-            children: [
-              if (leading != null) ...[leading, const SizedBox(width: MMSpacing.s)],
-              Expanded(
-                child: MMAdaptiveToolbar(
-                  items: toolbarItems,
-                  menuLabel: label,
-                  overflowLabel: overflowLabel,
-                  spacing: phone
-                      ? MMSpacing.xs
-                      : context.mmTablet
-                      ? MMSpacing.m
-                      : MMToolbarSpacing.group,
-                  menuIcon: menuIcon,
-                  cascadingMenu: menuIcon != null,
-                  menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
-                  trailingIds: {
-                    ...trailingItems.map((item) => item.id),
-                    if (menuIcon != null && !portraitTablet) ...{'compare', 'documents'},
-                    if (readerCompanions.isNotEmpty && actions.isEmpty) ...{'compare', 'documents'},
-                    if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),
-                    ':menu',
-                  },
-                  groups: phone
-                      ? const []
-                      : [
-                          if (menuIcon != null) {'select', 'highlight', 'underline', 'ink', 'area', 'sync'},
-                          if (context.mmTablet) ...[
-                            {'map-view', 'map-style'},
-                            if (!portraitTablet) {'compare', 'documents'},
+    final toolbar = MMCompactToolbarScope(
+      child: ColoredBox(
+        color: phone ? context.mmColors.surface : context.mmColors.windowBackground,
+        child: MMToolbar.content(
+          semanticLabel: label,
+          height: phone
+              ? MMSizes.thumbDock
+              : context.mmTouchPlatform
+              ? MMSizes.tabletPaneHeaderHeight
+              : MMSizes.paneHeaderHeight,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left:
+                  (leadingPadding ??
+                      (phone
+                          ? 6
+                          : context.mmTablet
+                          ? 16
+                          : 6)) +
+                  inset,
+              right: phone
+                  ? 6
+                  : context.mmTablet
+                  ? 16
+                  : 12,
+            ),
+            child: Row(
+              children: [
+                if (leading != null) ...[leading, const SizedBox(width: MMSpacing.s)],
+                Expanded(
+                  child: MMAdaptiveToolbar(
+                    items: toolbarItems,
+                    menuLabel: label,
+                    overflowLabel: overflowLabel,
+                    spacing: phone
+                        ? MMSpacing.xs
+                        : context.mmTablet
+                        ? MMSpacing.m
+                        : MMToolbarSpacing.group,
+                    menuIcon: menuIcon,
+                    cascadingMenu: menuIcon != null,
+                    menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
+                    trailingIds: {
+                      ...trailingItems.map((item) => item.id),
+                      if (menuIcon != null && !portraitTablet) ...{'compare', 'documents'},
+                      if (readerCompanions.isNotEmpty && actions.isEmpty) ...{'compare', 'documents'},
+                      if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),
+                      ':menu',
+                    },
+                    groups: phone
+                        ? const []
+                        : [
+                            if (menuIcon != null) {'select', 'highlight', 'underline', 'ink', 'area', 'sync'},
+                            if (context.mmTablet) ...[
+                              {'map-view', 'map-style'},
+                              if (!portraitTablet) {'compare', 'documents'},
+                            ],
+                            {'layout-reader', 'layout-split', 'layout-map'},
+                            if (portraitTablet) {'compare', 'documents'},
                           ],
-                          {'layout-reader', 'layout-split', 'layout-map'},
-                          if (portraitTablet) {'compare', 'documents'},
-                        ],
-                  menuEntries: [
-                    ...menuEntries,
-                    if (ownsActions && scope != null && scope.menuEntries.isNotEmpty) ...[
-                      if (menuEntries.isNotEmpty) const PopupMenuDivider(),
-                      ...scope.menuEntries,
+                    menuEntries: [
+                      ...menuEntries,
+                      if (ownsActions && scope != null && scope.menuEntries.isNotEmpty) ...[
+                        if (menuEntries.isNotEmpty) const PopupMenuDivider(),
+                        ...scope.menuEntries,
+                      ],
+                      ...trailingMenuEntries,
                     ],
-                    ...trailingMenuEntries,
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

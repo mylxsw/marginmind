@@ -1270,7 +1270,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         ? MMInput.of(context).phone
                               ? MMSizes.phoneWorkspaceToolbarHeight
                               : WorkspaceToolbarScope.maybeOf(context) != null
-                              ? MMSizes.paneHeaderHeight
+                              ? MMSizes.tabletPaneHeaderHeight
                               : chrome.top
                         : chrome.top,
                     bottom: chrome.bottom,
@@ -1423,7 +1423,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             builder: (vocabularyHints, onVocabularyTap, vocabularyViewportChanged) => MMPdfView(
               key: ocr == null || ocr.revision == 0 ? ValueKey(doc.id) : ValueKey((doc.id, ocr.revision)),
               pageBorderColor: MMInput.of(context).phone ? Colors.transparent : context.mmColors.border,
-              pageSpacing: MMInput.of(context).phone ? 0 : 16,
+              pageSpacing: MMInput.of(context).phone ? 0 : 8,
               filePath: ocr?.document?.path ?? controller.filePath(doc),
               controller: pdf,
               scrollProfile: !context.mmTouchPlatform

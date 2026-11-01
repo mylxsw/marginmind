@@ -1,0 +1,21 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "input"
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "temperature": null,
+    "maxOutputTokens": 4096,
+    "topP": null,
+    "topK": null,
+    "thinkingConfig": {
+      "thinkingBudget": 0
+    }
+  }
+}

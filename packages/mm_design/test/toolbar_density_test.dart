@@ -100,7 +100,7 @@ void main() {
                                 selected: true,
                               ),
                               MMToolbarButton(icon: MMIcons.compare, tooltip: 'Split', onPressed: () {}),
-                              MMToolbarButton(icon: MMIcons.network, tooltip: 'Map', onPressed: () {}),
+                              MMToolbarButton(icon: MMIcons.mindMap, tooltip: 'Map', onPressed: () {}),
                             ],
                           ),
                           const SizedBox(height: 12),

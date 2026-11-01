@@ -118,7 +118,7 @@ void main() {
   testWidgets('layout buttons switch panes and keep them mounted', (tester) async {
     await openFirstSet(tester);
     expect(find.byType(ReaderPane), findsOneWidget);
-    await tester.tap(find.byIcon(MMIcons.layoutMap));
+    await tester.tap(find.descendant(of: find.byType(MMToolbar), matching: find.byIcon(MMIcons.layoutMap)));
     await tester.pumpAndSettle();
     expect(find.byType(ReaderPane), findsNothing);
     expect(find.byType(ReaderPane, skipOffstage: false), findsOneWidget);

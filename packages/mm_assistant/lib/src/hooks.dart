@@ -95,7 +95,7 @@ class PolicyHook extends AgentHook {
     if (remaining <= 0) return const ModelCallHookResult.abort(error: ResearchFailure(ResearchFailureKind.budget));
     return ModelCallHookResult.proceed(
       request: request.copyWith(
-        modelConfig: ModelConfig(model: config.model, maxTokens: remaining, extra: config.extra),
+        modelConfig: ModelConfig.fromJson({...config.toJson(), 'maxTokens': remaining}),
         tools: tools,
         clearToolChoice: !toolsEnabled,
       ),
