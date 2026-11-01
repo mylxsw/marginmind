@@ -59,7 +59,7 @@ Matrix4 zoomMapAt(Matrix4 m, Offset focal, double factor) {
 }
 
 /// The card width handle's hit area, centered on the card's edge.
-const _resizeHandleWidth = 10.0;
+const _resizeHandleWidth = 22.0;
 
 /// Height of the note format bar, to decide whether it fits above a note.
 const _formatBarHeight = 30.0;
@@ -1740,11 +1740,26 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             onHorizontalDragCancel: _endResize,
             child: Center(
               child: Container(
-                width: 3,
-                height: math.min(22, math.max(0, shown.height - MMSpacing.s * 2)),
+                width: 18,
+                height: math.min(44, math.max(0, shown.height - MMSpacing.s * 2)),
                 decoration: BoxDecoration(
-                  color: c.accent.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(2),
+                  color: c.brightness == Brightness.dark ? const Color(0xFF35443A) : const Color(0xFFE5EFE7),
+                  border: Border.all(color: _nodeSelectionColor(c).withValues(alpha: 0.75)),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < 3; i++)
+                        Container(
+                          width: 3,
+                          height: 3,
+                          margin: const EdgeInsets.symmetric(vertical: 1.5),
+                          decoration: BoxDecoration(color: _nodeSelectionColor(c), shape: BoxShape.circle),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -2959,7 +2974,7 @@ class _NodeView extends StatelessWidget {
     final c = context.mmColors;
     final t = context.mmContentText;
     final ring = [
-      if (selected || flashing) BoxShadow(color: c.accent, spreadRadius: 3),
+      if (flashing) BoxShadow(color: c.accent, spreadRadius: 3),
       if (flashing) BoxShadow(color: c.accentTint, spreadRadius: 9),
     ];
     final (Color own, double radius, List<BoxShadow> shadow) = switch (spec.kind) {
@@ -3239,9 +3254,11 @@ class _NodeView extends StatelessWidget {
         look?.border ??
         (spec.kind == _Kind.excerpt || spec.kind == _Kind.image || spec.kind == _Kind.research ? c.border : null);
     return CustomPaint(
-      foregroundPainter: c.flat
-          ? _FlatNodeStroke(flatRadius, flatBorder, selected || flashing ? c.accent : null)
-          : null,
+      foregroundPainter: _FlatNodeStroke(
+        flatRadius,
+        c.flat ? flatBorder : null,
+        flashing ? c.accent : (selected ? _nodeSelectionColor(c) : null),
+      ),
       child: AnimatedContainer(
         duration: MMMotion.standard,
         decoration: BoxDecoration(
@@ -3884,6 +3901,9 @@ class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
   bool shouldRelayout(_SelectionToolbarLayout old) => old.bounds != bounds || old.topInset != topInset;
 }
 
+Color _nodeSelectionColor(MMColors colors) =>
+    colors.brightness == Brightness.dark ? const Color(0xFF91C5A4) : const Color(0xFF437A5A);
+
 /// Strokes never consume the node's measured text width.
 class _FlatNodeStroke extends CustomPainter {
   const _FlatNodeStroke(this.radius, this.border, this.selection);
@@ -3903,7 +3923,7 @@ class _FlatNodeStroke extends CustomPainter {
     }
     if (selection case final color?) {
       canvas.drawRRect(
-        RRect.fromRectAndRadius(rect.inflate(3), Radius.circular(radius + 3)),
+        RRect.fromRectAndRadius(rect.deflate(0.75), Radius.circular(radius)),
         Paint()
           ..color = color
           ..style = PaintingStyle.stroke
