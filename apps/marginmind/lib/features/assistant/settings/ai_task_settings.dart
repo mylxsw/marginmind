@@ -873,7 +873,10 @@ class _RouteRow extends StatelessWidget {
               )
             : Row(
                 children: [
-                  Flexible(child: name),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: constraints.maxWidth * .5),
+                    child: name,
+                  ),
                   const SizedBox(width: MMSpacing.m),
                   Expanded(
                     child: Align(alignment: Alignment.centerRight, child: picker),

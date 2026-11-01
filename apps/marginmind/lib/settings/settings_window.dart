@@ -71,6 +71,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
   late AiTaskFocus? _aiFocus = widget.initialFocus;
   ModelSettingsRequest? _modelsRequest;
   bool _closing = false;
+  final _windowFocus = FocusNode(debugLabel: 'Settings window');
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
 
   @override
   void dispose() {
+    _windowFocus.dispose();
     _aiDraft
       ..removeListener(_draftChanged)
       ..dispose();
@@ -98,6 +100,8 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
   }
 
   void _go(SettingsTab tab, {AiTaskFocus? focus, String? serviceId, bool addService = false}) {
+    // The old page's controls go away: hold focus on the window, never on a removed node.
+    if (tab != _tab) _windowFocus.requestFocus();
     setState(() {
       _tab = tab;
       if (tab == SettingsTab.aiTasks) _aiFocus = focus;
@@ -192,7 +196,11 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
             const SingleActivator(LogicalKeyboardKey.keyS, meta: true): save,
             const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
           },
-          child: Focus(autofocus: true, child: Builder(builder: _build)),
+          child: Focus(
+            focusNode: _windowFocus,
+            autofocus: true,
+            child: Builder(builder: _build),
+          ),
         ),
       ),
     );
