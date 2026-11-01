@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/document_translation_runtime.dart';
+
 // Production reader and real PDFium; only the model is an offline test double.
 // flutter run -d macos -t example/translation_acceptance.dart
 import 'dart:io';
@@ -91,7 +93,7 @@ Future<void> main() async {
       sharedPreferencesProvider.overrideWithValue(prefs),
       assistantDefaultModelProvider.overrideWithValue(model),
       assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready),
-      paragraphTranslatorProvider.overrideWithValue((_) async => AcceptanceTranslator()),
+      documentTranslatorFactoryProvider.overrideWithValue((_, _) async => AcceptanceTranslator()),
       studySetRepositoryProvider.overrideWithValue(
         InMemoryStudySetRepository(
           sets: [

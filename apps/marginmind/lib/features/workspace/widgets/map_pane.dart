@@ -3,8 +3,6 @@ import '../../map_generation/widgets/map_ocr_banner.dart';
 
 import 'dart:async';
 
-import 'map_switch_sheet.dart';
-
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -181,6 +179,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
   /// The style popover, the style it previews, and where it hangs.
   bool _styleOpen = false;
+  bool _styleCustomOpen = false;
   (MapStructure, MapPalette)? _stylePreview;
   final _stylePortal = OverlayPortalController();
   static const _styleRegion = 'map-style';
@@ -199,6 +198,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     _stylePortal.hide();
     setState(() {
       _styleOpen = false;
+      _styleCustomOpen = false;
       _stylePreview = null;
     });
     _focus.requestFocus();
@@ -691,7 +691,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
       children: [
         SizedBox.square(
           dimension: MMSizes.dropdownIcon,
-          child: Center(child: icon),
+          child: IconTheme.merge(
+            data: const IconThemeData(size: MMSizes.dropdownIcon),
+            child: Center(child: icon),
+          ),
         ),
         const SizedBox(width: MMSpacing.s),
         Expanded(child: Text(label)),
@@ -916,13 +919,16 @@ class _MapPaneState extends ConsumerState<MapPane> {
               : double.infinity,
           popover: TapRegion(
             groupId: _styleRegion,
-            onTapOutside: (_) => _closeStyle(),
+            onTapOutside: (_) {
+              if (!_styleCustomOpen) _closeStyle();
+            },
             child: SingleChildScrollView(
               child: MapStylePopover(
                 density: map?.density ?? MapDensity.compact,
                 onDensity: controller.setMapDensity,
                 backgroundColor: map?.backgroundColor,
                 onBackgroundColor: controller.setMapBackgroundColor,
+                onCustomOpenChanged: (open) => _styleCustomOpen = open,
                 structure: map?.structure ?? MapStructure.mind,
                 palette: map?.palette ?? MapPalette.system,
                 onPreview: (style) => setState(() => _stylePreview = style),
@@ -1350,20 +1356,49 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         ),
                                       ],
                                       menuEntries: [
-                                        MMDropdownItem<VoidCallback>(
+                                        MMDropdownSubmenu<VoidCallback>.items(
                                           key: const ValueKey('map-switch-menu'),
-                                          value: () => _runToolbarAction(() async {
-                                            _closeStyle();
-                                            await showMapSwitchSheet(context, ref, widget.studySetId);
-                                          }),
+                                          label: l.switchMap,
+                                          icon: MMIcons.mindMap,
+                                          width: MMSizes.dropdownWideWidth,
                                           enabled: loadedContent != null,
-                                          child: menuLabel(l.switchMap, const Icon(MMIcons.mindMap)),
+                                          itemBuilder: (context) => [
+                                            for (final target in content.maps)
+                                              MMDropdownItem<VoidCallback>(
+                                                key: ValueKey('map-switch-${target.id}'),
+                                                icon: MMIcons.mindMap,
+                                                value: () => _runToolbarAction(() async {
+                                                  _closeStyle();
+                                                  await controller.selectMap(target.id);
+                                                }),
+                                                child: Semantics(
+                                                  selected: target.id == state.activeMapId,
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          target.title.isEmpty ? l.mainMap : target.title,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: context.mmText.callout,
+                                                        ),
+                                                      ),
+                                                      if (target.id == state.activeMapId)
+                                                        const Icon(MMIcons.check, size: 14),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                         MMDropdownItem<VoidCallback>(
                                           key: const ValueKey('map-style-menu'),
                                           value: _toggleStyle,
                                           enabled: map != null,
-                                          child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
+                                          child: TapRegion(
+                                            groupId: _styleRegion,
+                                            child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
+                                          ),
                                         ),
                                         if (MMInput.touchInputOf(context))
                                           MMDropdownItem<VoidCallback>(

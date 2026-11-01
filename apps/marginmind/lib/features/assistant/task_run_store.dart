@@ -95,6 +95,13 @@ class PersistentTaskAssembly {
     return RuntimeModelBinding(model: service.configuration(model), key: key ?? '', serviceRevision: service.revision);
   }
 
+  /// Settings/host callers can choose the study-set durable infrastructure log.
+  RoutingCapabilityProbe createCapabilityProbe() => RoutingCapabilityProbe(
+    resolver: resolver,
+    steps: runtime.providerSteps,
+    key: (model) async => await assistantServiceKey(services.secrets, model.serviceId!, model.provider) ?? '',
+  );
+
   Future<RunContext> freeze<T>(
     TaskRequest<T> request, {
     required String runId,

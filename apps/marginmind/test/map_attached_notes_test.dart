@@ -53,6 +53,28 @@ void attachedNoteTests({bool native = false}) {
       await tester.enterText(find.byType(MMInlineTextField), 'Cancelled');
       await key(tester, LogicalKeyboardKey.escape);
       expect(controller.content.card(noteId)!.title, noteText);
+      // Clicking cancel must not trigger the text field's outside-click save.
+      await tester.tap(find.byKey(ValueKey('map-note-edit-$noteId')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(MMInlineTextField), 'Discard this change');
+      final cancel = find.byKey(ValueKey('map-note-cancel-$noteId'));
+      expect(tester.widget<MMIconButton>(cancel).icon, MMIcons.close);
+      await tester.tap(cancel, kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      expect(controller.content.card(noteId)!.title, noteText);
+      expect(find.byType(MMInlineTextField), findsNothing);
+      await tester.tap(find.byKey(ValueKey('map-note-edit-$noteId')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(MMInlineTextField), 'Saved with a check mark');
+      final save = find.byKey(ValueKey('map-note-save-$noteId'));
+      expect(tester.widget<MMIconButton>(save).icon, MMIcons.check);
+      await tester.tap(save, kind: PointerDeviceKind.touch);
+      await tester.pumpAndSettle();
+      expect(controller.content.card(noteId)!.title, 'Saved with a check mark');
+      expect(find.byType(MMInlineTextField), findsNothing);
+      await controller.undo();
+      await tester.pumpAndSettle();
+      expect(controller.content.card(noteId)!.title, noteText);
       await controller.undo();
       await tester.pumpAndSettle();
       expect(controller.content.card(noteId), isNull);

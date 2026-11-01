@@ -11,7 +11,11 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/providers.dart';
 import '../../../settings/settings_window.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/assistant_settings.dart';
+import '../../assistant/assistant_services.dart';
+import '../../assistant/settings/ai_task_status.dart';
+import '../../assistant/settings/ai_task_settings.dart';
+import '../../assistant/settings/model_route_picker.dart';
+import '../document_translation_runtime.dart';
 import '../full_translation.dart';
 import '../reader_compare.dart';
 import '../reader_ocr.dart';
@@ -113,6 +117,8 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     return f != null && t != null && f >= 1 && t <= _pageCount && f <= t;
   }
 
+  ModelReference? _modelOverride;
+
   Future<void> _start(
     Document doc,
     FullTranslationEstimation estimation,
@@ -154,6 +160,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
           note: note,
           sourceLang: sourceLanguage,
           modelName: modelName,
+          modelOverride: _modelOverride,
           estimatedTokens: estimation.tokens,
         );
       }
@@ -207,19 +214,15 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
       }
     }
 
-    final model = ref.watch(assistantDefaultModelProvider);
-    final modelName = model == null
-        ? ''
-        : (model.serviceId?.isNotEmpty == true ? '${model.serviceId}/${model.model}' : model.model);
-    final isOllama = model?.provider == AssistantProvider.ollama;
+    final route = ref.watch(documentTranslationRouteProvider(_modelOverride));
+    final row = route.value;
+    final catalog = ref.watch(assistantServicesProvider).value ?? AssistantServices(services: []);
+    final modelName = row?.effective == null
+        ? l.aiTasksNotSet
+        : routeModelLabel(catalog, row!.effective!, serviceLabel: row.serviceLabel, modelLabel: row.modelLabel);
+    final isOllama = row?.config?.capabilities.identity.protocol == ModelProtocol.ollamaChat;
     final isOnline = isOllama || ref.watch(translationOnlineProvider(widget.studySetId));
-    final credentialState = ref.watch(assistantCredentialStateProvider).value;
-
     final isScanned = doc.capabilities().ocr && ocr.document?.hasCopy != true && paragraphs.isEmpty && !ocr.running;
-    final noModel = model == null || credentialState == AssistantCredentialState.unconfigured;
-    final badKey =
-        credentialState == AssistantCredentialState.missingKey ||
-        credentialState == AssistantCredentialState.unavailable;
     final isOffline = !isOnline && !isOllama;
 
     final fullState = ref.watch(fullTranslationProvider((widget.studySetId, widget.documentId, _targetLang)));
@@ -244,8 +247,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         fullState.loading ||
         fullState.loadError != null ||
         !valid ||
-        (!viewSaved &&
-            (nothing || isScanned || noModel || badKey || credentialState != AssistantCredentialState.ready)) ||
+        (!viewSaved && (nothing || isScanned || row?.ready != true)) ||
         (_sourceChoice ?? _sourceLang) == _targetLang;
     final firstTo = _mode == TranslationMode.batch ? math.min(t, f + _batchSize - 1) : t;
     final primaryLabel = viewSaved
@@ -272,18 +274,14 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
           },
         ),
       );
-    } else if (!viewSaved && (noModel || badKey)) {
-      blockedBanner = _buildBanner(
-        icon: MMIcons.ai,
-        title: badKey ? l.fullTranslationBlockedBadKeyTitle : l.fullTranslationBlockedNoModelTitle,
-        desc: l.fullTranslationBlockedModelDesc,
-        action: MMButton(
-          label: l.fullTranslationActionSettings,
-          onPressed: () {
-            Navigator.of(context).pop();
-            showSettings(context, tab: SettingsTab.models);
-          },
-        ),
+    } else if (!viewSaved && (route.hasError || row?.ready == false)) {
+      blockedBanner = RoutingIssueLine(
+        text: route.hasError
+            ? l.aiTasksIssueInvalid
+            : routingIssueText(l, row!.issue, failureCode: row.failureCode) ?? l.aiTasksNotSet,
+        action: l.fullTranslationActionSettings,
+        onAction: () =>
+            showSettings(context, tab: SettingsTab.aiTasks, focus: const AiTaskFocusTask(TaskType.documentTranslate)),
       );
     } else if (!viewSaved && isOffline) {
       blockedBanner = _buildBanner(
@@ -337,6 +335,30 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                   const SizedBox(height: 12),
                 ],
                 if (blockedBanner != null) ...[blockedBanner, const SizedBox(height: 16)],
+                _buildFormRow(
+                  label: l.aiTasksModel,
+                  child: ModelRoutePicker(
+                    label: modelName,
+                    tone: row?.ready != true
+                        ? ModelRouteTone.caution
+                        : _modelOverride == null
+                        ? ModelRouteTone.inherited
+                        : ModelRouteTone.explicit,
+                    groups: [
+                      for (final service in catalog.services.where((s) => s.enabled))
+                        ModelRouteGroup(service.name, [
+                          for (final model in service.models.where((m) => m.enabled))
+                            ModelRouteOption(model: ModelReference(service.id, model.id), label: model.displayName),
+                        ]),
+                    ],
+                    selected: _modelOverride,
+                    followLabel: l.aiTasksUseSetting,
+                    onChanged: _starting ? null : (value) => setState(() => _modelOverride = value),
+                    semanticLabel: l.aiTasksModel,
+                    semanticValue: modelName,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 _buildFormRow(
                   label: l.language,
                   child: Row(

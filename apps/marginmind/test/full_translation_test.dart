@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/document_translation_runtime.dart';
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -399,7 +401,7 @@ void main() {
         overrides: [
           ...baseOverrides,
           translationStoreProvider('demo-1').overrideWith((ref) async => storage),
-          paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+          documentTranslatorFactoryProvider.overrideWithValue((_, _) async => translator),
           translationParagraphsProvider(('demo-1', 'c1')).overrideWith((ref) async => _sampleParagraphs('c1')),
           compareDocumentInfoProvider(('demo-1', 'c1')).overrideWith((ref) async => (language: 'zh', hasText: true)),
           assistantDefaultModelProvider.overrideWithValue(
@@ -510,7 +512,13 @@ void main() {
                 endpoint: 'https://api.anthropic.com',
               ),
             ),
-            assistantCredentialStateProvider.overrideWith((ref) async => cred),
+            documentTranslationRouteProvider.overrideWith(
+              (ref, model) async => RoutingRowState(
+                effective: const ModelReference('fixture', 'claude-3-5-sonnet'),
+                source: RoutingSource.functionBinding,
+                issue: cred == AssistantCredentialState.ready ? RoutingIssue.none : RoutingIssue.secretUnavailable,
+              ),
+            ),
             fullTranslationProvider(('demo-1', 'c1', 'en')).overrideWith(
               () => MockFullTranslationController(
                 'demo-1',

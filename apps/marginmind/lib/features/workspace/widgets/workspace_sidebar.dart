@@ -31,12 +31,11 @@ import 'notices.dart';
 import 'phone_workspace_sidebar.dart';
 
 /// Study set sidebar: documents, mind maps, notes and learning tools,
-/// followed by matching cards and tags. Search filters every section at once.
+/// followed by cards and tags. Sidebar search is temporarily hidden.
 class WorkspaceSidebar extends ConsumerWidget {
-  const WorkspaceSidebar({super.key, required this.studySetId, required this.searchFocus, this.onDismiss});
+  const WorkspaceSidebar({super.key, required this.studySetId, this.onDismiss});
 
   final String studySetId;
-  final FocusNode searchFocus;
   final VoidCallback? onDismiss;
 
   @override
@@ -386,8 +385,6 @@ class WorkspaceSidebar extends ConsumerWidget {
         key: ValueKey(studySetId),
         title: studyTitle ?? '',
         mapId: state.activeMapId,
-        searchFocus: searchFocus,
-        onSearch: controller.setSidebarQuery,
         onDismiss: onDismiss ?? controller.toggleSidebar,
         documents: [for (final row in docs) phoneRow(row, mapDestination: false)],
         maps: [for (final row in maps) phoneRow(row, mapDestination: true)],
@@ -486,11 +483,11 @@ class WorkspaceSidebar extends ConsumerWidget {
           ),
         ],
       ),
-      header: MMSearchField(placeholder: l.searchInSet, focusNode: searchFocus, onChanged: controller.setSidebarQuery),
       footer: Align(
         alignment: Alignment.centerRight,
         child: MMDropdownButton<String>(
           key: const ValueKey('workspace-add-content'),
+          plainIcon: true,
           tooltip: l.addDocumentMenu,
           width: MMSizes.dropdownWideWidth,
           icon: const Icon(MMIcons.add),
@@ -517,6 +514,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             trailing: ref.watch(canAddWebPageProvider)
                 ? MMDropdownButton<String>(
                     key: const ValueKey('add-document-menu'),
+                    plainIcon: true,
                     tooltip: l.addDocumentMenu,
                     width: MMSizes.dropdownWideWidth,
                     icon: const Icon(MMIcons.add),
@@ -537,6 +535,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             trailing: betaEnabled
                 ? MMDropdownButton<String>(
                     key: const ValueKey('add-map-menu'),
+                    plainIcon: true,
                     tooltip: l.newMap,
                     width: MMSizes.dropdownWideWidth,
                     icon: const Icon(MMIcons.add),

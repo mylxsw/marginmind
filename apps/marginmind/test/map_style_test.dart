@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/map_export_scene.dart';
 import 'package:marginmind/features/workspace/widgets/map_style_popover.dart';
+import 'package:marginmind/features/workspace/widgets/annotation_palette.dart';
 import 'package:marginmind/features/workspace/widgets/highlight_custom_color_picker.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -354,9 +355,21 @@ void main() {
       await controller.undo();
       await tester.pumpAndSettle();
       expect(map().backgroundColor, isNull, reason: 'reselecting does not add an undo step');
+      expect(
+        find.descendant(of: find.byType(MapStylePopover), matching: find.byType(MMFloatingToolbarSwatch)),
+        findsNWidgets(8),
+      );
+      expect(find.byType(AnnotationMoreColorsButton), findsOneWidget);
+      expect(find.descendant(of: find.byType(MapStylePopover), matching: find.byType(MMButton)), findsNothing);
+
       await tester.tap(find.byKey(const ValueKey('map-background-custom')));
       await tester.pumpAndSettle();
       expect(find.byType(HighlightCustomColorPicker), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(MapStylePopover), matching: find.byType(HighlightCustomColorPicker)),
+        findsNothing,
+      );
+
       await tester.enterText(find.byKey(const ValueKey('highlight-color-hex')), '#123456');
       await tester.pumpAndSettle();
       expect(map().backgroundColor, isNull, reason: 'custom color remains a draft');
@@ -373,6 +386,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('map-background-custom')));
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(HighlightCustomColorPicker), findsNothing);
+      expect(find.byType(MapStylePopover), findsOneWidget);
+      expect(map().backgroundColor, 0xFF123456);
+      await tester.tap(find.byKey(const ValueKey('map-background-custom')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 500));
       await tester.pumpAndSettle();
       expect(find.byType(HighlightCustomColorPicker), findsNothing);
       expect(find.byType(MapStylePopover), findsOneWidget);
@@ -440,7 +460,8 @@ void main() {
       await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('map-palette-ink'))));
       await tester.pumpAndSettle();
       expect(canvas(tester).previewStyle, isNotNull);
-      await tester.tapAt(tester.getBottomLeft(find.byType(MindMapCanvas)) + const Offset(400, -200));
+      final panel = tester.getRect(find.byType(MapStylePopover));
+      await tester.tapAt(Offset(panel.left - 16, panel.center.dy));
       await tester.pumpAndSettle();
       expect(find.byType(MapStylePopover), findsNothing);
       expect(canvas(tester).previewStyle, isNull);

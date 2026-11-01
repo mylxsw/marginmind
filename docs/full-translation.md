@@ -392,3 +392,35 @@ stateDiagram-v2
 - 检查点宽 ≤ 420 时，“剩余 n 页 · 约 t token”在中文下排在每批分段控件下一行：原型同宽度下“每批”标签被挤成两行，换行比压缩控件更易读。
 - 设置面板底栏说明最多两行：英文界面下按钮较宽，说明不能挤压主按钮。
 - 源语言未知且未指定时，面板标题行写“检测 → 目标语言”：没有可确定的源语言名可显示。
+
+## 20. Heavy Runtime 接入（GUL-651）
+
+生产全文、按需阅读、失败重试、重译均由 `documentTranslatorFactoryProvider` 装配
+`PersistentTaskAssembly`，注册 `documentTranslationSpec`／`registerDocumentTranslation`。
+不再从助手默认模型创建直接生成连接；独立选区仍使用 Quick 的 `selection_translate`。
+任务面板使用实际 resolver、`ModelRoutePicker`、`RoutingIssueLine`；运行面板展示冻结模型及
+`RunStatusCapsule`。本次显式选择写入请求覆盖，未知能力或失效服务不回退到其他模型。
+
+`TranslationJob.runContext` 是可选兼容字段，保存全文父 run 的路由、能力、权限范围、知识版本
+与单次输出上限。旧任务在首次明确继续时冻结；初始化／重开仅恢复缓存，不购买请求。
+分批修改要求仍只影响未来分片，要求内容参与分片指纹。父 manifest 的领域检查点记录子 run ID、
+显式重译代次、失败重试映射及迁移前用量。父 manifest 不由 SDK 当作可重放对话使用。
+SDK 子 run 则保存标准检查点与独立 usage；usage 按子 run ID 聚合，不因复用输出重复计数。
+
+每个源段按冻结模型的 context/output 容量保守拆分，分片带稳定段落 ID 和序号，进入同一
+Heavy SDK harness，加载 `translation.document@1`。分片之间不重新解析功能默认，也不切 Quick。
+输出必须返回原 ID 和非空译文，校验 Markdown、占位符、URL、代码及明确的术语映射
+（`term=译名`、`term→译名`、`term统一译为译名`）；任意自由文本要求由模型处理，语义忠实度仍需真实评测。
+超过容量的不可拆分代码／占位符显式报错，不截断或跳过。没有新增整任务额度。
+
+Runtime 独占传输重试与一次结构修复；调度器不再对 Runtime 失败放大重试或拆单重买。
+已验证分片保存在 RunStore，译文日志保存失败后可直接复用；内存中未写完的段落先重试落盘。
+重开未知在途请求保留 interrupted 语义，全文必须明确继续；自动按需阅读遇到未知在途结果会
+停止，须人工重试授权。暂停在当前分片完成后停止后续分片派发；停止取消 Runtime 并隔离迟到结果。
+人工编辑版本检查、缓存复用、批次 review、超预估暂停、撤销和页范围继续由原调度器负责。
+
+公共集成需要聚合 `documentTranslationSpec` 到 `aiTaskRoutingSpecsProvider`；本领域没有改写
+公共 provider 或公共 assembly 工厂。导出 `documentTranslationKnowledge` 供宿主注册表装配；
+其 `translation.document@1` 与公共知识注册表同版本兼容。
+
+移除某语言译文时先持久化该文档／语言的 Runtime 缓存代次，再删除译文日志；后续按需任务不会从旧 run 重新恢复已移除的内容。

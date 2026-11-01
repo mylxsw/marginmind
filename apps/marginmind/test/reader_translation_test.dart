@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/document_translation_runtime.dart';
+
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
@@ -91,7 +93,7 @@ Future<ProviderContainer> setup(
       assistantCredentialStateProvider.overrideWith(
         (ref) async => selected == null ? AssistantCredentialState.unconfigured : AssistantCredentialState.ready,
       ),
-      paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+      documentTranslatorFactoryProvider.overrideWithValue((_, _) async => translator),
       for (final id in ['c1', 'c2', 'third']) ...[
         translationParagraphsProvider(('demo-1', id)).overrideWith((ref) async => pageContent ?? paragraphs(id)),
         compareDocumentInfoProvider(('demo-1', id))
