@@ -11,6 +11,8 @@ import '../../workspace/workspace_controller.dart';
 import '../../research/research_origin.dart' show researchCardTitle;
 import '../assistant_services.dart';
 import '../expansion_controller.dart';
+import '../map_task_route.dart';
+import '../settings/ai_task_status.dart';
 import '../../workspace/widgets/map_source_chip.dart';
 import 'dashed_border.dart';
 
@@ -24,9 +26,10 @@ String expansionDirectionLabel(AppLocalizations l, ExpansionDirection direction)
 };
 
 class ExpansionOptions extends StatelessWidget {
-  const ExpansionOptions({super.key, required this.request, required this.onChanged});
+  const ExpansionOptions({super.key, required this.request, required this.onChanged, this.showModel = true});
   final ExpansionRequest request;
   final ValueChanged<ExpansionRequest> onChanged;
+  final bool showModel;
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -67,6 +70,8 @@ class ExpansionOptions extends StatelessWidget {
       columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
+        if (showModel)
+          row(context.l10n.aiTasksModel, MapTaskRoute(studySetId: request.studySetId, type: TaskType.mapExpand)),
         row(
           l.mapIdeaDirection,
           Column(
@@ -640,7 +645,7 @@ class ExpansionBar extends ConsumerWidget {
       final controller = ref.read(expansionControllerProvider(studySetId).notifier),
           l = context.l10n,
           c = context.mmColors;
-      final currentModel = ref.watch(assistantServicesProvider).value?.configuration;
+      final currentRoute = ref.watch(mapTaskRouteProvider((studySetId, TaskType.mapExpand))).value;
       final local = ref
           .watch(enabledAssistantModelsProvider)
           .values
@@ -664,7 +669,11 @@ class ExpansionBar extends ConsumerWidget {
             builder: (context, update) => AlertDialog(
               content: SizedBox(
                 width: MMSizes.ideaAdjustWidth,
-                child: ExpansionOptions(request: request, onChanged: (r) => update(() => request = r)),
+                child: ExpansionOptions(
+                  request: request,
+                  showModel: false,
+                  onChanged: (r) => update(() => request = r),
+                ),
               ),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
@@ -686,6 +695,20 @@ class ExpansionBar extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                TickerMode(
+                  enabled: !MMAppearance.reduceMotionOf(context),
+                  child: RunStatusCapsule(
+                    status: generating
+                        ? RunStatus.running
+                        : error
+                        ? RunStatus.failed
+                        : s.phase == ExpansionPhase.stopped
+                        ? (s.failure == null ? RunStatus.cancelled : RunStatus.partial)
+                        : RunStatus.awaitingUser,
+                    unfinished: s.targetFailures.length,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Semantics(
                   liveRegion: true,
                   child: Text(
@@ -714,12 +737,15 @@ class ExpansionBar extends ConsumerWidget {
                     label: error ? l.assistantRetry : l.mapIdeaRegenerate,
                     icon: MMIcons.history,
                   ),
-                  if (error && currentModel?.provider != AssistantProvider.ollama && local?.serviceId != null)
+                  if (error && currentRoute?.effective?.serviceId != local?.serviceId && local?.serviceId != null)
                     TextButton(
                       onPressed: () async {
-                        await ref
-                            .read(assistantServicesProvider.notifier)
-                            .setDefault(ModelReference(local!.serviceId!, local.model));
+                        ref
+                            .read(mapTaskChoicesProvider.notifier)
+                            .select(
+                              mapRouteKey(studySetId, TaskType.mapExpand),
+                              ModelReference(local!.serviceId!, local.model),
+                            );
                         await controller.regenerate();
                       },
                       child: Text(l.assistantUseLocal),

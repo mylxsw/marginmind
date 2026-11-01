@@ -65,6 +65,24 @@ ModelMapGenerator generator(
 const point = '{"k":"point","id":"p1","title":"First","doc":"D1","page":1,"marks":["A1"]}';
 const topic = '{"ref":"a","parent":"ROOT","title":"Topic","doc":"D1","page":1}';
 final cancelled = isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled);
+Future<List<MapLine>> partial(Stream<MapLine> stream, int accepted) async {
+  final lines = <MapLine>[];
+  await expectLater(
+    () async {
+      await for (final line in stream) {
+        lines.add(line);
+      }
+    },
+    throwsA(
+      isA<MapGenerationFailure>()
+          .having((e) => e.code, 'code', 'partialMapContent')
+          .having((e) => e.acceptedLines, 'accepted', accepted),
+    ),
+  );
+  expect(lines, hasLength(accepted));
+  return lines;
+}
+
 void main() {
   test('truncation preserves stage and reasoning without exposing response text', () async {
     final client = ScriptClient([
@@ -152,10 +170,10 @@ void main() {
       await model.close();
     }
   });
-  test('a usable draft is preserved without regenerating after rejected lines', () async {
+  test('a usable draft remains partial after rejected lines without regenerating accepted work', () async {
     final client = ScriptClient([answer('$topic\n{"ref":"b","parent":"a","title":"Child","extra":true}')]);
     final model = generator(client);
-    final result = await model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList();
+    final result = await partial(model.generate(build(MapLinePhase.generation, []), CancellationToken()), 1);
     expect(result.single.title, 'Topic');
     expect(client.calls, 1);
     await model.close();
@@ -473,13 +491,13 @@ void main() {
     final recorder = RecordingLLMClient(inner: script, store: store);
     for (final client in [RecordedChunks(recorder), ReplayLLMClient(store: store)]) {
       final model = generator(client);
-      final first = await model.readChapter(chapter(), CancellationToken()).toList();
+      final first = await partial(model.readChapter(chapter(), CancellationToken()), 2);
       final second = await model.readChapter(chapter(id: 'second', prefix: 'second-'), CancellationToken()).toList();
       final points = [...first, ...second];
       final map = await model.generate(build(MapLinePhase.generation, points), CancellationToken()).toList();
       expect(map.map((l) => l.kind), [MapLineKind.add, MapLineKind.excerpt]);
       expect(map.first.source?.documentId, 'private-document');
-      final diff = await model.update(build(MapLinePhase.diff, second), CancellationToken()).toList();
+      final diff = await partial(model.update(build(MapLinePhase.diff, second), CancellationToken()), 1);
       expect(diff.single.title, 'New');
       expect(first.last.parentId, 'new:${first.first.id}');
       await model.close();
@@ -516,7 +534,7 @@ void main() {
       ]),
     );
     final model = generator(client, invalid: invalid.add);
-    expect(await model.readChapter(chapter(), CancellationToken()).toList(), hasLength(1));
+    expect(await partial(model.readChapter(chapter(), CancellationToken()), 1), hasLength(1));
     expect(invalid, ['invalidMapLine', 'invalidMapLine']);
     await model.close();
   });

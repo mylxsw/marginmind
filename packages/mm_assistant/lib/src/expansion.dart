@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:mm_core/mm_core.dart';
 
 import 'providers.dart';
+import 'map_tasks.dart';
 
 const expansionSystemPrompt = '''Expand the supplied mind-map targets with short, useful topics.
 Output NDJSON only: one object per line, no markdown or tools.
@@ -109,12 +110,19 @@ class ModelIdeaExpander implements IdeaExpander {
     this.model, {
     this.budget = const ResearchBudget(outputTokens: 4096, inputCharacters: 30000, duration: Duration(seconds: 60)),
     this.onInvalidLine,
-  });
-  final AssistantConnection connection;
+  }) : execute = null;
+  ModelIdeaExpander.runtime(this.execute, {this.onInvalidLine})
+    : connection = null,
+      model = 'routed',
+      budget = const ResearchBudget(outputTokens: 8192, inputCharacters: 30000, duration: Duration(minutes: 5));
+  final MapTaskExecutor? execute;
+  final AssistantConnection? connection;
   final String model;
   final ResearchBudget budget;
   final void Function(String reason)? onInvalidLine;
   final _active = <CancelToken>{};
+  final _runtimeCancels = <CancellationToken>{};
+  bool _closed = false;
 
   @override
   Stream<ExpansionDraft> expand(ExpansionRequest request, ExpansionContext context, CancellationToken cancel) async* {
@@ -160,6 +168,7 @@ class ModelIdeaExpander implements IdeaExpander {
     for (var attempt = 0; attempt < request.depth; attempt++) {
       final previousCount = accepted.length;
       final allowedParents = repairParents == null ? null : {...repairParents};
+      final validationSeed = List<Map<String, Object?>>.of(accepted);
       await for (final line in _lines(
         expansionSystemPrompt,
         {
@@ -169,6 +178,7 @@ class ModelIdeaExpander implements IdeaExpander {
         },
         cancel,
         resources: resources,
+        validate: (text) => _validateExpansion(text, request, context, validationSeed),
       )) {
         Object? raw;
         try {
@@ -218,7 +228,9 @@ class ModelIdeaExpander implements IdeaExpander {
         for (final entry in depths.entries)
           if (entry.value < request.depth && !parentsWithChildren.contains(entry.key)) entry.key,
       };
-      if (repairParents.isEmpty) return;
+      final missingTargets = context.targets.keys.where((alias) => !parentsWithChildren.contains(alias));
+      if (repairParents.isEmpty && missingTargets.isEmpty) return;
+      repairParents.addAll(missingTargets);
       if (allowedParents != null && accepted.length == previousCount) break;
     }
     throw const ResearchFailure(ResearchFailureKind.protocol, 'incompleteDepth');
@@ -258,12 +270,101 @@ class ModelIdeaExpander implements IdeaExpander {
     return List.unmodifiable(items);
   }
 
+  ValidationReport _validateExpansion(
+    String text,
+    ExpansionRequest request,
+    ExpansionContext context,
+    List<Map<String, Object?>> seed,
+  ) {
+    final issues = <ValidationIssue>[];
+    void reject(String code) => issues.add(ValidationIssue(code: code, path: r'$', reason: 'Rejected expansion line'));
+    final parsers = {
+      for (final alias in context.targets.keys)
+        alias: ExpansionLineContext(
+          targets: {alias: context.targets[alias]!},
+          request: request,
+          draftPrefix: '$alias-',
+          existingTitles: context.existingTitles,
+          pages: context.details[alias]!.pages.keys.toSet(),
+          limits: context.limits,
+          onInvalid: reject,
+        ),
+    };
+    final owners = <String, String>{}, depths = <String, int>{};
+    final parents = <String>{};
+    final titles = context.existingTitles.map(normalizeExpansionTitle).toSet();
+    for (final raw in [...seed.map(jsonEncode), ...text.split('\n').where((s) => s.trim().isNotEmpty)]) {
+      try {
+        final row = jsonDecode(raw) as Map<String, dynamic>;
+        final parent = row['parent'], ref = row['ref'];
+        final alias = parsers.containsKey(parent) ? parent as String : owners[parent];
+        if (alias == null || owners.containsKey(ref)) {
+          reject('parentOrRef');
+          continue;
+        }
+        final draft = parseExpansionLine(raw, parsers[alias]!);
+        if (draft == null) continue;
+        if (!titles.add(normalizeExpansionTitle(draft.title))) {
+          reject('duplicate');
+          continue;
+        }
+        owners[ref as String] = alias;
+        depths[ref] = (depths[parent] ?? 0) + 1;
+        parents.add(parent as String);
+      } catch (_) {
+        reject('invalidJson');
+      }
+    }
+    final missing = context.targets.keys.where((target) => !parents.contains(target)).toSet();
+    if (missing.isNotEmpty) reject('missingTargets');
+    if (request.scope != ExpansionScope.group &&
+        depths.entries.any((e) => e.value < request.depth && !parents.contains(e.key))) {
+      reject('missingDepth');
+    }
+    return ValidationReport(issues: issues, missingInputIds: missing);
+  }
+
+  ValidationReport _validatePlan(String text, Map<String, Object?> payload) {
+    final issues = <ValidationIssue>[];
+    var count = 0;
+    for (final raw in text.split('\n').where((s) => s.trim().isNotEmpty)) {
+      final item = parseExpansionPlanLine(
+        raw,
+        targets: {for (final alias in (payload['targets'] as Map).keys) alias as String: alias},
+        rootAlias: payload['root'] as String,
+        breadth: payload['breadth'] as int,
+      );
+      if (item == null) {
+        issues.add(const ValidationIssue(code: 'invalidPlan', path: r'$', reason: 'Rejected plan line'));
+      } else {
+        count++;
+      }
+    }
+    if (count == 0) issues.add(const ValidationIssue(code: 'noValidPlan', path: r'$', reason: 'No plan'));
+    return ValidationReport(issues: issues);
+  }
+
   Stream<String> _lines(
     String system,
     Map<String, Object?> payload,
     CancellationToken cancel, {
     _ExpansionResources? resources,
+    ValidationReport Function(String)? validate,
   }) async* {
+    if (_closed) throw const ResearchFailure(ResearchFailureKind.cancelled);
+    if (execute != null) {
+      ValidationReport check(String text) => validate?.call(text) ?? _validatePlan(text, payload);
+      final text = await executeMapStage(execute!, system, payload, cancel, check, _runtimeCancels);
+      if (text.length > mapResponseCharacters) throw const ResearchFailure(ResearchFailureKind.budget);
+      for (final line in text.split('\n')) {
+        cancel.check();
+        if (line.trim().isNotEmpty) yield line;
+      }
+      if (check(text).issues.any((issue) => !{'missingDepth', 'missingTargets'}.contains(issue.code))) {
+        throw const ResearchFailure(ResearchFailureKind.protocol, 'partialExpansion');
+      }
+      return;
+    }
     budget.validate();
     cancel.check();
     final input = jsonEncode(payload);
@@ -290,7 +391,7 @@ class ModelIdeaExpander implements IdeaExpander {
     String? stop;
     try {
       final source = await wait(
-        connection.client.stream(
+        connection!.client.stream(
           [SystemMessage(system), UserMessage.text(input)],
           tools: const [],
           modelConfig: ModelConfig(model: model, maxTokens: budget.outputTokens, extra: {'store': false}),
@@ -347,10 +448,14 @@ class ModelIdeaExpander implements IdeaExpander {
 
   @override
   void close() {
+    _closed = true;
+    for (final token in _runtimeCancels.toList()) {
+      token.cancel();
+    }
     for (final token in _active) {
       token.cancel();
     }
-    connection.close();
+    connection?.close();
   }
 }
 
@@ -363,6 +468,7 @@ class _ExpansionResources {
 
 ResearchFailure expansionFailure(Object error) {
   if (error is ResearchFailure) return error;
+  if (error is ConfigurationFailure) return ResearchFailure(ResearchFailureKind.invalidRequest, error.code);
   if (error is TimeoutException) return const ResearchFailure(ResearchFailureKind.timeout);
   if (error is DioException) {
     final code = error.response?.statusCode;

@@ -1,3 +1,4 @@
+import 'package:marginmind/features/assistant/map_task_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_test/flutter_test.dart';
@@ -265,15 +266,15 @@ void main() {
     c.read(mapGenerationControllerProvider('demo-1').notifier).discard();
   });
 
-  testWidgets('opening generation settings does not read credentials; starting displays setup', (tester) async {
+  testWidgets('opening generation settings does not start admission; routed preview displays setup', (tester) async {
     var reads = 0;
     final c = await pumpApp(
       tester,
       prefs: {'settings.language': 'zh', 'settings.betaFeaturesEnabled': true},
       overrides: [
-        assistantCredentialStateProvider.overrideWith((ref) async {
+        mapTaskReadyProvider.overrideWith((ref, scope) async {
           reads++;
-          return AssistantCredentialState.missingKey;
+          return false;
         }),
       ],
     );

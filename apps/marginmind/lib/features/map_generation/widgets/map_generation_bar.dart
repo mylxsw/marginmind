@@ -8,6 +8,7 @@ import 'package:mm_platform/mm_platform.dart';
 import '../../../shared/l10n.dart';
 import '../../workspace/workspace_controller.dart';
 import '../map_generation_controller.dart';
+import '../../assistant/settings/ai_task_status.dart';
 import 'map_generation_failure.dart';
 
 class MapGenerationBar extends ConsumerStatefulWidget {
@@ -313,6 +314,25 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            TickerMode(
+              enabled: !MMAppearance.reduceMotionOf(context),
+              child: RunStatusCapsule(
+                status: isReading || isStreaming
+                    ? RunStatus.running
+                    : isFailed
+                    ? RunStatus.failed
+                    : preview.failure != null || preview.chapterFailures.isNotEmpty
+                    ? RunStatus.partial
+                    : phase == MapGenerationPhase.stopped
+                    ? RunStatus.cancelled
+                    : RunStatus.awaitingUser,
+                unfinished: preview.chapterFailures.isNotEmpty
+                    ? preview.chapterFailures.length
+                    : preview.failure is MapGenerationFailure
+                    ? (preview.failure as MapGenerationFailure).rejections.values.fold<int>(0, (sum, n) => sum + n)
+                    : 1,
+              ),
+            ),
             ?titleArea,
             if (isReview && preview.request.sources.length > 1)
               MapDocumentLegend(

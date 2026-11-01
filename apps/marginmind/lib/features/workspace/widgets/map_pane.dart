@@ -11,6 +11,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_assistant/mm_assistant.dart' show RoutingIssue;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -22,7 +23,7 @@ import '../../../settings/highlight_palette.dart';
 import '../../../shared/card_image.dart';
 import '../../assistant/assistant_entry.dart';
 import '../../assistant/expansion_controller.dart';
-import '../../assistant/assistant_settings.dart';
+import '../../assistant/map_task_route.dart';
 import '../../assistant/widgets/expansion_widgets.dart';
 import '../../assistant/assistant_reader.dart' show assistantRootId, assistantNodeBody;
 import '../../assistant/assistant_scope.dart' show assistantPreviewProvider, nodeContext;
@@ -269,11 +270,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
         state.selectedMarkId != null) {
       return;
     }
-    if (await ref.read(assistantConfiguredProvider.future) != true) {
-      if (mounted) await _openNodeAssistant(boundsOf(context).deflate(80));
+    final route = await ref.read(mapTaskRouteProvider((widget.studySetId, TaskType.mapExpand)).future);
+    if (!mounted) return;
+    if (route.issue != RoutingIssue.none && route.issue != RoutingIssue.unknown) {
+      await _openNodeAssistant(boundsOf(context).deflate(80));
       return;
     }
-    if (!mounted) return;
     final current = ref.read(workspaceProvider(widget.studySetId));
     if (current.activeMapId != state.activeMapId ||
         current.selectedCardId != state.selectedCardId ||

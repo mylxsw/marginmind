@@ -8,10 +8,10 @@ import 'package:mm_pdf/mm_pdf.dart';
 import 'map_quote.dart';
 
 import '../../app/providers.dart';
+import '../assistant/map_task_factory.dart';
 import '../assistant/assistant_controller.dart';
 import '../assistant/assistant_reader.dart';
 import '../assistant/assistant_scope.dart';
-import '../assistant/assistant_settings.dart';
 import '../assistant/assistant_writes.dart';
 import '../assistant/expansion_controller.dart';
 import '../assistant/map_generation_cache.dart';
@@ -301,22 +301,8 @@ final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, Str
 
 final mapQuotePageProvider = Provider<Future<TranslationPage?> Function(String, int)>((ref) => MMPdfEngine.quotePage);
 
-final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>(
-  (ref) => () async {
-    final model = ref.read(assistantDefaultModelProvider);
-    if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable, 'missingModel');
-    final key = await assistantModelKey(ref.read(assistantSecretsProvider), model);
-    if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
-      throw const ResearchFailure(ResearchFailureKind.authentication, 'missingKey');
-    }
-    // Each request owns its timeout, with no input/output usage quota. A shared
-    // connection deadline would expire midway through a multi-chapter document.
-    return ModelMapGenerator(
-      connectAssistant(model, key ?? '', budget: null, requestTimeout: mapGenerationRequestTimeout),
-      model.model,
-    );
-  },
-);
+// Optional injection; there is no legacy model fallback in production.
+final mapGeneratorProvider = Provider<Future<MapGenerator> Function()?>((ref) => null);
 
 final mapGenerationControllerProvider = NotifierProvider.autoDispose
     .family<MapGenerationController, MapGenerationPreview?, String>(
@@ -348,6 +334,8 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
   ProviderSubscription<ReaderOcrState>? _ocrSubscription;
   CancellationToken? _cancel;
   MapGenerator? _generator;
+  String _cacheModelKey = '';
+  MapTaskSession? _taskSession;
   int _generation = 0;
   bool _disposed = false;
   bool _ownsBusy = false;
@@ -573,13 +561,21 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     ref.read(expansionBusyProvider.notifier).set(true);
 
     try {
-      final generator = await ref.read(mapGeneratorProvider)();
+      final injected = ref.read(mapGeneratorProvider);
+      final MapGenerator generator;
+      if (injected != null) {
+        generator = await injected();
+        _cacheModelKey = 'injected-map-engine';
+        _taskSession = null;
+      } else {
+        final session = _taskSession = MapTaskSession(ref, request.studySetId, mapGenerateSpec);
+        _cacheModelKey = await session.cacheIdentity();
+        generator = ModelMapGenerator.runtime(session.execute);
+      }
       _generator = generator;
       cancel.check();
-
       final cache = ref.read(mapDigestCacheProvider(request.studySetId));
-      final modelConfig = ref.read(assistantDefaultModelProvider);
-      final modelKey = '${modelConfig?.serviceId ?? 'default'}:${modelConfig?.model ?? 'default'}';
+      final modelKey = _cacheModelKey;
 
       // Phase 1: Read chapters concurrently (up to 3)
       final taskQueue = _tasks.values.toList();
@@ -671,6 +667,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   Future<void> _streamBuild(MapGenerationRequest request, CancellationToken cancel, int epoch) async {
     final generator = _generator!;
+    _taskSession?.missingRangeIds = state!.chapterFailures.keys.toSet();
     final pages = <String, Set<int>>{};
     final updating = request.destination == MapGenerationDestination.update;
     final snapshot = ref.read(workspaceProvider(arg).notifier).content;
@@ -813,7 +810,14 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           failure: const ResearchFailure(ResearchFailureKind.protocol, 'noValidMapContent'),
         );
       } else {
-        state = state!.copyWith(phase: updating ? MapGenerationPhase.diff : MapGenerationPhase.review);
+        state = state!.copyWith(
+          phase: state!.chapterFailures.isEmpty
+              ? (updating ? MapGenerationPhase.diff : MapGenerationPhase.review)
+              : MapGenerationPhase.stopped,
+          failure: state!.chapterFailures.isEmpty
+              ? null
+              : const ResearchFailure(ResearchFailureKind.protocol, 'incompleteChapters'),
+        );
       }
     }
   }
@@ -852,10 +856,10 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
     _collectedPoints.removeWhere((point) => point.id.startsWith(task.input.context.draftPrefix));
     final cache = ref.read(mapDigestCacheProvider(state!.request.studySetId));
-    final modelConfig = ref.read(assistantDefaultModelProvider);
-    final modelKey = '${modelConfig?.serviceId ?? 'default'}:${modelConfig?.model ?? 'default'}';
+    final modelKey = _cacheModelKey;
 
     var chapterRead = false;
+    _taskSession?.missingRangeIds = {};
     try {
       _updateChapter(chapterId, MapChapterStatus.reading);
       final cacheKey = mapDigestCacheKey(

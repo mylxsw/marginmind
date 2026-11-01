@@ -1,3 +1,5 @@
+import 'package:marginmind/features/assistant/map_task_route.dart';
+
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -101,6 +103,7 @@ Future<ProviderContainer> openWorkspace(
     overrides: [
       assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),
+      mapTaskReadyProvider.overrideWith((ref, scope) async => credentialState == AssistantCredentialState.ready),
       ...overrides,
     ],
   );
