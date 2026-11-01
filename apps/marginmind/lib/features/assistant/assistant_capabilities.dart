@@ -46,7 +46,9 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
     if (raw != null) {
       try {
         final document = jsonDecode(raw) as Map;
-        if (document['version'] != 1 || document['rules'] != maintainedCapabilityRevision) {
+        if (document['version'] != 1 ||
+            (document['rules'] != maintainedCapabilityRevision &&
+                !previousMaintainedCapabilityRevisions.contains(document['rules']))) {
           throw const ConfigurationFailure('unsupportedCapabilityStoreVersion');
         }
         for (final row in document['entries'] as List) {
@@ -78,7 +80,7 @@ class AssistantCapabilityProfiles extends CapabilityProfiles {
               id['endpointFingerprint'] is! String ||
               !RegExp(r'^[a-f0-9]{64}$').hasMatch(id['endpointFingerprint'] as String) ||
               (id['modelRevision'] != null && id['modelRevision'] is! String) ||
-              (entry['rule'] != null && entry['rule'] != maintainedCapabilityRevision)) {
+              (entry['rule'] != null && entry['rule'] != document['rules'])) {
             throw const FormatException('Invalid capability identity or rule');
           }
           ModelProtocol.values.byName(id['protocol'] as String);

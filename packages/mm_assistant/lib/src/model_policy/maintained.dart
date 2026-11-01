@@ -4,7 +4,10 @@ import '../services.dart';
 import 'routing.dart';
 
 /// Bump when semantic sources, endpoint scope, or audited SDK wire behavior change.
-const maintainedCapabilityRevision = 'official-2026-11-01-v1';
+const maintainedCapabilityRevision = 'official-2026-11-01-v2';
+
+/// Known prior rules may be rebuilt from current evidence; future rules may not.
+const previousMaintainedCapabilityRevisions = {'official-2026-11-01-v1'};
 
 /// Exact, reviewed allowlist. Catalog tools flags and model-name fragments are
 /// never evidence. See docs/ai-capability-profiles.md for sources and wire tests.
@@ -31,8 +34,9 @@ ModelCapabilityProfile? maintainedCapabilityProfile(AssistantService service, Se
           (identity.protocol == ModelProtocol.responses && {'', '/v1', '/v1/responses'}.contains(path)))) {
     reference = 'https://developers.openai.com/api/docs/models/gpt-4.1';
     basis =
-        'Pinned GPT-4.1 snapshot is non-reasoning; omit reasoning controls. '
-        'SDK 2.1.8 exact Chat Completions/Responses encoding audited by maintained_capabilities_test.';
+        'Pinned GPT-4.1 snapshot is non-reasoning and officially supports function calling; omit reasoning controls. '
+        'SDK 2.1.8 exact Chat Completions/Responses encoding audited by maintained_capabilities_test; '
+        'GPT-4.1 Chat Completions tool execution and persisted replay audited by maintained_tools_wire_test.';
     thinking = ThinkingCapability.notApplicable;
     context = 1047576;
     output = 32768;
@@ -72,7 +76,11 @@ ModelCapabilityProfile? maintainedCapabilityProfile(AssistantService service, Se
   return ModelCapabilityProfile(
     identity: identity,
     thinking: thinking,
-    // Remote support alone does not prove a full SDK feature/replay contract.
+    // GPT-4.1 Chat Completions only: official tool semantics plus SDK
+    // declaration/call/result replay regression. Other protocols stay closed.
+    tools: identity.protocol == ModelProtocol.chatCompletions && model.id == 'gpt-4.1-2025-04-14'
+        ? CapabilitySupport.supported
+        : CapabilitySupport.unknown,
     historyReplay: replay,
     contextTokens: context,
     outputTokens: output,

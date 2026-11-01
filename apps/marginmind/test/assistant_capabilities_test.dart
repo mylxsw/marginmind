@@ -160,6 +160,21 @@ void main() {
     expect(profiles.probeObservation(result.identity), isNotNull);
     expect(profiles.probeObservation(serviceCapabilityIdentity(service, service.models.single)), isNull);
   });
+  test('known previous rule revision is rebuilt and old acceptance is discarded', () async {
+    final profiles = AssistantCapabilityProfiles(prefs, services);
+    await profiles.refresh();
+    final identity = serviceCapabilityIdentity(service, service.models.single);
+    await profiles.recordProbe(identity, ReasoningPolicy.off);
+    final raw = prefs.getString(AssistantCapabilityProfiles.settingsKey)!;
+    await prefs.setString(
+      AssistantCapabilityProfiles.settingsKey,
+      raw.replaceAll(maintainedCapabilityRevision, previousMaintainedCapabilityRevisions.single),
+    );
+    await profiles.refresh();
+    expect(profiles.lookup(identity).tools, CapabilitySupport.supported);
+    expect(profiles.probeObservation(identity), isNull);
+    expect(prefs.getString(AssistantCapabilityProfiles.settingsKey), contains(maintainedCapabilityRevision));
+  });
   test('concurrent instances merge observations without last-writer loss', () async {
     service = service.copyWith(
       models: [

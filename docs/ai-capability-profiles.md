@@ -15,12 +15,24 @@ binds the exact configured endpoint. No network response adds semantic support.
 | `gemini-2.5-flash` | `generativelanguage.googleapis.com`, Gemini GenerateContent: empty, `/v1beta` | `generationConfig.thinkingConfig.thinkingBudget: 0` | auto/off; standard/deep unsupported | 1,048,576 / 65,536 |
 
 All other model IDs (including undated GPT-4.1 alias), proxies, custom paths,
-Anthropic, Ollama, Vertex and Interactions remain unknown. Tool, structured-output
-and multimodal requirements remain unknown in this initial matrix: vendor feature
-advertising does not prove the SDK's complete contract. Chat Completions history
+Anthropic, Ollama, Vertex and Interactions remain unknown. GPT-4.1 Chat Completions now admits `tools` and `historyReplay` together;
+all other combinations retain unknown tool support. Structured-output and
+multimodal requirements remain unknown: they have no completed SDK-specific
+admission evidence in this change. Chat Completions history
 replay uses the existing tested codec; Responses/Gemini history replay remains
-unsupported because of the existing SDK replay gaps. Thus admission for a text
-Quick task does not automatically admit a tool-using Heavy task.
+unsupported because of the existing SDK replay gaps. The GPT-4.1 Chat Completions rule has a real SDK Agent tool declaration → returned
+call → executable tool → result message → final answer test, plus persisted
+AgentState replay in `maintained_tools_wire_test.dart`. The mocked HTTP responses
+are encoder/loop evidence, not independent semantic evidence; official function
+calling documentation supplies the latter.
+
+The approved plan (§7/§9/§10) requires controlled tools and history for Heavy
+assistant/research/document workflows. The audited combination now satisfies
+`requiredCapabilities={tools,historyReplay}` without removing requirements or
+silently downgrading Heavy. Native structured output is optional in the plan,
+with local schema validation retained; tasks explicitly requiring native
+structured output or multimodal input still fail closed. Responses/Gemini's
+known replay gaps still block general Heavy history, regardless of vendor claims.
 
 Sources:
 
@@ -29,7 +41,7 @@ Sources:
   dated sibling or undated alias is included.
 
 - [OpenAI GPT-4.1 model](https://developers.openai.com/api/docs/models/gpt-4.1):
-  identifies the pinned snapshot, non-reasoning behavior and token limits. The
+  identifies the pinned snapshot, non-reasoning behavior, function calling support and token limits. The
   rule deliberately excludes aliases. This older snapshot is marked deprecated;
   availability must be checked separately with the existing probe.
 - [Gemini GenerateContent thinking](https://ai.google.dev/gemini-api/docs/generate-content/thinking?hl=en)
@@ -99,7 +111,8 @@ Writes across instances sharing the preferences object are serialized. Identity
 checks reject late probes; refresh prunes removed/changed identities. A service edit
 while a preferences write is pending fails that refresh without publishing stale
 memory. Cached preferences are reloaded after write failure, and later queued work
-can retry. Corrupt or future-version documents fail closed, remain byte-for-byte
+can retry. Rule revision v2 rebuilds known v1 records from current evidence and discards their
+old acceptance observations. Corrupt or future-version documents fail closed, remain byte-for-byte
 intact and never bootstrap admission. This is the existing single-process
 SharedPreferences storage model, not a multi-process transactional database.
 
@@ -108,6 +121,13 @@ SharedPreferences storage model, not a multi-process transactional database.
 `TaskSpec.maxOutputTokens` is a default ceiling; `TaskRequest.maxOutputTokens` may
 further reduce it. Resolution compiles the minimum of these and the capability
 output ceiling into `ProviderCallPolicy.maxOutputTokens`. Nonpositive limits fail.
+The public Runtime also narrows supplied snapshots against request/spec/capability
+limits at start, child retry and recovery. `useConfiguration` intersects the next
+policy with the current admitted ceiling: model/reasoning switches cannot raise
+it. Recovery retains the minimum recorded phase ceiling even if the caller omits
+the original request override. The actual narrowed value is archived in both the
+current context and new configuration phase before dispatch. Completed prior
+phases retain attribution. Invalid ceilings fail before reserving a run ID.
 Every Runtime attempt (initial, HTTP retry, schema repair and resumed run) uses the
 frozen policy, not mutable model defaults or SDK-provided extras. The outbound
 verifier checks the exact limit as well as reasoning fields. There is no aggregate
@@ -120,7 +140,7 @@ selection translation carries its original `maxTokens` as input `maxOutputTokens
 `quickTaskOutputLimit(type, input)` converts this to the public TaskRequest field.
 All repairs share that resolved ceiling and Quick remains forced off.
 
-## Local validation
+## Initial PR validation
 
 macOS, Flutter 3.47.2, Dart 3.13.2, dart_agent_core 2.1.8.
 
@@ -130,3 +150,14 @@ macOS, Flutter 3.47.2, Dart 3.13.2, dart_agent_core 2.1.8.
 - `dart analyze` on changed Dart files and the model-policy directory: no remaining issues. `dart format` and `git diff --check` clean.
 
 No full-suite tests, repository coverage, live-service requests or CI waits/reruns.
+
+## Review regressions
+
+The review attachment `capability_review_regression_test.dart` is included unchanged.
+Both assertions failed at the original head (8192 instead of 64; tools:unknown)
+and pass with the Runtime and tool-rule corrections. No assertions were removed
+or skipped. Same macOS / Flutter 3.47.2 / Dart 3.13.2 environment.
+
+- From `packages/mm_assistant`: `dart test test/capability_review_regression_test.dart test/maintained_tools_wire_test.dart test/task_output_boundary_test.dart test/model_policy_test.dart test/task_runtime_test.dart --reporter expanded` — 43 passed. Run from this package directory so the existing policy fixture paths resolve.
+- From `apps/marginmind`: `flutter test --no-pub test/assistant_capabilities_test.dart test/runtime_review_regression_test.dart` — 15 passed (including rule-v1 migration and failed configuration-save rollback).
+- Targeted `dart analyze` of changed implementation/test files: no issues; formatting and diff checks clean. No full-suite/coverage run or CI wait.

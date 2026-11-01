@@ -40,6 +40,7 @@ class SdkAgentRuntime implements AgentRuntime {
   @override
   RuntimeRunHandle<T> start<T>(TaskRequest<T> request, RunContext context) {
     final definition = tasks.resolve<T>(request.spec);
+    context = _boundTaskContext(request, context);
     if (!_active.add(context.runId)) throw StateError('Run already active');
     final handle = RuntimeRunHandle<T>._(this, request, context, definition);
     unawaited(handle._start());
@@ -89,8 +90,9 @@ class SdkAgentRuntime implements AgentRuntime {
       maxOutputTokens: original.maxOutputTokens,
       purpose: original.purpose,
     );
+    final boundedChild = _boundTaskContext(request, child);
     if (!_active.add(childRunId)) throw StateError('Run already active');
-    final handle = RuntimeRunHandle<T>._(this, request, child, definition);
+    final handle = RuntimeRunHandle<T>._(this, request, boundedChild, definition);
     try {
       // Keep application proposal/write receipts, but no model calls to replay.
       final previous = handle._decodeState(saved.checkpoint);
@@ -125,11 +127,17 @@ class SdkAgentRuntime implements AgentRuntime {
       throw StateError('Run is terminal');
     }
     final definition = tasks.resolve<T>(request.spec);
+    var bounded = _boundTaskContext(request, saved.context);
+    for (final phase in saved.configurationPhases) {
+      bounded = _boundTaskContext(request, bounded, previousLimit: phase.config.policy.maxOutputTokens);
+    }
     if (!_active.add(context.runId)) throw StateError('Run already active');
-    final handle = RuntimeRunHandle<T>._(this, request, saved.context, definition);
+    final handle = RuntimeRunHandle<T>._(this, request, bounded, definition);
     handle._revision = saved.revision;
     handle._sequence = saved.checkpoint['sequence'] as int? ?? saved.revision;
-    handle._phases = saved.configurationPhases.toList();
+    handle._phases = [
+      for (final phase in saved.configurationPhases) phase.phase == handle._context.phase ? handle._context : phase,
+    ];
     handle._calls = saved.usage.modelCalls;
     handle._repairs = saved.usage.repairs;
     handle._inputTokens = saved.usage.inputTokens;
@@ -152,9 +160,12 @@ class SdkAgentRuntime implements AgentRuntime {
 }
 
 class RuntimeRunHandle<T> implements RunHandle<T> {
-  RuntimeRunHandle._(this.runtime, this.request, this._context, this.definition)
-    : _state = sdk.AgentState(sessionId: _context.runId),
-      _phases = [_context];
+  RuntimeRunHandle._(this.runtime, this.request, RunContext context, this.definition)
+    : _context = _boundTaskContext(request, context),
+      _state = sdk.AgentState(sessionId: context.runId),
+      _phases = [] {
+    _phases = [_context];
+  }
   final SdkAgentRuntime runtime;
   final TaskRequest<T> request;
   final TaskDefinition<T> definition;
@@ -534,8 +545,8 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
     try {
       _state = sdk.AgentState.fromJson(jsonDecode(jsonEncode(_state.toJson())));
       _state.isRunning = false;
-      _context = next;
-      _phases = [..._phases, next];
+      _context = _boundTaskContext(request, next, previousLimit: _context.config.policy.maxOutputTokens);
+      _phases = [..._phases, _context];
       // Signatures are bound to model identity; never send old blocks to a new model.
       (_state.metadata.putIfAbsent('runtime.configurationHistory.v1', () => <dynamic>[]) as List).add(
         _state.history.toJson(),
@@ -739,4 +750,23 @@ class _RuntimeClient<T> implements sdk.LLMClient {
     bool? jsonOutput,
     CancelToken? cancelToken,
   }) async => throw UnsupportedError('Task runtime uses SDK final-message harness; drafts are not committed');
+}
+
+/// The Runtime owns this invariant even when callers supply a prebuilt snapshot.
+/// A new configuration can lower an admitted ceiling, never raise it. Store the
+/// narrowed policy before dispatch so manifests describe the actual wire value.
+RunContext _boundTaskContext<T>(TaskRequest<T> request, RunContext context, {int? previousLimit}) {
+  final limits = [
+    request.maxOutputTokens,
+    request.spec.maxOutputTokens,
+    context.config.policy.maxOutputTokens,
+    context.config.capabilities.outputTokens,
+    previousLimit,
+  ].whereType<int>().toList();
+  if (limits.any((limit) => limit <= 0)) throw const ConfigurationFailure('invalidOutputLimit');
+  final limit = limits.isEmpty ? null : limits.reduce((a, b) => a < b ? a : b);
+  if (limit == context.config.policy.maxOutputTokens) return context;
+  final encoded = encodeRunContext(context);
+  (encoded['policy'] as Map)['maxOutputTokens'] = limit;
+  return decodeRunContext(encoded);
 }
