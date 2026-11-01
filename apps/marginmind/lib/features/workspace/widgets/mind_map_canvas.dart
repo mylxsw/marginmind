@@ -1748,17 +1748,20 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < 3; i++)
-                        Container(
-                          width: 3,
-                          height: 3,
-                          margin: const EdgeInsets.symmetric(vertical: 1.5),
-                          decoration: BoxDecoration(color: _nodeSelectionColor(c), shape: BoxShape.circle),
-                        ),
-                    ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < 3; i++)
+                          Container(
+                            width: 3,
+                            height: 3,
+                            margin: const EdgeInsets.symmetric(vertical: 1.5),
+                            decoration: BoxDecoration(color: _nodeSelectionColor(c), shape: BoxShape.circle),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

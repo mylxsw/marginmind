@@ -75,10 +75,14 @@ class WorkspaceDesktopShell extends ConsumerWidget {
               ),
               key: const ValueKey('workspace-tab-row'),
               height: MMSizes.windowTitlebarHeight,
-              decoration: BoxDecoration(color: Color.lerp(c.windowBackground, c.sidebarOpaque, .35)),
-              foregroundDecoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: c.separator)),
+              decoration: BoxDecoration(
+                color: touch ? Color.lerp(c.windowBackground, c.sidebarOpaque, .35) : c.windowBackground,
               ),
+              foregroundDecoration: touch
+                  ? BoxDecoration(
+                      border: Border(bottom: BorderSide(color: c.separator)),
+                    )
+                  : null,
               child: Row(
                 children: [
                   if (!sidebarVisible || touch)
@@ -217,15 +221,17 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   );
                   final body = WorkspaceTabbedContent(studySetId: studySetId, documentMap: documentMap);
                   final panel = Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                    padding: touch ? const EdgeInsets.fromLTRB(4, 8, 8, 8) : EdgeInsets.zero,
                     child: ClipRRect(
                       key: const ValueKey('workspace-right-sidebar'),
-                      borderRadius: BorderRadius.circular(MMRadii.sidebar),
+                      borderRadius: touch ? BorderRadius.circular(MMRadii.sidebar) : BorderRadius.zero,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: c.sidebarOpaque,
-                          border: Border.all(color: c.separator),
-                          borderRadius: BorderRadius.circular(MMRadii.sidebar),
+                          border: touch
+                              ? Border.all(color: c.separator)
+                              : Border(left: BorderSide(color: c.separator, width: .5)),
+                          borderRadius: touch ? BorderRadius.circular(MMRadii.sidebar) : BorderRadius.zero,
                         ),
                         child: RightPanelView(studySetId: studySetId),
                       ),
