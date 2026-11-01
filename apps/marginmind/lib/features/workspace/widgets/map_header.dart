@@ -4,8 +4,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mm_design/mm_design.dart';
 
-export 'generate_map_button.dart';
-
 enum MapPaneSlot { canvas, header }
 
 class MapHeaderGeometry {

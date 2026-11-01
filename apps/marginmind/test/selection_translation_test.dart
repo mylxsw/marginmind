@@ -11,6 +11,7 @@ import 'package:marginmind/features/workspace/widgets/annotation_color_button.da
 import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
 import 'package:marginmind/features/workspace/widgets/selection_translation.dart';
+import 'package:marginmind/features/workspace/widgets/vocabulary_add_button.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:marginmind/settings/settings_window.dart';
@@ -514,8 +515,10 @@ void main() {
       final popup = find.byKey(const ValueKey('selection-translation-result'));
       final scroll = find.byKey(const ValueKey('selection-translation-scroll'));
       final copyBounds = tester.getRect(copy);
+      final favoriteBounds = tester.getRect(find.byType(VocabularyAddButton));
       expect(copyBounds.top, greaterThan(tester.getRect(scroll).bottom));
-      expect(copyBounds.bottom, closeTo(tester.getRect(popup).bottom - 16, .1));
+      expect(copyBounds.center.dy, closeTo(favoriteBounds.center.dy, .1));
+      expect(favoriteBounds.bottom, closeTo(tester.getRect(popup).bottom - 14, .1));
       expect(copyBounds.left, closeTo(tester.getRect(popup).left + 14, .1));
       if (long) {
         final position = tester

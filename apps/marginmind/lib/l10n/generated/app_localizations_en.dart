@@ -4067,6 +4067,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapHasMap => 'Has a map';
 
   @override
+  String get mapEmptyGenerateTitle => 'Turn your source into a mind map';
+
+  @override
+  String get mapEmptyGenerateSubtitle => 'Capture key ideas, organize the structure, and keep the original context.';
+
+  @override
+  String get mapEmptySourceStart => 'Start with this source';
+
+  @override
+  String get mapEmptyInstructionsPlaceholder => 'For example: organize by events, impact, and responses';
+
+  @override
   String mapGenerateFrom(String document) {
     return 'Generate a Map from “$document”';
   }

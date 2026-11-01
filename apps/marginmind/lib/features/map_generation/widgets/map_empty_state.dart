@@ -62,24 +62,18 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
     super.dispose();
   }
 
-  String _documentTitle() {
+  Document? _document() {
     final workspace = ref.watch(workspaceProvider(widget.studySetId));
     final loaded = ref.watch(workspaceContentProvider(widget.studySetId));
     final content = loaded ?? ref.read(workspaceProvider(widget.studySetId).notifier).content;
-    final activeDocId = workspace.activeDocumentId;
-    if (activeDocId != null) {
-      final doc = content.document(activeDocId);
-      if (doc != null) return doc.title;
-    }
-    final firstDoc = content.documents.firstOrNull;
-    return firstDoc?.title ?? '';
+    return content.document(workspace.activeDocumentId ?? '') ?? content.documents.firstOrNull;
   }
 
-  String _documentId() {
-    final workspace = ref.watch(workspaceProvider(widget.studySetId));
-    final loaded = ref.watch(workspaceContentProvider(widget.studySetId));
-    final content = loaded ?? ref.read(workspaceProvider(widget.studySetId).notifier).content;
-    return workspace.activeDocumentId ?? content.documents.firstOrNull?.id ?? '';
+  String _documentTitle() => _document()?.title ?? '';
+  String _documentId() => _document()?.id ?? '';
+
+  void _createBlankTopic() {
+    ref.read(workspaceProvider(widget.studySetId).notifier).addTopic('');
   }
 
   void _toggleSuggestion(String text) {
@@ -160,6 +154,7 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
       onInstructionsChanged: (val) {
         _controller.text = val;
         widget.onInstructionsChanged?.call(val);
+        if (mounted) setState(() {});
       },
     );
   }
@@ -169,165 +164,230 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
-
-    final isUnconfigured = _needsSetup;
-
-    final docTitle = _documentTitle();
+    final document = _document();
     final scanned = _scanned(listen: true);
-
-    final suggestions = [
-      l.mapGenerateSuggestExam,
-      l.mapGenerateSuggestExplain,
-      l.mapGenerateSuggestQuotes,
-      l.mapGenerateSuggestExamples,
-    ];
+    final suggestions = [l.mapGenerateSuggestQuotes, l.mapGenerateSuggestExplain, l.mapGenerateSuggestExamples];
 
     return CallbackShortcuts(
       bindings: {primaryShortcut(LogicalKeyboardKey.enter): _startGeneration},
       child: ColoredBox(
         color: c.canvas,
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.xl),
-            child: Transform.translate(
-              offset: const Offset(0, -MMSizes.ideaBarBottomInset / 2),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Center within the scrollable extent; short windows must not clip
+            // the first controls above the viewport.
+            final compact = constraints.maxWidth < 420 || constraints.maxHeight < 600;
+            final gap = compact ? MMSpacing.xl : MMSpacing.xxxl;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xl, vertical: MMSpacing.xxxl),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: MMSizes.mapEmptyStateWidth),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Icon glyph
-                    Container(
-                      width: MMSizes.mapEmptyGlyph,
-                      height: MMSizes.mapEmptyGlyph,
-                      decoration: BoxDecoration(
-                        color: c.researchTint,
-                        borderRadius: BorderRadius.circular(MMRadii.mapEmptyGlyph),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(MMIcons.generateMap, size: 24, color: c.research),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Title
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        l.mapGenerateFrom(docTitle),
-                        style: t.title3.copyWith(color: c.label),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // AI configured vs unconfigured
-                    if (isUnconfigured) ...[
-                      const SizedBox(width: 360, child: ModelSetupCard(inline: true)),
-                    ] else ...[
-                      // Input box
-                      Container(
-                        decoration: BoxDecoration(
-                          color: c.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: _focused ? c.research : c.separator, width: 1),
-                          boxShadow: [if (_focused) BoxShadow(color: c.researchTint, spreadRadius: 3)],
+                constraints: BoxConstraints(minHeight: (constraints.maxHeight - 64).clamp(0, double.infinity)),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: MMSizes.mapEmptyStateWidth),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            l.mapEmptyGenerateTitle,
+                            style: t.largeTitle.copyWith(fontWeight: FontWeight.w600),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                        padding: const EdgeInsets.fromLTRB(10, 10, 8, 12),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Semantics(
-                              label: l.mapIdeaHint,
-                              child: TextField(
-                                key: const ValueKey('map-empty-state-instructions'),
-                                controller: _controller,
-                                focusNode: _focusNode,
-                                minLines: 2,
-                                maxLines: 6,
-                                buildCounter: (context, {required currentLength, required isFocused, maxLength}) =>
-                                    null,
-                                style: t.body.copyWith(height: 20 / 14),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  border: InputBorder.none,
-                                  hintText: l.mapIdeaHint,
-                                  hintStyle: t.body.copyWith(color: c.secondaryLabel),
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                onChanged: (text) {
-                                  widget.onInstructionsChanged?.call(text);
-                                  setState(() {});
-                                },
-                              ),
+                        const SizedBox(height: MMSpacing.s),
+                        Text(
+                          l.mapEmptyGenerateSubtitle,
+                          style: t.body.copyWith(color: c.secondaryLabel, height: 1.5),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: gap),
+                        if (document != null) ...[
+                          _SourceTopic(document: document, onAdd: _createBlankTopic),
+                          SizedBox(height: gap),
+                        ],
+                        if (_needsSetup)
+                          const SizedBox(width: 360, child: ModelSetupCard(inline: true))
+                        else ...[
+                          Container(
+                            key: const ValueKey('map-empty-state-composer'),
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              borderRadius: BorderRadius.circular(MMRadii.cover),
+                              border: Border.all(color: _focused ? c.research : c.separator),
+                              boxShadow: [if (_focused) BoxShadow(color: c.researchTint, spreadRadius: 3)],
                             ),
-                            const SizedBox(height: 8),
-                            // Wraps instead of overflowing in a narrow map pane.
-                            Wrap(
-                              alignment: WrapAlignment.spaceBetween,
-                              runSpacing: 6,
+                            clipBehavior: Clip.antiAlias,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                MMButton(
-                                  key: const ValueKey('map-empty-state-settings-button'),
-                                  label: l.mapGenerateSettings,
-                                  icon: MMIcons.adjust,
-                                  variant: MMButtonVariant.plain,
-                                  onPressed: _openSettings,
+                                Padding(
+                                  padding: const EdgeInsets.all(MMSpacing.l),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        l.mapGenerateInstructionsHint,
+                                        style: t.body.copyWith(color: c.secondaryLabel),
+                                      ),
+                                      const SizedBox(height: MMSpacing.s),
+                                      TextField(
+                                        key: const ValueKey('map-empty-state-instructions'),
+                                        controller: _controller,
+                                        focusNode: _focusNode,
+                                        minLines: 2,
+                                        maxLines: 6,
+                                        style: t.body.copyWith(height: 1.6),
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          border: InputBorder.none,
+                                          hintText: l.mapEmptyInstructionsPlaceholder,
+                                          hintStyle: t.body.copyWith(color: c.secondaryLabel, height: 1.6),
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                        onChanged: (text) {
+                                          widget.onInstructionsChanged?.call(text);
+                                          setState(() {});
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                Tooltip(
-                                  message: scanned ? l.mapBannerNeedsOcr : '',
-                                  child: MMButton(
-                                    key: const ValueKey('map-empty-state-start-button'),
-                                    label: l.mapGenerateStart,
-                                    color: c.research,
-                                    variant: MMButtonVariant.primary,
-                                    onPressed: scanned ? null : _startGeneration,
+                                Divider(height: 1, thickness: MMSizes.hairline, color: c.separator),
+                                Padding(
+                                  padding: const EdgeInsets.all(MMSpacing.s),
+                                  child: Wrap(
+                                    alignment: WrapAlignment.spaceBetween,
+                                    runSpacing: MMSpacing.s,
+                                    children: [
+                                      MMButton(
+                                        key: const ValueKey('map-empty-state-settings-button'),
+                                        label: l.mapGenerateSettings,
+                                        icon: MMIcons.adjust,
+                                        variant: MMButtonVariant.plain,
+                                        onPressed: _openSettings,
+                                      ),
+                                      Tooltip(
+                                        message: scanned ? l.mapBannerNeedsOcr : '',
+                                        child: MMButton(
+                                          key: const ValueKey('map-empty-state-start-button'),
+                                          label: l.mapGenerate,
+                                          color: c.research,
+                                          foregroundColor: c.onResearch,
+                                          variant: MMButtonVariant.primary,
+                                          onPressed: scanned || document == null ? null : _startGeneration,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Suggestion chips
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final suggestion in suggestions)
-                            _SuggestionChip(
-                              text: suggestion,
-                              selected: _isSuggestionSelected(suggestion),
-                              onTap: () => _toggleSuggestion(suggestion),
-                            ),
+                          ),
+                          const SizedBox(height: MMSpacing.l),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: MMSpacing.s,
+                            runSpacing: MMSpacing.s,
+                            children: [
+                              for (final suggestion in suggestions)
+                                _SuggestionChip(
+                                  text: suggestion,
+                                  selected: _isSuggestionSelected(suggestion),
+                                  onTap: () => _toggleSuggestion(suggestion),
+                                ),
+                            ],
+                          ),
                         ],
-                      ),
-                    ],
-
-                    const SizedBox(height: 22),
-
-                    // Blank topic button
-                    MMButton(
-                      key: const ValueKey('map-empty-state-blank-button'),
-                      label: l.mapGenerateBlank,
-                      variant: MMButtonVariant.plain,
-                      onPressed: () {
-                        ref.read(workspaceProvider(widget.studySetId).notifier).addTopic('');
-                      },
+                        SizedBox(height: gap),
+                        MMButton(
+                          key: const ValueKey('map-empty-state-blank-button'),
+                          label: l.mapGenerateBlank,
+                          icon: MMIcons.chevronRight,
+                          variant: MMButtonVariant.plain,
+                          onPressed: _createBlankTopic,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// A prospective root topic, grounded in the real source, not an AI summary.
+class _SourceTopic extends StatelessWidget {
+  const _SourceTopic({required this.document, required this.onAdd});
+  final Document document;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final t = context.mmText;
+    final l = context.l10n;
+    final origin = document.origin;
+    final source = origin == null ? document.format.name.toUpperCase() : Uri.parse(origin.url).host;
+    final icon = origin != null || document.format == DocumentFormat.web
+        ? MMIcons.web
+        : switch (document.format) {
+            DocumentFormat.epub || DocumentFormat.mobi || DocumentFormat.azw3 => MMIcons.ebook,
+            _ => MMIcons.document,
+          };
+    return Column(
+      children: [
+        Text(l.mapEmptySourceStart, style: t.callout.copyWith(color: c.secondaryLabel)),
+        const SizedBox(height: MMSpacing.m),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(width: 52),
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: MMSizes.mapEmptySourceWidth),
+                child: Tooltip(
+                  message: document.title,
+                  child: Container(
+                    key: const ValueKey('map-empty-state-source'),
+                    constraints: const BoxConstraints(minHeight: MMSizes.mapEmptySourceHeight),
+                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xl, vertical: MMSpacing.l),
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(MMRadii.mapEmptyGlyph),
+                      border: Border.all(color: c.research, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: 22, color: c.research),
+                        const SizedBox(width: MMSpacing.m),
+                        Flexible(
+                          child: Text(document.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: t.headline),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+            SizedBox(width: 24, child: Divider(height: 1, color: c.research, thickness: 1)),
+            MMIconButton(
+              key: const ValueKey('map-empty-state-source-add'),
+              icon: MMIcons.add,
+              tooltip: l.mapGenerateBlank,
+              onPressed: onAdd,
+            ),
+          ],
         ),
-      ),
+        const SizedBox(height: MMSpacing.s),
+        Text('${l.mapGenerateSource}：$source', style: t.footnote.copyWith(color: c.secondaryLabel)),
+      ],
     );
   }
 }
@@ -355,12 +415,16 @@ class _SuggestionChip extends StatelessWidget {
           final fg = selected ? c.onResearch : (hovered ? c.label : c.secondaryLabel);
 
           return Container(
-            height: 24,
-            padding: const EdgeInsets.symmetric(horizontal: 9),
+            constraints: BoxConstraints(minHeight: context.mmTouchPlatform ? MMSizes.touchTarget : 24),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
             child: Center(
               widthFactor: 1.0,
-              child: Text(text, style: t.callout.copyWith(color: fg, height: 1)),
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: t.callout.copyWith(color: fg),
+              ),
             ),
           );
         },

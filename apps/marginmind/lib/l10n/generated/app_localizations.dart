@@ -7292,6 +7292,30 @@ abstract class AppLocalizations {
   /// **'Has a map'**
   String get mapHasMap;
 
+  /// No description provided for @mapEmptyGenerateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn your source into a mind map'**
+  String get mapEmptyGenerateTitle;
+
+  /// No description provided for @mapEmptyGenerateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture key ideas, organize the structure, and keep the original context.'**
+  String get mapEmptyGenerateSubtitle;
+
+  /// No description provided for @mapEmptySourceStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with this source'**
+  String get mapEmptySourceStart;
+
+  /// No description provided for @mapEmptyInstructionsPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: organize by events, impact, and responses'**
+  String get mapEmptyInstructionsPlaceholder;
+
   /// No description provided for @mapGenerateFrom.
   ///
   /// In en, this message translates to:

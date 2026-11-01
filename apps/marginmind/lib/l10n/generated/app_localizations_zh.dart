@@ -3895,6 +3895,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapHasMap => '已有脑图';
 
   @override
+  String get mapEmptyGenerateTitle => '从资料生成脑图';
+
+  @override
+  String get mapEmptyGenerateSubtitle => '提炼重点，梳理结构，保留原文脉络';
+
+  @override
+  String get mapEmptySourceStart => '从这份资料开始';
+
+  @override
+  String get mapEmptyInstructionsPlaceholder => '例如：按事件经过、影响和应对措施整理';
+
+  @override
   String mapGenerateFrom(String document) {
     return '从「$document」生成脑图';
   }

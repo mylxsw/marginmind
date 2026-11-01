@@ -82,7 +82,9 @@ void main() {
         prefs: {'settings.appearance': dark ? 'dark' : 'light'},
         overrides: [mapGeneratorProvider.overrideWithValue(() async => updateEngine())],
       );
-      await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
       await tester.pumpAndSettle();
       await _save(tester, 'scene_11_${dark ? 'dark' : 'light'}');
       Navigator.of(tester.element(find.byType(UpdateMapSheet))).pop();

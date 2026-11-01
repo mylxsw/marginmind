@@ -163,7 +163,9 @@ void main() {
         pageText: (_, _) async => '',
         overrides: [pdfOcrServiceProvider.overrideWithValue(ocr)],
       );
-      await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('map-range-toggle-c1')));
       final range = find.byType(MapSourceRange).first;
@@ -188,7 +190,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('map-ocr-banner')), findsOneWidget);
       await _save(tester, 'scene_14_scan_$mode');
-      await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
       await tester.pumpAndSettle();
       expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-sheet-start-button'))).onPressed, isNull);
       await _save(tester, 'scene_14_scan_sheet_$mode');
@@ -221,17 +225,28 @@ void main() {
       final wsController = container.read(workspaceProvider('demo-1').notifier);
       final genController = container.read(mapGenerationControllerProvider('demo-1').notifier);
 
+      wsController.selectCard('c3');
+      await tester.pumpAndSettle();
+      await _save(tester, 'map_header_$mode');
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      await _save(tester, 'map_more_menu_$mode');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
       // --- Scene 1: Empty state on mind map ---
       await wsController.addMap('学习的底层逻辑');
       await tester.pumpAndSettle();
 
-      expect(find.text('从「学习的底层逻辑」生成脑图'), findsOneWidget);
+      expect(find.text('从资料生成脑图'), findsOneWidget);
       await _save(tester, 'scene_1_empty_$mode');
 
       // --- Scene 2: Settings sheet ---
-      final headerButton = find.byKey(const ValueKey('map-generate-header-button'));
-      expect(headerButton, findsOneWidget);
-      await tester.tap(headerButton);
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      final menuItem = find.byKey(const ValueKey('map-generate-menu-item'));
+      expect(menuItem, findsOneWidget);
+      await tester.tap(menuItem);
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('map-generate-sheet-start-button')), findsOneWidget);

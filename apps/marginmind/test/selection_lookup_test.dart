@@ -360,8 +360,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(SelectionTranslation), findsOneWidget);
     expect(find.byTooltip('生词本收录单词和 8 个词以内的短语'), findsOneWidget);
-    final button = tester.widget<MMButton>(
-      find.descendant(of: find.byType(VocabularyAddButton), matching: find.byType(MMButton)),
+    final button = tester.widget<MMIconButton>(
+      find.descendant(of: find.byType(VocabularyAddButton), matching: find.byType(MMIconButton)),
     );
     expect(button.onPressed, isNull);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
@@ -396,8 +396,14 @@ void main() {
     expect(find.byTooltip('翻译（T）'), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyT);
     await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+    final favorite = find.byType(VocabularyAddButton);
+    expect(find.descendant(of: favorite, matching: find.byIcon(MMIcons.star)), findsOneWidget);
+    expect(find.descendant(of: favorite, matching: find.byType(MMButton)), findsNothing);
+    expect(find.text('加入生词本'), findsNothing);
+    await tester.tap(find.byTooltip('加入生词本（S）'));
     await tester.pumpAndSettle();
+    final savedStar = find.descendant(of: favorite, matching: find.byIcon(MMIcons.starFill));
+    expect(tester.widget<Icon>(savedStar).color, MMInkColor.yellow.color);
     final e = container.read(vocabularyProvider).requireValue.entries.single;
     expect(e.kind, VocabularyKind.phrase);
     expect(e.senses.single.meaning, '认真工作');

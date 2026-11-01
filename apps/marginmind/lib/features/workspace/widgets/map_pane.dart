@@ -41,6 +41,7 @@ import 'map_style_popover.dart';
 import 'outline_view.dart';
 import 'map_selection_bar.dart';
 import 'map_header.dart';
+import 'generate_map_menu.dart';
 import 'workspace_toolbar.dart';
 import 'tag_content_pane.dart';
 import '../workspace_chrome_controller.dart';
@@ -652,10 +653,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final l = context.l10n;
     final c = context.mmColors;
     final t = context.mmText;
-    Widget nodeMenuIcon(MMNodeAction action) => Builder(
-      builder: (context) =>
-          MMNodeActionIcon(action, color: IconTheme.of(context).color ?? c.label, size: MMSizes.dropdownIcon),
-    );
     Widget menuLabel(String label, Widget icon) => Row(
       children: [
         SizedBox.square(
@@ -1223,30 +1220,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                             ),
                                           ),
                                         ),
-                                        MMToolbarItem(
-                                          id: 'map-generate',
-                                          priority: 55,
-                                          child: GenerateMapButton(studySetId: widget.studySetId),
-                                          compactChild: GenerateMapButton(studySetId: widget.studySetId, compact: true),
-                                          menuEntry: MMDropdownItem<VoidCallback>(
-                                            value: () {
-                                              final docId =
-                                                  state.activeDocumentId ?? content.documents.firstOrNull?.id ?? '';
-                                              showGenerateMapSheet(
-                                                context,
-                                                ref,
-                                                widget.studySetId,
-                                                preselectedDocId: docId,
-                                              );
-                                            },
-                                            enabled:
-                                                map != null &&
-                                                (mapGen == null ||
-                                                    (mapGen.phase != MapGenerationPhase.reading &&
-                                                        mapGen.phase != MapGenerationPhase.streaming)),
-                                            child: menuLabel(l.mapGenerateMenu, const Icon(MMIcons.generateMap)),
-                                          ),
-                                        ),
                                         if (phone) ...[
                                           MMToolbarItem(
                                             id: 'actual-size',
@@ -1295,21 +1268,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                           enabled: map != null,
                                           child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
                                         ),
-                                        for (final command in [
-                                          (l.addChildTopic, commandBar.onChild, nodeMenuIcon(MMNodeAction.child)),
-                                          (l.addSiblingAfter, commandBar.onSibling, nodeMenuIcon(MMNodeAction.sibling)),
-                                          (l.addRelation, commandBar.onRelation, nodeMenuIcon(MMNodeAction.relation)),
-                                          (l.addSummary, commandBar.onSummary, nodeMenuIcon(MMNodeAction.summary)),
-                                          (l.addNote, commandBar.onNote, const Icon(MMIcons.addNote)),
-                                          (l.insertImage, commandBar.onImage, const Icon(MMIcons.image)),
-                                          (l.cardTags, commandBar.onTags, const Icon(MMIcons.tag)),
-                                          (l.showCardDetails, commandBar.onDetails, const Icon(MMIcons.info)),
-                                        ])
-                                          MMDropdownItem<VoidCallback>(
-                                            value: command.$2,
-                                            enabled: command.$2 != null,
-                                            child: menuLabel(command.$1, command.$3),
-                                          ),
+                                        generateMapMenuItem(context, ref, widget.studySetId),
                                         MMDropdownItem<VoidCallback>(
                                           value: () => viewCommand('center', () => _viewCommand(MindMapCommand.center)),
                                           child: menuLabel(l.centerCurrentNode, const Icon(MMIcons.locate)),

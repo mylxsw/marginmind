@@ -14,6 +14,7 @@ import 'package:marginmind/features/map_generation/map_generation_controller.dar
 import 'package:marginmind/features/map_generation/widgets/generate_map_sheet.dart';
 import 'package:marginmind/features/map_generation/widgets/map_empty_state.dart';
 import 'package:marginmind/features/workspace/widgets/map_source_chip.dart';
+import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart' hide Card;
 import 'package:mm_core/testing.dart';
@@ -111,11 +112,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Empty state glyph and title
-      expect(find.byIcon(MMIcons.generateMap), findsWidgets);
-      expect(find.text('从「学习的底层逻辑」生成脑图'), findsOneWidget);
+      expect(find.byKey(const ValueKey('map-empty-state-source')), findsOneWidget);
+      expect(find.text('从资料生成脑图'), findsOneWidget);
 
       // Suggestions
-      final examChip = find.text('侧重考试要点');
+      final examChip = find.text('保留原文关键句');
       expect(examChip, findsOneWidget);
       final explainChip = find.text('每个主题附一句解释');
       expect(explainChip, findsOneWidget);
@@ -125,12 +126,15 @@ void main() {
       // Toggle suggestion 1
       await tester.tap(examChip);
       await tester.pumpAndSettle();
-      expect(find.descendant(of: instructionsField, matching: find.textContaining('侧重考试要点')), findsOneWidget);
+      expect(find.descendant(of: instructionsField, matching: find.textContaining('保留原文关键句')), findsOneWidget);
 
       // Toggle suggestion 2
       await tester.tap(explainChip);
       await tester.pumpAndSettle();
-      expect(find.descendant(of: instructionsField, matching: find.textContaining('侧重考试要点；每个主题附一句解释')), findsOneWidget);
+      expect(
+        find.descendant(of: instructionsField, matching: find.textContaining('保留原文关键句；每个主题附一句解释')),
+        findsOneWidget,
+      );
 
       // Untoggle suggestion 1
       await tester.tap(examChip);
@@ -206,8 +210,10 @@ void main() {
         },
       );
 
-      // Open sheet via header button
-      await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+      // Open sheet from the map menu
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
       await tester.pumpAndSettle();
 
       final sheet = find.byType(GenerateMapSheet);
@@ -739,11 +745,32 @@ void main() {
   });
 
   group('Sidebar and Header Controls', () {
-    testWidgets('GenerateMapButton state transitions', (tester) async {
+    testWidgets('generation lives in the neutral more menu and follows preview state', (tester) async {
       final container = await openWorkspace(tester);
 
-      // Initially "生成脑图"
-      expect(find.text('生成脑图'), findsOneWidget);
+      expect(find.text('生成脑图'), findsNothing);
+      expect(find.byKey(const ValueKey('map-generate-header-button')), findsNothing);
+      final workspace = container.read(workspaceProvider('demo-1').notifier);
+      workspace.selectCard('c3');
+      await tester.pumpAndSettle();
+      expect(find.byType(MapNodeBar), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      final item = find.byKey(const ValueKey('map-generate-menu-item'));
+      expect(find.descendant(of: item, matching: find.text('生成脑图')), findsOneWidget);
+      expect(tester.widget<MMDropdownItem<VoidCallback>>(item).enabled, isTrue);
+      final icon = find.descendant(of: item, matching: find.byIcon(MMIcons.generateMap));
+      expect(IconTheme.of(tester.element(icon)).color, tester.element(icon).mmColors.label);
+      final menu = find.byWidgetPredicate((w) => w is MMAdaptiveToolbar && w.menuKey == const ValueKey('map-more'));
+      final entries = tester.widget<MMAdaptiveToolbar>(menu).menuEntries;
+      for (final label in ['添加子主题', '在后面添加同级节点', '添加关联线', '添加概要', '添加笔记', '插入图片…', '标签…', '显示详情']) {
+        for (final entry in entries) {
+          expect(find.descendant(of: find.byWidget(entry), matching: find.text(label)), findsNothing);
+        }
+      }
+      expect(find.text('定位选中节点'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
 
@@ -759,14 +786,25 @@ void main() {
           generatedAt: DateTime.now(),
         ),
         phase: MapGenerationPhase.streaming,
+        lines: [MapLine(id: 'draft-1', kind: MapLineKind.add, parentId: 'ROOT', title: '待审阅主题')],
       );
       await tester.pump();
-      expect(find.text('生成中'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pump();
+      expect(find.descendant(of: item, matching: find.text('生成中')), findsOneWidget);
+      expect(tester.widget<MMDropdownItem<VoidCallback>>(item).enabled, isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
 
       // Simulate review state
       controller.state = controller.state!.copyWith(phase: MapGenerationPhase.review);
-      await tester.pump();
-      expect(find.text('审阅中'), findsOneWidget);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: item, matching: find.text('审阅中')), findsOneWidget);
+      expect(tester.widget<MMDropdownItem<VoidCallback>>(item).enabled, isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
     });
 
     testWidgets('WorkspaceSidebar shows mind map icon for associated document and updates dot', (tester) async {

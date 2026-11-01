@@ -22,14 +22,12 @@ class VocabularyAddButton extends ConsumerStatefulWidget {
     this.lookup,
     this.translation,
     this.contextOnly = false,
-    this.iconOnly = false,
   });
   final String studySetId, selected;
   final TranslationParagraph paragraph;
   final WordLookupResult? lookup;
   final String? translation;
   final bool contextOnly;
-  final bool iconOnly;
   @override
   ConsumerState<VocabularyAddButton> createState() => VocabularyAddButtonState();
 }
@@ -179,29 +177,12 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
         : e.status == VocabularyStatus.known
         ? l.vocabularyKnown
         : l.vocabularyLearning;
-    if (widget.iconOnly) {
-      return MMIconButton(
-        icon: e == null ? MMIcons.star : MMIcons.starFill,
-        tooltip: tooltip,
-        color: e == null ? null : MMInkColor.yellow.color,
-        selected: e != null,
-        onPressed: onPressed,
-      );
-    }
-    return Tooltip(
-      message: e == null || !eligible ? tooltip : '',
-      child: MMButton(
-        icon: e == null ? MMIcons.star : MMIcons.starFill,
-        variant: e == null ? MMButtonVariant.primary : MMButtonVariant.secondary,
-        color: context.mmColors.vocabulary,
-        foregroundColor: context.mmColors.onVocabulary,
-        label: e == null
-            ? l.vocabularyAdd
-            : e.status == VocabularyStatus.known
-            ? l.vocabularyKnown
-            : l.vocabularyLearning,
-        onPressed: onPressed,
-      ),
+    return MMIconButton(
+      icon: e == null ? MMIcons.star : MMIcons.starFill,
+      tooltip: tooltip,
+      color: e == null ? null : MMInkColor.yellow.color,
+      selected: e != null,
+      onPressed: onPressed,
     );
   }
 }

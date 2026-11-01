@@ -205,7 +205,6 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
       selected: term,
       lookup: r,
       contextOnly: contextOnly,
-      iconOnly: true,
     );
     return Actions(
       actions: {

@@ -121,7 +121,9 @@ void main() {
       content: InMemoryStudySetContentRepository({'demo-1': before}),
       overrides: [mapGeneratorProvider.overrideWithValue(() async => updateEngine())],
     );
-    await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+    await tester.tap(find.byKey(const ValueKey('map-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
     await tester.pumpAndSettle();
     expect(find.byType(UpdateMapSheet), findsOneWidget);
     expect(find.text('只处理新内容'), findsOneWidget);
@@ -220,7 +222,9 @@ void main() {
       content: InMemoryStudySetContentRepository({'demo-1': before}),
       overrides: [mapGeneratorProvider.overrideWithValue(() async => updateEngine())],
     );
-    await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+    await tester.tap(find.byKey(const ValueKey('map-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
     await tester.pumpAndSettle();
     final sheet = find.byType(UpdateMapSheet);
     await tester.tap(find.descendant(of: sheet, matching: find.byType(MMCheckbox)).last);
@@ -265,7 +269,9 @@ void main() {
       content: InMemoryStudySetContentRepository({'demo-1': updateFixture()}),
       credentialState: AssistantCredentialState.missingKey,
     );
-    await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+    await tester.tap(find.byKey(const ValueKey('map-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
     await tester.pumpAndSettle();
     expect(find.byType(ModelSetupCard), findsNothing);
     await tester.tap(find.text('预览更改'));

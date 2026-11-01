@@ -245,7 +245,9 @@ void main() {
           mapQuotePageProvider.overrideWithValue((_, _) async => throw StateError('Unavailable geometry')),
         ],
       );
-      await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+      await tester.tap(find.byKey(const ValueKey('map-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
       await tester.pumpAndSettle();
       expect(find.byType(MapSourceRange), findsNothing);
       await tester.tap(find.byKey(ValueKey('map-range-toggle-${doc.id}')));
@@ -264,7 +266,10 @@ void main() {
         await tester.enterText(fields.first, '3');
       }
       await tester.pump();
-      expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-sheet-start-button'))).onPressed, isNotNull);
+      expect(
+        tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-sheet-start-button'))).onPressed,
+        isNotNull,
+      );
       expect(tester.widget<Text>(find.byKey(const ValueKey('map-range-page-count'))).data, '2 页');
       await tester.tap(find.byKey(const ValueKey('map-generate-range-done')));
       await tester.pump();
@@ -287,7 +292,9 @@ void main() {
 
   testWidgets('source selection is separate from the range and advanced settings', (tester) async {
     await harness.openWorkspace(tester);
-    await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+    await tester.tap(find.byKey(const ValueKey('map-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
     await tester.pumpAndSettle();
     final sheet = find.byType(GenerateMapSheet);
     expect(
@@ -336,7 +343,9 @@ void main() {
     expect(find.descendant(of: banner, matching: find.text('取消')), findsNothing);
     final border = (tester.widget<Container>(banner).decoration! as BoxDecoration).border! as Border;
     expect(border.top.width, MMSizes.hairline);
-    await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+    await tester.tap(find.byKey(const ValueKey('map-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
     await tester.pumpAndSettle();
     final sheet = find.byType(GenerateMapSheet);
     expect(find.descendant(of: sheet, matching: find.byIcon(MMReaderIcons.area)), findsOneWidget);
