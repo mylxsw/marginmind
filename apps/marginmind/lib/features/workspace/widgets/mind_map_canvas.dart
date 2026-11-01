@@ -561,7 +561,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   Widget _fieldNode(String id, _NodeSpec spec, LayoutRect target, _NodeLook? look) {
     final f = field!;
-    final t = context.mmContentText;
+    final t = MMTextStyles(_drawingColors);
     final (style, kind, maxLines) = switch (spec.kind) {
       _Kind.note => (t.body.copyWith(height: 19 / 13), CardKind.note, null),
       _Kind.excerpt => (t.headline.copyWith(height: 17 / 13), CardKind.excerpt, 1),
@@ -734,7 +734,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final meta = _cache._specs[id]?.meta;
     if (meta == null || _cache._specs[id]!.segments.isNotEmpty) return card;
     final painter = TextPainter(
-      text: TextSpan(text: meta, style: context.mmContentText.footnote),
+      text: TextSpan(text: meta, style: MMTextStyles(_drawingColors).footnote),
       textDirection: TextDirection.ltr,
       maxLines: 1,
     )..layout();
@@ -1247,8 +1247,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: context.mmColors.canvas,
-              border: Border.all(color: context.mmColors.accent, width: 2),
+              color: _drawingColors.canvas,
+              border: Border.all(color: _drawingColors.accent, width: 2),
               shape: round ? BoxShape.circle : BoxShape.rectangle,
             ),
           ),
@@ -1305,7 +1305,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               child: DecoratedBox(
                 key: const ValueKey('relation-target'),
                 decoration: BoxDecoration(
-                  border: Border.all(color: context.mmColors.accent, width: 2),
+                  border: Border.all(color: _drawingColors.accent, width: 2),
                   borderRadius: BorderRadius.circular(MMRadii.card),
                 ),
               ),
@@ -1407,7 +1407,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           left: math.max(0, middle.dx - 140),
           top: math.max(math.max(curve.$1.dy, curve.$4.dy), math.max(curve.$2.dy, curve.$3.dy)) + 24,
           child: Material(
-            color: context.mmColors.canvas,
+            color: _drawingColors.canvas,
             elevation: 2,
             borderRadius: BorderRadius.circular(8),
             child: Row(
@@ -1447,9 +1447,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   /// A label of a relation (at the middle of its line) or summary.
   Widget _markLabel(String id, {required bool summary}) {
-    final t = context.mmContentText;
+    final t = MMTextStyles(_drawingColors);
     final f = _markField?.id == id ? _markField : null;
-    final palette = summary ? _mapColors(context.mmColors) : null;
+    final palette = summary ? _mapColors(_drawingColors) : null;
     final style = summary ? t.headline.copyWith(color: palette?.onSummary) : t.footnote;
     Widget? editor;
     if (f != null) {
@@ -1504,8 +1504,20 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     );
   }
 
+  MMColors get _drawingColors => mapCanvasColors(context.mmColors, widget.content.map(widget.mapId)?.backgroundColor);
+
   @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: _build);
+  Widget build(BuildContext context) {
+    final colors = _drawingColors;
+    return Theme(
+      data: Theme.of(context)
+          .copyWith(extensions: [...Theme.of(context).extensions.values.where((e) => e is! MMColors), colors]),
+      child: ColoredBox(
+        color: colors.canvas,
+        child: LayoutBuilder(builder: _build),
+      ),
+    );
+  }
 
   /// Nodes being dragged (the selection when the grabbed node is in it),
   /// the pointer in global coordinates, and where they would land. The
@@ -1705,7 +1717,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (rect == null) return null;
     final shown = _shown(id, rect);
     final left = result.leftSide.contains(id);
-    final c = context.mmColors;
+    final c = _drawingColors;
     return Positioned(
       key: const ValueKey('card-width-handle'),
       left: (left ? shown.left : shown.right) - _resizeHandleWidth / 2,
@@ -1783,6 +1795,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   Widget _nodeWidget(String id, _NodeSpec spec, AppLocalizations l, _NodeLook? look) {
     final signature = (
+      widget.content.map(widget.mapId)?.backgroundColor,
+      _drawingColors.brightness,
       look,
       spec.kind,
       spec.title,
@@ -1923,8 +1937,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Widget? _notesFooter(String id, _NodeSpec spec) {
     if (spec.attachedNotes.isEmpty) return null;
     final l = context.l10n;
-    final c = context.mmColors;
-    final t = context.mmContentText;
+    final c = _drawingColors;
+    final t = MMTextStyles(_drawingColors);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2091,7 +2105,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   Widget _build(BuildContext context, BoxConstraints viewport) {
     final l = context.l10n;
-    final c = context.mmColors;
+    final c = _drawingColors;
     final field = this.field;
     final result = _cache.update(
       expansionDrafts: _drafts,
@@ -2835,7 +2849,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                               child: IgnorePointer(
                                 child: CustomPaint(
                                   painter: DashedBorderPainter(
-                                    color: context.mmColors.accent,
+                                    color: mapCanvasColors(
+                                      context.mmColors,
+                                      widget.content.map(widget.mapId)?.backgroundColor,
+                                    ).accent,
                                     radius: 16,
                                     width: 2,
                                     dash: 5,

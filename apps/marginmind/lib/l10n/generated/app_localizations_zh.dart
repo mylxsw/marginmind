@@ -5604,4 +5604,34 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantIconApricot => '杏橙';
+
+  @override
+  String get mapBackground => '背景色';
+
+  @override
+  String get mapBackgroundTheme => '跟随主题';
+
+  @override
+  String get mapBackgroundBlack => '纯黑';
+
+  @override
+  String get mapBackgroundCharcoal => '炭灰';
+
+  @override
+  String get mapBackgroundGray => '中灰';
+
+  @override
+  String get mapBackgroundLightGray => '浅灰';
+
+  @override
+  String get mapBackgroundWhite => '纯白';
+
+  @override
+  String get mapBackgroundIvory => '米白';
+
+  @override
+  String get mapBackgroundSage => '浅绿';
+
+  @override
+  String get mapBackgroundBlue => '浅蓝';
 }

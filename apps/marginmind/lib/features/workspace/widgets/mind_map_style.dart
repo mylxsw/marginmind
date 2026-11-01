@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show Brightness;
 
 import 'package:flutter/painting.dart';
 import 'package:mm_core/mm_core.dart';
@@ -184,4 +185,17 @@ List<MapCubic> _trunk(Rect a, Rect b) {
     ],
     tip,
   );
+}
+
+/// Resolve drawing colors against the map background, independently of app chrome.
+MMColors mapCanvasColors(MMColors appColors, int? background) {
+  if (background == null) return appColors;
+  final color = Color(background);
+  final brightness = color.computeLuminance() > 0.179 ? Brightness.light : Brightness.dark;
+  final base = brightness == appColors.brightness
+      ? appColors
+      : (brightness == Brightness.light ? MMColors.light : MMColors.dark)
+            .withAccent(appColors.accent)
+            .copyWith(flat: appColors.flat);
+  return base.copyWith(canvas: color);
 }

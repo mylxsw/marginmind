@@ -43,6 +43,16 @@ void main() {
       expect(viewport.top, greaterThanOrEqualTo(phone.safe.top));
       expect(viewport.bottom, lessThanOrEqualTo(phone.size.height - phone.safe.bottom));
       expect(tester.takeException(), isNull);
+      final custom = find.byKey(const ValueKey('map-background-custom'));
+      await tester.ensureVisible(custom);
+      await tester.tap(custom);
+      await tester.pumpAndSettle();
+      final apply = find.byKey(const ValueKey('highlight-color-apply'));
+      await tester.ensureVisible(apply);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(apply);
+      await tester.pumpAndSettle();
       // Keep the same popup open while rotating; the anchor also moves.
       final rotated = Size(phone.size.height, phone.size.width);
       tester.view.physicalSize = rotated;

@@ -3001,6 +3001,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     await _update((c) => _editor.setMapStructure(c, structure));
   }
 
+  Future<void> setMapBackgroundColor(int? color) async {
+    if (content.map(state.activeMapId)?.backgroundColor == color) return;
+    await _update((c) => _editor.setMapBackgroundColor(c, color));
+  }
+
   Future<void> setMapPalette(MapPalette palette) async {
     if ((content.map(state.activeMapId)?.palette ?? MapPalette.system) == palette) return;
     await _update((c) => _editor.setMapPalette(c, palette));

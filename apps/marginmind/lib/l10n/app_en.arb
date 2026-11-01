@@ -3050,5 +3050,15 @@
   "assistantIconTitle": "AI assistant icon",
   "assistantIconIris": "Blue purple",
   "assistantIconJade": "Teal",
-  "assistantIconApricot": "Apricot"
+  "assistantIconApricot": "Apricot",
+  "mapBackground": "Background",
+  "mapBackgroundTheme": "Follow Theme",
+  "mapBackgroundBlack": "Black",
+  "mapBackgroundCharcoal": "Charcoal",
+  "mapBackgroundGray": "Gray",
+  "mapBackgroundLightGray": "Light Gray",
+  "mapBackgroundWhite": "White",
+  "mapBackgroundIvory": "Ivory",
+  "mapBackgroundSage": "Sage",
+  "mapBackgroundBlue": "Pale Blue"
 }

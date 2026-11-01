@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/map_export_scene.dart';
 import 'package:marginmind/features/workspace/widgets/map_style_popover.dart';
+import 'package:marginmind/features/workspace/widgets/highlight_custom_color_picker.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
@@ -341,6 +342,45 @@ void main() {
       await toggleMapStyle(tester);
     }
 
+    testWidgets('background presets, custom draft, reset and undo', (tester) async {
+      final (_, controller) = await open(tester);
+      MindMap map() => controller.content.map(MindMap.defaultId)!;
+      await toggleMapStyle(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-background-4294967295')));
+      await tester.pumpAndSettle();
+      expect(map().backgroundColor, 0xFFFFFFFF);
+      await controller.setMapBackgroundColor(0xFFFFFFFF);
+      await controller.undo();
+      await tester.pumpAndSettle();
+      expect(map().backgroundColor, isNull, reason: 'reselecting does not add an undo step');
+      await tester.tap(find.byKey(const ValueKey('map-background-custom')));
+      await tester.pumpAndSettle();
+      expect(find.byType(HighlightCustomColorPicker), findsOneWidget);
+      await tester.enterText(find.byKey(const ValueKey('highlight-color-hex')), '#123456');
+      await tester.pumpAndSettle();
+      expect(map().backgroundColor, isNull, reason: 'custom color remains a draft');
+      await tester.ensureVisible(find.byKey(const ValueKey('highlight-color-apply')));
+      await tester.tap(find.byKey(const ValueKey('highlight-color-apply')));
+      await tester.pumpAndSettle();
+      expect(map().backgroundColor, 0xFF123456);
+      await tester.tap(find.byKey(const ValueKey('map-background-theme')));
+      await tester.pumpAndSettle();
+      expect(map().backgroundColor, isNull);
+      await controller.undo();
+      await tester.pumpAndSettle();
+      expect(map().backgroundColor, 0xFF123456);
+      await tester.tap(find.byKey(const ValueKey('map-background-custom')));
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(HighlightCustomColorPicker), findsNothing);
+      expect(find.byType(MapStylePopover), findsOneWidget);
+      expect(map().backgroundColor, 0xFF123456);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await settleHud(tester);
+    });
+
     testWidgets('hover previews, leaving restores, a click applies one undo step', (tester) async {
       final (_, controller) = await open(tester);
       MindMap map() => controller.content.map(MindMap.defaultId)!;
@@ -351,8 +391,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(MapStylePopover), findsOneWidget);
       expect(canvas(tester).fitInsets, isNotNull, reason: 'the map makes way for the popover');
-      // Structure and palette names remain tooltips; density is explicit.
-      expect(find.descendant(of: find.byType(MapStylePopover), matching: find.byType(Text)), findsNWidgets(2));
+      // Background controls add a section without exposing thumbnail labels.
+      expect(find.byKey(const ValueKey('map-background-custom')), findsOneWidget);
 
       await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('map-structure-tree'))));
       await tester.pumpAndSettle();
@@ -455,6 +495,26 @@ void main() {
       final ink = build(_content(palette: MapPalette.ink));
       // An outlined topic: the outline color, then the canvas inside it.
       expect(boxColors(ink), containsAllInOrder([0xFF3A3A3C, MMColors.light.canvas.toARGB32()]));
+    });
+
+    test('background controls export fill and contrast, while transparency is preserved', () {
+      for (final background in [0xFFFFFFFF, 0xFF000000, 0xFF808080]) {
+        final content = _content().copyWith(maps: [MindMap.main.copyWith(backgroundColor: background)]);
+        final scene = build(content, colors: MMColors.dark);
+        expect(boxColors(scene).first, background);
+        final expected = mapCanvasColors(MMColors.dark, background);
+        expect(curveColors(scene), {expected.line.toARGB32()});
+        final transparent = MapExportScene.build(
+          content: content,
+          mapId: MindMap.defaultId,
+          title: 'Root',
+          colors: MMColors.dark,
+          researchLabel: 'Research',
+          source: (d, p) => '',
+          transparent: true,
+        );
+        expect(transparent.commands.length, scene.commands.length - 1);
+      }
     });
 
     test('the system palette keeps the export look', () {

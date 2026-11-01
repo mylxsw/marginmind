@@ -5829,4 +5829,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantIconApricot => 'Apricot';
+
+  @override
+  String get mapBackground => 'Background';
+
+  @override
+  String get mapBackgroundTheme => 'Follow Theme';
+
+  @override
+  String get mapBackgroundBlack => 'Black';
+
+  @override
+  String get mapBackgroundCharcoal => 'Charcoal';
+
+  @override
+  String get mapBackgroundGray => 'Gray';
+
+  @override
+  String get mapBackgroundLightGray => 'Light Gray';
+
+  @override
+  String get mapBackgroundWhite => 'White';
+
+  @override
+  String get mapBackgroundIvory => 'Ivory';
+
+  @override
+  String get mapBackgroundSage => 'Sage';
+
+  @override
+  String get mapBackgroundBlue => 'Pale Blue';
 }

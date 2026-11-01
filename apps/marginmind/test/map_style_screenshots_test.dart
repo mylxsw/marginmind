@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/annotation_palette.dart';
@@ -115,6 +116,45 @@ void main() {
     Directory(_out!).createSync(recursive: true);
     await _loadFonts();
   });
+
+  for (final (name, background, phone) in [
+    ('background-white', 0xFFFFFFFF, false),
+    ('background-black', 0xFF000000, false),
+    ('background-ivory-custom', 0xFFFAF6ED, false),
+    ('background-phone', 0xFFEDF3FA, true),
+  ]) {
+    testWidgets(name, skip: skip, (tester) async {
+      final container = await pumpApp(
+        tester,
+        content: InMemoryStudySetContentRepository({'demo-1': _sample()}),
+        size: phone ? const Size(390, 844) : const Size(1400, 900),
+        prefs: {'settings.appearance': 'dark', 'settings.language': 'zh'},
+        overrides: [
+          if (phone) ...[touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+        ],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      controller.setLayout(MMSplitMode.secondary);
+      await controller.setMapPalette(MapPalette.rainbow);
+      await controller.setMapBackgroundColor(background);
+      await tester.pumpAndSettle();
+      await toggleMapStyle(tester);
+      await tester.pumpAndSettle();
+      if (name.endsWith('custom')) {
+        await tester.tap(find.byKey(const ValueKey('map-background-custom')));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const ValueKey('highlight-color-apply')));
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+      await _save(tester, name);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await settleHud(tester);
+    });
+  }
 
   const styles = [
     (MapStructure.mind, MapPalette.rainbow),

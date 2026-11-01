@@ -32,6 +32,13 @@ class MapEditResult<T> {
 }
 
 extension MindMapEditing on StudySetEditor {
+  StudySetContent setMapBackgroundColor(StudySetContent c, int? color) => c.copyWith(
+    maps: [
+      for (final m in c.maps)
+        m.id == mapId ? m.copyWith(backgroundColor: color == null ? null : 0xFF000000 | (color & 0xFFFFFF)) : m,
+    ],
+  );
+
   StudySetContent setMapStructure(StudySetContent c, MapStructure structure) =>
       c.copyWith(maps: [for (final m in c.maps) m.id == mapId ? m.copyWith(structure: structure) : m]);
 

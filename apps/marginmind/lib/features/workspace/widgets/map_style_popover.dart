@@ -5,6 +5,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
 import 'mind_map_style.dart';
+import 'highlight_custom_color_picker.dart';
 
 /// Positions the style panel during layout so its nested tooltips can resolve
 /// their coordinates before painting (unlike a CompositedTransformFollower).
@@ -86,9 +87,13 @@ class MapStylePopover extends StatefulWidget {
     required this.onClose,
     this.density = MapDensity.compact,
     this.onDensity,
+    this.backgroundColor,
+    this.onBackgroundColor,
   });
 
   /// The map's own style, marked as selected.
+  final int? backgroundColor;
+  final ValueChanged<int?>? onBackgroundColor;
   final MapDensity density;
   final ValueChanged<MapDensity>? onDensity;
   final MapStructure structure;
@@ -105,6 +110,7 @@ class MapStylePopover extends StatefulWidget {
 }
 
 class _MapStylePopoverState extends State<MapStylePopover> {
+  bool _customColor = false;
   @override
   void initState() {
     super.initState();
@@ -119,7 +125,11 @@ class _MapStylePopoverState extends State<MapStylePopover> {
 
   bool _key(KeyEvent event) {
     if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.escape) return false;
-    widget.onClose();
+    if (_customColor) {
+      setState(() => _customColor = false);
+    } else {
+      widget.onClose();
+    }
     return true;
   }
 
@@ -127,6 +137,7 @@ class _MapStylePopoverState extends State<MapStylePopover> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
+    final canvasColors = mapCanvasColors(c, widget.backgroundColor);
     return MouseRegion(
       onExit: (_) => widget.onPreview(null),
       child: MMGlass(
@@ -175,10 +186,84 @@ class _MapStylePopoverState extends State<MapStylePopover> {
                     selected: p == widget.palette,
                     onHover: () => widget.onPreview((widget.structure, p)),
                     onTap: () => widget.onPalette(p),
-                    child: CustomPaint(painter: PaletteThumbPainter(mapPaletteOf(p).of(c.brightness), c)),
+                    child: CustomPaint(
+                      painter: PaletteThumbPainter(mapPaletteOf(p).of(canvasColors.brightness), canvasColors),
+                    ),
                   ),
               ],
             ),
+            if (widget.onBackgroundColor != null) ...[
+              const SizedBox(height: MMSpacing.l),
+              Text(l.mapBackground, style: context.mmText.headline),
+              const SizedBox(height: MMSpacing.s),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: [
+                  for (final (value, label) in <(int?, String)>[
+                    (null, l.mapBackgroundTheme),
+                    (0xFF000000, l.mapBackgroundBlack),
+                    (0xFF242424, l.mapBackgroundCharcoal),
+                    (0xFF808080, l.mapBackgroundGray),
+                    (0xFFF0F0F0, l.mapBackgroundLightGray),
+                    (0xFFFFFFFF, l.mapBackgroundWhite),
+                    (0xFFFAF6ED, l.mapBackgroundIvory),
+                    (0xFFEEF4EE, l.mapBackgroundSage),
+                    (0xFFEDF3FA, l.mapBackgroundBlue),
+                  ])
+                    MMInteractive(
+                      key: ValueKey('map-background-${value ?? 'theme'}'),
+                      tooltip: label,
+                      semanticLabel: label,
+                      selected: widget.backgroundColor == value,
+                      onTap: () {
+                        widget.onPreview(null);
+                        setState(() => _customColor = false);
+                        widget.onBackgroundColor!(value);
+                      },
+                      builder: (context, state) => Container(
+                        width: MMInput.touchInputOf(context) ? 40 : 32,
+                        height: MMInput.touchInputOf(context) ? 40 : 32,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: widget.backgroundColor == value ? c.accent : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: value == null ? c.canvas : Color(value),
+                            border: Border.all(color: c.secondaryLabel.withValues(alpha: .4)),
+                          ),
+                          child: value == null ? Icon(Icons.brightness_auto, size: 14, color: c.label) : null,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: MMSpacing.s),
+              if (!_customColor)
+                MMButton(
+                  key: const ValueKey('map-background-custom'),
+                  label: l.highlightCustomColor,
+                  onPressed: () => setState(() => _customColor = true),
+                )
+              else
+                HighlightCustomColorPicker(
+                  title: l.mapBackground,
+                  showPresets: false,
+                  current: MMAnnotationColor.fromColor(canvasColors.canvas),
+                  onCancel: () => setState(() => _customColor = false),
+                  onSelected: (color) {
+                    widget.onPreview(null);
+                    widget.onBackgroundColor!(color.color.toARGB32());
+                    setState(() => _customColor = false);
+                  },
+                ),
+            ],
           ],
         ),
       ),

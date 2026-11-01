@@ -240,6 +240,20 @@ void main() {
     expect(next.nodes, same(before.nodes));
   });
 
+  test('background persists per map, resets, and old documents follow the theme', () {
+    final (before, other) = editor.addMap(content, title: 'Other');
+    final next = editor.setMapBackgroundColor(before, 0xFFFAF6ED);
+    expect(next.map(MindMap.defaultId)!.backgroundColor, 0xFFFAF6ED);
+    expect(next.map(other.id), same(other));
+    final restored = StudySetContent.fromJson(next.toJson());
+    expect(restored.map(MindMap.defaultId)!.backgroundColor, 0xFFFAF6ED);
+    expect(MindMap.fromJson({'id': 'old', 'title': ''}).backgroundColor, isNull);
+    final reset = editor.setMapBackgroundColor(restored, null);
+    expect(reset.map(MindMap.defaultId)!.backgroundColor, isNull);
+    expect(reset.map(MindMap.defaultId)!.toJson().containsKey('backgroundColor'), isFalse);
+    expect(next.map(MindMap.defaultId)!.copyWith(title: 'Renamed').backgroundColor, 0xFFFAF6ED);
+  });
+
   test('merge retains other map placements and archives consumed shared cards', () {
     final (withMap, other) = editor.addMap(content, title: 'other');
     var nextId = 100;

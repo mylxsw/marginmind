@@ -236,7 +236,7 @@ class MMColors extends ThemeExtension<MMColors> {
   }
 
   @override
-  MMColors copyWith({Color? accent, Color? accentFill, Color? accentTint, bool? flat}) {
+  MMColors copyWith({Color? accent, Color? accentFill, Color? accentTint, bool? flat, Color? canvas}) {
     return MMColors(
       flat: flat ?? this.flat,
       brightness: brightness,
@@ -244,7 +244,7 @@ class MMColors extends ThemeExtension<MMColors> {
       sidebar: (flat ?? this.flat) ? sidebarOpaque : sidebar,
       sidebarOpaque: sidebarOpaque,
       readerBackground: readerBackground,
-      canvas: canvas,
+      canvas: canvas ?? this.canvas,
       card: card,
       page: page,
       label: label,

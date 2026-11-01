@@ -2351,5 +2351,15 @@
   "assistantIconTitle": "AI 助手图标",
   "assistantIconIris": "蓝紫",
   "assistantIconJade": "湖绿",
-  "assistantIconApricot": "杏橙"
+  "assistantIconApricot": "杏橙",
+  "mapBackground": "背景色",
+  "mapBackgroundTheme": "跟随主题",
+  "mapBackgroundBlack": "纯黑",
+  "mapBackgroundCharcoal": "炭灰",
+  "mapBackgroundGray": "中灰",
+  "mapBackgroundLightGray": "浅灰",
+  "mapBackgroundWhite": "纯白",
+  "mapBackgroundIvory": "米白",
+  "mapBackgroundSage": "浅绿",
+  "mapBackgroundBlue": "浅蓝"
 }

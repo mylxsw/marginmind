@@ -817,6 +817,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     });
     final outline = state.mapView != MapViewMode.map;
     final map = content.map(state.activeMapId);
+    final canvasColors = outline ? c : mapCanvasColors(c, map?.backgroundColor);
     final single = state.selectedCardIds.length <= 1 && state.selectedCardId != null;
     final ready =
         expansion == null &&
@@ -891,6 +892,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
               child: MapStylePopover(
                 density: map?.density ?? MapDensity.compact,
                 onDensity: controller.setMapDensity,
+                backgroundColor: map?.backgroundColor,
+                onBackgroundColor: controller.setMapBackgroundColor,
                 structure: map?.structure ?? MapStructure.mind,
                 palette: map?.palette ?? MapPalette.system,
                 onPreview: (style) => setState(() => _stylePreview = style),
@@ -1498,14 +1501,14 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         if (labelBounds.maxWidth < 12 + MMSpacing.xs) return const SizedBox.shrink();
                                         return Row(
                                           children: [
-                                            Icon(MMIcons.syncToMap, size: 12, color: c.secondaryLabel),
+                                            Icon(MMIcons.syncToMap, size: 12, color: canvasColors.secondaryLabel),
                                             const SizedBox(width: MMSpacing.xs),
                                             Flexible(
                                               child: _ExcerptTargetLabel(
                                                 title: excerptTargetId == rootNodeId
                                                     ? rootTitle
                                                     : content.card(excerptTargetId)?.title ?? '',
-                                                style: t.footnote,
+                                                style: t.footnote.copyWith(color: canvasColors.secondaryLabel),
                                               ),
                                             ),
                                           ],

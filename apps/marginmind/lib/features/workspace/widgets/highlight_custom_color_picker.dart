@@ -11,10 +11,14 @@ class HighlightCustomColorPicker extends StatefulWidget {
     required this.current,
     required this.onSelected,
     required this.onCancel,
+    this.title,
+    this.showPresets = true,
   });
   final MMAnnotationColor current;
   final ValueChanged<MMAnnotationColor> onSelected;
   final VoidCallback onCancel;
+  final String? title;
+  final bool showPresets;
 
   @override
   State<HighlightCustomColorPicker> createState() => _HighlightCustomColorPickerState();
@@ -66,31 +70,32 @@ class _HighlightCustomColorPickerState extends State<HighlightCustomColorPicker>
           children: [
             Row(
               children: [
-                Expanded(child: Text(l.highlightCustomColor, style: context.mmText.headline)),
+                Expanded(child: Text(widget.title ?? l.highlightCustomColor, style: context.mmText.headline)),
                 MMIconButton(icon: MMIcons.close, tooltip: l.cancel, onPressed: widget.onCancel, size: 26),
               ],
             ),
             const SizedBox(height: 6),
-            LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      for (final color in MMAnnotationColor.values)
-                        MMFloatingToolbarColor(
-                          color: color,
-                          tooltip: l.colorName(color),
-                          selected: color == _color,
-                          onPressed: () => widget.onSelected(color),
-                        ),
-                    ],
+            if (widget.showPresets)
+              LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        for (final color in MMAnnotationColor.values)
+                          MMFloatingToolbarColor(
+                            color: color,
+                            tooltip: l.colorName(color),
+                            selected: color == _color,
+                            onPressed: () => widget.onSelected(color),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
             const SizedBox(height: 10),
             _SaturationValue(value: _hsv, label: l.highlightColorSaturationValue, onChanged: _set),
             const SizedBox(height: 6),

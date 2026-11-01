@@ -556,6 +556,7 @@ class MindMap {
     this.density = MapDensity.full,
     this.structure = MapStructure.mind,
     this.palette = MapPalette.system,
+    this.backgroundColor,
   });
   static const defaultId = 'main';
   static const main = MindMap(id: defaultId, title: '');
@@ -565,12 +566,16 @@ class MindMap {
   final MapDensity density;
   final MapStructure structure;
   final MapPalette palette;
+
+  /// Opaque ARGB canvas color; null follows the application theme.
+  final int? backgroundColor;
   MindMap copyWith({
     Object? generation = _keepValue,
     String? title,
     MapDensity? density,
     MapStructure? structure,
     MapPalette? palette,
+    Object? backgroundColor = _keepValue,
   }) => MindMap(
     generation: identical(generation, _keepValue) ? this.generation : generation as MapGeneration?,
     id: id,
@@ -578,6 +583,7 @@ class MindMap {
     density: density ?? this.density,
     structure: structure ?? this.structure,
     palette: palette ?? this.palette,
+    backgroundColor: identical(backgroundColor, _keepValue) ? this.backgroundColor : backgroundColor as int?,
   );
   Map<String, Object?> toJson() => {
     if (generation != null) 'generation': generation!.toJson(),
@@ -586,6 +592,7 @@ class MindMap {
     'density': density.name,
     'structure': structure.name,
     'palette': palette.name,
+    if (backgroundColor != null) 'backgroundColor': backgroundColor,
   };
   factory MindMap.fromJson(Map<String, Object?> j) => MindMap(
     generation: j['generation'] == null ? null : MapGeneration.fromJson((j['generation'] as Map).cast()),
@@ -594,6 +601,7 @@ class MindMap {
     density: MapDensity.values.byName(j['density'] as String? ?? 'full'),
     structure: MapStructure.values.byName(j['structure'] as String? ?? 'mind'),
     palette: MapPalette.values.byName(j['palette'] as String? ?? 'system'),
+    backgroundColor: j['backgroundColor'] is int ? 0xFF000000 | ((j['backgroundColor'] as int) & 0xFFFFFF) : null,
   );
 }
 

@@ -55,6 +55,7 @@ class MapExportScene extends CustomPainter {
   }) {
     const root = '__export_root__';
     final map = content.map(mapId);
+    colors = mapCanvasColors(colors, map?.backgroundColor);
     final palette = mapPaletteOf(map?.palette ?? MapPalette.system).of(colors.brightness);
     final nodes = <String, _ExportNode>{
       root: _ExportNode(title, '', MMTypography.title3, palette.root, palette.onRoot),

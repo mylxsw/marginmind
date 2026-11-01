@@ -10261,6 +10261,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apricot'**
   String get assistantIconApricot;
+
+  /// No description provided for @mapBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get mapBackground;
+
+  /// No description provided for @mapBackgroundTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow Theme'**
+  String get mapBackgroundTheme;
+
+  /// No description provided for @mapBackgroundBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get mapBackgroundBlack;
+
+  /// No description provided for @mapBackgroundCharcoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Charcoal'**
+  String get mapBackgroundCharcoal;
+
+  /// No description provided for @mapBackgroundGray.
+  ///
+  /// In en, this message translates to:
+  /// **'Gray'**
+  String get mapBackgroundGray;
+
+  /// No description provided for @mapBackgroundLightGray.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Gray'**
+  String get mapBackgroundLightGray;
+
+  /// No description provided for @mapBackgroundWhite.
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get mapBackgroundWhite;
+
+  /// No description provided for @mapBackgroundIvory.
+  ///
+  /// In en, this message translates to:
+  /// **'Ivory'**
+  String get mapBackgroundIvory;
+
+  /// No description provided for @mapBackgroundSage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sage'**
+  String get mapBackgroundSage;
+
+  /// No description provided for @mapBackgroundBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Pale Blue'**
+  String get mapBackgroundBlue;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
