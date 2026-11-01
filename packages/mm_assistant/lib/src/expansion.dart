@@ -110,12 +110,14 @@ class ModelIdeaExpander implements IdeaExpander {
     this.model, {
     this.budget = const ResearchBudget(outputTokens: 4096, inputCharacters: 30000, duration: Duration(seconds: 60)),
     this.onInvalidLine,
-  }) : execute = null;
-  ModelIdeaExpander.runtime(this.execute, {this.onInvalidLine})
+  }) : execute = null,
+       continuationRepairs = 0;
+  ModelIdeaExpander.runtime(this.execute, {this.onInvalidLine, this.continuationRepairs = 0})
     : connection = null,
       model = 'routed',
       budget = const ResearchBudget(outputTokens: 8192, inputCharacters: 30000, duration: Duration(minutes: 5));
   final MapTaskExecutor? execute;
+  final int continuationRepairs;
   final AssistantConnection? connection;
   final String model;
   final ResearchBudget budget;
@@ -165,7 +167,7 @@ class ModelIdeaExpander implements IdeaExpander {
     Set<String>? repairParents;
     // At most one completion request for each missing level. Parser state and
     // provenance survive across responses; no fabricated intermediate topics.
-    for (var attempt = 0; attempt < request.depth; attempt++) {
+    for (var attempt = 0; attempt < request.depth + continuationRepairs; attempt++) {
       final previousCount = accepted.length;
       final allowedParents = repairParents == null ? null : {...repairParents};
       final validationSeed = List<Map<String, Object?>>.of(accepted);
@@ -173,6 +175,8 @@ class ModelIdeaExpander implements IdeaExpander {
         expansionSystemPrompt,
         {
           ...payload,
+          if (execute != null)
+            '_mapHost': {'prefix': context.draftPrefix, 'targets': context.targets, 'repair': attempt},
           if (repairParents != null) 'accepted': accepted,
           if (repairParents != null) 'parentsNeedingChildren': repairParents.toList(),
         },
@@ -231,7 +235,7 @@ class ModelIdeaExpander implements IdeaExpander {
       final missingTargets = context.targets.keys.where((alias) => !parentsWithChildren.contains(alias));
       if (repairParents.isEmpty && missingTargets.isEmpty) return;
       repairParents.addAll(missingTargets);
-      if (allowedParents != null && accepted.length == previousCount) break;
+      if (allowedParents != null && accepted.length == previousCount && continuationRepairs == 0) break;
     }
     throw const ResearchFailure(ResearchFailureKind.protocol, 'incompleteDepth');
   }
@@ -246,6 +250,7 @@ class ModelIdeaExpander implements IdeaExpander {
     var fresh = 0;
     await for (final line in _lines(expansionPlanSystemPrompt, {
       ...context.payload(grounded: false, plan: true),
+      if (execute != null) '_mapHost': {'targets': context.targets},
       'breadth': breadth,
     }, cancel)) {
       final item = parseExpansionPlanLine(

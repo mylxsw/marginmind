@@ -22,6 +22,7 @@ import '../../../shared/card_image.dart';
 import '../../assistant/assistant_entry.dart';
 import '../../assistant/expansion_controller.dart';
 import '../../assistant/map_task_route.dart';
+import '../../assistant/widgets/map_task_recovery.dart';
 import '../../assistant/widgets/expansion_widgets.dart';
 import '../../assistant/assistant_reader.dart' show assistantRootId, assistantNodeBody;
 import '../../assistant/assistant_scope.dart' show assistantPreviewProvider, nodeContext;
@@ -1453,6 +1454,27 @@ class _MapPaneState extends ConsumerState<MapPane> {
                             ),
                     ),
                   ],
+                ),
+              ),
+              Positioned(
+                top: _headerGeometry.toolbarTopInset + 64,
+                left: 16,
+                right: 16,
+                child: Center(
+                  child: MapTaskRecovery(
+                    studySetId: widget.studySetId,
+                    canContinue:
+                        (expansion == null ||
+                            {ExpansionPhase.error, ExpansionPhase.stopped}.contains(expansion.phase)) &&
+                        (mapGen == null ||
+                            {MapGenerationPhase.failed, MapGenerationPhase.stopped}.contains(mapGen.phase)) &&
+                        !ref.watch(expansionBusyProvider),
+                    taskType: expansion != null
+                        ? 'mapExpand'
+                        : mapGen != null
+                        ? 'mapGenerate'
+                        : null,
+                  ),
                 ),
               ),
               if (expansion?.isMapPlan == true)

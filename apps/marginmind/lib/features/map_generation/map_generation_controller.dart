@@ -61,6 +61,40 @@ class MapGenerationRequest {
   final bool onlyNewContent;
   final int round;
 
+  Map<String, dynamic> toJson() => {
+    'studySetId': studySetId,
+    'mapId': mapId,
+    'title': title,
+    'sources': sources.map((s) => s.toJson()).toList(),
+    'organization': organization.name,
+    'depth': depth,
+    'instructions': instructions,
+    'includeAnnotations': includeAnnotations,
+    'extractQuotes': extractQuotes,
+    'destination': destination.name,
+    'parentId': parentId,
+    'onlyNewContent': onlyNewContent,
+    'round': round,
+  };
+  factory MapGenerationRequest.fromJson(Map<String, dynamic> j) => MapGenerationRequest(
+    studySetId: j['studySetId'],
+    mapId: j['mapId'],
+    title: j['title'],
+    sources: [
+      for (final s in j['sources'])
+        MapDocumentSelection(documentId: s['documentId'], chapters: List<String>.from(s['chapters'])),
+    ],
+    organization: MapOrganization.values.byName(j['organization']),
+    depth: j['depth'],
+    instructions: j['instructions'],
+    includeAnnotations: j['includeAnnotations'],
+    extractQuotes: j['extractQuotes'],
+    destination: MapGenerationDestination.values.byName(j['destination']),
+    parentId: j['parentId'],
+    onlyNewContent: j['onlyNewContent'],
+    round: j['round'],
+  );
+
   MapGenerationRequest copyWith({
     String? title,
     List<MapDocumentSelection>? sources,
@@ -367,7 +401,28 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     return null;
   }
 
-  Future<void> start(MapGenerationRequest request) async {
+  /// Explicit continuation rebuilds the preview from persisted stage results.
+  Future<void> continueTask(String id) async {
+    if ((state != null && !{MapGenerationPhase.failed, MapGenerationPhase.stopped}.contains(state!.phase)) ||
+        ref.read(expansionBusyProvider) ||
+        ref.read(assistantControllerProvider.notifier).busy) {
+      throw StateError('Assistant is busy');
+    }
+    final session = await MapTaskSession.restore(ref, arg, mapGenerateSpec, id);
+    final workflow = session.workflow!;
+    final request = MapGenerationRequest.fromJson(Map<String, dynamic>.from(workflow['request']));
+    if (request.studySetId != arg ||
+        workflow['sourceRevision'] != mapTaskFingerprint(ref.read(workspaceProvider(arg).notifier).content.toJson())) {
+      throw const ConfigurationFailure('mapSourceRevisionChanged');
+    }
+    if (state != null) {
+      stop();
+      state = null;
+    }
+    await start(request, continuing: session);
+  }
+
+  Future<void> start(MapGenerationRequest request, {MapTaskSession? continuing}) async {
     if ((state != null && state!.phase != MapGenerationPhase.failed) ||
         ref.read(assistantControllerProvider.notifier).busy ||
         ref.read(expansionBusyProvider)) {
@@ -384,7 +439,9 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
     final workspace = ref.read(workspaceProvider(arg).notifier);
     final snapshot = workspace.content;
-    final proposalId = 'map-gen-${DateTime.now().microsecondsSinceEpoch}';
+    final proposalId =
+        continuing?.workflow?['proposalId'] as String? ?? 'map-gen-${DateTime.now().microsecondsSinceEpoch}';
+    _taskSession = continuing;
 
     final builder = ref.read(documentDigestBuilderProvider(arg));
     final cancel = _cancel = CancellationToken();
@@ -551,6 +608,17 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       chapterProgress: Map.unmodifiable(chapterProgress),
     );
 
+    if (continuing != null &&
+        mapTaskFingerprint({'sources': generation.sources.map((s) => s.toJson()).toList()}) !=
+            continuing.workflow!['sourceFingerprint']) {
+      _ownsBusy = false;
+      ref.read(expansionBusyProvider.notifier).set(false);
+      state = state!.copyWith(
+        phase: MapGenerationPhase.failed,
+        failure: const ResearchFailure(ResearchFailureKind.invalidRequest, 'mapSourceRevisionChanged'),
+      );
+      return;
+    }
     await _runGeneration(request);
   }
 
@@ -568,9 +636,18 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         _cacheModelKey = 'injected-map-engine';
         _taskSession = null;
       } else {
-        final session = _taskSession = MapTaskSession(ref, request.studySetId, mapGenerateSpec);
+        final session = _taskSession ??= MapTaskSession(ref, request.studySetId, mapGenerateSpec);
+        await session.saveWorkflow({
+          'request': request.toJson(),
+          'proposalId': state!.proposalId,
+          'sourceRevision': mapTaskFingerprint(ref.read(workspaceProvider(arg).notifier).content.toJson()),
+          'baseRevision': state!.baseRevision,
+          'sourceFingerprint': mapTaskFingerprint({
+            'sources': state!.generation.sources.map((s) => s.toJson()).toList(),
+          }),
+        });
         _cacheModelKey = await session.cacheIdentity();
-        generator = ModelMapGenerator.runtime(session.execute);
+        generator = ModelMapGenerator.runtime(session.execute, continuationRepairs: session.continuationRound);
       }
       _generator = generator;
       cancel.check();
@@ -597,6 +674,12 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
               instructions: task.input.instructions,
             );
 
+            final durablePoints = _taskSession?.chapterPoints(task.id, task.fingerprint);
+            if (durablePoints != null) {
+              _collectedPoints.addAll(durablePoints);
+              _updateChapter(task.id, MapChapterStatus.done);
+              continue;
+            }
             final cached = await cache.read(cacheKey, context: task.input.context);
             if (cached != null) {
               if (_disposed || epoch != _generation) return;
@@ -606,6 +689,11 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
                   _collectedPoints.add(line);
                 }
               }
+              await _taskSession?.saveChapterPoints(
+                task.id,
+                task.fingerprint,
+                _collectedPoints.where((p) => p.id.startsWith(task.input.context.draftPrefix)).toList(),
+              );
               _updateChapter(task.id, MapChapterStatus.done);
             } else {
               final readLines = <MapLine>[];
@@ -619,6 +707,11 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
                 final rawLines = mapPointCacheLines(readLines, task.input.context);
                 await cache.write(cacheKey, rawLines, context: task.input.context);
               }
+              await _taskSession?.saveChapterPoints(
+                task.id,
+                task.fingerprint,
+                _collectedPoints.where((p) => p.id.startsWith(task.input.context.draftPrefix)).toList(),
+              );
               _updateChapter(task.id, MapChapterStatus.done);
             }
           } catch (e) {
@@ -667,6 +760,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   Future<void> _streamBuild(MapGenerationRequest request, CancellationToken cancel, int epoch) async {
     final generator = _generator!;
+    _collectedPoints.sort((a, b) => a.id.compareTo(b.id));
     _taskSession?.missingRangeIds = state!.chapterFailures.keys.toSet();
     final pages = <String, Set<int>>{};
     final updating = request.destination == MapGenerationDestination.update;
@@ -860,6 +954,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
     var chapterRead = false;
     _taskSession?.missingRangeIds = {};
+    _taskSession?.explicitContinuation = true;
     try {
       _updateChapter(chapterId, MapChapterStatus.reading);
       final cacheKey = mapDigestCacheKey(
@@ -895,6 +990,11 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         _updateChapter(chapterId, MapChapterStatus.done);
       }
 
+      await _taskSession?.saveChapterPoints(
+        task.id,
+        task.fingerprint,
+        _collectedPoints.where((p) => p.id.startsWith(task.input.context.draftPrefix)).toList(),
+      );
       chapterRead = true;
       state = state!.copyWith(phase: MapGenerationPhase.streaming, failure: null);
       await _streamBuild(state!.request, cancel, epoch);
@@ -964,6 +1064,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
   void discard() {
     if (state?.isApplying == true) return;
     if (state != null) stop();
+    _taskSession?.dismiss().ignore();
     state = null;
   }
 
@@ -1095,6 +1196,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         /* The write already committed. */
       }
       _generator = null;
+      _taskSession?.dismiss().ignore();
       if (!_disposed) {
         state = null;
         if (isNewMap) {

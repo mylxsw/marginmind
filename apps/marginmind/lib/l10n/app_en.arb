@@ -3151,5 +3151,12 @@
   "aiTaskStudyNotes": "Study Note Organizing",
   "aiTaskReviewCards": "Review Cards & Questions",
   "aiTasksProfilesUnavailable": "Couldn't load model capabilities",
-  "aiTasksProbeUnsaved": "Test result not saved"
+  "aiTasksProbeUnsaved": "Test result not saved",
+  "mapTaskSaveFailed": "Result could not be saved. It is still held in this session.",
+  "mapTaskRetrySave": "Retry saving",
+  "mapTaskContinue": "Continue saved map task",
+  "mapTaskGenerate": "Generate map",
+  "mapTaskExpand": "Expand map",
+  "mapTaskContinueNotice": "Completed stages will be reused. Unsaved results will only be saved. An interrupted request with no recorded result may call the model again and incur a charge. Continue?",
+  "mapTaskCannotContinue": "Could not continue. Check that the original map and sources are unchanged and storage is available."
 }

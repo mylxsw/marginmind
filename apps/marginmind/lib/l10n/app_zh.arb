@@ -2442,5 +2442,12 @@
   "aiTaskStudyNotes": "学习笔记整理与改写",
   "aiTaskReviewCards": "复习卡与问题生成",
   "aiTasksProfilesUnavailable": "无法读取模型能力",
-  "aiTasksProbeUnsaved": "测试结果未保存"
+  "aiTasksProbeUnsaved": "测试结果未保存",
+  "mapTaskSaveFailed": "结果保存失败，当前会话仍保留结果。",
+  "mapTaskRetrySave": "重试保存",
+  "mapTaskContinue": "继续已保存的导图任务",
+  "mapTaskGenerate": "生成导图",
+  "mapTaskExpand": "扩展导图",
+  "mapTaskContinueNotice": "已完成阶段将直接复用，待保存结果只重试保存。若中断的请求尚无已记录结果，继续可能再次调用模型并产生费用。是否继续？",
+  "mapTaskCannotContinue": "无法继续，请确认原导图及来源未变更，且存储可用。"
 }

@@ -5897,4 +5897,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiTasksProbeUnsaved => '测试结果未保存';
+
+  @override
+  String get mapTaskSaveFailed => '结果保存失败，当前会话仍保留结果。';
+
+  @override
+  String get mapTaskRetrySave => '重试保存';
+
+  @override
+  String get mapTaskContinue => '继续已保存的导图任务';
+
+  @override
+  String get mapTaskGenerate => '生成导图';
+
+  @override
+  String get mapTaskExpand => '扩展导图';
+
+  @override
+  String get mapTaskContinueNotice => '已完成阶段将直接复用，待保存结果只重试保存。若中断的请求尚无已记录结果，继续可能再次调用模型并产生费用。是否继续？';
+
+  @override
+  String get mapTaskCannotContinue => '无法继续，请确认原导图及来源未变更，且存储可用。';
 }
