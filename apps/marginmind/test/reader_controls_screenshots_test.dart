@@ -46,6 +46,9 @@ Future<void> _fonts() async {
       'Noto Sans SC',
     )..addFont(Future.value(ByteData.sublistView(File(symbols).readAsBytesSync())))).load();
   }
+  await (FontLoader(
+    'packages/lucide_icons_flutter/Lucide',
+  )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
   final pub = Platform.environment['PUB_CACHE'] ?? '${Platform.environment['HOME']}/.pub-cache';
   final icons = Directory('$pub/hosted/pub.dev')
       .listSync()
@@ -115,12 +118,12 @@ void main() {
         final controls = tester.getRect(find.byKey(const ValueKey('compare-floating-controls')));
         await _save(tester, 'divider-$name', bounds: Rect.fromCenter(center: controls.center, width: 100, height: 140));
         for (final (key, label) in [
-          ('reader-page', 'zoom'),
+          ('reader-more', 'zoom'),
           ('reader-crop', 'crop'),
           ('reader-appearance', 'appearance'),
           ('reader-compare', 'compare'),
         ]) {
-          await tester.tap(find.byKey(ValueKey(key)));
+          await tapReaderCommand(tester, find.byKey(ValueKey(key)));
           await tester.pumpAndSettle();
           final popup = find.byWidgetPredicate(
             (w) =>

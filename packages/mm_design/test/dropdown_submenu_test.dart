@@ -6,6 +6,68 @@ import 'package:mm_design/mm_design.dart';
 import 'harness.dart';
 
 void main() {
+  testWidgets('popup submenu flips left at the window edge without a gap', (tester) async {
+    await tester.pumpWidget(
+      harness(
+        Align(
+          alignment: Alignment.topRight,
+          child: MMDropdownButton<String>(
+            tooltip: 'More',
+            itemBuilder: (_) => const [
+              MMDropdownSubmenu<String>(
+                label: 'Appearance',
+                entries: [(value: 'white', label: 'White', selected: true)],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Appearance'));
+    await tester.pumpAndSettle();
+    final parent = tester.getRect(find.byType(SubmenuButton));
+    final child = tester.getRect(find.byType(MenuItemButton));
+    expect(parent.left - child.right, inInclusiveRange(0, 12));
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('popup submenu opens to the side and selecting a leaf closes the parent', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    String? selected;
+    await tester.pumpWidget(
+      harness(
+        MMDropdownButton<String>(
+          tooltip: 'More',
+          onSelected: (value) => selected = value,
+          itemBuilder: (_) => const [
+            MMDropdownSubmenu<String>(
+              label: 'Appearance',
+              icon: MMIcons.appearance,
+              entries: [
+                (value: 'white', label: 'White', selected: true),
+                (value: 'dark', label: 'Dark', selected: false),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dark'), findsNothing);
+    await tester.tap(find.text('Appearance'));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.text('Dark')).left, greaterThan(tester.getRect(find.text('Appearance')).right));
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+    expect(selected, 'dark');
+    expect(find.text('Appearance'), findsNothing);
+    expect(find.text('Dark'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
   for (final brightness in Brightness.values) {
     testWidgets('dropdown submenu returns a leaf and closes both menus in $brightness', (tester) async {
       String? selected;

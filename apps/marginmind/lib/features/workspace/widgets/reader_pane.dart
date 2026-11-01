@@ -585,23 +585,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           icon: MMReaderIcons.syncToMap,
         ),
       ),
-      if (!MMInput.of(context).phone && MMSizeClass.of(context) != MMSizeClass.compact)
-        MMToolbarItem(
-          id: 'compare',
-          priority: 80,
-          child: ReaderCompareMenu(studySetId: widget.studySetId, enabled: capabilities.parallel && !crop.editing),
-          menuEntry: PopupMenuItem<VoidCallback>(
-            enabled: false,
-            height: MMSizes.dropdownRowHeight,
-            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
-            child: ReaderCompareMenu(
-              studySetId: widget.studySetId,
-              enabled: capabilities.parallel && !crop.editing,
-              menuLabel: l.compareReading,
-              onInvoked: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
       MMToolbarItem(
         id: 'documents',
         priority: 70,
@@ -643,6 +626,18 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         icon: MMIcons.readingSettings,
         id: 'reader-settings',
       ),
+      if (!MMInput.of(context).phone && MMSizeClass.of(context) != MMSizeClass.compact)
+        PopupMenuItem<VoidCallback>(
+          enabled: false,
+          height: MMSizes.dropdownRowHeight,
+          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
+          child: ReaderCompareMenu(
+            studySetId: widget.studySetId,
+            enabled: capabilities.parallel && !crop.editing,
+            menuLabel: l.compareReading,
+            onInvoked: () => Navigator.of(context).pop(),
+          ),
+        ),
       if (canFullTranslate)
         entry(
           hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
@@ -691,12 +686,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
       entry(l.cropMargins, canAdjustCrop ? cropSession.adjust : null, icon: MMReaderIcons.crop, id: 'reader-crop'),
       const PopupMenuDivider(),
-      MMDropdownHeader<VoidCallback>(l.readerAppearance),
-      for (final value in MMReaderStyle.values)
-        MMDropdownItem<VoidCallback>(
-          value: () => setStyle(value),
-          child: _styleRow(context, value, selected: value == style),
-        ),
+      MMDropdownSubmenu<VoidCallback>(
+        key: const ValueKey('reader-appearance'),
+        label: l.readerAppearance,
+        icon: MMIcons.appearance,
+        entries: [
+          for (final value in MMReaderStyle.values)
+            (value: () => setStyle(value), label: _styleName(context, value), selected: value == style),
+        ],
+      ),
     ];
     _paneChrome?.bindReader(this, WorkspacePaneCommands(state.activeDocumentId, commands));
     return ReaderAnnotationTools(
@@ -777,12 +775,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         child: _menuRow(MMIcons.crop, l.cropMargins),
       ),
     ];
-    final styleItems = [
-      for (final value in MMReaderStyle.values)
-        MMDropdownItem<Object>(
-          value: value,
-          child: _styleRow(context, value, selected: value == style),
-        ),
+    final styleItems = <PopupMenuEntry<Object>>[
+      MMDropdownSubmenu<Object>(
+        key: const ValueKey('reader-appearance'),
+        label: l.readerAppearance,
+        icon: MMIcons.appearance,
+        entries: [
+          for (final value in MMReaderStyle.values)
+            (value: value, label: _styleName(context, value), selected: value == style),
+        ],
+      ),
     ];
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
@@ -806,9 +808,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final hintButton = document == null
         ? const SizedBox.shrink()
         : VocabularyHintButton(documentId: document.id, compact: compact);
-    final compareButton = ReaderCompareMenu(
-      studySetId: widget.studySetId,
-      enabled: capabilities.parallel && !crop.editing,
+    PopupMenuEntry<Object> compareEntry() => PopupMenuItem<Object>(
+      enabled: false,
+      height: MMSizes.dropdownRowHeight,
+      child: ReaderCompareMenu(
+        studySetId: widget.studySetId,
+        enabled: capabilities.parallel && !crop.editing,
+        menuLabel: l.compareReading,
+        onInvoked: () => Navigator.of(context).pop(),
+      ),
     );
     final annotation = IgnorePointer(
       ignoring: crop.editing,
@@ -830,7 +838,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               Flexible(
                 child: ReaderAnnotationTools(state: state, controller: controller, textOnly: !extended),
               ),
-              if (MMSizeClass.of(context) != MMSizeClass.compact) compareButton,
               MMDropdownButton<Object>(
                 key: const ValueKey('reader-more'),
                 tooltip: l.moreTools,
@@ -869,6 +876,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   }
                 },
                 itemBuilder: (_) => [
+                  if (MMSizeClass.of(context) != MMSizeClass.compact) compareEntry(),
                   if (!extended) ...[
                     MMDropdownItem<Object>(
                       value: AnnotationTool.area,
@@ -928,7 +936,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               tooltip: l.readingSettings,
               onPressed: () => showReadingSettings(context, ref, widget.studySetId),
             ),
-          if (MMSizeClass.of(context) == MMSizeClass.medium) ...[marginButton, compareButton],
+          if (MMSizeClass.of(context) == MMSizeClass.medium) marginButton,
           const SizedBox(width: MMSpacing.s),
           if (capabilities.readingSettings)
             MMToolbarButton(
@@ -960,6 +968,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                 }
               },
               itemBuilder: (_) => [
+                if (MMSizeClass.of(context) != MMSizeClass.compact) compareEntry(),
                 if (canFullTranslate) ...[
                   MMDropdownItem<Object>(
                     value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
@@ -1008,11 +1017,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               : null,
         ),
         MMDropdownButton<Object>(
-          key: const ValueKey('reader-appearance'),
-          tooltip: l.readerAppearance,
-          onSelected: (value) => setStyle(value as MMReaderStyle),
-          itemBuilder: (_) => styleItems,
-          icon: const Icon(MMIcons.appearance),
+          key: const ValueKey('reader-more'),
+          tooltip: l.moreTools,
+          onSelected: (value) {
+            if (value is MMReaderStyle) setStyle(value);
+          },
+          itemBuilder: (_) => [compareEntry(), ...styleItems],
+          icon: const Icon(MMIcons.more),
         ),
         annotation,
         hintButton,
@@ -1023,7 +1034,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             onPressed: () => showReadingSettings(context, ref, widget.studySetId),
           ),
         marginButton,
-        compareButton,
         ?progress,
       ],
     );
@@ -1040,42 +1050,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     ],
   );
 
-  Widget _styleRow(BuildContext context, MMReaderStyle value, {required bool selected}) {
-    final l = context.l10n;
-    final c = context.mmColors;
-    return Row(
-      children: [
-        Icon(switch (value) {
-          MMReaderStyle.white => MMReaderIcons.white,
-          MMReaderStyle.dark => MMReaderIcons.dark,
-          MMReaderStyle.paper => MMReaderIcons.paper,
-          MMReaderStyle.green => MMReaderIcons.green,
-        }, size: MMSizes.dropdownIcon),
-        const SizedBox(width: MMSpacing.s),
-        Text(switch (value) {
-          MMReaderStyle.white => l.readerStyleWhite,
-          MMReaderStyle.dark => l.readerStyleDark,
-          MMReaderStyle.paper => l.readerStylePaper,
-          MMReaderStyle.green => l.readerStyleGreen,
-        }, style: context.mmText.callout),
-        const Spacer(),
-        Container(
-          width: MMSizes.dropdownIcon,
-          height: MMSizes.dropdownIcon,
-          decoration: BoxDecoration(
-            color: value.paperColor,
-            border: Border.all(color: c.separator),
-            borderRadius: BorderRadius.circular(MMRadii.page),
-          ),
-        ),
-        const SizedBox(width: MMSpacing.s),
-        SizedBox.square(
-          dimension: MMSizes.dropdownIcon,
-          child: selected ? Icon(MMIcons.check, color: c.accent, size: MMSizes.dropdownIcon) : null,
-        ),
-      ],
-    );
-  }
+  String _styleName(BuildContext context, MMReaderStyle value) => switch (value) {
+    MMReaderStyle.white => context.l10n.readerStyleWhite,
+    MMReaderStyle.dark => context.l10n.readerStyleDark,
+    MMReaderStyle.paper => context.l10n.readerStylePaper,
+    MMReaderStyle.green => context.l10n.readerStyleGreen,
+  };
 
   Widget _body(
     BuildContext context,

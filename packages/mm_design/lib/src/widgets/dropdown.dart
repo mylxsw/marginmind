@@ -314,10 +314,12 @@ ButtonStyle _dropdownMenuItemStyle(BuildContext context) => ButtonStyle(
   shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(MMRadii.row))),
 );
 
-/// A cascading entry for MMDropdownMenuButton; leaves return through its callback.
+/// A cascading entry for anchored or popup dropdowns. Selecting a leaf closes
+/// its submenu and returns through the owning dropdown callback.
 class MMDropdownSubmenu<T> extends PopupMenuEntry<T> {
-  const MMDropdownSubmenu({super.key, required this.label, required this.entries});
+  const MMDropdownSubmenu({super.key, required this.label, required this.entries, this.icon});
   final String label;
+  final IconData? icon;
   final List<({T value, String label, bool selected})> entries;
   @override
   double get height => MMSizes.dropdownRowHeight;
@@ -328,16 +330,60 @@ class MMDropdownSubmenu<T> extends PopupMenuEntry<T> {
 }
 
 class _MMDropdownSubmenuState<T> extends State<MMDropdownSubmenu<T>> {
+  final _controller = MenuController();
+  bool _openLeft = false;
+  double _submenuWidth = MMSizes.dropdownWidth;
+  final _firstLeaf = GlobalKey();
+
+  void _positionPopup() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    final spaceRight = MediaQuery.sizeOf(context).width - rect.right;
+    final openLeft = spaceRight < _submenuWidth && rect.left > spaceRight;
+    if (_openLeft != openLeft) setState(() => _openLeft = openLeft);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<_MMDropdownMenuScope<T>>()!;
+    final scope = context.dependOnInheritedWidgetOfExactType<_MMDropdownMenuScope<T>>();
+    void select(T value) {
+      _controller.close();
+      if (scope != null) {
+        scope.select(value);
+      } else {
+        Navigator.of(context).pop<T>(value);
+      }
+    }
+
     return SubmenuButton(
+      controller: _controller,
+      onOpen: scope == null
+          ? () {
+              _positionPopup();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted || !_controller.isOpen) return;
+                final leaf = _firstLeaf.currentContext?.findRenderObject() as RenderBox?;
+                if (leaf == null || !leaf.hasSize) return;
+                setState(() => _submenuWidth = leaf.size.width + 2 * MMSpacing.xs);
+                _positionPopup();
+              });
+            }
+          : null,
+      alignmentOffset: scope == null && _openLeft ? Offset(-_submenuWidth, 0) : null,
+      trailingIcon: scope == null
+          ? Icon(_openLeft ? MMIcons.chevronLeft : MMIcons.chevronRight, size: MMSizes.dropdownIcon)
+          : null,
+      leadingIcon: widget.icon == null ? null : Icon(widget.icon, size: MMSizes.dropdownIcon),
       style: _dropdownMenuItemStyle(context),
-      menuStyle: _dropdownMenuStyle(context),
+      menuStyle: scope == null
+          ? _dropdownMenuStyle(context).copyWith(alignment: _openLeft ? Alignment.topLeft : Alignment.topRight)
+          : _dropdownMenuStyle(context),
       submenuIcon: const WidgetStatePropertyAll(Icon(MMIcons.chevronRight, size: MMSizes.dropdownIcon)),
       menuChildren: [
-        for (final entry in widget.entries)
+        for (final (index, entry) in widget.entries.indexed)
           MenuItemButton(
+            key: index == 0 ? _firstLeaf : null,
             style: _dropdownMenuItemStyle(context),
             leadingIcon: SizedBox.square(
               dimension: MMSizes.dropdownIcon,
@@ -345,7 +391,7 @@ class _MMDropdownSubmenuState<T> extends State<MMDropdownSubmenu<T>> {
                   ? Icon(MMIcons.check, size: MMSizes.dropdownIcon, color: context.mmColors.accent)
                   : null,
             ),
-            onPressed: () => scope.select(entry.value),
+            onPressed: () => select(entry.value),
             child: Text(entry.label),
           ),
       ],

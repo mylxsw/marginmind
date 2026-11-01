@@ -69,12 +69,11 @@ void main() {
       Rect readerAction(String id) =>
           t.getRect(find.byWidget(readerToolbar.items.firstWhere((item) => item.id == id).child));
       final layout = readerAction('layout-map');
-      final compare = readerAction('compare');
       final documents = readerAction('documents');
       final assistant = readerAction('assistant');
-      expect(compare.left - layout.right, 12);
-      expect(documents.left, compare.right);
-      expect(assistant.left, documents.right);
+      expect(readerToolbar.items.any((item) => item.id == 'compare'), false);
+      expect(documents.left - layout.right, 12);
+      expect(assistant.left - documents.right, 12);
       expect(find.byKey(const ValueKey('toolbar-organize-note')), findsNothing);
       await t.tap(find.byKey(const ValueKey('reader-more')));
       await t.pumpAndSettle();
