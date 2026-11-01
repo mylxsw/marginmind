@@ -7,6 +7,7 @@ import 'package:mm_book/mm_book.dart' as book;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
 import '../../shared/l10n.dart';
@@ -362,6 +363,29 @@ class _Preview extends StatelessWidget {
             if (sourceHost != null && block.text.startsWith('$sourceHost · ')) return false;
             return true;
           });
+    final header = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (sourceHost != null) ...[
+          Text('$sourceHost · $dateLabel', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+          const SizedBox(height: MMSpacing.m),
+        ],
+        Text(value.package.document.title, style: context.mmText.title2.copyWith(fontSize: 20, height: 1.4)),
+        const SizedBox(height: MMSpacing.xl),
+      ],
+    );
+    if (mode == WebCaptureMode.original) {
+      final document = value.package.document;
+      final data = value.package.files[document.sourceFileName ?? document.fileName];
+      if (data == null) return Center(child: Text(context.l10n.docSaveFailed, style: context.mmText.body));
+      return MMPdfDataPreview(
+        key: const ValueKey('web-conversion-pdf'),
+        data: data,
+        sourceName: document.sourceFileName ?? document.fileName,
+        header: header,
+        errorBuilder: (context, _, _) => Center(child: Text(context.l10n.docSaveFailed, style: context.mmText.body)),
+      );
+    }
     // Desktop scroll views add a scrollbar automatically. Disable its painting,
     // while retaining wheel, trackpad, touch and keyboard scrolling.
     return ScrollConfiguration(
@@ -372,15 +396,8 @@ class _Preview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (sourceHost != null) ...[
-              Text('$sourceHost · $dateLabel', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
-              const SizedBox(height: MMSpacing.m),
-            ],
-            Text(value.package.document.title, style: context.mmText.title2.copyWith(fontSize: 20, height: 1.4)),
-            const SizedBox(height: MMSpacing.xl),
-            if (mode == WebCaptureMode.original && value.preview != null)
-              Image.memory(value.preview!, fit: BoxFit.fitWidth)
-            else if (mode == WebCaptureMode.markdown)
+            header,
+            if (mode == WebCaptureMode.markdown)
               Text(value.markdown ?? '', style: MMTypography.mono.copyWith(color: c.label, height: 1.6))
             else
               for (final block in blocks)

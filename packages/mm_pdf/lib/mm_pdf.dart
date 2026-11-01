@@ -4,6 +4,7 @@ library;
 
 export 'src/ink.dart' show MMPdfInk, MMPdfInkDraft, MMPdfInkTool, inkStrokeHit, paintInk;
 export 'src/pdf_engine.dart';
+export 'src/pdf_data_preview.dart';
 export 'src/pdf_view.dart';
 export 'src/pdf_navigation.dart';
 
