@@ -4,6 +4,43 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  testWidgets('content toolbar ignores window gestures even inside window chrome', (tester) async {
+    var clicks = 0;
+    var zooms = 0;
+    var drags = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MMTheme.light(),
+        home: MMWindowChrome(
+          onTitleDoubleTap: () => zooms++,
+          onDragStart: () => drags++,
+          child: Scaffold(
+            body: MMToolbar.content(
+              semanticLabel: 'Reader',
+              child: Row(
+                children: [
+                  MMToolbarButton(icon: MMIcons.sidebar, tooltip: 'Pages', onPressed: () => clicks++),
+                  const Expanded(child: SizedBox()),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final empty = tester.getCenter(find.byType(MMToolbar));
+    await tester.dragFrom(empty, const Offset(80, 0), kind: PointerDeviceKind.mouse);
+    await tester.tapAt(empty, kind: PointerDeviceKind.mouse);
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tapAt(empty, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(drags, 0);
+    expect(zooms, 0);
+    await tester.tap(find.byTooltip('Pages'), kind: PointerDeviceKind.mouse);
+    expect(clicks, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('sidebar header buttons respond immediately and leave title gestures on empty space', (tester) async {
     var clicks = 0;
     var zooms = 0;

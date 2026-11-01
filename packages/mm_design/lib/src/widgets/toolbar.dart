@@ -49,7 +49,8 @@ class MMToolbar extends StatelessWidget {
         children: [
           // A background sibling cannot compete with button gestures. An
           // ancestor double-tap recognizer holds their taps for 300ms.
-          const MMWindowDragRegion(),
+          // Pane toolbars are content controls, even inside window chrome.
+          if (child == null) const MMWindowDragRegion(),
           if (child != null)
             Semantics(label: semanticLabel, container: true, child: child!)
           else
