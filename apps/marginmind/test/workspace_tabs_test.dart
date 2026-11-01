@@ -360,6 +360,7 @@ void main() {
       const WorkspaceTab(WorkspaceTabKind.note, noteId: 'written'),
       WorkspaceTab.vocabulary,
       WorkspaceTab.review,
+      WorkspaceTab.statistics,
     ]) {
       owner.activateTab(tab);
       expect(c.read(assistantAutoContextsProvider('demo-1')), isEmpty);

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/review/stats_screen.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_design/mm_design.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 
@@ -70,7 +72,7 @@ void main() {
     expect(container.read(navigationProvider), isA<LibraryRoute>());
   });
 
-  testWidgets('study set entry shows that set and returns to it', (tester) async {
+  testWidgets('study set statistics use a reusable content tab that switches and closes', (tester) async {
     final container = await pumpApp(
       tester,
       sets: setsWithLogs(4),
@@ -81,13 +83,33 @@ void main() {
     await doubleTap(tester, find.text('认知科学入门'));
     await tester.tap(find.byKey(const ValueKey('sidebar-statistics')));
     await tester.pumpAndSettle();
-    expect(container.read(navigationProvider), isA<StatsRoute>());
-    expect(find.text('认知科学入门'), findsOneWidget);
+    expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, 'statistics');
+    expect(find.byKey(const ValueKey('workspace-tab-statistics')), findsOneWidget);
+    final sidebar = tester.widget<MMSidebarItem>(find.byKey(const ValueKey('sidebar-statistics')));
+    expect(sidebar.selected, isTrue);
+    expect(find.byTooltip('Back to Study Set'), findsNothing);
     expect(value(tester, 'stats-reviewed').data, '4');
 
-    await tester.tap(find.byTooltip('Back to Study Set'));
+    await tester.tap(find.byKey(const ValueKey('sidebar-statistics')));
     await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider('demo-1')).tabs.open.length, 2);
+    await tester.tap(find.byKey(const ValueKey('workspace-tab-documentMap')));
+    await tester.pumpAndSettle();
+    expect(find.byType(StatsScreen), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('workspace-tab-statistics')));
+    await tester.pumpAndSettle();
+    expect(value(tester, 'stats-reviewed').data, '4');
+    await tester.tap(find.byKey(const ValueKey('close-workspace-tab-statistics')));
+    await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, 'documentMap');
+    expect(find.byType(StatsScreen, skipOffstage: false), findsNothing);
+    owner.activateTab(WorkspaceTab.statistics);
+    await tester.pumpAndSettle();
+    expect(value(tester, 'stats-reviewed').data, '4');
     expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(tester.takeException(), isNull);
     await settleHud(tester);
   });
 

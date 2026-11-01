@@ -8,6 +8,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/navigation.dart';
 import '../../../shared/l10n.dart';
 import '../../review/review_screen.dart';
+import '../../review/stats_screen.dart';
 import '../../study_notes/note_view.dart';
 import '../../vocabulary/vocabulary_screen.dart';
 import '../workspace_content_host.dart';
@@ -53,6 +54,7 @@ class WorkspaceTabbedContent extends ConsumerWidget {
                       route: VocabularyRoute(studySetId: studySetId, returnTo: WorkspaceRoute(studySetId)),
                     ),
                     WorkspaceTabKind.review => ReviewScreen(studySetId: studySetId, embedded: true),
+                    WorkspaceTabKind.statistics => StatsScreen(studySetId: studySetId, embedded: true),
                   },
                 ),
               ),

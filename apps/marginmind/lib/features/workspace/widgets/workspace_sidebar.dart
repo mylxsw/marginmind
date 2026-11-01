@@ -313,7 +313,8 @@ class WorkspaceSidebar extends ConsumerWidget {
           key: const ValueKey('sidebar-statistics'),
           icon: MMIcons.statistics,
           label: l.statistics,
-          onTap: () => ref.read(navigationProvider.notifier).showStats(studySetId),
+          selected: state.tabs.active?.kind == WorkspaceTabKind.statistics,
+          onTap: () => controller.activateTab(WorkspaceTab.statistics),
         ),
     ];
     final tagCounts = <String, int>{};

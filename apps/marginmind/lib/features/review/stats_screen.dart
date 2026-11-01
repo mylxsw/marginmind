@@ -31,9 +31,10 @@ final reviewStatsDataProvider = FutureProvider.family<ReviewStatsData, String?>(
 /// Reviews per day, share remembered per day and cards due over the next
 /// thirty days. Numbers and bars only; the titles are all the text there is.
 class StatsScreen extends ConsumerWidget {
-  const StatsScreen({super.key, required this.studySetId});
+  const StatsScreen({super.key, required this.studySetId, this.embedded = false});
 
   final String? studySetId;
+  final bool embedded;
 
   void _back(WidgetRef ref) => ref.read(navigationProvider.notifier).back();
 
@@ -95,6 +96,26 @@ class StatsScreen extends ConsumerWidget {
       );
     }
 
+    body = ColoredBox(color: context.mmColors.windowBackground, child: body);
+    if (embedded) {
+      return Column(
+        children: [
+          MMToolbar.content(
+            semanticLabel: l.statistics,
+            height: 44,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(l.statistics, style: context.mmText.callout),
+              ),
+            ),
+          ),
+          Expanded(child: body),
+        ],
+      );
+    }
+
     return MMWindowScaffold(
       sidebarVisible: false,
       onDragStart: WindowChrome.onDragStart,
@@ -110,7 +131,7 @@ class StatsScreen extends ConsumerWidget {
           onPressed: () => _back(ref),
         ),
       ),
-      body: ColoredBox(color: context.mmColors.windowBackground, child: body),
+      body: body,
     );
   }
 }

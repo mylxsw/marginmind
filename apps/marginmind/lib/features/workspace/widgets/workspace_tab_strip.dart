@@ -14,6 +14,7 @@ String workspaceTabTitle(BuildContext context, WorkspaceState state, WorkspaceTa
   WorkspaceTabKind.note => state.content?.studyNote(tab.noteId ?? '')?.title ?? context.l10n.notesTitle,
   WorkspaceTabKind.vocabulary => context.l10n.vocabularyTitle,
   WorkspaceTabKind.review => context.l10n.review,
+  WorkspaceTabKind.statistics => context.l10n.statistics,
 };
 
 IconData _tabIcon(WorkspaceTab tab) => switch (tab.kind) {
@@ -21,6 +22,7 @@ IconData _tabIcon(WorkspaceTab tab) => switch (tab.kind) {
   WorkspaceTabKind.note => MMIcons.studyNote,
   WorkspaceTabKind.vocabulary => MMIcons.vocabulary,
   WorkspaceTabKind.review => MMIcons.review,
+  WorkspaceTabKind.statistics => MMIcons.statistics,
 };
 
 TextStyle _tabTextStyle(BuildContext context) =>
