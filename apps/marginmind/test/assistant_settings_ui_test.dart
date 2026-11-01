@@ -400,6 +400,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('add-models-confirm')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('add-models')), findsNothing);
+    expect(find.text('已添加 2 个模型'), findsOneWidget);
+    expect(find.text('分配给功能'), findsOneWidget, reason: 'the HUD offers assignment');
     final added = _services(app).services.firstWhere((s) => s.id == service.id).models;
     expect(added.map((m) => m.id), ['gpt-5', 'my-model']);
     expect(added.every((m) => m.enabled && m.tools == ToolCapability.unknown), isTrue);
