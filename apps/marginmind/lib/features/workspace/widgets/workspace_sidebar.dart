@@ -487,6 +487,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         alignment: Alignment.centerRight,
         child: MMDropdownButton<String>(
           key: const ValueKey('workspace-add-content'),
+          plainIcon: true,
           tooltip: l.addDocumentMenu,
           width: MMSizes.dropdownWideWidth,
           icon: const Icon(MMIcons.add),
@@ -513,6 +514,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             trailing: ref.watch(canAddWebPageProvider)
                 ? MMDropdownButton<String>(
                     key: const ValueKey('add-document-menu'),
+                    plainIcon: true,
                     tooltip: l.addDocumentMenu,
                     width: MMSizes.dropdownWideWidth,
                     icon: const Icon(MMIcons.add),
@@ -533,6 +535,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             trailing: betaEnabled
                 ? MMDropdownButton<String>(
                     key: const ValueKey('add-map-menu'),
+                    plainIcon: true,
                     tooltip: l.newMap,
                     width: MMSizes.dropdownWideWidth,
                     icon: const Icon(MMIcons.add),

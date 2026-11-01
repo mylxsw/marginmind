@@ -34,6 +34,7 @@ class MMDropdownButton<T> extends StatefulWidget {
     this.onClosed,
     this.cascading = false,
     this.menuController,
+    this.plainIcon = false,
   });
 
   final VoidCallback? onOpened, onClosed;
@@ -42,6 +43,9 @@ class MMDropdownButton<T> extends StatefulWidget {
   final String? tooltip;
   final bool enabled;
   final bool cascading;
+
+  /// Use the standard icon button without a selected tint while the menu is open.
+  final bool plainIcon;
   final MenuController? menuController;
   final double width;
   final Widget? icon, child;
@@ -122,7 +126,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MMRadii.row)),
         ),
         iconSize: MMSpacing.l,
-        icon: context.mmTouchPlatform ? null : widget.icon,
+        icon: widget.plainIcon || context.mmTouchPlatform ? null : widget.icon,
         color: c.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -145,7 +149,17 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
         },
         itemBuilder: widget.itemBuilder,
         borderRadius: context.mmTouchPlatform ? BorderRadius.circular(16) : null,
-        child: context.mmTouchPlatform
+        child: widget.plainIcon
+            ? Builder(
+                builder: (context) => MMIconButton(
+                  iconWidget: widget.icon ?? const Icon(MMIcons.more),
+                  tooltip: widget.tooltip ?? '',
+                  onPressed: widget.enabled
+                      ? () => context.findAncestorStateOfType<PopupMenuButtonState<T>>()!.showButtonMenu()
+                      : null,
+                ),
+              )
+            : context.mmTouchPlatform
             ? Semantics(
                 button: true,
                 enabled: widget.enabled,
