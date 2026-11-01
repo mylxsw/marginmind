@@ -1263,6 +1263,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get densityFull => '完整';
 
   @override
+  String get switchMap => '切换脑图';
+
+  @override
   String get mapStyle => '样式';
 
   @override

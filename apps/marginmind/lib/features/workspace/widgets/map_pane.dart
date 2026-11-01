@@ -3,6 +3,8 @@ import '../../map_generation/widgets/map_ocr_banner.dart';
 
 import 'dart:async';
 
+import 'map_switch_sheet.dart';
+
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -1316,6 +1318,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         ),
                                       ],
                                       menuEntries: [
+                                        MMDropdownItem<VoidCallback>(
+                                          key: const ValueKey('map-switch-menu'),
+                                          value: () => _runToolbarAction(() async {
+                                            _closeStyle();
+                                            await showMapSwitchSheet(context, ref, widget.studySetId);
+                                          }),
+                                          enabled: loadedContent != null,
+                                          child: menuLabel(l.switchMap, const Icon(MMIcons.mindMap)),
+                                        ),
                                         MMDropdownItem<VoidCallback>(
                                           key: const ValueKey('map-style-menu'),
                                           value: _toggleStyle,

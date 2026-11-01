@@ -2402,6 +2402,12 @@ abstract class AppLocalizations {
   /// **'Full'**
   String get densityFull;
 
+  /// No description provided for @switchMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Map'**
+  String get switchMap;
+
   /// No description provided for @mapStyle.
   ///
   /// In en, this message translates to:

@@ -657,6 +657,7 @@
   "formatNumberList": "Numbered List",
   "densityCompact": "Compact",
   "densityFull": "Full",
+  "switchMap": "Switch Map",
   "mapStyle": "Style",
   "mapStructureMind": "Mind Map",
   "mapStructureLogic": "Logic Chart",

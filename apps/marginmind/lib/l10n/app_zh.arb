@@ -448,6 +448,7 @@
   "formatNumberList": "有序列表",
   "densityCompact": "紧凑",
   "densityFull": "完整",
+  "switchMap": "切换脑图",
   "mapStyle": "样式",
   "mapStructureMind": "思维导图",
   "mapStructureLogic": "逻辑图",

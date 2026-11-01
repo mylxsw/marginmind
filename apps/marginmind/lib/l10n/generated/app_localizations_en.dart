@@ -1312,6 +1312,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get densityFull => 'Full';
 
   @override
+  String get switchMap => 'Switch Map';
+
+  @override
   String get mapStyle => 'Style';
 
   @override
