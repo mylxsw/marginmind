@@ -18,9 +18,12 @@ String modelEndpointFingerprint(ModelProtocol protocol, String endpoint) {
   return sha256.convert(utf8.encode('${protocol.name}\n$uri')).toString();
 }
 
-/// No built-in model-name profiles. Admission is supplied by verified catalog data.
+/// In-memory compatibility entrypoint; production supplies a durable subclass.
 class CapabilityProfiles {
   final _profiles = <CapabilityIdentity, ModelCapabilityProfile>{};
+  Future<void> refresh() async {}
+  Future<void> recordProbe(CapabilityIdentity identity, ReasoningPolicy reasoning) async {}
+  void clear() => _profiles.clear();
   void put(ModelCapabilityProfile profile) => _profiles[profile.identity] = profile;
   ModelCapabilityProfile lookup(CapabilityIdentity identity) =>
       _profiles[identity] ?? ModelCapabilityProfile(identity: identity);
@@ -36,6 +39,7 @@ class DefaultProviderPolicyCompiler implements ProviderPolicyCompiler {
     required ReasoningPolicy requested,
     required CapabilityIdentity identity,
     required ModelCapabilityProfile capabilities,
+    int? maxOutputTokens,
   }) {
     if (identity != capabilities.identity || identity.adapterVersion != modelPolicyAdapterVersion) {
       throw const ConfigurationFailure('staleCapabilities');
@@ -70,12 +74,16 @@ class DefaultProviderPolicyCompiler implements ProviderPolicyCompiler {
       throw const ConfigurationFailure('invalidReasoningRecipe');
     }
     final parameters = _parameters(identity.protocol, recipe);
+    final limits = [maxOutputTokens, capabilities.outputTokens].whereType<int>().toList();
+    if (limits.any((n) => n <= 0)) throw const ConfigurationFailure('invalidOutputLimit');
+    final limit = limits.isEmpty ? null : limits.reduce((a, b) => a < b ? a : b);
     return ProviderCallPolicy(
       identity: identity,
       requested: requested,
       effective: effective,
       recipe: recipe,
       parameters: parameters,
+      maxOutputTokens: limit,
     );
   }
 }
@@ -119,13 +127,27 @@ ModelConfig policyModelConfig(ProviderCallPolicy policy, {int? maxTokens}) {
   final extra = policy.identity.protocol == ModelProtocol.gemini && parameters.isNotEmpty
       ? Map<String, dynamic>.from(parameters['generationConfig'] as Map)
       : parameters;
-  return ModelConfig(model: policy.identity.model.modelId, maxTokens: maxTokens, extra: extra);
+  final limit = policy.maxOutputTokens;
+  if (limit != null && maxTokens != null && maxTokens != limit) {
+    throw const ConfigurationFailure('outputLimitOverride');
+  }
+  return ModelConfig(model: policy.identity.model.modelId, maxTokens: limit ?? maxTokens, extra: extra);
 }
 
 /// Checked after SDK encoding on every attempt. Missing fields never trigger a parameter-free retry.
 void verifyPolicyPayload(ProviderCallPolicy policy, Map<String, dynamic> body) {
   if (body['model'] != null && body['model'] != policy.identity.model.modelId) {
     throw const ConfigurationFailure('policyModelMismatch');
+  }
+  final limit = policy.maxOutputTokens;
+  if (limit != null) {
+    final actualLimit = switch (policy.identity.protocol) {
+      ModelProtocol.responses => body['max_output_tokens'],
+      ModelProtocol.gemini => (body['generationConfig'] as Map?)?['maxOutputTokens'],
+      ModelProtocol.anthropicMessages => body['max_tokens'],
+      _ => body['max_completion_tokens'],
+    };
+    if (actualLimit != limit) throw const ConfigurationFailure('outputLimitPayloadMismatch');
   }
   final expected = _parameters(policy.identity.protocol, policy.recipe);
   // Reject extra reasoning knobs as well as missing ones, including nested display/effort settings.

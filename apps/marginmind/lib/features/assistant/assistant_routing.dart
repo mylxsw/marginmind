@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/providers.dart';
 import 'assistant_services.dart';
+import 'assistant_capabilities.dart';
 import 'assistant_settings.dart';
 
 class RoutingRevisionConflict implements Exception {
@@ -160,7 +161,13 @@ class AssistantRoutingController extends AsyncNotifier<RoutingConfig> {
   }
 }
 
-final assistantCapabilityProfilesProvider = Provider<CapabilityProfiles>((ref) => CapabilityProfiles());
+final assistantCapabilityStoreProvider = Provider<AssistantCapabilityProfiles>(
+  (ref) => AssistantCapabilityProfiles(ref.watch(sharedPreferencesProvider), ref.watch(assistantServicesStoreProvider)),
+);
+// Preserve the existing provider's type for UI/host overrides.
+final assistantCapabilityProfilesProvider = Provider<CapabilityProfiles>(
+  (ref) => ref.watch(assistantCapabilityStoreProvider),
+);
 final assistantModelResolverProvider = Provider<TaskModelResolver>(
   (ref) => TaskModelResolver(
     catalog: () => ref.read(assistantServicesStoreProvider).load(),

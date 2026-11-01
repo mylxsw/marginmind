@@ -13,6 +13,9 @@ class CapabilityProbeResult {
   final bool accepted;
   final ModelCapabilityProfile profile;
   RunPurpose get purpose => RunPurpose.capabilityProbe;
+
+  /// Connectivity cannot resolve missing independent semantic evidence.
+  String? get admissionFailureCode => issue == RoutingIssue.unknown ? 'maintainedEvidenceRequired' : null;
   RoutingIssue get issue => profile.evidence?.admitsPolicy == true ? RoutingIssue.none : RoutingIssue.unknown;
 }
 
@@ -49,6 +52,7 @@ class RoutingCapabilityProbe {
       throw const ConfigurationFailure('probeModelUnavailable');
     }
     final identity = serviceCapabilityIdentity(service, model);
+    await cancellation.bind(resolver.profiles.refresh());
     final profile = resolver.profiles.lookup(identity);
     ProviderCallPolicy? policy;
     if (profile.evidence?.admitsPolicy == true) {
@@ -57,6 +61,7 @@ class RoutingCapabilityProbe {
         requested: reasoning,
         identity: identity,
         capabilities: profile,
+        maxOutputTokens: 16,
       );
     } else if (reasoning != ReasoningPolicy.auto) {
       throw const ConfigurationFailure('unverifiedCapabilities');
@@ -77,9 +82,7 @@ class RoutingCapabilityProbe {
     try {
       await transport.client.generate(
         [sdk.UserMessage.text('Reply OK.')],
-        modelConfig: policy == null
-            ? sdk.ModelConfig(model: model.id, maxTokens: 16)
-            : policyModelConfig(policy, maxTokens: 16),
+        modelConfig: policy == null ? sdk.ModelConfig(model: model.id, maxTokens: 16) : policyModelConfig(policy),
         cancelToken: token,
       );
       cancellation.check();
@@ -93,6 +96,7 @@ class RoutingCapabilityProbe {
           serviceCapabilityIdentity(currentService, currentModel) != identity) {
         throw const ConfigurationFailure('serviceConfigurationChanged');
       }
+      await cancellation.bind(resolver.profiles.recordProbe(identity, reasoning));
       return CapabilityProbeResult(identity: identity, accepted: true, profile: profile);
     } catch (_) {
       cancellation.check();

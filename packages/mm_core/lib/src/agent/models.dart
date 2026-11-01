@@ -112,9 +112,13 @@ class ProviderCallPolicy {
     required this.effective,
     required this.recipe,
     required Map<String, dynamic> parameters,
+    this.maxOutputTokens,
   }) : parameters = freezeAgentJson(parameters);
   final CapabilityIdentity identity;
   final ReasoningPolicy requested, effective;
+
+  /// Frozen per-request ceiling, never an aggregate run quota.
+  final int? maxOutputTokens;
   final ReasoningRecipe recipe;
 
   /// SDK-independent protocol parameters, never credentials or user extras.

@@ -71,6 +71,7 @@ class TaskParagraphTranslator implements ParagraphTranslator {
         'text': paragraph.text,
         'sourceLanguage': sourceLanguage,
         'targetLanguage': language,
+        'maxOutputTokens': maxTokens,
       }, cancel);
       cancel.check();
       return ParagraphTranslation(text);

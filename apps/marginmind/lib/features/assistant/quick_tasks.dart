@@ -27,6 +27,7 @@ final quickTaskExecutorProvider = Provider.family<QuickTaskExecutor, String>((re
       spec: quickTaskSpec(type),
       input: input,
       inputFingerprint: quickInputFingerprint(input),
+      maxOutputTokens: quickTaskOutputLimit(type, input),
     );
     final context = await assembly.freeze(
       request,
