@@ -171,10 +171,14 @@ class ReadingPages extends Notifier<Map<String, int>> {
   void record(String id, int page) => state = {...state, id: page};
 }
 
+enum NoteReference { document, map }
+
 class WorkspaceState {
   const WorkspaceState({
     this.content,
     this.activeNoteId,
+    this.noteReference,
+    this.noteSplitFraction = .55,
     this.noteAnnotationId,
     this.selectedAnnotationIds = const {},
     this.annotationColors = const {0, 1, 2, 3, 4, 5},
@@ -225,6 +229,8 @@ class WorkspaceState {
 
   final String? noteAnnotationId;
   final String? activeNoteId;
+  final NoteReference? noteReference;
+  final double noteSplitFraction;
   final Set<String> selectedAnnotationIds;
   final Set<int> annotationColors;
   final String activeMapId;
@@ -315,6 +321,9 @@ class WorkspaceState {
     String? noteAnnotationId,
     String? activeNoteId,
     bool closeNote = false,
+    NoteReference? noteReference,
+    bool closeNoteReference = false,
+    double? noteSplitFraction,
     Set<String>? selectedAnnotationIds,
     Set<int>? annotationColors,
     String? activeMapId,
@@ -373,6 +382,8 @@ class WorkspaceState {
       content: content ?? this.content,
       noteAnnotationId: noteAnnotationId ?? this.noteAnnotationId,
       activeNoteId: closeNote ? null : activeNoteId ?? this.activeNoteId,
+      noteReference: closeNote || closeNoteReference ? null : noteReference ?? this.noteReference,
+      noteSplitFraction: noteSplitFraction ?? this.noteSplitFraction,
       selectedAnnotationIds: selectedAnnotationIds ?? this.selectedAnnotationIds,
       annotationColors: annotationColors ?? this.annotationColors,
       activeMapId: activeMapId ?? this.activeMapId,
@@ -745,7 +756,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       c.relationsOf(mapId).any((r) => r.id == id) || c.summariesOf(mapId).any((s) => s.$1.id == id);
 
   /// Switch only after queued writes; inline editors must finish first.
-  Future<void> selectMap(String id, {String? forDocumentId}) async {
+  Future<void> selectMap(String id, {String? forDocumentId, bool keepNote = false}) async {
     if (_blockExpansionEdit()) return;
     if (_creating || _editing != null || _markEditing != null || _clipboardBusy) return;
     await _enqueue(() async {
@@ -756,7 +767,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         return;
       }
       state = state.copyWith(
-        closeNote: true,
+        closeNote: !keepNote,
         clearTagFilter: true,
         activeMapId: id,
         selectRoot: true,
@@ -963,7 +974,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (state.panel == RightPanel.assistant && _panelRestore != null) {
       _panelRestore = (layout: layout, sidebarVisible: _panelRestore!.sidebarVisible);
     }
-    state = state.copyWith(layout: layout);
+    state = state.copyWith(layout: layout, closeNote: true);
   }
 
   /// Temporary space for two readable PDF columns; restore on exit.
@@ -1168,13 +1179,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(
       openDocumentIds: open,
       activeDocumentId: id,
+      noteReference: state.activeNoteId == null ? null : NoteReference.document,
       clearReveal: true,
       findVisible: id == state.activeDocumentId ? null : false,
       clearPending: true,
       layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
     );
     if (changed) {
-      unawaited(ref.read(documentMapNavigationProvider(studySetId).notifier).documentChanged(id, followMap: followMap));
+      unawaited(
+        ref
+            .read(documentMapNavigationProvider(studySetId).notifier)
+            .documentChanged(id, followMap: followMap && state.activeNoteId == null),
+      );
     }
   }
 
@@ -1589,11 +1605,56 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void openStudyNote(String id) {
     if (content.studyNote(id) == null) return;
+    state = state.copyWith(activeNoteId: id, clearTagFilter: true, closeNoteReference: true, clearPending: true);
+  }
+
+  void showNoteReference(NoteReference reference) {
+    if (state.activeNoteId == null) return;
+    if (reference == NoteReference.document && state.activeDocumentId == null) return;
+    state = state.copyWith(noteReference: reference);
+  }
+
+  Future<void> openNoteMap(String id) async {
+    final noteId = state.activeNoteId;
+    if (noteId == null) return;
+    await selectMap(id, keepNote: true);
+    if (!ref.mounted || state.activeNoteId != noteId || state.activeMapId != id) return;
+    showNoteReference(NoteReference.map);
+  }
+
+  void closeNoteReference() => state = state.copyWith(closeNoteReference: true);
+
+  void setNoteSplitFraction(double value) => state = state.copyWith(noteSplitFraction: value.clamp(.1, .9));
+
+  Future<void> revealNoteCard(String cardId) async {
+    final noteId = state.activeNoteId;
+    if (noteId == null) return;
+    final node =
+        content.nodes.where((n) => n.cardId == cardId && n.mapId == state.activeMapId).firstOrNull ??
+        content.nodes.where((n) => n.cardId == cardId).firstOrNull;
+    if (node == null) return;
+    if (node.mapId != state.activeMapId) await selectMap(node.mapId, keepNote: true);
+    if (!ref.mounted || state.activeNoteId != noteId || state.activeMapId != node.mapId) return;
+    await _update((c) => _expandAncestors(c, cardId), undoable: false);
+    if (!ref.mounted || state.activeNoteId != noteId) return;
     state = state.copyWith(
-      activeNoteId: id,
+      noteReference: NoteReference.map,
+      selectedCardId: cardId,
+      locateCardTick: state.locateCardTick + 1,
+      mapView: MapViewMode.map,
       clearTagFilter: true,
-      layout: onePane ? MMSplitMode.secondary : MMSplitMode.split,
-      clearPending: true,
+    );
+    _flash(cardId: cardId);
+  }
+
+  void revealNoteMargin(String id) {
+    final note = content.marginNotes.where((n) => n.id == id).firstOrNull;
+    if (note == null || content.document(note.documentId) == null) return;
+    openDocument(note.documentId, followMap: false);
+    state = state.copyWith(
+      reveal: note.anchor?.textAnchors.isNotEmpty == true
+          ? RevealRequest.text(note.documentId, note.anchor!.textAnchors, ++_revealNonce)
+          : RevealRequest(note.documentId, note.page, const [], ++_revealNonce),
     );
   }
 
@@ -1770,10 +1831,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void revealNoteAnnotation(String id) {
     final annotation = content.annotation(id);
     if (annotation == null || annotation.needsReview) return;
-    openDocument(annotation.documentId);
+    openDocument(annotation.documentId, followMap: false);
     state = state.copyWith(
       noteAnnotationId: id,
-      layout: onePane ? MMSplitMode.primary : MMSplitMode.split,
+      layout: state.activeNoteId != null ? null : (onePane ? MMSplitMode.primary : MMSplitMode.split),
       reveal: annotation.isText
           ? RevealRequest.text(annotation.documentId, annotation.textAnchors, ++_revealNonce)
           : RevealRequest(annotation.documentId, annotation.page, annotation.rects, ++_revealNonce),

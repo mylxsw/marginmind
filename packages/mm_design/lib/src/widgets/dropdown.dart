@@ -264,6 +264,7 @@ class _MMDropdownMenuButtonState<T> extends State<MMDropdownMenuButton<T>> {
         for (final entry in widget.itemBuilder(context))
           if (entry is PopupMenuItem<T>)
             MenuItemButton(
+              key: entry.key,
               style: _dropdownMenuItemStyle(context),
               onPressed: entry.enabled && entry.value != null ? () => _select(entry.value as T) : null,
               child: entry.child,

@@ -189,7 +189,10 @@ Future<void> tapWorkspaceCommand(WidgetTester tester, String id) async {
       return toolbar.menuEntries.any((entry) => entry.key == ValueKey('workspace-command-$id')) ||
           toolbar.items.any((item) => item.menuEntry.key == ValueKey('workspace-command-$id'));
     });
-    final menu = dedicatedMenu.evaluate().isNotEmpty
+    final noteMenu = find.byKey(const ValueKey('note-more')).hitTestable();
+    final menu = noteMenu.evaluate().isNotEmpty
+        ? noteMenu
+        : dedicatedMenu.evaluate().isNotEmpty
         ? dedicatedMenu.first
         : find.byKey((adaptiveMenu.first.widget as MMAdaptiveToolbar).menuKey!).hitTestable();
     await tester.tap(menu);

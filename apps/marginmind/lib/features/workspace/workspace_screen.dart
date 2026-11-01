@@ -21,7 +21,7 @@ import '../assistant/assistant_entry.dart';
 import '../assistant/widgets/assistant_panel.dart';
 import 'workspace_controller.dart';
 import 'widgets/full_translation_notifications.dart';
-import '../study_notes/note_view.dart';
+import '../study_notes/note_workspace_panes.dart';
 import '../study_notes/note_setup_sheet.dart';
 import 'widgets/map_pane.dart';
 import 'widgets/workspace_toolbar.dart';
@@ -117,6 +117,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     ref.listen(provider.select((s) => s.activeDocumentId), (_, _) {
       if (touchPlatform) _setDrawer(false);
     });
+    ref.listen(provider.select((s) => s.activeNoteId), (_, _) {
+      if (touchPlatform) _setDrawer(false);
+    });
+    ref.listen(provider.select((s) => s.noteReference), (_, next) {
+      if (touchPlatform && next != null) _setDrawer(false);
+    });
     ref.listen(provider.select((s) => s.tagFilter), (_, next) {
       if (touchPlatform && next != null) _setDrawer(false);
     });
@@ -125,6 +131,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       provider.select(
         (s) => (
           s.activeNoteId,
+          s.noteReference,
           s.sidebarVisible,
           s.layout,
           s.splitFraction,
@@ -156,6 +163,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       content?.documents.map((d) => d.id) ?? const [],
       documentTitleOf: (id) => content?.document(id)?.title ?? id,
     );
+    final noteOpen = content?.studyNote(state.activeNoteId ?? '') != null;
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
     final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
@@ -165,7 +173,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       if (!touchPlatform || media.accessibleNavigation) 'accessibility',
       if (media.viewInsets.bottom > 0) 'keyboard',
       if (_drawer) 'drawer',
-      if (state.panel != null) 'panel',
+      if (state.panel != null || noteOpen) 'panel',
       if (state.pending != null ||
           (!_phoneCompact && state.tool != AnnotationTool.select) ||
           state.findVisible ||
@@ -221,7 +229,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       final shown = resolveWorkspaceLayout(
                         windowWidth: width,
                         sidebarVisible: state.sidebarVisible && !touchPlatform,
-                        layout: state.layout,
+                        layout: noteOpen ? MMSplitMode.primary : state.layout,
                         panelOpen: state.panel != null,
                         preservePanes: state.panel == RightPanel.assistant,
                         minReader: minReader,
@@ -245,11 +253,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                           doc,
                           setTitle,
                           shown.sidebarVisible,
-                          state.content?.studyNote(state.activeNoteId ?? '') != null &&
-                                  state.layout == MMSplitMode.split &&
-                                  shown.mode == MMSplitMode.primary
-                              ? MMSplitMode.secondary
-                              : shown.mode,
+                          noteOpen ? MMSplitMode.primary : shown.mode,
                           minReader,
                           shown.panelWidth,
                           sizeClass,
@@ -274,8 +278,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       _setDrawer(false);
       return true;
     }
-    if (ref.read(workspaceProvider(widget.studySetId)).panel != null) {
+    final state = ref.read(workspaceProvider(widget.studySetId));
+    if (state.noteReference != null) {
+      controller.closeNoteReference();
+      return true;
+    }
+    if (state.panel != null) {
       controller.closePanel();
+      return true;
+    }
+    if (state.activeNoteId != null) {
+      controller.setLayout(MMSplitMode.primary);
       return true;
     }
     return false;
@@ -296,6 +309,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     bool canSplit,
   ) {
     final l = context.l10n;
+    final noteOpen = state.content?.studyNote(state.activeNoteId ?? '') != null;
     final compact = sizeClass == MMSizeClass.compact;
     final tablet = context.mmTablet;
     final media = MediaQuery.sizeOf(context);
@@ -311,7 +325,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       panelFraction: _tabletPanelFraction,
       minReader: minReader,
     );
-    if (tablet) {
+    if (tablet && !noteOpen) {
       layout = tabletLayout.mode;
       controller.onePane = layout != MMSplitMode.split;
       canSplit = true;
@@ -366,14 +380,15 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     final globalActions = <MMToolbarItem>[
-      action(
-        'layout-reader',
-        MMIcons.layoutReader,
-        AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
-        () => controller.setLayout(MMSplitMode.primary),
-        selected: layout == MMSplitMode.primary,
-      ),
-      if (canSplit)
+      if (!noteOpen)
+        action(
+          'layout-reader',
+          MMIcons.layoutReader,
+          AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
+          () => controller.setLayout(MMSplitMode.primary),
+          selected: layout == MMSplitMode.primary,
+        ),
+      if (!noteOpen && canSplit)
         action(
           'layout-split',
           MMIcons.layoutSplit,
@@ -381,13 +396,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           () => controller.setLayout(MMSplitMode.split),
           selected: layout == MMSplitMode.split,
         ),
-      action(
-        'layout-map',
-        MMIcons.layoutMap,
-        AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
-        () => controller.setLayout(MMSplitMode.secondary),
-        selected: layout == MMSplitMode.secondary,
-      ),
+      if (!noteOpen)
+        action(
+          'layout-map',
+          MMIcons.layoutMap,
+          AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
+          () => controller.setLayout(MMSplitMode.secondary),
+          selected: layout == MMSplitMode.secondary,
+        ),
       if (MMPlatformCapabilities.current.assistant)
         action(
           'assistant',
@@ -400,6 +416,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
     ];
     final globalMenuEntries = <PopupMenuEntry<VoidCallback>>[
+      if (noteOpen) ...[
+        MMDropdownItem(
+          value: state.activeDocumentId == null ? null : () => controller.showNoteReference(NoteReference.document),
+          enabled: state.activeDocumentId != null,
+          child: Text(l.paneSource),
+        ),
+        MMDropdownItem(value: () => controller.showNoteReference(NoteReference.map), child: Text(l.paneMap)),
+      ],
       action(
         'organize-note',
         MMIcons.organizeNote,
@@ -407,58 +431,55 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         () => showNoteSetupSheet(context, ref, widget.studySetId),
       ).menuEntry,
     ];
-    Widget paneChrome(Widget child, {required bool primary}) => !mergedToolbar
+    Widget paneChrome(Widget child, {required bool primary}) => !mergedToolbar && !noteOpen
         ? child
         : WorkspaceToolbarScope(
-            actions: phone ? const [] : globalActions,
-            menuEntries: phone ? const [] : globalMenuEntries,
+            actions: phone && !noteOpen ? const [] : globalActions,
+            menuEntries: phone && !noteOpen ? const [] : globalMenuEntries,
             primary: primary,
-            leading: phone ? null : leading,
-            ownsLeading: !phone && (primary || layout == MMSplitMode.secondary),
+            leading: phone && !noteOpen ? null : leading,
+            ownsLeading: (noteOpen || !phone) && (primary || layout == MMSplitMode.secondary),
             ownsActions: primary
                 ? stacked || layout == MMSplitMode.primary
                 : !stacked || layout == MMSplitMode.secondary,
             child: child,
           );
-    final split = MMSplitView(
-      mode: layout,
-      showModeButtons: !mergedToolbar,
-      onModeChanged: (!tablet && compact) || !canSplit ? null : controller.setLayout,
-      primaryLabel: l.layoutReader,
-      secondaryLabel: l.layoutMap,
-      splitLabel: l.layoutSplit,
-      fraction: state.splitFraction,
-      axis: stacked ? Axis.vertical : Axis.horizontal,
-      minPrimaryWidth: stacked ? MMSizes.paneMinHeight : minReader,
-      minSecondaryWidth: stacked ? MMSizes.paneMinHeight : MMSizes.mapMinWidth,
-      collapseWhenNarrow: stacked || state.panel != RightPanel.assistant,
-      onFractionChanged: controller.setSplitFraction,
-      primary: PdfDropTarget(
-        label: l.dropToImport,
-        onDrop: (files) async {
-          final notice = await controller.importDocuments(files);
-          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-        },
-        child: paneChrome(ReaderPane(studySetId: widget.studySetId), primary: true),
-      ),
-      secondary: PdfDropTarget(
-        label: l.dropImage,
-        onDrop: (files) async {
-          final notice = await controller.importDocuments(files);
-          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-        },
-        onImageDrop: (files) =>
-            insertImageFiles(context, ref, widget.studySetId, [for (final file in files) file.path]),
-        child: paneChrome(
-          state.content?.studyNote(state.activeNoteId ?? '') != null
-              ? StudyNoteView(studySetId: widget.studySetId, noteId: state.activeNoteId!)
-              : MapPane(studySetId: widget.studySetId),
-          primary: false,
-        ),
-      ),
-    );
+    final split = noteOpen
+        ? paneChrome(NoteWorkspacePanes(studySetId: widget.studySetId, noteId: state.activeNoteId!), primary: true)
+        : MMSplitView(
+            mode: layout,
+            showModeButtons: !mergedToolbar,
+            onModeChanged: (!tablet && compact) || !canSplit ? null : controller.setLayout,
+            primaryLabel: l.layoutReader,
+            secondaryLabel: l.layoutMap,
+            splitLabel: l.layoutSplit,
+            fraction: state.splitFraction,
+            axis: stacked ? Axis.vertical : Axis.horizontal,
+            minPrimaryWidth: stacked ? MMSizes.paneMinHeight : minReader,
+            minSecondaryWidth: stacked ? MMSizes.paneMinHeight : MMSizes.mapMinWidth,
+            collapseWhenNarrow: stacked || state.panel != RightPanel.assistant,
+            onFractionChanged: controller.setSplitFraction,
+            primary: PdfDropTarget(
+              label: l.dropToImport,
+              onDrop: (files) async {
+                final notice = await controller.importDocuments(files);
+                if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+              },
+              child: paneChrome(ReaderPane(studySetId: widget.studySetId), primary: true),
+            ),
+            secondary: PdfDropTarget(
+              label: l.dropImage,
+              onDrop: (files) async {
+                final notice = await controller.importDocuments(files);
+                if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+              },
+              onImageDrop: (files) =>
+                  insertImageFiles(context, ref, widget.studySetId, [for (final file in files) file.path]),
+              child: paneChrome(MapPane(studySetId: widget.studySetId), primary: false),
+            ),
+          );
     final floating = sizeClass != MMSizeClass.regular;
-    final paneSwitch = compact && !mergedToolbar;
+    final paneSwitch = !noteOpen && compact && !mergedToolbar;
     final panel = state.panel == null ? null : RightPanelView(studySetId: widget.studySetId);
     Widget compactSwitcher(double top) => Padding(
       padding: EdgeInsets.fromLTRB(MMSpacing.m, top, MMSpacing.m, MMSpacing.s),
@@ -531,7 +552,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ],
     );
     final body = ExcerptViewScope(
-      showInMap: compact && layout != MMSplitMode.secondary ? controller.showCardInMap : null,
+      showInMap: noteOpen
+          ? controller.revealNoteCard
+          : compact && layout != MMSplitMode.secondary
+          ? controller.showCardInMap
+          : null,
       child: Builder(
         builder: (context) {
           // The panes run on beneath a touch window's glass chrome; the pane
@@ -605,7 +630,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         },
       ),
     );
-    if (mergedToolbar) {
+    if (mergedToolbar || noteOpen) {
       final scaffold = MMWindowScaffold.contentBuilder(
         // A compact window has no room beside or over the panes: the panel
         // rises from the bottom.
@@ -648,7 +673,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             tablet: tablet,
             collapseWhenNarrow: stacked || state.panel != RightPanel.assistant,
           ),
-          child: phone
+          child: phone && !noteOpen
               ? usePhoneReaderControls(context)
                     ? Stack(
                         children: [

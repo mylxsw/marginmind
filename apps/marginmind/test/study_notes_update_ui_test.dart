@@ -391,10 +391,10 @@ void main() {
     final newer = note.copyWith(organizedAt: DateTime.now());
     expect(collectNoteChanges(content, newer).count, 0);
   });
-  testWidgets('File menu opens a hidden note before requesting its update preview', (tester) async {
+  testWidgets('File menu previews the independent note while its source is open', (tester) async {
     final container = await openNote(tester, content: updateFixture());
     final owner = container.read(workspaceProvider('demo-1').notifier);
-    owner.setLayout(MMSplitMode.primary);
+    owner.showNoteReference(NoteReference.document);
     await tester.pumpAndSettle();
     Iterable<PlatformMenuItem> flatten(List<PlatformMenuItem> items) sync* {
       for (final item in items) {
@@ -412,6 +412,7 @@ void main() {
     expect(find.byType(StudyNoteView), findsOneWidget);
     expect(find.byKey(const ValueKey('note-update-apply')), findsOneWidget);
     expect(container.read(noteUpdateRequestedProvider('written')), isFalse);
+    expect(container.read(workspaceProvider('demo-1')).noteReference, NoteReference.document);
     await tester.tap(find.byKey(const ValueKey('note-update-cancel')));
     await settleHud(tester);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));

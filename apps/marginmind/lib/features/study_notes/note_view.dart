@@ -417,17 +417,6 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                       for (final action in scope.actions)
                         if (action.id == 'assistant') action.child,
                     ],
-                    if (globalMenu)
-                      MMDropdownButton<VoidCallback>(
-                        key: const ValueKey('note-workspace-more'),
-                        tooltip: l.moreTools,
-                        icon: const Icon(MMIcons.more),
-                        onSelected: (command) => command(),
-                        itemBuilder: (_) => [
-                          for (final action in scope.actions) action.menuEntry,
-                          ...scope.menuEntries,
-                        ],
-                      ),
                     if (globalMenu) const SizedBox(width: MMSpacing.s),
                   ],
                 ),
@@ -445,13 +434,12 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                     child: Row(
                       children: [
                         const SizedBox(width: MMSpacing.m),
-                        if (compact)
-                          MMIconButton(
-                            key: const ValueKey('note-back'),
-                            icon: MMIcons.chevronLeft,
-                            tooltip: l.layoutReader,
-                            onPressed: () => _owner.setLayout(MMSplitMode.primary),
-                          ),
+                        MMIconButton(
+                          key: const ValueKey('note-back'),
+                          icon: MMIcons.chevronLeft,
+                          tooltip: l.layoutReader,
+                          onPressed: () => _owner.setLayout(MMSplitMode.primary),
+                        ),
                         Icon(
                           MMIcons.studyNote,
                           key: const ValueKey('note-toolbar-icon'),
@@ -486,64 +474,8 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             tooltip: l.noteRegenerate,
                             onPressed: () => showNoteReorganization(context, ref, widget.studySetId, note.id),
                           ),
-                        if (compact)
-                          MMDropdownMenuButton<String>(
-                            key: const ValueKey('note-more'),
-                            tooltip: l.moreTools,
-                            icon: MMIcons.more,
-                            itemBuilder: (_) => [
-                              MMDropdownSubmenu<String>(
-                                label: l.readerOutline,
-                                entries: [
-                                  for (final section in note.sections)
-                                    (value: 'section:${section.id}', label: section.title, selected: false),
-                                ],
-                              ),
-                              MMDropdownSubmenu<String>(
-                                label: l.noteTemplate,
-                                entries: [
-                                  for (final template in NoteTemplate.values)
-                                    (
-                                      value: 'template:${template.name}',
-                                      label: noteTemplateLabel(l, template),
-                                      selected: template == note.template,
-                                    ),
-                                ],
-                              ),
-                              if (note.sections
-                                  .expand((s) => s.blocks)
-                                  .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
-                                MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
-                              if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
-                              MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
-                              MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
-                              MMDropdownItem(value: 'share', child: Text('${l.noteShareTitle}…')),
-                            ],
-                            onSelected: (value) {
-                              if (value == 'markers') {
-                                ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
-                              } else if (value == 'continue' && continuation != null) {
-                                resumeNoteOrganization(context, continuation);
-                              } else if (value == 'regenerate') {
-                                showNoteReorganization(context, ref, widget.studySetId, note.id);
-                              } else if (value == 'export') {
-                                showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
-                              } else if (value == 'share') {
-                                showNoteShareSheet(context, _owner.content, note);
-                              } else if (value.startsWith('section:')) {
-                                _jump(value.substring('section:'.length));
-                              } else if (value.startsWith('template:')) {
-                                _owner.changeStudyNote(
-                                  note.id,
-                                  (n) => n.copyWith(
-                                    template: NoteTemplate.values.byName(value.substring('template:'.length)),
-                                  ),
-                                );
-                              }
-                            },
-                          )
-                        else ...[
-                          if (!floating)
+                        if (!compact) ...[
+                          if (!floating && constraints.maxWidth >= 800)
                             MMDropdownButton<String>(
                               key: const ValueKey('note-toc'),
                               tooltip: l.readerOutline,
@@ -594,6 +526,83 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             onPressed: () => showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text),
                           ),
                         ],
+                        MMDropdownMenuButton<Object>(
+                          key: const ValueKey('note-more'),
+                          tooltip: l.moreTools,
+                          icon: MMIcons.more,
+                          itemBuilder: (_) => [
+                            MMDropdownSubmenu<Object>(
+                              label: l.readerOutline,
+                              entries: [
+                                for (final section in note.sections)
+                                  (value: 'section:${section.id}', label: section.title, selected: false),
+                              ],
+                            ),
+                            MMDropdownSubmenu<Object>(
+                              label: l.noteTemplate,
+                              entries: [
+                                for (final template in NoteTemplate.values)
+                                  (
+                                    value: 'template:${template.name}',
+                                    label: noteTemplateLabel(l, template),
+                                    selected: template == note.template,
+                                  ),
+                              ],
+                            ),
+                            if (note.sections
+                                .expand((s) => s.blocks)
+                                .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
+                              MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
+                            if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
+                            MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
+                            MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
+                            MMDropdownItem(value: 'share', child: Text('${l.noteShareTitle}…')),
+                            if (globalMenu) ...[
+                              const PopupMenuDivider(),
+                              for (final action in scope!.actions)
+                                if (action.id != 'assistant' && action.menuEntry is PopupMenuItem<VoidCallback>)
+                                  MMDropdownItem<Object>(
+                                    value: (action.menuEntry as PopupMenuItem<VoidCallback>).value,
+                                    child: (action.menuEntry as PopupMenuItem<VoidCallback>).child,
+                                  ),
+                              for (final entry in scope.menuEntries)
+                                if (entry is PopupMenuItem<VoidCallback>)
+                                  MMDropdownItem<Object>(
+                                    key: entry.key,
+                                    value: entry.value,
+                                    enabled: entry.enabled,
+                                    child: entry.child,
+                                  ),
+                            ],
+                          ],
+                          onSelected: (command) {
+                            if (command is VoidCallback) {
+                              command();
+                              return;
+                            }
+                            final value = command as String;
+                            if (value == 'markers') {
+                              ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
+                            } else if (value == 'continue' && continuation != null) {
+                              resumeNoteOrganization(context, continuation);
+                            } else if (value == 'regenerate') {
+                              showNoteReorganization(context, ref, widget.studySetId, note.id);
+                            } else if (value == 'export') {
+                              showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
+                            } else if (value == 'share') {
+                              showNoteShareSheet(context, _owner.content, note);
+                            } else if (value.startsWith('section:')) {
+                              _jump(value.substring('section:'.length));
+                            } else if (value.startsWith('template:')) {
+                              _owner.changeStudyNote(
+                                note.id,
+                                (n) => n.copyWith(
+                                  template: NoteTemplate.values.byName(value.substring('template:'.length)),
+                                ),
+                              );
+                            }
+                          },
+                        ),
                         const SizedBox(width: MMSpacing.s),
                       ],
                     ),
@@ -943,6 +952,30 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     return [label, if (location?.trim().isNotEmpty == true) location!].join(' · ');
   }
 
+  Widget _ownSourceLink(StudySetContent content, OwnBlock block) {
+    final VoidCallback? open = switch (block.source) {
+      OwnSource.card || OwnSource.image when content.nodes.any((n) => n.cardId == block.sourceId) =>
+        () => _owner.revealNoteCard(block.sourceId),
+      OwnSource.marginNote
+          when content.marginNotes.any((n) => n.id == block.sourceId && content.document(n.documentId) != null) =>
+        () => _owner.revealNoteMargin(block.sourceId),
+      _ => null,
+    };
+    return MMInteractive(
+      key: ValueKey('note-own-source-link-${block.id}'),
+      onTap: open,
+      builder: (_, _) => Text(
+        _ownSource(content, block),
+        key: ValueKey('note-own-source-${block.id}'),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: context.mmText.footnote.copyWith(
+          color: open == null ? context.mmColors.secondaryLabel : context.mmColors.accent,
+        ),
+      ),
+    );
+  }
+
   Widget _block(StudyNote note, NoteSection section, StudyNoteBlock block, StudySetContent content) {
     final l = context.l10n, c = context.mmColors;
     Widget child;
@@ -1084,7 +1117,12 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       );
     } else if (block is OwnBlock && block.source == OwnSource.image) {
       final path = content.card(block.sourceId)?.imageFileName;
-      child = path == null ? const SizedBox.shrink() : CardImage(path);
+      child = path == null
+          ? const SizedBox.shrink()
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [CardImage(path), _ownSourceLink(content, block)],
+            );
     } else {
       final text = switch (block) {
         OwnBlock() => ownNoteText(content, block),
@@ -1119,14 +1157,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                 items: block is PointsBlock ? value.split('\n') : null,
               ),
             ),
-            if (block is OwnBlock)
-              Text(
-                _ownSource(content, block),
-                key: ValueKey('note-own-source-${block.id}'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-              ),
+            if (block is OwnBlock) _ownSourceLink(content, block),
           ],
         ),
       );

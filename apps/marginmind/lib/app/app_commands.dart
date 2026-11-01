@@ -590,7 +590,6 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         activeNote == null || (ref.watch(noteChangesProvider((workspaceId!, activeNote.id)))?.count ?? 0) == 0
             ? null
             : () {
-                workspace!.openStudyNote(activeNote.id);
                 ref.read(noteUpdateRequestedProvider(activeNote.id).notifier).request();
               },
       ),

@@ -13,6 +13,7 @@ class WorkspaceToolbarScope extends InheritedWidget {
     required this.actions,
     this.menuEntries = const [],
     this.primary = true,
+    this.useGeometry = true,
     required this.leading,
     required this.ownsActions,
     required this.ownsLeading,
@@ -22,6 +23,7 @@ class WorkspaceToolbarScope extends InheritedWidget {
   final Widget? leading;
   final bool ownsActions, ownsLeading;
   final bool primary;
+  final bool useGeometry;
   static WorkspaceToolbarScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<WorkspaceToolbarScope>();
   @override
@@ -48,7 +50,7 @@ class WorkspaceToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = WorkspaceToolbarScope.maybeOf(context);
-    final geometry = WorkspaceLayoutGeometryScope.maybeOf(context);
+    final geometry = scope?.useGeometry == false ? null : WorkspaceLayoutGeometryScope.maybeOf(context);
     final ownsLeading = geometry == null
         ? scope?.ownsLeading == true
         : scope?.primary == true || geometry.split.effectiveMode == MMSplitMode.secondary;

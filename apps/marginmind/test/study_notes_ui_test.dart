@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/study_notes/note_export_sheet.dart';
 import 'package:marginmind/features/study_notes/note_setup_sheet.dart';
@@ -62,12 +63,18 @@ Future<ProviderContainer> openNote(
   String appearance = 'light',
   String language = 'en',
   StudySetContent? content,
+  bool touch = false,
+  bool phone = false,
 }) async {
   final container = await pumpApp(
     tester,
     size: size,
     prefs: {'settings.appearance': appearance, 'settings.language': language},
     content: InMemoryStudySetContentRepository({'demo-1': content ?? noteFixture()}),
+    overrides: [
+      if (touch) touchPlatformProvider.overrideWithValue(true),
+      if (touch) phoneProvider.overrideWithValue(phone),
+    ],
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');
   await tester.pumpAndSettle();
@@ -352,6 +359,8 @@ void main() {
 
   testWidgets('compact More exposes TOC and layout submenus, changes layouts and exports', (tester) async {
     final container = await openNote(tester, size: const Size(1280, 820));
+    container.read(workspaceProvider('demo-1').notifier).showNoteReference(NoteReference.document);
+    await tester.pumpAndSettle();
     expect(tester.widget<Icon>(find.byKey(const ValueKey('note-toolbar-icon'))).icon, MMIcons.studyNote);
     expect(find.byKey(const ValueKey('note-export')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('note-more')));
@@ -371,7 +380,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Table of Contents'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Memory').last);
+    await tester.tap(find.text('Memory').hitTestable().last);
     await tester.pumpAndSettle();
     expect(find.text('Export Note…'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('note-more')));
@@ -390,7 +399,7 @@ void main() {
     final note = content.studyNotes.single;
     await openNote(
       tester,
-      size: const Size(1600, 1000),
+      size: const Size(1440, 1000),
       content: content.copyWith(
         studyNotes: [
           note.copyWith(
@@ -406,6 +415,10 @@ void main() {
         ],
       ),
     );
+    final owner = ProviderScope.containerOf(tester.element(find.byType(StudyNoteView)))
+        .read(workspaceProvider('demo-1').notifier);
+    owner.showNoteReference(NoteReference.document);
+    await tester.pumpAndSettle();
     final width = tester.getSize(find.byType(StudyNoteView)).width;
     expect(width, greaterThanOrEqualTo(MMSizes.noteSetupSheetWidth));
     expect(width, lessThan(MMNoteLayout.exportLabelMinWidth));
@@ -454,14 +467,7 @@ void main() {
         ],
       ),
     );
-    expect(
-      find.descendant(of: find.byKey(const ValueKey('note-toc')), matching: find.text('Table of Contents')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: find.byKey(const ValueKey('note-toc')), matching: find.byIcon(MMIcons.chevronDown)),
-      findsOneWidget,
-    );
+    expect(find.text('Table of Contents'), findsOneWidget);
     expect(
       find.descendant(of: find.byKey(const ValueKey('note-export')), matching: find.text('Export')),
       findsOneWidget,

@@ -169,6 +169,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   @override
   Widget build(BuildContext context) {
     final browser = ref.watch(workspaceBrowserProvider(widget.studySetId));
+    final noteOpen = ref.watch(workspaceProvider(widget.studySetId).select((s) => s.activeNoteId != null));
+    final browserVisible = browser.visible && !noteOpen;
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
     final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? StudySetContent.empty;
     Widget browserChrome(Widget child) => WorkspaceToolbarScope.maybeOf(context) == null
@@ -182,18 +184,18 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     return Stack(
       children: [
         Offstage(
-          offstage: browser.visible,
-          child: ExcludeFocus(excluding: browser.visible, child: _buildReader(context)),
+          offstage: browserVisible,
+          child: ExcludeFocus(excluding: browserVisible, child: _buildReader(context)),
         ),
         if (browser.session case final session?)
           Offstage(
-            offstage: !browser.visible,
+            offstage: !browserVisible,
             child: browserChrome(
               BrowserPane(
                 key: ValueKey(session.id),
                 studySetId: widget.studySetId,
                 session: session,
-                visible: browser.visible,
+                visible: browserVisible,
                 documentSwitcher: DocumentSwitcher(
                   studySetId: widget.studySetId,
                   documents: content.documents,

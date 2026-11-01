@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Run the macOS study-note integration test and capture only its native window.
+"""Run macOS study-note integration tests and capture visual evidence.
 
-The host captures screenshots because the application's sandbox cannot launch
-xcrun/Swift or write arbitrary evidence paths. The app sends a local HTTP request
-at each settled frame; no application entitlements are changed.
+The host captures native windows for the original flows. The independent note
+workspace uploads its rendered scene (including popup menus) over localhost.
+The app sandbox and entitlements stay unchanged.
 """
 import argparse
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -19,6 +19,7 @@ NAMES = {'note-light', 'note-dark', 'export-light', 'export-dark'}
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--updates', action='store_true', help='Capture incremental updates and templates')
+    parser.add_argument('--workspace', action='store_true', help='Capture the independent note workspace and its references')
     parser.add_argument('--ai', action='store_true', help='Capture the fake-organizer AI flow')
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/evidence/gul-588')
     args = parser.parse_args()
@@ -28,9 +29,31 @@ def main():
     if args.updates:
         names = {'update-banner', 'update-preview', 'update-applied', 'reading', 'cornell', 'review', 'review-dark'}
         target = 'integration_test/study_notes_updates_test.dart'
+    if args.workspace:
+        names = {'note-page-light', 'note-source-light', 'note-source-dark', 'note-map-dark', 'note-page-dark', 'note-menu-dark'}
+        target = 'integration_test/note_workspace_test.dart'
     captured = set()
 
     class Capture(BaseHTTPRequestHandler):
+        def do_POST(self):
+            try:
+                name = urlparse(self.path).path.removeprefix('/capture/')
+                length = int(self.headers.get('Content-Length', '0'))
+                if not args.workspace or name not in names or not 0 < length <= 24 * 1024 * 1024:
+                    raise ValueError('Invalid rendered capture request')
+                data = self.rfile.read(length)
+                if len(data) != length or not data.startswith(bytes.fromhex('89504e470d0a1a0a')):
+                    raise ValueError('Invalid PNG')
+                (args.output / f'{name}.png').write_bytes(data)
+                captured.add(name)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'captured')
+            except Exception as error:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(str(error).encode())
+
         def do_GET(self):
             try:
                 url = urlparse(self.path)

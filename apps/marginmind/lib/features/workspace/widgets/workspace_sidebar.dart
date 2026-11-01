@@ -46,7 +46,15 @@ class WorkspaceSidebar extends ConsumerWidget {
     final provider = workspaceProvider(studySetId);
     ref.watch(
       provider.select(
-        (s) => (s.sidebarQuery, s.activeMapId, s.activeNoteId, s.activeDocumentId, s.tagFilter, s.selectedCardId),
+        (s) => (
+          s.sidebarQuery,
+          s.activeMapId,
+          s.activeNoteId,
+          s.noteReference,
+          s.activeDocumentId,
+          s.tagFilter,
+          s.selectedCardId,
+        ),
       ),
     );
     final state = ref.read(provider);
@@ -124,11 +132,18 @@ class WorkspaceSidebar extends ConsumerWidget {
               }
               return null;
             }(),
-            selected: state.tagFilter == null && state.activeNoteId == null && map.id == state.activeMapId,
+            selected:
+                state.tagFilter == null &&
+                (state.activeNoteId == null || state.noteReference == NoteReference.map) &&
+                map.id == state.activeMapId,
             selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
             onTap: () async {
-              await controller.selectMap(map.id);
-              controller.setLayout(MMSplitMode.secondary);
+              if (state.activeNoteId != null) {
+                await controller.openNoteMap(map.id);
+              } else {
+                await controller.selectMap(map.id);
+                controller.setLayout(MMSplitMode.secondary);
+              }
             },
             onContextMenu: (position) => _mapMenu(context, ref, map, position),
           ),
@@ -198,7 +213,10 @@ class WorkspaceSidebar extends ConsumerWidget {
               icon: documentIcon(d),
               label: d.title,
               trailing: _DocumentTranslationTrailing(studySetId: studySetId, document: d),
-              selected: !browser.visible && d.id == state.activeDocumentId,
+              selected:
+                  !browser.visible &&
+                  (state.activeNoteId == null || state.noteReference == NoteReference.document) &&
+                  d.id == state.activeDocumentId,
               selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
               onTap: () {
                 browserOwner.hide();
