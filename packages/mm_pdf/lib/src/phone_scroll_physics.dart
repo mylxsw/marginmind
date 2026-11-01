@@ -4,7 +4,13 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
 
 /// Opt-in reading behavior. Null in MMPdfView preserves the viewer's old path.
-enum MMPdfScrollProfile { phone }
+enum MMPdfScrollProfile {
+  /// Mobile pan inertia plus the compact phone's double-tap zoom shortcut.
+  phone,
+
+  /// Mobile pan inertia without changing the host's double-tap behavior.
+  touch,
+}
 
 /// Screen-pixel pan inertia, isolated from wheel and scale gestures by pdfrx.
 class MMPhoneScrollPhysics extends BouncingScrollPhysics {
@@ -14,7 +20,9 @@ class MMPhoneScrollPhysics extends BouncingScrollPhysics {
   /// direct input; filtering a spring's output again would leave it off its edge.
   final bool Function()? userGestureInProgress;
 
-  static const velocityMultiplier = 1.6;
+  // Extend the release travel by 25% over the original 1.6x phone profile.
+  // Direct dragging stays 1:1; edge return velocity remains bounded below.
+  static const velocityMultiplier = 2.0;
   static const decelerationPerMillisecond = .998;
   static final dragPerSecond = math.pow(decelerationPerMillisecond, 1000).toDouble();
   static const maxSpringVelocity = 1600.0;

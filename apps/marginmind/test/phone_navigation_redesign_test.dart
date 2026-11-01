@@ -60,32 +60,48 @@ void main() {
     )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
   });
 
-  testWidgets('PDF profile follows phone compact only, including rotation', (tester) async {
-    installTestPdfBackend(pageCount: 164);
-    final container = await pumpApp(
-      tester,
-      size: const Size(393, 852),
-      renderPdf: true,
-      overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
-    );
-    container.read(navigationProvider.notifier).openStudySet('demo-1');
-    await tester.pumpAndSettle();
-    container.read(workspaceProvider('demo-1').notifier).openDocument('c1');
-    await tester.pump();
-    final pdf = container.read(readerPdfProvider('demo-1'));
-    for (var i = 0; i < 100 && !pdf.isReady; i++) {
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+  for (final device in [
+    (name: 'phone', touch: true, phone: true, size: const Size(393, 852)),
+    (name: 'tablet', touch: true, phone: false, size: const Size(834, 1194)),
+    (name: 'desktop', touch: false, phone: false, size: const Size(1280, 820)),
+  ]) {
+    testWidgets('PDF inertia follows ${device.name} across rotation and narrow windows', (tester) async {
+      installTestPdfBackend(pageCount: 164);
+      final container = await pumpApp(
+        tester,
+        size: device.size,
+        renderPdf: true,
+        overrides: [
+          touchPlatformProvider.overrideWithValue(device.touch),
+          phoneProvider.overrideWithValue(device.phone),
+        ],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      container.read(workspaceProvider('demo-1').notifier).openDocument('c1');
       await tester.pump();
-    }
-    expect(pdf.isReady, true);
-    expect(tester.widget<MMPdfView>(find.byType(MMPdfView)).scrollProfile, MMPdfScrollProfile.phone);
-    tester.view.physicalSize = const Size(852, 393);
-    await tester.pumpAndSettle();
-    expect(tester.widget<MMPdfView>(find.byType(MMPdfView)).scrollProfile, isNull);
-    await tester.pumpWidget(const SizedBox());
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-    await tester.pump();
-  });
+      final pdf = container.read(readerPdfProvider('demo-1'));
+      for (var i = 0; i < 100 && !pdf.isReady; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+        await tester.pump();
+      }
+      expect(pdf.isReady, true);
+      for (final size in [device.size, Size(device.size.height, device.size.width), const Size(393, 852)]) {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+        final expected = !device.touch
+            ? null
+            : device.phone && size.width < 600
+            ? MMPdfScrollProfile.phone
+            : MMPdfScrollProfile.touch;
+        expect(tester.widget<MMPdfView>(find.byType(MMPdfView)).scrollProfile, expected);
+        expect(tester.takeException(), isNull);
+      }
+      await tester.pumpWidget(const SizedBox());
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    });
+  }
 
   testWidgets('phone ratings stay usable with a pointer and accessibility text', (tester) async {
     final container = await pumpApp(

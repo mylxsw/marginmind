@@ -2590,9 +2590,9 @@ class _MMPdfViewState extends State<MMPdfView> {
           initialPageNumber: widget.initialPage,
           params: PdfViewerParams(
             backgroundColor: widget.backgroundColor,
-            scrollPhysics: widget.scrollProfile == MMPdfScrollProfile.phone ? _phoneScrollPhysics : null,
-            // Never amplify pinch/trackpad scale offsets with the phone pan profile.
-            scrollPhysicsScale: widget.scrollProfile == MMPdfScrollProfile.phone ? const BouncingScrollPhysics() : null,
+            scrollPhysics: widget.scrollProfile != null ? _phoneScrollPhysics : null,
+            // Keep pinch/trackpad scale offsets separate from mobile pan inertia.
+            scrollPhysicsScale: widget.scrollProfile != null ? const BouncingScrollPhysics() : null,
             onInteractionStart: (_) {
               _phonePanActive = true;
               _userScrollPosition = widget.controller.scrollPosition;

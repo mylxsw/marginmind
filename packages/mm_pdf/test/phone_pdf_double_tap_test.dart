@@ -55,36 +55,38 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('non-phone scrollProfile does not alter zoom on double tap', (tester) async {
-    tester.view.physicalSize = const Size(1280, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
+  for (final profile in [null, MMPdfScrollProfile.touch]) {
+    testWidgets('$profile does not alter zoom on double tap', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
 
-    final controller = MMPdfViewController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: MMPdfView(filePath: 'desktop-tap-test.pdf', controller: controller, scrollProfile: null),
+      final controller = MMPdfViewController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MMPdfView(filePath: 'desktop-tap-test.pdf', controller: controller, scrollProfile: profile),
+          ),
         ),
-      ),
-    );
+      );
 
-    for (var i = 0; i < 100 && !controller.isReady; i++) {
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
-      await tester.pump();
-    }
-    expect(controller.isReady, isTrue);
-    await tester.pumpAndSettle();
+      for (var i = 0; i < 100 && !controller.isReady; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+        await tester.pump();
+      }
+      expect(controller.isReady, isTrue);
+      await tester.pumpAndSettle();
 
-    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
-    final initialZoom = pdf.currentZoom;
+      final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+      final initialZoom = pdf.currentZoom;
 
-    await tester.tap(find.byType(MMPdfView));
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.byType(MMPdfView));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byType(MMPdfView));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.byType(MMPdfView));
+      await tester.pumpAndSettle();
 
-    expect(pdf.currentZoom, closeTo(initialZoom, 0.001));
-    controller.dispose();
-  });
+      expect(pdf.currentZoom, closeTo(initialZoom, 0.001));
+      controller.dispose();
+    });
+  }
 }
