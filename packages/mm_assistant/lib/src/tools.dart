@@ -37,17 +37,80 @@ class AssistantTools {
   final AssistantPermissions? permissions;
   // Pagination bounds work per tool call, not the total pages a run may read.
   static const pageBatchSize = 20;
-  static const readNames = {'read_selection', 'read_pages', 'search_study_set', 'read_branch'};
+  static const readNames = {
+    'read_selection',
+    'read_pages',
+    'search_study_set',
+    'read_branch',
+    'read_more',
+    'read_history',
+  };
   String str(Map<String, dynamic> a, String k, {int max = 200}) {
     final v = a[k];
     if (v is! String || v.trim().isEmpty || v.length > max) throw const FormatException('Invalid argument');
     return v;
   }
 
+  final _continuations = <String, Object Function()>{};
+  int _cursor = 0;
+  String _continue(Object Function() read) {
+    final cursor = 'read-${++_cursor}';
+    _continuations[cursor] = read;
+    return cursor;
+  }
+
+  Object _bounded(Object value) {
+    final encoded = jsonEncode(value);
+    final available = (budget.remainingReadCharacters - 1024).clamp(0, 12000);
+    if (jsonEncode(encoded).length <= available) {
+      budget.takeContextSpace(jsonEncode(encoded).length + 512);
+      return value;
+    }
+    Object fragment(int start) {
+      final remaining = (budget.remainingReadCharacters - 1024).clamp(0, 12000);
+      var end = start;
+      // Encoded text fragments retain every character and can be requested in
+      // order. The cursor is scoped to this tool instance and permissions.
+      var low = start, high = encoded.length;
+      while (low < high) {
+        final mid = (low + high + 1) ~/ 2;
+        if (jsonEncode(encoded.substring(start, mid)).length <= remaining) {
+          low = mid;
+        } else {
+          high = mid - 1;
+        }
+      }
+      end = low;
+      if (end > start &&
+          end < encoded.length &&
+          encoded.codeUnitAt(end - 1) >= 0xd800 &&
+          encoded.codeUnitAt(end - 1) <= 0xdbff) {
+        end--;
+      }
+      if (end == start) budget.contextFull = true;
+      final next = end;
+      final out = <String, Object?>{
+        'dataFragment': encoded.substring(start, end),
+        'offset': start,
+        'complete': end == encoded.length,
+        if (end < encoded.length) 'nextCursor': _continue(() => fragment(next)),
+        'notice': 'Fragment of JSON data; omitted content has not been read.',
+      };
+      budget.takeContextSpace(jsonEncode(jsonEncode(out)).length);
+      return out;
+    }
+
+    return fragment(0);
+  }
+
   Future<Object> execute(String name, Map<String, dynamic> a) async {
     cancel.check();
     Object out;
     switch (name) {
+      case 'read_more':
+        final next = _continuations[str(a, 'cursor')];
+        if (next == null) throw const FormatException('Invalid continuation');
+        return next();
       case 'read_selection':
         final id = str(a, 'selectionId');
         if (!scope.selections.contains(id)) await _authorize(name, a);
@@ -72,19 +135,18 @@ class AssistantTools {
         final map = str(a, 'mapId'), node = str(a, 'nodeId');
         if (!scope.allowsBranch(map, node)) await _authorize(name, a);
         final nodes = await cancel.bind(reader.readBranch(map, node, scope, cancel));
-        if (nodes.length > 200) throw const ResearchFailure(ResearchFailureKind.budget);
         out = [for (final n in nodes) n.toJson()];
       case 'web_search':
         out = [for (final r in await cancel.bind(_network.search(str(a, 'query'), cancel))) r.toJson()];
       case 'search_papers':
-        out = [for (final s in await cancel.bind(_network.papers(str(a, 'query'), cancel))) _source(s)];
+        out = _sources(await cancel.bind(_network.papers(str(a, 'query'), cancel)));
       case 'fetch_source':
         out = _source(await cancel.bind(_network.fetch(Uri.parse(str(a, 'url', max: 2048)), cancel)));
       default:
         throw const FormatException('Unknown tool');
     }
     cancel.check();
-    return out;
+    return {'read_selection', 'read_pages', 'fetch_source', 'search_papers'}.contains(name) ? out : _bounded(out);
   }
 
   Future<void> _authorize(String name, Map<String, dynamic> arguments) async {
@@ -205,17 +267,64 @@ class AssistantTools {
     final row = candidate(length);
     if (!budget.takeContextSpace(size(row))) return null;
     row['citation'] = citations.page(ReadPage(page.documentId, page.page, row['text'] as String));
+    if (length < page.text.length) {
+      final remainder = page.text.substring(length);
+      row['nextCursor'] = _continue(() => _pages([ReadPage(page.documentId, page.page, remainder)], selection: true));
+    }
     return row;
   }
 
-  Object _source(AssistantSource s) => {
-    'title': s.title,
-    'kind': s.kind,
-    'url': s.url.toString(),
-    'paragraphs': s.paragraphs,
-    'citations': citations.source(s),
-  };
+  Object _sources(List<AssistantSource> sources, [int index = 0]) {
+    if (index >= sources.length) return {'complete': true};
+    return {
+      'source': _source(sources[index]),
+      'complete': index + 1 == sources.length,
+      if (index + 1 < sources.length) 'nextCursor': _continue(() => _sources(sources, index + 1)),
+    };
+  }
+
+  Object _source(AssistantSource source, {int paragraphIndex = 0, int offset = 0}) {
+    final entries = source.paragraphs.entries.toList();
+    if (paragraphIndex >= entries.length) return {'complete': true, 'paragraphs': <String, String>{}};
+    final p = entries[paragraphIndex];
+    final length = (budget.remainingReadCharacters - 2048).clamp(0, 8000) ~/ 4;
+    var end = (offset + length).clamp(0, p.value.length);
+    if (end > offset &&
+        end < p.value.length &&
+        p.value.codeUnitAt(end - 1) >= 0xd800 &&
+        p.value.codeUnitAt(end - 1) <= 0xdbff) {
+      end--;
+    }
+    final text = p.value.substring(offset, end);
+    final nextParagraph = end == p.value.length ? paragraphIndex + 1 : paragraphIndex;
+    final nextOffset = end == p.value.length ? 0 : end;
+    final complete = nextParagraph == entries.length;
+    final admitted = AssistantSource(
+      id: source.id,
+      version: source.version,
+      kind: source.kind,
+      title: source.title,
+      url: source.url,
+      paragraphs: {p.key: text},
+      fetchedAt: source.fetchedAt,
+      snapshotFile: source.snapshotFile,
+    );
+    final out = {
+      'title': source.title.substring(0, source.title.length.clamp(0, 200)),
+      'kind': source.kind,
+      'paragraphs': {p.key: text},
+      'offset': offset,
+      'citations': text.isEmpty ? <String>[] : citations.source(admitted),
+      'complete': complete,
+      if (!complete) 'nextCursor': _continue(() => _source(source, paragraphIndex: nextParagraph, offset: nextOffset)),
+    };
+    if (text.isEmpty) budget.contextFull = true;
+    budget.takeContextSpace(jsonEncode(jsonEncode(out)).length + 256);
+    return out;
+  }
+
   List<Tool> build() => [
+    _tool('read_more', {'cursor': 'string'}),
     _tool('read_selection', {'selectionId': 'string'}),
     _tool('read_pages', {'documentId': 'string', 'from': 'integer', 'to': 'integer'}),
     _tool('search_study_set', {'query': 'string'}),
@@ -272,6 +381,11 @@ class AssistantTools {
         'Read document pages using documentId and inclusive 1-based from/to. There is no total page quota. Returns {pages, complete, nextPage?, notice?}, at most $pageBatchSize pages per batch within available context space. If complete=false, follow notice/nextPage; textComplete=false means only a prefix of that page was read. Never treat omitted content as read. If extra read permission is needed, the tool waits for the user to allow or deny it.',
       'read_selection' => 'Read selected text using selectionId. Returns {pages, complete, notice?}; textComplete=false means only a prefix fits. Selected text does not consume a page quota.',
       'read_branch' => 'Read a mind-map branch using mapId and nodeId (__root__ for the map root). The tool asks the user before reading an additional branch.',
+      'read_more' => 'Continue an earlier bounded result using its nextCursor. Only returned content is read.',
+      'web_search' => 'Discover URLs using short keywords; search snippets are not evidence. Fetch a source before citing it. Follow nextCursor with read_more for omitted results.',
+      'search_papers' =>
+        'Discover scholarly metadata. Metadata is not full paper text. Follow nextCursor with read_more.',
+      'fetch_source' => 'Fetch an immutable source snapshot as evidence. Returns bounded paragraphs and citations; follow nextCursor with read_more. Omitted text has not been read.',
       _ => name,
     },
     parameters: {
@@ -317,7 +431,12 @@ class AssistantTools {
 
 class AssistantSkill extends Skill {
   AssistantSkill(String name, String prompt, List<Tool> tools)
-    : super(name: name, description: prompt, systemPrompt: '$prompt\n$assistantAnswerStyle', tools: tools);
+    : super(
+        name: name,
+        description: prompt,
+        systemPrompt: '$prompt\n${name == 'translate' ? '只输出完整译文，保留原文结构，不加结论或总结。' : assistantAnswerStyle}',
+        tools: tools,
+      );
 }
 
 const assistantAnswerStyle =

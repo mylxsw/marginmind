@@ -33,3 +33,9 @@ export 'src/translation_scheduler.dart';
 export 'src/map_generation.dart';
 
 export 'src/model_policy/compiler.dart';
+
+export 'src/task_runtime/history.dart';
+
+export 'src/task_runtime/runtime.dart';
+export 'src/task_runtime/registry.dart';
+export 'src/knowledge/registry.dart';

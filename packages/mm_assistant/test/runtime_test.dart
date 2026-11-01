@@ -182,7 +182,9 @@ void main() {
     await expectLater(tools.execute('search_study_set', {'query': 'ok', 'limit': 30}), throwsFormatException);
     await expectLater(tools.execute('unknown', {}), throwsFormatException);
     await expectLater(tools.execute('web_search', {'query': 'ok'}), throwsA(isA<ResearchFailure>()));
-    expect(registry.items, hasLength(2));
+    // Selection and full-page excerpts keep distinct immutable evidence.
+    expect(registry.items.map((c) => c.quote), containsAll(['selection', 'page 1', 'page 2']));
+    expect(registry.items.map((c) => c.marker).toSet(), hasLength(3));
     cancellation.cancel();
     await expectLater(tools.execute('read_selection', {'selectionId': 'sel'}), throwsA(isA<ResearchFailure>()));
   });
