@@ -103,7 +103,7 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
     MMHud.show(context, context.l10n.docSaving);
     await controller.saveWebDocument(prepared.package, cancelled: cancelled);
     if (!context.mounted || cancelled()) return;
-    owner.close(session.id);
+    owner.close();
     final review = controller.content.annotations.where((a) => a.documentId == id && a.needsReview).toList();
     MMHud.show(
       context,
