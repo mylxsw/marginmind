@@ -115,10 +115,10 @@ void main() {
     expect(controller.imagePath(card.imageFileName!), card.imageFileName);
 
     controller.revealCard(card.id);
-    final reveal = container.read(provider).tabs.current.reference!.anchor!.target as PdfTarget;
+    final reveal = container.read(provider).reveal!;
     expect(reveal.documentId, 'c1');
-    expect(reveal.pages.first.page, 24);
-    expect(reveal.pages.first.rects, [_area.rect]);
+    expect(reveal.page, 24);
+    expect(reveal.rects, [_area.rect]);
 
     await controller.undo();
     expect(controller.content.cards, hasLength(before.cards.length));
@@ -157,8 +157,8 @@ void main() {
     // The node's double-click recognizer holds the arena briefly.
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
-    expect(referenceState(tester).reveal!.rects, [_area.rect]);
-    expect(referenceState(tester).activeDocumentId, 'c1');
+    expect(container.read(workspaceProvider('demo-1')).reveal!.rects, [_area.rect]);
+    expect(container.read(workspaceProvider('demo-1')).activeDocumentId, 'c1');
     await settleHud(tester);
 
     // Clicking the framed area offers recolor, locate and delete, not copy.
@@ -278,7 +278,7 @@ void main() {
     await tester.tap(find.text(l.revealSource));
     await tester.pumpAndSettle();
     expect(container.read(navigationProvider), isA<WorkspaceRoute>());
-    expect(referenceState(tester).reveal!.page, 7);
+    expect(container.read(workspaceProvider('demo-1')).reveal!.page, 7);
     await settleHud(tester);
   });
 

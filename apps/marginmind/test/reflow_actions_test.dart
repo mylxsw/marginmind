@@ -41,10 +41,7 @@ void main() {
     await workspace.redo();
     final card = (await workspace.excerptSource(doc.id, selection, MMAnnotationColor.yellow)).cardId!;
     workspace.revealCard(card);
-    expect(
-      (container.read(provider).tabs.current.reference!.anchor!.target as TextTarget).textAnchors.single.quote,
-      'Learning',
-    );
+    expect(container.read(provider).reveal!.textAnchors.single.quote, 'Learning');
     await workspace.setTool(AnnotationTool.underline);
     await workspace.onSourceSelectionCommitted(doc.id, selection);
     final underlines = workspace.content.annotations.where((a) => a.kind == AnnotationKind.underline).toList();

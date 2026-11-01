@@ -235,16 +235,34 @@ void main() {
       expect(c.cardForAnnotation(plain), isNotNull);
     });
 
-    test('revealing a card opens an owned reference without switching the main document', () async {
+    test('revealing a card locates the main reader and restores split layout', () async {
       controller.openDocument('c2');
       final excerpt = controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt);
       controller.setLayout(MMSplitMode.secondary);
       controller.revealCard(excerpt.id);
       final state = container.read(workspaceProvider('demo-1'));
-      expect(state.activeDocumentId, 'c2');
-      expect(state.layout, MMSplitMode.secondary);
-      expect(state.tabs.current.reference!.id, 'c1');
-      expect((state.tabs.current.reference!.anchor!.target as PdfTarget).pages.first.page, 24);
+      expect(state.activeDocumentId, 'c1');
+      expect(state.layout, MMSplitMode.split);
+      expect(state.tabs.current.reference, isNull);
+      expect(state.reveal!.page, 24);
+      expect(state.selectedCardId, excerpt.id);
+      expect(state.flashCardId, excerpt.id);
+    });
+
+    test('repeated source jumps reuse the current reader and preserve an existing companion', () {
+      controller.openDocument('c1');
+      controller.openDocumentReference('c2');
+      final excerpt = controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt);
+      controller.revealCard(excerpt.id);
+      final first = container.read(workspaceProvider('demo-1'));
+      expect(first.activeDocumentId, 'c1');
+      expect(first.tabs.current.reference!.id, 'c2');
+      expect(first.reveal!.page, 24);
+      controller.revealCard(excerpt.id);
+      final second = container.read(workspaceProvider('demo-1'));
+      expect(second.tabs.current.reference, same(first.tabs.current.reference));
+      expect(second.reveal, isNot(same(first.reveal)));
+      expect(second.selectedCardId, excerpt.id);
     });
 
     test('removing a card keeps its highlight; deleting the highlight removes both', () async {

@@ -116,7 +116,7 @@ void main() {
     final card = controller.content.cardForAnnotation(annotation.id)!;
     controller.revealCard(card.id);
     await tester.pumpAndSettle();
-    final reference = referenceContainer(tester).read(reflowSessionProvider(('demo-1', doc.id)));
+    final reference = container.read(reflowSessionProvider(('demo-1', doc.id)));
     expect(reference.position!.chapterId, anchor.chapterId);
     expect(reference.position!.offset, annotation.textAnchors.first.start);
     await controller.undo();
@@ -133,7 +133,7 @@ void main() {
     controller.revealCard(card.id);
     await tester.pumpAndSettle();
     expect(
-      referenceContainer(tester).read(reflowSessionProvider(('demo-1', doc.id))).position!.offset,
+      container.read(reflowSessionProvider(('demo-1', doc.id))).position!.offset,
       annotation.textAnchors.first.start,
     );
     await controller.setReadingPosition(

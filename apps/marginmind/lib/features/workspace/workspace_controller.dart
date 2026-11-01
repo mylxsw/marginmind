@@ -2835,15 +2835,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (index < 0 || index >= segments.length) return;
     final annotation = content.annotation(segments[index].annotationId ?? '');
     if (annotation == null) return;
-    if (!isReference) {
-      if (!annotation.needsReview) {
-        revealNoteAnnotation(annotation.id);
-      } else {
-        openDocumentReference(annotation.documentId);
-      }
-      return;
-    }
-    openDocument(annotation.documentId);
+    openDocument(annotation.documentId, followMap: false);
     if (annotation.needsReview) return;
     state = state.copyWith(
       selectedCardId: cardId,
@@ -2857,18 +2849,6 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void revealMapSource(CardSource source) {
     final document = content.document(source.documentId);
     if (document == null || source.page < 1 || source.page > document.pageCount) return;
-    if (!isReference) {
-      openDocumentReference(
-        source.documentId,
-        anchor: SourceAnchor(
-          target: PdfTarget(
-            documentId: source.documentId,
-            pages: [AnnotationPage(page: source.page, rects: const [])],
-          ),
-        ),
-      );
-      return;
-    }
     openDocument(source.documentId, followMap: false);
     state = state.copyWith(reveal: RevealRequest(source.documentId, source.page, const [], ++_revealNonce));
   }
@@ -2878,10 +2858,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final card = content.card(cardId);
     if (card == null) return;
     if (card.source case final source?) {
-      if (!isReference) {
-        revealMapSource(source);
-        return;
-      }
+      final document = content.document(source.documentId);
+      if (document == null || source.page < 1 || source.page > document.pageCount) return;
       openDocument(source.documentId, followMap: false);
       state = state.copyWith(
         selectedCardId: cardId,
