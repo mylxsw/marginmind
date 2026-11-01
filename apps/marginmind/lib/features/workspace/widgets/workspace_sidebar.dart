@@ -456,7 +456,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                     key: const ValueKey('add-document-menu'),
                     tooltip: l.addDocumentMenu,
                     width: MMSizes.dropdownWideWidth,
-                    icon: const Icon(MMIcons.addDocument),
+                    icon: const Icon(MMIcons.add),
                     onSelected: (value) => value == 'web'
                         ? dispatchAddWebPage(context, ref, studySetId)
                         : pickAndImportDocuments(context, ref, studySetId),
@@ -466,7 +466,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                     ],
                   )
                 : MMIconButton(
-                    icon: MMIcons.addDocument,
+                    icon: MMIcons.add,
                     tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
                     onPressed: () => pickAndImportDocuments(context, ref, studySetId),
                   ),
