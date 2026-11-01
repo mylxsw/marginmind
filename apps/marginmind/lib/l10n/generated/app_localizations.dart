@@ -10777,6 +10777,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review Cards & Questions'**
   String get aiTaskReviewCards;
+
+  /// No description provided for @aiTasksProfilesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load model capabilities'**
+  String get aiTasksProfilesUnavailable;
+
+  /// No description provided for @aiTasksProbeUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Test result not saved'**
+  String get aiTasksProbeUnsaved;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

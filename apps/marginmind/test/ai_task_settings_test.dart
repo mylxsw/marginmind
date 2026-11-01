@@ -86,6 +86,34 @@ class _Probe extends RoutingCapabilityProbe {
   }
 }
 
+/// Production-shaped registry whose reads can fail on demand.
+class _FlakyProfiles extends CapabilityProfiles {
+  bool fail = false;
+  @override
+  Future<void> refresh() async {
+    if (fail) throw StateError('capability store unavailable');
+  }
+}
+
+class _UnsavedProbe extends RoutingCapabilityProbe {
+  _UnsavedProbe(TaskModelResolver resolver) : super(resolver: resolver, key: (_) async => 'k');
+  @override
+  Future<CapabilityProbeResult> probe(
+    ModelReference reference, {
+    required CancellationToken cancellation,
+    ReasoningPolicy reasoning = ReasoningPolicy.auto,
+  }) async => throw StateError('Capability persistence failed');
+}
+
+/// An exact model/endpoint pair from the reviewed production allowlist.
+final _openai = AssistantService(
+  id: 'openai',
+  protocol: ServiceProtocol.openai,
+  name: 'OpenAI',
+  endpoint: 'https://api.openai.com/v1',
+  models: const [ServiceModel(id: 'gpt-4.1-2025-04-14', name: 'GPT-4.1')],
+);
+
 class _UnreadableSecrets extends FakeSecrets {
   @override
   Future<String?> read(String name) async =>
@@ -678,6 +706,95 @@ void main() {
       expect(find.text('需验证'), findsWidgets, reason: 'notes stay in the sheet');
       expect(tester.takeException(), isNull);
     }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+  });
+
+  group('capability profiles', () {
+    Future<ProviderContainer> openMaintained(WidgetTester tester, {List<Override> overrides = const []}) => _open(
+      tester,
+      prefs: _prefs(services: [_openai], routing: _routing(quick: null, heavy: null)),
+      secrets: FakeSecrets()..values[AssistantServicesStore.account('openai')] = 'k',
+      overrides: overrides,
+    );
+
+    testWidgets('first open with models but no defaults loads maintained profiles for menus and thinking', (
+      tester,
+    ) async {
+      await openMaintained(tester);
+      expect(_pickerOf(tester, '重型任务 · 默认模型').label, '选择模型');
+      expect(_pickerOf(tester, aiTaskName(l, TaskType.research)).label, '需配置');
+      await tester.tap(_row('重型任务 · 默认模型'));
+      await tester.pumpAndSettle();
+      expect(find.text('GPT-4.1'), findsWidgets);
+      expect(find.text('需验证'), findsNothing, reason: 'the reviewed exact rule is loaded before any row resolves');
+      await tester.tap(find.text('GPT-4.1').hitTestable().last);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<MMPopUpButton<ReasoningPolicy>>(find.byKey(const ValueKey('ai-tasks-heavy-reasoning')))
+            .items
+            .map((e) => e.$1),
+        [ReasoningPolicy.auto, ReasoningPolicy.off],
+      );
+      expect(find.text('需验证兼容性'), findsNothing);
+    });
+
+    testWidgets('changing the service identity refreshes rows, menus and thinking choices', (tester) async {
+      final container = await openMaintained(tester);
+      await _choose(tester, '重型任务 · 默认模型', 'GPT-4.1');
+      expect(find.text('需验证兼容性'), findsNothing);
+      await container
+          .read(assistantServicesProvider.notifier)
+          .updateDetails('openai', endpoint: 'https://proxy.example/v1');
+      await tester.pumpAndSettle();
+      expect(find.text('需验证兼容性'), findsOneWidget, reason: 'a proxy endpoint is not the reviewed identity');
+      expect(
+        tester
+            .widget<MMPopUpButton<ReasoningPolicy>>(find.byKey(const ValueKey('ai-tasks-heavy-reasoning')))
+            .items
+            .map((e) => e.$1),
+        [ReasoningPolicy.auto],
+      );
+      await tester.tap(_row(aiTaskName(l, TaskType.research)));
+      await tester.pumpAndSettle();
+      expect(find.text('需验证'), findsOneWidget);
+    });
+
+    testWidgets('a failed profile refresh is visible and retryable; the draft stays', (tester) async {
+      final profiles = _FlakyProfiles();
+      await _open(tester, overrides: [assistantCapabilityProfilesProvider.overrideWithValue(profiles)]);
+      final name = aiTaskName(l, TaskType.documentSummarize);
+      await _choose(tester, name, 'Claude Haiku');
+      profiles.fail = true;
+      await _choose(tester, aiTaskName(l, TaskType.research), 'Claude Haiku');
+      expect(find.byKey(const ValueKey('ai-tasks-profiles-failed')), findsOneWidget);
+      expect(find.text('无法读取模型能力'), findsOneWidget);
+      expect(_pickerOf(tester, name).selected, _haiku, reason: 'the draft is untouched');
+      expect(_pickerOf(tester, aiTaskName(l, TaskType.research)).selected, _haiku);
+      expect(find.text('未保存'), findsOneWidget);
+      profiles.fail = false;
+      await tester.ensureVisible(find.byKey(const ValueKey('ai-tasks-profiles-retry')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('ai-tasks-profiles-retry')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('ai-tasks-profiles-failed')), findsNothing);
+      expect(_pickerOf(tester, name).selected, _haiku);
+    });
+
+    testWidgets('a probe whose observation cannot be saved says so instead of passing', (tester) async {
+      await _open(
+        tester,
+        overrides: [
+          assistantCapabilityProbeProvider.overrideWith(
+            (ref) => _UnsavedProbe(ref.watch(assistantModelResolverProvider)),
+          ),
+        ],
+      );
+      await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
+      await tester.pumpAndSettle();
+      expect(find.text('测试结果未保存'), findsOneWidget);
+      expect(find.text('已连接 · 兼容性未验证'), findsNothing);
+      expect(find.text('连接不可用'), findsNothing);
+    });
   });
 
   group('status components', () {

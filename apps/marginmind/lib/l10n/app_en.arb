@@ -3146,5 +3146,7 @@
   "aiTaskMapGenerate": "Mind Map Generation & Update",
   "aiTaskResearch": "Research & Verification",
   "aiTaskStudyNotes": "Study Note Organizing",
-  "aiTaskReviewCards": "Review Cards & Questions"
+  "aiTaskReviewCards": "Review Cards & Questions",
+  "aiTasksProfilesUnavailable": "Couldn't load model capabilities",
+  "aiTasksProbeUnsaved": "Test result not saved"
 }

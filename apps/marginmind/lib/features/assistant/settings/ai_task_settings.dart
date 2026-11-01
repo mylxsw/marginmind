@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../settings/settings_save_actions.dart';
 import '../../../shared/l10n.dart';
+import '../assistant_capabilities.dart';
 import '../assistant_routing.dart';
 import '../assistant_services.dart';
 import 'ai_task_status.dart';
@@ -207,7 +208,7 @@ Future<bool> saveAiTaskDraft(WidgetRef ref, AiTaskDraft draft) async {
 }
 
 /// A capability test of one model: running, or how it ended.
-enum _ProbeOutcome { running, reachable, unreachable }
+enum _ProbeOutcome { running, reachable, unreachable, unsaved }
 
 /// Settings › AI Features: the quick and heavy defaults, then each feature's
 /// model. Rows show the model that will run; colour tells bound from inherited.
@@ -236,6 +237,10 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
   AiTaskFocus? _pendingFocus;
   int _generation = 0;
   int? _catalogRevision;
+
+  /// Capability profiles were read at least once / the last read failed.
+  bool _profilesLoaded = false, _profilesFailed = false;
+  static const _storeFailures = {'corruptCapabilityStore', 'unsupportedCapabilityStoreVersion'};
 
   AiTaskDraft get _draft => widget.draft;
   static String _defaultId(TaskCategory c) => 'default-${c.name}';
@@ -293,13 +298,31 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     final config = _draft.toConfig(), defaults = _draft.toConfig(bindings: false);
     TaskRequest<Object?> request(TaskSpec spec) =>
         TaskRequest<Object?>(spec: spec, input: const {}, inputFingerprint: 'settings');
-    final results = await Future.wait([
-      for (final type in TaskType.values) resolver.inspect(request(specs[type] ?? _settingsSpec(type)), config),
-      for (final category in TaskCategory.values)
-        resolver.inspect(request(_settingsSpec(TaskType.values.firstWhere((t) => t.category == category))), defaults),
-    ]);
+    final List<RoutingRowState> results;
+    try {
+      // Menus and thinking options read profiles synchronously; load them even
+      // when no row resolves far enough to refresh them (nothing assigned yet).
+      await ref.read(assistantCapabilityProfilesProvider).refresh();
+      // One at a time: each inspect refreshes the shared registry, which is
+      // briefly empty while it rebuilds; parallel lookups could read that gap.
+      results = [
+        for (final type in TaskType.values) await resolver.inspect(request(specs[type] ?? _settingsSpec(type)), config),
+        for (final category in TaskCategory.values)
+          await resolver.inspect(
+            request(_settingsSpec(TaskType.values.firstWhere((t) => t.category == category))),
+            defaults,
+          ),
+      ];
+    } catch (_) {
+      // Keep the previous rows and the draft; the page offers a retry.
+      if (mounted && generation == _generation) setState(() => _profilesFailed = _profilesLoaded = true);
+      return;
+    }
     if (!mounted || generation != _generation) return;
+    final failed = results.any((r) => _storeFailures.contains(r.failureCode));
     setState(() {
+      _profilesLoaded = true;
+      _profilesFailed = failed;
       for (final (i, type) in TaskType.values.indexed) {
         _rows[type] = results[i];
       }
@@ -376,7 +399,14 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     } on ResearchFailure catch (e) {
       outcome = e.kind == ResearchFailureKind.cancelled ? null : _ProbeOutcome.unreachable;
     } on ConfigurationFailure catch (e) {
-      outcome = e.code == 'secretUnavailable' ? _ProbeOutcome.unreachable : null;
+      outcome = e.code == 'secretUnavailable'
+          ? _ProbeOutcome.unreachable
+          : _storeFailures.contains(e.code)
+          ? _ProbeOutcome.unsaved
+          : null;
+    } on StateError {
+      // The service answered but the observation could not be persisted.
+      outcome = token.isCancelled ? null : _ProbeOutcome.unsaved;
     } catch (_) {
       outcome = token.isCancelled ? null : _ProbeOutcome.unreachable;
     }
@@ -488,7 +518,7 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _draft.adopt(config));
     }
     final catalog = services.value;
-    if (catalog == null || !_draft.loaded) {
+    if (catalog == null || !_draft.loaded || !_profilesLoaded) {
       return Center(
         key: const ValueKey('settings-ai-tasks'),
         child: routing.hasError || services.hasError
@@ -556,6 +586,17 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (_profilesFailed)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(MMSpacing.xs, MMSpacing.s, MMSpacing.xs, 0),
+                    child: RoutingIssueLine(
+                      key: const ValueKey('ai-tasks-profiles-failed'),
+                      text: l.aiTasksProfilesUnavailable,
+                      action: l.assistantRetry,
+                      actionKey: const ValueKey('ai-tasks-profiles-retry'),
+                      onAction: () => unawaited(_inspect()),
+                    ),
+                  ),
                 for (final category in TaskCategory.values) ...[
                   if (category != TaskCategory.values.first) const SizedBox(height: MMSpacing.xs),
                   MMSettingsHeader(category == TaskCategory.quick ? l.aiTasksQuick : l.aiTasksHeavy),
@@ -632,6 +673,17 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     );
   }
 
+  /// A saved connectivity observation for [model]'s current identity. It is
+  /// shown as reachable only; it never makes unknown capabilities supported.
+  bool _accepted(ModelReference model) {
+    final profiles = ref.read(assistantCapabilityProfilesProvider);
+    final catalog = ref.read(assistantServicesProvider).value;
+    final service = catalog?.services.where((s) => s.id == model.serviceId).firstOrNull;
+    final entry = service?.models.where((m) => m.id == model.modelId).firstOrNull;
+    if (profiles is! AssistantCapabilityProfiles || service == null || entry == null) return false;
+    return profiles.probeObservation(serviceCapabilityIdentity(service, entry)) != null;
+  }
+
   /// The line under a row, if its state needs a decision.
   Widget? _issue(String id, RoutingRowState? row, {VoidCallback? onChoose, bool showThinking = true}) {
     if (row == null) return null;
@@ -639,11 +691,23 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     final text = routingIssueText(l, row.issue, failureCode: row.failureCode);
     if (text == null) return null;
     if (row.issue == RoutingIssue.thinkingAlwaysOn && !showThinking) return null;
+    // A store that cannot be read is reported once for the page, not per row.
+    if (_storeFailures.contains(row.failureCode)) return null;
     final model = row.effective;
     switch (row.issue) {
       case RoutingIssue.unknown:
         final probe = model == null ? null : _probes[model];
-        if (probe?.$1 == _ProbeOutcome.reachable) {
+        if (probe?.$1 == _ProbeOutcome.unsaved) {
+          return RoutingIssueLine(
+            key: ValueKey('ai-issue-$id'),
+            text: l.aiTasksProbeUnsaved,
+            critical: false,
+            action: l.aiTasksTest,
+            actionKey: ValueKey('ai-action-$id'),
+            onAction: _draft.saving ? null : () => unawaited(_probe(model!)),
+          );
+        }
+        if (probe?.$1 == _ProbeOutcome.reachable || (probe == null && model != null && _accepted(model))) {
           return RoutingIssueLine(key: ValueKey('ai-issue-$id'), text: l.aiTasksIssueReachable, critical: false);
         }
         if (probe?.$1 == _ProbeOutcome.unreachable) {

@@ -6119,4 +6119,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiTaskReviewCards => 'Review Cards & Questions';
+
+  @override
+  String get aiTasksProfilesUnavailable => 'Couldn\'t load model capabilities';
+
+  @override
+  String get aiTasksProbeUnsaved => 'Test result not saved';
 }

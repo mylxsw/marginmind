@@ -5882,4 +5882,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiTaskReviewCards => '复习卡与问题生成';
+
+  @override
+  String get aiTasksProfilesUnavailable => '无法读取模型能力';
+
+  @override
+  String get aiTasksProbeUnsaved => '测试结果未保存';
 }

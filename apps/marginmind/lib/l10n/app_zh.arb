@@ -2437,5 +2437,7 @@
   "aiTaskMapGenerate": "思维导图生成与更新",
   "aiTaskResearch": "调研与查证",
   "aiTaskStudyNotes": "学习笔记整理与改写",
-  "aiTaskReviewCards": "复习卡与问题生成"
+  "aiTaskReviewCards": "复习卡与问题生成",
+  "aiTasksProfilesUnavailable": "无法读取模型能力",
+  "aiTasksProbeUnsaved": "测试结果未保存"
 }
