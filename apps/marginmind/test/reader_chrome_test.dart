@@ -50,7 +50,7 @@ void main() {
         return (text.text as TextSpan).style!.color;
       }
 
-      for (final icon in [MMIcons.highlight, MMIcons.areaSelect, MMIcons.pen]) {
+      for (final icon in [MMIcons.highlight, MMIcons.areaSelect, MMIcons.inkAnnotations]) {
         expect(paintedColor(icon), colors.label, reason: 'Enabled toolbar icons use one foreground');
       }
       expect(paintedColor(MMIcons.select), colors.accent);

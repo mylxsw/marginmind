@@ -287,7 +287,7 @@ void main() {
     expect(controller.content.annotations.last.quote, selection.text);
     expect(controller.content.annotations.last.kind, AnnotationKind.underline);
     expect(find.byType(SelectionToolbar), findsNothing);
-    await tester.tap(find.byIcon(MMIcons.pen));
+    await tester.tap(find.byIcon(MMIcons.inkAnnotations));
     await tester.pumpAndSettle();
     expect(find.byType(UnderlineStyleToolbar), findsNothing);
     expect(container.read(provider).tool, AnnotationTool.ink);

@@ -482,7 +482,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       (AnnotationTool.select, MMIcons.select, l.toolSelect, 60),
       (AnnotationTool.highlight, MMIcons.highlight, l.toolHighlight, 50),
       (AnnotationTool.underline, MMIcons.underline, l.toolUnderline, 40),
-      (AnnotationTool.ink, MMIcons.pen, l.toolPen, 30),
+      (AnnotationTool.ink, MMIcons.inkAnnotations, l.toolPen, 30),
       (AnnotationTool.area, MMIcons.areaSelect, l.toolArea, 10),
     ];
     final documents = DocumentSwitcher(
@@ -919,7 +919,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     MMDropdownItem<Object>(
                       value: AnnotationTool.ink,
                       enabled: controller.canUseTool(AnnotationTool.ink),
-                      child: _menuRow(MMIcons.pen, l.toolPen),
+                      child: _menuRow(MMIcons.inkAnnotations, l.toolPen),
                     ),
                     MMDropdownItem<Object>(
                       value: 'sync',
