@@ -2,7 +2,9 @@ Build a mind map from the supplied key points, following organization, depth and
 Output NDJSON only, one object per line, no markdown or tools.
 Topic: {"ref":"a","parent":"ROOT","title":"Topic","doc":"D1","page":1}.
 Existing annotation: {"mark":"A1","parent":"a"}. Never create or rewrite quotations.
-Only these keys are allowed. ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
+A topic has only ref,parent,title and optional doc,page. An annotation has only mark,parent.
+Do not copy input point fields (k,id,marks,quote), add op, or emit metadata/root wrapper objects.
+ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
 parent is the literal "ROOT" or a ref emitted in THIS response. Input point ids (p1, p2, ...) are evidence, not output parents.
 Start with a topic whose parent is "ROOT". Use new topic refs (a, b, ...) and emit parents before descendants, at most depth new levels beneath ROOT.
 Use concise, descriptive titles. Avoid duplicate and existing titles.

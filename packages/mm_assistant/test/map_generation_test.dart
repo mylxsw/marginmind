@@ -86,12 +86,11 @@ void main() {
     await model.close();
   });
   test('validation reports fixed rejection reasons and never response content', () async {
-    final client = ScriptClient([
-      answer(
-        'private response\n{"ref":"a","parent":"missing","title":"private title"}\n'
-        '{"ref":"b","parent":"ROOT","title":"Topic","extra":"private value"}',
-      ),
-    ]);
+    final invalid = answer(
+      'private response\n{"ref":"a","parent":"missing","title":"private title"}\n'
+      '{"ref":"b","parent":"ROOT","title":"Topic","extra":"private value"}',
+    );
+    final client = ScriptClient([invalid, invalid]);
     final model = generator(client);
     try {
       await model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList();
@@ -104,6 +103,8 @@ void main() {
       expect(error.message, isNull);
       expect(error.toString(), isNot(contains('private')));
     }
+    expect(client.calls, 2);
+    expect((client.requests.last.first as SystemMessage).content, isNot(contains('private')));
     await model.close();
   });
   test('43 unresolved parents trigger one corrected request with a fresh parser', () async {
@@ -116,10 +117,87 @@ void main() {
     expect(client.calls, 2);
     expect(result, hasLength(2));
     expect(result.last.parentId, 'new:${result.first.id}');
-    expect(
-      (client.requests.last.first as SystemMessage).content,
-      contains('previous response had no resolvable parents'),
-    );
+    expect((client.requests.last.first as SystemMessage).content, contains('previous response had no valid map lines'));
+    await model.close();
+  });
+  test('an invalid root field and 43 disconnected children get one schema repair', () async {
+    for (final phase in [MapLinePhase.generation, MapLinePhase.diff]) {
+      final root = {if (phase == MapLinePhase.diff) 'op': 'add', 'ref': 'a', 'parent': 'ROOT', 'title': 'Topic'};
+      final invalid = [
+        jsonEncode({...root, 'extra': 'private response value'}),
+        for (var i = 0; i < 43; i++)
+          jsonEncode({if (phase == MapLinePhase.diff) 'op': 'add', 'ref': 'b$i', 'parent': 'a', 'title': 'Child $i'}),
+      ].join('\n');
+      final client = ScriptClient([
+        answer(invalid),
+        answer(
+          '${jsonEncode(root)}\n${jsonEncode({if (phase == MapLinePhase.diff) 'op': 'add', 'ref': 'b', 'parent': 'a', 'title': 'Child'})}',
+        ),
+      ]);
+      final model = generator(client);
+      final input = build(phase, []), cancel = CancellationToken();
+      final result =
+          await (phase == MapLinePhase.generation ? model.generate(input, cancel) : model.update(input, cancel))
+              .toList();
+      expect(client.calls, 2);
+      expect(result.map((line) => line.title), ['Topic', 'Child']);
+      expect(result.last.parentId, 'new:${result.first.id}');
+      final repair = (client.requests.last.first as SystemMessage).content;
+      expect(repair, contains('unexpectedKeys'));
+      expect(repair, contains('unknownParent'));
+      expect(repair, isNot(contains('private response value')));
+      String payload(List<LLMMessage> messages) =>
+          (messages.last as UserMessage).contents.whereType<TextPart>().single.text;
+      expect(payload(client.requests.first), payload(client.requests.last));
+      await model.close();
+    }
+  });
+  test('a usable draft is preserved without regenerating after rejected lines', () async {
+    final client = ScriptClient([answer('$topic\n{"ref":"b","parent":"a","title":"Child","extra":true}')]);
+    final model = generator(client);
+    final result = await model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList();
+    expect(result.single.title, 'Topic');
+    expect(client.calls, 1);
+    await model.close();
+  });
+  test('truncated, refused and incomplete responses never trigger schema repair', () async {
+    for (final (stop, code, kind) in [
+      ('length', 'outputTruncated', ResearchFailureKind.budget),
+      ('refusal', null, ResearchFailureKind.refusal),
+      (null, 'incompleteStream', ResearchFailureKind.protocol),
+    ]) {
+      final client = ScriptClient([answer('{"ref":"a","parent":"ROOT","title":"Topic","extra":true}', stop: stop)]);
+      final model = generator(client);
+      await expectLater(
+        model.generate(build(MapLinePhase.generation, []), CancellationToken()).toList(),
+        throwsA(isA<MapGenerationFailure>().having((e) => e.kind, 'kind', kind).having((e) => e.code, 'code', code)),
+      );
+      expect(client.calls, 1);
+      await model.close();
+    }
+  });
+  test('schema repair stays cancellable and cancels the second network request', () async {
+    final repairing = Completer<void>(), silent = StreamController<StreamingMessage>();
+    CancelToken? network;
+    late final StreamClient client;
+    client = StreamClient((token) {
+      if (client.calls == 1) {
+        return Stream.value(
+          StreamingMessage(modelMessage: answer('{"ref":"a","parent":"ROOT","title":"Topic","extra":true}')),
+        );
+      }
+      network = token;
+      repairing.complete();
+      return silent.stream;
+    });
+    final model = generator(client), cancel = CancellationToken();
+    final check = expectLater(model.generate(build(MapLinePhase.generation, []), cancel).toList(), throwsA(cancelled));
+    await repairing.future;
+    cancel.cancel();
+    await check;
+    expect(client.calls, 2);
+    expect(network!.isCancelled, isTrue);
+    await silent.close();
     await model.close();
   });
   test('out-of-order descendants resolve without another request or arbitrary reparenting', () async {

@@ -6,7 +6,8 @@ Allowed forms:
 {"op":"rename","node":"N1","title":"New title"}
 {"op":"move","node":"N1","parent":"a"}
 {"op":"remove","node":"N1","why":"Reason"}
-No extra keys. ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
+Each line must match exactly one allowed form, with no extra keys or metadata/root wrapper objects.
+Do not copy input point fields (k,id,marks,quote). ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
 parent is the literal "ROOT", a supplied N alias or a ref emitted in THIS response. Input point ids are evidence, not output parents.
 Use new topic refs (a, b, ...) and emit parents before descendants, at most depth new levels.
 Never rename, move or remove protected nodes; additions beneath them are allowed. Preserve user content. Removal requires a concrete reason.

@@ -24,7 +24,9 @@ const mapGenerationSystemPrompt =
 Output NDJSON only, one object per line, no markdown or tools.
 Topic: {"ref":"a","parent":"ROOT","title":"Topic","doc":"D1","page":1}.
 Existing annotation: {"mark":"A1","parent":"a"}. Never create or rewrite quotations.
-Only these keys are allowed. ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
+A topic has only ref,parent,title and optional doc,page. An annotation has only mark,parent.
+Do not copy input point fields (k,id,marks,quote), add op, or emit metadata/root wrapper objects.
+ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
 parent is the literal "ROOT" or a ref emitted in THIS response. Input point ids (p1, p2, ...) are evidence, not output parents.
 Start with a topic whose parent is "ROOT". Use new topic refs (a, b, ...) and emit parents before descendants, at most depth new levels beneath ROOT.
 Use concise, descriptive titles. Avoid duplicate and existing titles.
@@ -40,7 +42,8 @@ Allowed forms:
 {"op":"rename","node":"N1","title":"New title"}
 {"op":"move","node":"N1","parent":"a"}
 {"op":"remove","node":"N1","why":"Reason"}
-No extra keys. ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
+Each line must match exactly one allowed form, with no extra keys or metadata/root wrapper objects.
+Do not copy input point fields (k,id,marks,quote). ref is unique ASCII letter followed by up to 63 letters/digits/_/-; ROOT and D/N/A followed by digits are reserved.
 parent is the literal "ROOT", a supplied N alias or a ref emitted in THIS response. Input point ids are evidence, not output parents.
 Use new topic refs (a, b, ...) and emit parents before descendants, at most depth new levels.
 Never rename, move or remove protected nodes; additions beneath them are allowed. Preserve user content. Removal requires a concrete reason.
@@ -125,16 +128,18 @@ class ModelMapGenerator implements MapGenerator {
           yield line;
         }
       } on MapGenerationFailure catch (failure) {
-        // A completely disconnected response has no usable draft to preserve.
-        // Ask once with explicit reference rules; never silently reparent nodes.
-        if (failure.code != 'noValidMapContent' ||
-            failure.rejections.length != 1 ||
-            !failure.rejections.containsKey('unknownParent')) {
+        // No lines have reached the host, so rebuilding cannot duplicate edits.
+        // An invalid root field can also disconnect every descendant. Repair all
+        // empty, completed validation failures once, using only safe diagnostics.
+        if (failure.code != 'noValidMapContent' || failure.acceptedLines != 0 || failure.rejections.isEmpty) {
           rethrow;
         }
         cancel.check();
         await for (final line in _parse(
-          '$system\nThe previous response had no resolvable parents. Rebuild the complete response. '
+          '$system\nThe previous response had no valid map lines. '
+          'Validation rejection counts: ${jsonEncode(failure.rejections)}. '
+          'Rebuild the complete response as NDJSON using exactly the allowed forms above. '
+          'Do not emit additional fields, markdown, explanations or wrapper objects. '
           'Start with parent "ROOT" (or a supplied N alias for updates). '
           'Never use an input point id, document id, map title or omitted topic as a parent. '
           'Each other parent must match a ref emitted earlier in this response.',
