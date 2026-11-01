@@ -611,10 +611,7 @@ class _PhoneSheetRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (badge != null) ...[
-                      const SizedBox(width: MMSpacing.xs),
-                      badge!,
-                    ],
+                    if (badge != null) ...[const SizedBox(width: MMSpacing.xs), badge!],
                   ],
                 ),
               ),
