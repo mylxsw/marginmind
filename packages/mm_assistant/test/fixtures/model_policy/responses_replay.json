@@ -1,0 +1,27 @@
+{
+  "model": "fixture-model",
+  "stream": false,
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "input"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call-1",
+      "name": "read",
+      "arguments": "{\"page\":1}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call-1",
+      "output": "evidence"
+    }
+  ]
+}

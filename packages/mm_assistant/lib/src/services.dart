@@ -1,3 +1,6 @@
+import 'package:mm_core/mm_core.dart' show ModelReference;
+export 'package:mm_core/mm_core.dart' show ModelReference;
+
 import 'providers.dart';
 
 enum ServiceProtocol { openai, anthropic, gemini, ollama }
@@ -91,12 +94,6 @@ class AssistantService {
     responses: j['responses'] ?? false,
     models: (j['models'] as List).map((m) => ServiceModel.fromJson(Map<String, dynamic>.from(m))).toList(),
   );
-}
-
-class ModelReference {
-  const ModelReference(this.serviceId, this.modelId);
-  final String serviceId, modelId;
-  Map<String, dynamic> toJson() => {'serviceId': serviceId, 'modelId': modelId};
 }
 
 class AssistantServices {
