@@ -112,11 +112,14 @@ void attachedNoteTests({bool native = false}) {
     await settleHud(tester);
   }, semanticsEnabled: !native);
 
-  for (final dark in [false, true]) {
+  for (final variant in [(false, false), (true, false), (false, true), (true, true)]) {
+    final (dark, topicOwner) = variant;
     testWidgets(
-      'real styled ${dark ? 'dark' : 'light'} notes fold independently from topics',
+      'real styled ${dark ? 'dark' : 'light'} ${topicOwner ? 'topic' : 'excerpt'} notes fold independently from topics',
       (tester) async {
-        final output = native ? '${Directory.systemTemp.path}/node-attached-notes-evidence' : null;
+        final output = native || const bool.fromEnvironment('NOTE_EVIDENCE')
+            ? '${Directory.systemTemp.path}/node-attached-notes-evidence/${topicOwner ? 'topic' : 'excerpt'}'
+            : null;
         tester.view.physicalSize = const Size(1100, 620);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
@@ -126,6 +129,7 @@ void attachedNoteTests({bool native = false}) {
         addTearDown(transform.dispose);
         addTearDown(focus.dispose);
         final content = StudySetContent(
+          maps: const [MindMap(id: MindMap.defaultId, title: '', palette: MapPalette.rainbow)],
           documents: [Document(id: 'doc', title: '人物态度', fileName: 'a.pdf', pageCount: 1, importedAt: _now)],
           annotations: [
             Annotation(
@@ -139,7 +143,13 @@ void attachedNoteTests({bool native = false}) {
             ),
           ],
           cards: [
-            Card(id: 'owner', kind: CardKind.excerpt, annotationId: 'quote', createdAt: _now),
+            Card(
+              id: 'owner',
+              kind: topicOwner ? CardKind.topic : CardKind.excerpt,
+              title: topicOwner ? '遗忘曲线 × 间隔重复：关键在复习时机' : '',
+              annotationId: topicOwner ? null : 'quote',
+              createdAt: _now,
+            ),
             Card(id: 'note', kind: CardKind.note, title: noteText, createdAt: _now),
             Card(id: 'second', kind: CardKind.note, title: '第二条笔记', createdAt: _now),
             Card(id: 'topic', kind: CardKind.topic, title: '新主题', createdAt: _now),
@@ -213,6 +223,23 @@ void attachedNoteTests({bool native = false}) {
         await tester.pumpAndSettle();
         expect(find.text(noteText), findsOneWidget);
         expect(find.text('第二条笔记'), findsOneWidget);
+        final surface = tester.widget<ColoredBox>(
+          find.descendant(
+            of: find.byKey(const ValueKey('owner')),
+            matching: find.byKey(const ValueKey('map-notes-surface')),
+          ),
+        );
+        expect(surface.color, dark ? MMColors.dark.card : MMColors.light.card);
+        if (topicOwner) {
+          final title = tester.widget<Text>(find.text('遗忘曲线 × 间隔重复：关键在复习时机'));
+          final colors = dark ? MMColors.dark : MMColors.light;
+          expect(title.style!.color, colors.label);
+          final card = tester.widget<AnimatedContainer>(
+            find.descendant(of: find.byKey(const ValueKey('owner')), matching: find.byType(AnimatedContainer)).first,
+          );
+          final fill = (card.decoration! as BoxDecoration).color!;
+          expect(contrastRatio(colors.label, fill), greaterThanOrEqualTo(4.5));
+        }
         expect(tester.getSize(find.byKey(const ValueKey('owner'))).height, greaterThan(folded.height));
         expect(find.byKey(const ValueKey('topic')), findsOneWidget);
         await capture('expanded');

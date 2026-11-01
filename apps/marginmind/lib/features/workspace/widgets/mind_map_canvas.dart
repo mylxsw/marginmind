@@ -2081,6 +2081,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     }
     final branch = _branches[id];
     if (branch == null || !_firstLevel.contains(id)) return null;
+    if (spec.attachedNotes.isNotEmpty) {
+      // A reading card needs a quiet surface and theme-aware text; a branch's
+      // solid fill is intended for short topic labels, not paragraphs of notes.
+      return _look(Color.alphaBlend(palette.topicFill(branch, c).withValues(alpha: 0.12), c.card), c.label, c.border);
+    }
     return _look(palette.topicFill(branch, c), palette.topicText(branch, c), palette.topicBorder(branch));
   }
 
@@ -3302,7 +3307,7 @@ class _NodeView extends StatelessWidget {
                 height: spec.notesHeight,
                 child: ClipRRect(
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(flatRadius)),
-                  child: notes!,
+                  child: ColoredBox(key: const ValueKey('map-notes-surface'), color: c.card, child: notes!),
                 ),
               ),
             if (onReveal != null)

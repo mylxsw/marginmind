@@ -55,8 +55,15 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('proposal-apply')));
     await pumpFor(tester, 30);
     expect(app.workspace.content.cards.length, count + 1);
-    app.workspace.openPanel(RightPanel.assistant);
-    await tester.pumpAndSettle();
+    expect(app.workspace.state.panel, RightPanel.assistant);
+    expect(app.workspace.state.tabs.current.reference, isNull);
+    final added = app.workspace.content.cards.singleWhere((c) => c.title == '新主题');
+    expect(app.workspace.state.selectedCardId, added.id);
+    await tester.tap(find.byKey(const ValueKey('proposal-show')));
+    await pumpFor(tester);
+    expect(app.workspace.state.panel, RightPanel.assistant);
+    expect(app.workspace.state.tabs.current.reference, isNull);
+    expect(app.workspace.state.selectedCardId, added.id);
     expect(find.byKey(const ValueKey('proposal-undo')), findsOneWidget);
 
     // The card's undo: the topic goes and the proposal can be applied again.

@@ -84,15 +84,13 @@ class _ProposalCardState extends ConsumerState<ProposalCard> {
           .firstOrNull;
       final receipt = applied?.receipt;
       if (receipt == null || !mounted) return;
-      if (ref.read(workspaceProvider(widget.studySetId)).layout == MMSplitMode.primary) {
-        workspace.setLayout(MMSplitMode.split);
-      }
       if (receipt.nodeIds.lastOrNull case final node?) {
         await workspace.revealAnchor(
           SourceAnchor(
             target: CardTarget(cardId: node),
             mapId: applied!.proposal.mapId,
           ),
+          asReference: false,
         );
       }
       if (mounted) {
@@ -239,6 +237,7 @@ class _ProposalCardState extends ConsumerState<ProposalCard> {
                                         target: CardTarget(cardId: view.receipt!.nodeIds.last),
                                         mapId: p.mapId,
                                       ),
+                                      asReference: false,
                                     ),
                         ),
                         MMButton(
