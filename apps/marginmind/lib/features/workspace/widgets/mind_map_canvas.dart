@@ -1752,12 +1752,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             onHorizontalDragCancel: _endResize,
             child: Center(
               child: Container(
-                width: 18,
-                height: math.min(44, math.max(0, shown.height - MMSpacing.s * 2)),
+                width: 10,
+                height: math.min(28, math.max(0, shown.height - MMSpacing.s * 2)),
                 decoration: BoxDecoration(
                   color: c.brightness == Brightness.dark ? const Color(0xFF35443A) : const Color(0xFFE5EFE7),
                   border: Border.all(color: _nodeSelectionColor(c).withValues(alpha: 0.75)),
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Center(
                   child: FittedBox(
@@ -1767,8 +1767,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       children: [
                         for (var i = 0; i < 3; i++)
                           Container(
-                            width: 3,
-                            height: 3,
+                            width: 2,
+                            height: 2,
                             margin: const EdgeInsets.symmetric(vertical: 1.5),
                             decoration: BoxDecoration(color: _nodeSelectionColor(c), shape: BoxShape.circle),
                           ),

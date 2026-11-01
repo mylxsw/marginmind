@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/app/document_commands.dart';
 import 'package:marginmind/app/app.dart' show touchPlatformProvider, phoneProvider;
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/widgets/tag_content_pane.dart';
@@ -29,6 +30,83 @@ Future<void> openTag(WidgetTester tester, String value) async {
 }
 
 void main() {
+  testWidgets('footer add menu imports documents and creates maps from the review tab', (tester) async {
+    var imports = 0;
+    final c = await pumpApp(
+      tester,
+      pdfPicker: (_) async {
+        imports++;
+        return const [];
+      },
+    );
+    c.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final owner = c.read(workspaceProvider('demo-1').notifier);
+    owner.activateTab(WorkspaceTab.review);
+    owner.setSidebarQuery('no matching documents or maps');
+    await tester.pumpAndSettle();
+    final add = find.byKey(const ValueKey('workspace-add-content'));
+    expect(add.hitTestable(), findsOneWidget);
+    expect(tester.getCenter(add).dy, greaterThan(750));
+    expect(tester.getCenter(add).dx, greaterThan(200));
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(find.byType(MMDropdownHeader<String>), findsNWidgets(2));
+    expect(find.text('Generate from Document…'), findsNothing);
+    await tester.tap(find.text('Import Document…'));
+    await tester.pumpAndSettle();
+    expect(imports, 1);
+    expect(find.byType(MMDropdownHeader<String>), findsNothing);
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Mind Map…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Created from footer');
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+    expect(owner.content.map(c.read(workspaceProvider('demo-1')).activeMapId)!.title, 'Created from footer');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('footer add menu respects web and beta availability', (tester) async {
+    var webAdds = 0;
+    final c = await pumpApp(
+      tester,
+      prefs: const {'settings.betaFeaturesEnabled': true},
+      overrides: [
+        canAddWebPageProvider.overrideWithValue(true),
+        addWebPageHandlerProvider.overrideWithValue((_, _, id) async {
+          expect(id, 'demo-1');
+          webAdds++;
+        }),
+      ],
+    );
+    c.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final add = find.byKey(const ValueKey('workspace-add-content'));
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(find.text('Generate from Document…'), findsOneWidget);
+    expect(find.byType(MMBetaBadge).hitTestable(), findsWidgets);
+    await tester.tap(find.text('Add Web Page…'));
+    await tester.pumpAndSettle();
+    expect(webAdds, 1);
+    c.updateOverrides([
+      ...await testOverrides(prefs: const {'settings.betaFeaturesEnabled': true}),
+      canAddWebPageProvider.overrideWithValue(false),
+      addWebPageHandlerProvider.overrideWithValue(null),
+    ]);
+    await tester.pumpAndSettle();
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(find.text('Add Web Page…'), findsNothing);
+    expect(find.text('Import Document…'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(MMDropdownHeader<String>), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('sidebar controls align with the titlebar and Home returns to the library', (tester) async {
     final c = await openSidebar(tester);
     final home = find.byKey(const ValueKey('workspace-home')).hitTestable();
