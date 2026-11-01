@@ -67,7 +67,12 @@ class WorkspaceDesktopShell extends ConsumerWidget {
             semanticLabel: l.workspaceDocumentMapTab,
             height: MMSizes.windowTitlebarHeight,
             child: Container(
-              padding: EdgeInsets.only(left: MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0),
+              padding: EdgeInsets.only(
+                left: switch (MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0) {
+                  final inset when inset > 0 => inset + 8,
+                  _ => 0,
+                },
+              ),
               key: const ValueKey('workspace-tab-row'),
               height: MMSizes.windowTitlebarHeight,
               decoration: BoxDecoration(color: Color.lerp(c.windowBackground, c.sidebarOpaque, .35)),

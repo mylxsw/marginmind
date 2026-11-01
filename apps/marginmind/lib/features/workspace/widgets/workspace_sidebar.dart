@@ -430,6 +430,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             tooltip: AppShortcuts.tip(l.showLibrary, AppShortcuts.showLibrary),
             onPressed: () => ref.read(navigationProvider.notifier).showLibrary(),
           ),
+          const SizedBox(width: 8),
           MMIconButton(
             key: const ValueKey('workspace-hide-sidebar'),
             icon: MMIcons.sidebar,
