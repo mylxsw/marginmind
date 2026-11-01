@@ -79,16 +79,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      c.brightness == Brightness.dark
-                          ? Color.lerp(c.windowBackground, Colors.black, .22)!
-                          : c.sidebarOpaque,
-                      c.brightness == Brightness.dark
-                          ? Color.lerp(c.windowBackground, Colors.black, .22)!
-                          : c.sidebarOpaque,
-                      c.windowBackground,
-                      c.windowBackground,
-                    ],
+                    colors: [c.workspaceChrome, c.workspaceChrome, c.windowBackground, c.windowBackground],
                     stops: [0, 1 - 1 / toolbarHeight, 1 - 1 / toolbarHeight, 1],
                   ),
                 ),

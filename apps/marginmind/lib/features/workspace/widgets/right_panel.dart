@@ -44,7 +44,7 @@ class _RightPanelViewState extends ConsumerState<RightPanelView> {
       child: FocusTraversalGroup(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: c.sidebarOpaque,
+            color: context.mmTouchPlatform ? c.sidebarOpaque : c.workspaceChrome,
             border: Border(left: BorderSide(color: c.separator)),
           ),
           child: Stack(

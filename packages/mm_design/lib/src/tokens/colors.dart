@@ -118,6 +118,10 @@ class MMColors extends ThemeExtension<MMColors> {
   final Color glass;
   final Color glassOpaque;
 
+  /// Shared background for desktop tabs and the two workspace sidebars.
+  Color get workspaceChrome =>
+      brightness == Brightness.dark ? Color.lerp(windowBackground, Colors.black, .22)! : sidebarOpaque;
+
   Color get surface => glassOpaque;
   Color get border => brightness == Brightness.dark ? const Color(0x1FFFFFFF) : const Color(0x1F000000);
   Color get selectedSegment => brightness == Brightness.dark ? const Color(0xFF636366) : Colors.white;

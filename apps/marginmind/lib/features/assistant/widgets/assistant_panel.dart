@@ -259,7 +259,7 @@ class AssistantHeader extends ConsumerWidget {
     final thinking = ref.watch(assistantControllerProvider.select((conversation) => conversation.running));
     final ui = ref.read(assistantUiProvider(studySetId).notifier);
     return Container(
-      height: 52,
+      height: context.mmTouchPlatform ? MMSizes.tabletPaneHeaderHeight : MMSizes.desktopWindowTitlebarHeight,
       padding: const EdgeInsets.only(left: MMSpacing.l, right: MMSpacing.s),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: c.separator)),

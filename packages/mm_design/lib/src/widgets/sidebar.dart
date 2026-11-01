@@ -45,7 +45,7 @@ class MMSidebar extends StatelessWidget {
 
     Widget panel = Container(
       decoration: BoxDecoration(
-        color: reduce ? c.sidebarOpaque : c.sidebar,
+        color: flat ? c.workspaceChrome : (reduce ? c.sidebarOpaque : c.sidebar),
         borderRadius: radius,
         border: flat ? null : Border.all(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: 0.5),
       ),
