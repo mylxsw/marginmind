@@ -74,6 +74,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   Timer? _edgeTimer;
   Offset? _lastDrag;
   bool _hoverNavigation = false;
+  bool _navigationFocused = false;
+  bool _scrubbing = false;
   int _scrollRequest = 0;
   int _viewTick = -1;
   ChapterLayout? _interactionLayout;
@@ -831,7 +833,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                         child: MouseRegion(
                                           onEnter: (_) => setState(() => _hoverNavigation = true),
                                           onExit: (_) => setState(() => _hoverNavigation = false),
-                                          child: WorkspaceChromeBar(bottom: true, child: _navigation(s, paged)),
+                                          child: Focus(
+                                            onFocusChange: (focused) => setState(() => _navigationFocused = focused),
+                                            child: WorkspaceChromeBar(bottom: true, child: _navigation(s, paged)),
+                                          ),
                                         ),
                                       ),
                               ),
@@ -1262,37 +1267,48 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         onJump: jumpPage,
       );
     }
-    final visible = _hoverNavigation || MMInput.touchInputOf(context);
+    final visible = _hoverNavigation || _navigationFocused || _scrubbing || MMInput.touchInputOf(context);
+    final c = context.mmColors;
     Widget fade(Widget child) => IgnorePointer(
       ignoring: !visible,
-      child: AnimatedOpacity(duration: MMMotion.quick, opacity: visible ? 1 : 0, child: child),
+      child: AnimatedOpacity(
+        duration: MMAppearance.duration(context, MMMotion.quick),
+        opacity: visible ? 1 : 0,
+        child: child,
+      ),
     );
     return SizedBox(
       width: math.min(s.spec?.width ?? MMReaderLayout.measure, MMReaderLayout.measure) * .8,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          MMGlass(
-            borderRadius: BorderRadius.circular(MMRadii.capsule),
-            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xs),
-            child: fixed
-                ? ReaderPageField(
-                    page: sourcePage,
-                    pageCount: book.chapters.length,
-                    editRequests: _pageFieldRequests,
-                    onJump: jumpPage,
-                  )
-                : GestureDetector(
-                    onTap: () => workspace.showReaderPanel(ReaderPanelMode.outline),
-                    child: Text(
-                      '${book.title(position, fallback: widget.document.title)} · ${(book.progress(position) * 100).round()}%',
-                      key: const ValueKey('reflow-progress-label'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.mmText.footnote,
-                    ),
-                  ),
+          fade(
+            SizedBox(
+              height: context.mmTouchPlatform ? null : MMSizes.field,
+              child: MMGlass(
+                borderRadius: BorderRadius.circular(MMRadii.capsule),
+                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xs),
+                child: fixed
+                    ? ReaderPageField(
+                        page: sourcePage,
+                        pageCount: book.chapters.length,
+                        editRequests: _pageFieldRequests,
+                        onJump: jumpPage,
+                      )
+                    : GestureDetector(
+                        onTap: () => workspace.showReaderPanel(ReaderPanelMode.outline),
+                        child: Text(
+                          '${book.title(position, fallback: widget.document.title)} · ${(book.progress(position) * 100).round()}%',
+                          key: const ValueKey('reflow-progress-label'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.mmText.footnote,
+                        ),
+                      ),
+              ),
+            ),
           ),
+          const SizedBox(height: MMSpacing.s),
           Row(
             children: [
               if (paged)
@@ -1304,22 +1320,41 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                   ),
                 ),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: MMSizes.readerProgressTrack,
-                    activeTrackColor: visible ? context.mmColors.accent : context.mmColors.secondaryLabel,
-                    inactiveTrackColor: context.mmColors.hairline,
-                  ),
-                  child: Slider(
-                    key: const ValueKey('reflow-progress'),
-                    value: progress.clamp(0, 1),
-                    onChanged: (v) {
-                      if (fixed) {
-                        jumpPage((v * (book.chapters.length - 1)).round() + 1);
-                      } else {
-                        _jump(book.atProgress(v));
-                      }
-                    },
+                child: SizedBox(
+                  height: context.mmTouchPlatform ? MMSizes.touchTarget : MMSizes.field - MMSpacing.xxs,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: MMSizes.readerProgressTrack,
+                      activeTrackColor: context.mmTouchPlatform
+                          ? c.accent
+                          : c.secondaryLabel.withValues(alpha: visible ? .65 : .3),
+                      inactiveTrackColor: c.secondaryLabel.withValues(alpha: visible ? .2 : .12),
+                      thumbColor: context.mmTouchPlatform ? c.label : c.secondaryLabel,
+                      overlayColor: c.secondaryLabel.withValues(alpha: .1),
+                      trackShape: context.mmTouchPlatform
+                          ? const RoundedRectSliderTrackShape()
+                          : const RectangularSliderTrackShape(),
+                      thumbShape: RoundSliderThumbShape(
+                        enabledThumbRadius: visible ? MMSpacing.xs : 0,
+                        elevation: 0,
+                        pressedElevation: 0,
+                      ),
+                      showValueIndicator: ShowValueIndicator.never,
+                    ),
+                    child: Slider(
+                      key: const ValueKey('reflow-progress'),
+                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+                      onChangeStart: (_) => setState(() => _scrubbing = true),
+                      onChangeEnd: (_) => setState(() => _scrubbing = false),
+                      value: progress.clamp(0, 1),
+                      onChanged: (v) {
+                        if (fixed) {
+                          jumpPage((v * (book.chapters.length - 1)).round() + 1);
+                        } else {
+                          _jump(book.atProgress(v));
+                        }
+                      },
+                    ),
                   ),
                 ),
               ),
