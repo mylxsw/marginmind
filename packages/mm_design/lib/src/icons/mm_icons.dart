@@ -91,7 +91,7 @@ abstract final class MMIcons {
   static const IconData success = CupertinoIcons.checkmark_circle;
   static const IconData appearance = CupertinoIcons.circle_lefthalf_fill; // circle.lefthalf.filled
   static const IconData settings = CupertinoIcons.gear;
-  static const IconData review = CupertinoIcons.square_stack; // rectangle.on.rectangle
+  static const IconData review = LucideIcons.brain;
   static const IconData statistics = CupertinoIcons.chart_bar; // chart.bar
   static const IconData tag = CupertinoIcons.tag;
   static const IconData addTopic = CupertinoIcons.plus_rectangle; // plus.rectangle
