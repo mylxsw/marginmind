@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_screen.dart';
@@ -53,6 +54,15 @@ void main() {
       'vocabulary redesign visual ${dark ? 'dark' : 'light'}',
       (tester) async {
         await tester.runAsync(loadVocabularyScreenshotFonts);
+        final accent = Platform.environment['MM_SYSTEM_ACCENT'];
+        if (accent != null) {
+          const channel = MethodChannel('marginmind/system_appearance');
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            channel,
+            (_) async => {'accent': int.parse(accent, radix: 16)},
+          );
+          addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+        }
         final repo = InMemoryVocabularyRepository([_sample()]);
         addTearDown(repo.dispose);
         final c = await pumpApp(

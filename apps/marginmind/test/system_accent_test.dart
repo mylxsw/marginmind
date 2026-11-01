@@ -30,7 +30,14 @@ void main() {
       );
       owner.read(navigationProvider.notifier).showVocabulary();
       await tester.pumpAndSettle();
-      for (final color in [const Color(0xFFAF52DE), const Color(0xFFFF9500), const Color(0xFFFFCC00)]) {
+      for (final (color, foreground) in [
+        (const Color(0xFF007AFF), Colors.white),
+        (const Color(0xFF0A84FF), Colors.white),
+        (const Color(0xFF3B78F9), Colors.white),
+        (const Color(0xFFAF52DE), Colors.white),
+        (const Color(0xFFFF9500), Colors.black),
+        (const Color(0xFFFFCC00), Colors.black),
+      ]) {
         (owner.read(systemAppearanceProvider.notifier) as _Appearance).change(color);
         await tester.pumpAndSettle();
         final c = tester.element(find.byType(VocabularyScreen)).mmColors;
@@ -41,7 +48,12 @@ void main() {
         final surface = tester.widget<Container>(find.descendant(of: button, matching: find.byType(Container)).first);
         expect((surface.decoration! as BoxDecoration).color, color);
         final label = tester.widget<Text>(find.descendant(of: button, matching: find.text('Mark as known')));
-        expect(contrastRatio(label.style!.color!, color), greaterThanOrEqualTo(4.5));
+        expect(label.style!.color, foreground);
+        expect(contrastRatio(label.style!.color!, color), greaterThanOrEqualTo(3));
+        final check = tester.widget<Icon>(find.descendant(of: button, matching: find.byIcon(MMIcons.check)));
+        expect(check.color, foreground);
+        expect(c.onResearch, foreground);
+        expect(Theme.of(tester.element(button)).colorScheme.onPrimary, foreground);
         final row = find.byKey(const ValueKey('vocabulary-row-cat'));
         final selection = tester.widget<Container>(find.descendant(of: row, matching: find.byType(Container)).first);
         expect((selection.decoration! as BoxDecoration).color, c.selectedRow);

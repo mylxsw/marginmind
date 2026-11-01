@@ -329,10 +329,12 @@ class MMColors extends ThemeExtension<MMColors> {
   }
 }
 
-/// Solid system accents may be light (yellow) or dark (blue). Use the same
-/// contrast rule for every feature instead of hard-coding a feature's ink.
+/// White-first ink for solid controls, shared by every feature. System blue
+/// should keep its native white label even when black has higher contrast.
+/// Use dark ink only when white falls below 3:1 (e.g. yellow or light orange).
+/// This control rule is separate from the 4.5:1 body-text color tokens.
 Color readableForeground(Color background) =>
-    contrastRatio(Colors.white, background) >= contrastRatio(Colors.black, background) ? Colors.white : Colors.black;
+    contrastRatio(Colors.white, background) >= 3 ? Colors.white : Colors.black;
 
 /// WCAG contrast ratio between two opaque colors, used by tests to keep
 /// text tokens at 4.5:1 or better.

@@ -31,7 +31,15 @@ void main() {
       });
 
       test('all feature colors share the system accent through theme changes', () {
-        for (final accent in [c.accent, const Color(0xFFAF52DE), const Color(0xFFFF9500), const Color(0xFFFFCC00)]) {
+        for (final accent in [
+          c.accent,
+          const Color(0xFF007AFF),
+          const Color(0xFF0A84FF),
+          const Color(0xFF3B78F9),
+          const Color(0xFFAF52DE),
+          const Color(0xFFFF9500),
+          const Color(0xFFFFCC00),
+        ]) {
           final themed = c.withAccent(accent);
           expect(themed.research, themed.accent);
           expect(themed.vocabulary, themed.accent);
@@ -40,9 +48,9 @@ void main() {
           expect(themed.accentFill, accent);
           expect(themed.researchWash.a, closeTo(themed.accentTint.a / 2, 0.002));
           expect(themed.researchWash.toARGB32() & 0xFFFFFF, accent.toARGB32() & 0xFFFFFF);
-          expect(contrastRatio(themed.onAccent, themed.accentFill), greaterThanOrEqualTo(4.5));
-          expect(contrastRatio(themed.onResearch, themed.research), greaterThanOrEqualTo(4.5));
-          expect(contrastRatio(themed.onVocabulary, themed.vocabulary), greaterThanOrEqualTo(4.5));
+          expect(contrastRatio(themed.onAccent, themed.accentFill), greaterThanOrEqualTo(3));
+          expect(contrastRatio(themed.onResearch, themed.research), greaterThanOrEqualTo(3));
+          expect(contrastRatio(themed.onVocabulary, themed.vocabulary), greaterThanOrEqualTo(3));
           expect(contrastRatio(themed.label, composite(themed.accentTint, themed.card)), greaterThanOrEqualTo(4.5));
           final wash = composite(themed.researchWash, themed.canvas);
           expect(contrastRatio(themed.label, wash), greaterThanOrEqualTo(4.5));
@@ -55,7 +63,7 @@ void main() {
           expect(blended.vocabulary, blended.accent);
           expect(blended.researchTint, blended.accentTint);
           expect(blended.vocabularyTint, blended.accentTint);
-          expect(contrastRatio(blended.onResearch, blended.research), greaterThanOrEqualTo(4.5));
+          expect(contrastRatio(blended.onResearch, blended.research), greaterThanOrEqualTo(3));
         }
         expect(MMIcons.vocabulary.fontFamily, isNotEmpty);
       });
@@ -69,6 +77,21 @@ void main() {
       });
     });
   }
+
+  test('solid controls prefer white on system blue and purple, dark ink on light accents', () {
+    for (final accent in [
+      const Color(0xFF007AFF),
+      const Color(0xFF0A84FF),
+      const Color(0xFF3B78F9),
+      const Color(0xFFAF52DE),
+    ]) {
+      expect(readableForeground(accent), Colors.white);
+    }
+    for (final accent in [const Color(0xFFFF9500), const Color(0xFFFFCC00), Colors.white]) {
+      expect(readableForeground(accent), Colors.black);
+      expect(contrastRatio(readableForeground(accent), accent), greaterThanOrEqualTo(4.5));
+    }
+  });
 
   group('mind map palettes', () {
     test('six palettes in the offered order, found by their stored names', () {

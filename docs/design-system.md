@@ -7,7 +7,7 @@
 | 类 | 内容 |
 | --- | --- |
 | `MMColors.vocabulary` / `vocabularyTint` | 生词使用系统 `accent` / `accentTint`，这两个名称仅为兼容入口，不再拥有固定青绿色。筛选及列表选中态使用全局中性色，主按钮使用 `accentFill` / `onAccent`；正文提示、状态标记与查词卡片随系统强调色更新。图标继续使用 Lucide `book-a`。 |
-| `MMColors` | 语义色（`ThemeExtension`），浅色 `MMColors.light` / 深色 `MMColors.dark`。`withAccent()` 将强调色与实心按钮同步为系统颜色，文字自动选择黑/白以保证对比度。`research` / `researchTint` 同样只兼容映射到 `accent` / `accentTint`，AI 不再使用固定紫色；`researchWash` 使用强调底色一半透明度，实心填色的 `onResearch` / `onVocabulary` 自动选黑/白。状态色 `positive` / `caution` / `critical` 保持系统成功、警告与错误含义；用户选择的标注颜色与脑图配色保持内容含义。 |
+| `MMColors` | 语义色（`ThemeExtension`），浅色 `MMColors.light` / 深色 `MMColors.dark`。`withAccent()` 将强调色与实心按钮同步为系统颜色。实心控件的文字和图标统一白色优先，白色对比度低于 3:1 的浅黄、浅橙等底色才改深字；不按黑白对比度较大者选择。`research` / `researchTint` 兼容映射到 `accent` / `accentTint`；`researchWash` 使用强调底色一半透明度，`onResearch` / `onVocabulary` 沿用同一前景规则。状态色 `positive` / `caution` / `critical` 保持系统成功、警告与错误含义；用户选择的标注颜色与脑图配色保持内容含义。 |
 | `MMAnnotationColor` | 六种预设标注色与任意 RGB 自定义色。`colorIndex` 保留预设 ID 0–5，自定义色存 `0x01000000 | RGB`，通过 `fromIndex` 统一解码；`highlight`（32%）、`underline`（90%）、`cardTint`（14%）。 |
 | `MMInkColor` / `MMInkWidth` | 画笔的六色（红/橙/黄/绿/蓝/墨黑，`stroke` 为 90% 不透明）与三档粗细（1.5 / 2.5 / 4，单位 PDF 点，随页面缩放）。数据只存颜色索引和点数。 |
 | `MMTypography` / `MMTextStyles` | macOS 文本样式：title3 15、headline 13 semibold、body 13、callout 12、subheadline 11 semibold、footnote 11；阅读用宋体 16.5/32，摘录 13/20。 |
@@ -23,7 +23,7 @@ final c = context.mmColors;   // 颜色
 final t = context.mmText;     // 已着色的文本样式
 ```
 
-对比度：`test/tokens_test.dart` 会检查所有文字令牌在其所在背景上不低于 4.5:1（深色主题的次级文字因此比初版设计稿提亮为 `#AEAEB2`）。
+对比度：`test/tokens_test.dart` 检查普通正文和次级文字在背景上不低于 4.5:1（深色次级文字因此提亮为 `#AEAEB2`）。按用户确认的系统实心控件外观，按钮文字和图标优先白色，保留系统蓝底，白色不足 3:1 才改深字；不宣称这些小字号白字按钮全部达到正文的 4.5:1。
 
 ## 组件
 
