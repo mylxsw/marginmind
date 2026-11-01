@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:dio/dio.dart';
+import 'package:crypto/crypto.dart';
 import 'package:mm_core/mm_core.dart';
 
 import '../model_policy/compiler.dart';
@@ -11,6 +12,7 @@ import '../runtime.dart'
     show CheckedLLMClient, assistantFailureKind, assistantFailureStatus, suppressAssistantDiagnostics;
 import 'history.dart';
 import 'registry.dart';
+import 'provider_steps.dart';
 
 /// Credentials are fetched anew before dispatch, never written to a checkpoint.
 class RuntimeModelBinding {
@@ -27,7 +29,9 @@ class SdkAgentRuntime implements AgentRuntime {
     required this.knowledge,
     required this.loadModel,
     this.testClient,
-  });
+    ProviderSteps? providerSteps,
+  }) : providerSteps = providerSteps ?? ProviderSteps(store: store);
+  final ProviderSteps providerSteps;
   final RunStore store;
   final TaskRegistry tasks;
   final KnowledgeRegistry knowledge;
@@ -61,6 +65,7 @@ class SdkAgentRuntime implements AgentRuntime {
         !runMayResume(saved) ||
         saved.inputFingerprint != original.inputFingerprint ||
         saved.taskType != original.spec.type ||
+        jsonEncode(saved.checkpoint['images'] ?? []) != jsonEncode(original.images.map((i) => i.toJson()).toList()) ||
         saved.schemaVersion != original.spec.schemaVersion ||
         saved.promptVersion != original.spec.promptVersion ||
         childRunId == parent.runId) {
@@ -89,6 +94,8 @@ class SdkAgentRuntime implements AgentRuntime {
       reasoning: original.reasoning,
       maxOutputTokens: original.maxOutputTokens,
       purpose: original.purpose,
+      images: original.images,
+      streamDrafts: original.streamDrafts,
     );
     final boundedChild = _boundTaskContext(request, child);
     if (!_active.add(childRunId)) throw StateError('Run already active');
@@ -126,6 +133,9 @@ class SdkAgentRuntime implements AgentRuntime {
     if ({RunStatus.completed, RunStatus.partial, RunStatus.failed, RunStatus.cancelled}.contains(saved.status)) {
       throw StateError('Run is terminal');
     }
+    if (jsonEncode(saved.checkpoint['images'] ?? []) != jsonEncode(request.images.map((i) => i.toJson()).toList())) {
+      throw const ConfigurationFailure('checkpointImagesMismatch');
+    }
     final definition = tasks.resolve<T>(request.spec);
     var bounded = _boundTaskContext(request, saved.context);
     for (final phase in saved.configurationPhases) {
@@ -135,6 +145,7 @@ class SdkAgentRuntime implements AgentRuntime {
     final handle = RuntimeRunHandle<T>._(this, request, bounded, definition);
     handle._revision = saved.revision;
     handle._sequence = saved.checkpoint['sequence'] as int? ?? saved.revision;
+    handle._eventWatermark = handle._sequence;
     handle._phases = [
       for (final phase in saved.configurationPhases) phase.phase == handle._context.phase ? handle._context : phase,
     ];
@@ -176,14 +187,16 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
   final _result = Completer<RunResult<T>>();
   final _clock = Stopwatch()..start();
   final _cancel = CancelToken();
+  final _childCancellation = CancellationToken();
   Completer<void>? _gate;
   int _revision = -1, _calls = 0, _repairs = 0, _inputTokens = 0, _outputTokens = 0;
   bool _paused = false, _cancelled = false, _recovered = false, _unknownUsage = false, _started = false;
   int? _reasoningTokens;
   Duration _elapsedBefore = Duration.zero;
   int _sequence = -1;
+  int _eventWatermark = -1;
   bool _inflight = false;
-  int _toolCallsInFlight = 0;
+  int _toolCallsInFlight = 0, _providerCallsInFlight = 0;
   bool _changingConfiguration = false;
   RunStatus _status = RunStatus.created;
   RunResult<T>? _pending;
@@ -191,6 +204,32 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
   Future<void> _writes = Future.value();
   RunContext get context => _context;
   RunStatus get status => _status;
+
+  /// Valid only for this live parent; cancellation and output ceilings inherit.
+  SearchProvider get nativeSearch => RuntimeNativeSearch(
+    steps: runtime.providerSteps,
+    parent: () => _context,
+    taskType: request.spec.type,
+    loadModel: runtime.loadModel,
+    parentCancellation: _childCancellation,
+    onFinished: () => _providerCallsInFlight--,
+    nextRunId: () async {
+      await _ready();
+      if (_result.isCompleted || _pending != null) throw StateError('Parent is terminal');
+      final sequence = (_state.metadata['runtime.providerSequence.v1'] as int? ?? 0) + 1;
+      _state.metadata['runtime.providerSequence.v1'] = sequence;
+      final id = 'provider-${sha256.convert(utf8.encode('${_context.runId}:$sequence'))}';
+      (_state.metadata.putIfAbsent('runtime.providerChildren.v1', () => <dynamic>[]) as List).add(id);
+      _providerCallsInFlight++;
+      try {
+        await _save(_status);
+        return id;
+      } catch (_) {
+        _providerCallsInFlight--;
+        rethrow;
+      }
+    },
+  );
   @override
   Stream<RunEvent> get events => _events.stream;
   @override
@@ -215,9 +254,10 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
     'sdk': 'dart_agent_core',
     'version': '2.1.8',
     'adapter': 1,
-    'sequence': _sequence + 1,
+    'sequence': _eventWatermark > _sequence ? _eventWatermark : _sequence + 1,
     'state': jsonDecode(jsonEncode({..._state.toJson(), 'lastError': null})),
     'purpose': request.purpose.name,
+    'images': request.images.map((i) => i.toJson()).toList(),
     if (_encoded != null) 'pending': _encoded,
   };
   Future<void> _save(RunStatus status, {String? failure, Map<String, dynamic>? result}) {
@@ -340,6 +380,9 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
         : runtime.knowledge.resolve(spec, _context.knowledgeVersions);
     final allowed = spec.allowedTools.intersection({for (final b in bundles) ...b.tools});
     final bindings =
+        definition.createControlledBindings?.call(
+          TaskExecutionScope(context: _context, state: _state, input: request.input, nativeSearch: nativeSearch),
+        ) ??
         definition.createBindings?.call(_context, _state, request.input) ??
         TaskBindings(tools: definition.tools, hooks: definition.hooks);
     final tools = bindings.tools.where((t) => allowed.contains(t.name)).toList();
@@ -366,14 +409,49 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
     );
     suppressAssistantDiagnostics();
     var input = jsonEncode(request.input);
+    final firstRepair = _repairs;
     for (var repair = _repairs; repair <= spec.maxRepairs; repair++) {
       await _ready();
       _repairs = repair;
       await _save(RunStatus.running);
-      final responses = await agent.run([sdk.UserMessage.text(input)], cancelToken: _cancel, useStream: false);
+      final messages = [
+        sdk.UserMessage([
+          sdk.TextPart(input),
+          if (repair == firstRepair) ...request.images.map((i) => sdk.ImagePart(i.base64Data, i.mimeType)),
+        ]),
+      ];
+      sdk.ModelMessage? last;
+      // SDK owns accumulation, tool rounds and opaque/signed history.
+      await for (final event in agent.runStream(messages, cancelToken: _cancel, useStream: request.streamDrafts)) {
+        if (_cancelled) throw const ResearchFailure(ResearchFailureKind.cancelled);
+        if (phase != _context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
+        if (event.eventType == sdk.StreamingEventType.modelRetrying) {
+          throw const ResearchFailure(ResearchFailureKind.protocol);
+        }
+        if (event.eventType == sdk.StreamingEventType.fullModelMessage) last = event.data as sdk.ModelMessage;
+        if (request.streamDrafts && event.eventType == sdk.StreamingEventType.modelChunkMessage) {
+          final delta = (event.data as sdk.ModelMessage).textOutput;
+          if (delta != null && delta.isNotEmpty) {
+            if (_sequence + 1 >= _eventWatermark) {
+              _eventWatermark = _sequence + 1000000;
+              await _save(RunStatus.running);
+            }
+            _events.add(
+              RunEvent(
+                runId: _context.runId,
+                sequence: ++_sequence,
+                status: RunStatus.running,
+                stage: 'draft',
+                kind: RunEventKind.draftDelta,
+                draft: delta,
+              ),
+            );
+          }
+        }
+      }
       if (_cancelled) throw const ResearchFailure(ResearchFailureKind.cancelled);
       if (phase != _context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
-      final text = responses.whereType<sdk.ModelMessage>().lastOrNull?.textOutput ?? '';
+      final text = last?.textOutput ?? '';
       T? value;
       ValidationReport validation;
       try {
@@ -479,6 +557,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
 
   void _close() {
     _clock.stop();
+    _childCancellation.cancel();
     runtime._active.remove(_context.runId);
     unawaited(_events.close());
   }
@@ -516,6 +595,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
     }
     _cancelled = true;
     _cancel.cancel();
+    _childCancellation.cancel();
     final gate = _gate;
     _gate = null;
     gate?.complete();
@@ -532,6 +612,7 @@ class RuntimeRunHandle<T> implements RunHandle<T> {
         !_paused ||
         _inflight ||
         _toolCallsInFlight > 0 ||
+        _providerCallsInFlight > 0 ||
         _result.isCompleted ||
         _pending != null ||
         next.runId != _context.runId ||
@@ -602,6 +683,15 @@ class _RuntimeHook<T> extends sdk.AgentHook {
     await handle._ready();
     _checkPhase();
     handle._toolCallsInFlight++;
+    handle._events.add(
+      RunEvent(
+        runId: handle.context.runId,
+        sequence: ++handle._sequence,
+        status: RunStatus.running,
+        stage: context.call.name,
+        kind: RunEventKind.toolStarted,
+      ),
+    );
     return const sdk.ToolCallHookResult.proceed();
   }
 
@@ -617,6 +707,16 @@ class _RuntimeToolCompletionHook<T> extends sdk.AgentHook {
   @override
   Future<sdk.ToolResultHookResult> afterToolCall(sdk.ToolResultHookContext context) async {
     handle._toolCallsInFlight--;
+    if (!handle._cancelled && !handle._result.isCompleted) {
+      handle._events.add(
+        RunEvent(
+          runId: handle.context.runId,
+          sequence: ++handle._sequence,
+          status: RunStatus.running,
+          kind: RunEventKind.toolCompleted,
+        ),
+      );
+    }
     return sdk.ToolResultHookResult.proceed(result: context.result);
   }
 }
@@ -635,12 +735,49 @@ class _RuntimeClient<T> implements sdk.LLMClient {
     required sdk.ModelConfig modelConfig,
     bool? jsonOutput,
     CancelToken? cancelToken,
-  }) async {
+  }) async => (await _dispatch(
+    messages,
+    tools: tools,
+    toolChoice: toolChoice,
+    jsonOutput: jsonOutput,
+    cancelToken: cancelToken,
+    streaming: false,
+  ).single).modelMessage!;
+
+  @override
+  Future<Stream<sdk.StreamingMessage>> stream(
+    List<sdk.LLMMessage> messages, {
+    List<sdk.Tool>? tools,
+    sdk.ToolChoice? toolChoice,
+    required sdk.ModelConfig modelConfig,
+    bool? jsonOutput,
+    CancelToken? cancelToken,
+  }) async => _dispatch(
+    messages,
+    tools: tools,
+    toolChoice: toolChoice,
+    jsonOutput: jsonOutput,
+    cancelToken: cancelToken,
+    streaming: true,
+  );
+
+  Stream<sdk.StreamingMessage> _dispatch(
+    List<sdk.LLMMessage> messages, {
+    List<sdk.Tool>? tools,
+    sdk.ToolChoice? toolChoice,
+    bool? jsonOutput,
+    CancelToken? cancelToken,
+    required bool streaming,
+  }) async* {
+    var emitted = false;
     for (var attempt = 0; ; attempt++) {
       await handle._ready();
       if (phase != handle.context.phase) throw const ConfigurationFailure('configurationPhaseChanged');
       final context = handle._context;
       validateTaskCapabilities(handle.request.spec, context.config.capabilities);
+      if (handle.request.images.isNotEmpty && context.config.capabilities.multimodal != CapabilitySupport.supported) {
+        throw const ConfigurationFailure('multimodal:unverified');
+      }
       final policy = const DefaultProviderPolicyCompiler().compile(
         category: handle.request.spec.category,
         requested: context.config.policy.requested,
@@ -683,6 +820,7 @@ class _RuntimeClient<T> implements sdk.LLMClient {
           );
         }
         final client = CheckedLLMClient(handle.runtime.testClient ?? connection!.client);
+        handle._eventWatermark = handle._sequence + 1000000;
         handle._inflight = true;
         handle._calls++;
         final attemptRecord = <String, dynamic>{
@@ -694,43 +832,88 @@ class _RuntimeClient<T> implements sdk.LLMClient {
         };
         (handle._state.metadata.putIfAbsent('runtime.attempts.v1', () => <dynamic>[]) as List).add(attemptRecord);
         await handle._save(RunStatus.running);
-        final response = await Future.any<sdk.ModelMessage>([
-          client.generate(
-            messages,
-            tools: tools,
-            toolChoice: toolChoice,
-            modelConfig: policyModelConfig(policy),
-            jsonOutput: jsonOutput,
-            cancelToken: cancelToken,
+        handle._events.add(
+          RunEvent(
+            runId: context.runId,
+            sequence: ++handle._sequence,
+            status: RunStatus.running,
+            stage: attemptRecord['purpose'] as String,
+            kind: RunEventKind.modelStarted,
           ),
-          handle._cancel.whenCancel.then<sdk.ModelMessage>(
-            (_) => throw const ResearchFailure(ResearchFailureKind.cancelled),
-          ),
-        ]);
+        );
+        sdk.ModelMessage? response;
+        sdk.ModelUsage? reported;
+        String? stop;
+        final source = streaming
+            ? await Future.any<Stream<sdk.StreamingMessage>>([
+                client.stream(
+                  messages,
+                  tools: tools,
+                  toolChoice: toolChoice,
+                  modelConfig: policyModelConfig(policy),
+                  jsonOutput: jsonOutput,
+                  cancelToken: cancelToken,
+                ),
+                handle._cancel.whenCancel.then<Stream<sdk.StreamingMessage>>(
+                  (_) => throw const ResearchFailure(ResearchFailureKind.cancelled),
+                ),
+              ])
+            : Stream<sdk.StreamingMessage>.fromFuture(
+                client
+                    .generate(
+                      messages,
+                      tools: tools,
+                      toolChoice: toolChoice,
+                      modelConfig: policyModelConfig(policy),
+                      jsonOutput: jsonOutput,
+                      cancelToken: cancelToken,
+                    )
+                    .then((m) => sdk.StreamingMessage(modelMessage: m)),
+              );
+        final iterator = StreamIterator(source);
+        try {
+          while (await Future.any<bool>([
+            iterator.moveNext(),
+            handle._cancel.whenCancel.then<bool>((_) => throw const ResearchFailure(ResearchFailureKind.cancelled)),
+          ])) {
+            if (handle._cancelled) throw const ResearchFailure(ResearchFailureKind.cancelled);
+            final event = iterator.current;
+            response = event.modelMessage;
+            stop = response?.stopReason ?? stop;
+            reported = response?.usage ?? reported;
+            emitted = true;
+            yield event;
+          }
+        } finally {
+          final usage = reported;
+          if (usage == null ||
+              (usage.promptTokens == 0 && usage.completionTokens == 0 && usage.originalUsage == null)) {
+            handle._unknownUsage = true;
+          } else {
+            handle._inputTokens += usage.promptTokens;
+            handle._outputTokens += usage.completionTokens;
+            if (usage.thoughtToken > 0) handle._reasoningTokens = (handle._reasoningTokens ?? 0) + usage.thoughtToken;
+            attemptRecord.addAll({
+              'usageQuality': 'reported',
+              'inputTokens': usage.promptTokens,
+              'outputTokens': usage.completionTokens,
+              'reasoningTokens': usage.thoughtToken,
+            });
+          }
+          await iterator.cancel();
+        }
         handle._inflight = false;
         if (handle._cancelled) throw const ResearchFailure(ResearchFailureKind.cancelled);
-        final usage = response.usage;
-        if (usage == null || (usage.promptTokens == 0 && usage.completionTokens == 0 && usage.originalUsage == null)) {
-          handle._unknownUsage = true;
-        } else {
-          handle._inputTokens += usage.promptTokens;
-          handle._outputTokens += usage.completionTokens;
-          if (usage.thoughtToken > 0) handle._reasoningTokens = (handle._reasoningTokens ?? 0) + usage.thoughtToken;
-          attemptRecord.addAll({
-            'usageQuality': 'reported',
-            'inputTokens': usage.promptTokens,
-            'outputTokens': usage.completionTokens,
-            'reasoningTokens': usage.thoughtToken,
-          });
-        }
-        if (!{'stop', 'end_turn', 'tool_use', 'tool_calls', 'completed'}.contains(response.stopReason)) {
+        if (!{'stop', 'end_turn', 'tool_use', 'tool_calls', 'completed'}.contains(stop?.toLowerCase())) {
           throw const ResearchFailure(ResearchFailureKind.protocol);
         }
-        return response;
+        return;
       } catch (e) {
         handle._unknownUsage = true;
         final status = assistantFailureStatus(e);
-        if (handle._cancelled || attempt >= 2 || status == null || !(status == 429 || status >= 500)) rethrow;
+        if (emitted || handle._cancelled || attempt >= 2 || status == null || !(status == 429 || status >= 500)) {
+          rethrow;
+        }
         final retryAfter = e is DioException ? int.tryParse(e.response?.headers.value('retry-after') ?? '') : null;
         final wait = Duration(seconds: (retryAfter ?? (1 << attempt)).clamp(0, 30));
         await Future.any([Future<void>.delayed(wait), handle._cancel.whenCancel]);
@@ -740,16 +923,6 @@ class _RuntimeClient<T> implements sdk.LLMClient {
       }
     }
   }
-
-  @override
-  Future<Stream<sdk.StreamingMessage>> stream(
-    List<sdk.LLMMessage> messages, {
-    List<sdk.Tool>? tools,
-    sdk.ToolChoice? toolChoice,
-    required sdk.ModelConfig modelConfig,
-    bool? jsonOutput,
-    CancelToken? cancelToken,
-  }) async => throw UnsupportedError('Task runtime uses SDK final-message harness; drafts are not committed');
 }
 
 /// The Runtime owns this invariant even when callers supply a prebuilt snapshot.
