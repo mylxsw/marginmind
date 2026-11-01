@@ -81,6 +81,13 @@ Size _size(TreeLayoutResult layout, String id) {
 
 void main() {
   group('measurement', () {
+    test('plain topics can shrink below the reading card minimum', () {
+      final cache = MindMapRenderCache();
+      expect(_size(_update(cache, _content(topicWidth: 90)), 't').width, 90);
+      expect(_size(_update(cache, _content(topicWidth: 1)), 't').width, 64);
+      expect(_size(_update(cache, _content(sourceTopic: true, topicWidth: 90)), 't').width, MapNode.minWidth);
+    });
+
     test('generated topic widths wrap the title and respect widths with attached notes', () {
       final cache = MindMapRenderCache();
       final content = _content(sourceTopic: true);
@@ -272,6 +279,51 @@ void main() {
       expect(handle, findsOneWidget);
     });
 
+    for (final left in [false, true]) {
+      testWidgets('a plain topic can widen then shrink to its original width on the ${left ? 'left' : 'right'}', (
+        tester,
+      ) async {
+        final initial = _content();
+        var content = initial.copyWith(nodes: initial.nodes.where((node) => node.cardId != 'n').toList());
+        if (left) {
+          content = content.copyWith(
+            cards: [
+              ...content.cards,
+              Card(id: 'other', kind: CardKind.topic, title: 'Other', createdAt: _now),
+            ],
+            nodes: [
+              const MapNode(cardId: 'other', order: 0),
+              for (final node in content.nodes) node.cardId == 't' ? node.copyWith(order: 1) : node,
+            ],
+          );
+        }
+        final calls = await pumpCanvas(tester, content: content, selected: 't');
+        final topic = find.byKey(const ValueKey('t'));
+        final original = tester.getSize(topic).width;
+        expect(original, lessThan(MapNode.minWidth));
+        expect(
+          tester.getCenter(handle).dx,
+          closeTo(left ? tester.getRect(topic).left : tester.getRect(topic).right, 1),
+        );
+        final direction = left ? -1.0 : 1.0;
+        Future<void> drag(double delta) async {
+          final gesture = await tester.startGesture(tester.getCenter(handle), kind: PointerDeviceKind.mouse);
+          await gesture.moveBy(Offset(direction * delta / 2, 0));
+          await gesture.moveBy(Offset(direction * delta / 2, 0));
+          await tester.pumpAndSettle();
+          await gesture.up();
+          await tester.pumpAndSettle();
+        }
+
+        await drag(240);
+        expect(tester.getSize(topic).width, closeTo(original + 240, 1));
+        await tester.pump(const Duration(milliseconds: 500));
+        await drag(-240);
+        expect(tester.getSize(topic).width, closeTo(original, 1));
+        expect(calls.last.$2, closeTo(original, 1));
+      });
+    }
+
     testWidgets('a generated topic follows a horizontal drag and resets on double click', (tester) async {
       final calls = await pumpCanvas(tester, content: _content(sourceTopic: true, topicWidth: 280), selected: 't');
       expect(handle, findsOneWidget);
@@ -357,6 +409,19 @@ void main() {
       await tester.pumpAndSettle();
       return (container, container.read(workspaceProvider('demo-1').notifier));
     }
+
+    testWidgets('a plain topic saves a narrow width and supports undo and redo', (tester) async {
+      final (_, controller) = await open(tester);
+      final topic = controller.content.cards.firstWhere((c) => c.kind == CardKind.topic && c.source == null);
+      await controller.setCardWidth(topic.id, 320);
+      await controller.setCardWidth(topic.id, 90);
+      expect(controller.content.node(topic.id)!.width, 90);
+      await controller.undo();
+      expect(controller.content.node(topic.id)!.width, 320);
+      await controller.redo();
+      expect(controller.content.node(topic.id)!.width, 90);
+      await settleHud(tester);
+    });
 
     testWidgets('width is saved per map node, undoable, and reset from the menu', (tester) async {
       final (_, controller) = await open(tester);

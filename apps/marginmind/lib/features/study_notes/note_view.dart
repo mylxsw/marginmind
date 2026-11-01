@@ -503,7 +503,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                               tooltip: l.readerOutline,
                               itemBuilder: (_) => [
                                 for (final section in note.sections)
-                                  MMDropdownItem(value: section.id, child: Text(section.title)),
+                                  MMDropdownItem(value: section.id, icon: MMIcons.section, child: Text(section.title)),
                               ],
                               onSelected: _jump,
                               child: _toolbarLabel(l.readerOutline),
@@ -514,6 +514,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             itemBuilder: (_) => [
                               for (final template in NoteTemplate.values)
                                 MMDropdownItem(
+                                  icon: MMIcons.template,
                                   value: template,
                                   child: Row(
                                     children: [
@@ -555,6 +556,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                           itemBuilder: (_) => [
                             MMDropdownSubmenu<Object>(
                               label: l.readerOutline,
+                              icon: MMIcons.outline,
                               entries: [
                                 for (final section in note.sections)
                                   (value: 'section:${section.id}', label: section.title, selected: false),
@@ -562,6 +564,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             ),
                             MMDropdownSubmenu<Object>(
                               label: l.noteTemplate,
+                              icon: MMIcons.template,
                               entries: [
                                 for (final template in NoteTemplate.values)
                                   (
@@ -574,18 +577,25 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             if (note.sections
                                 .expand((s) => s.blocks)
                                 .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
-                              MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
-                            if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
-                            MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
-                            MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
-                            MMDropdownItem(value: 'share', child: Text('${l.noteShareTitle}…')),
+                              MMDropdownItem(value: 'markers', icon: MMIcons.ai, child: Text(l.noteShowAi)),
+                            if (continuation != null)
+                              MMDropdownItem(value: 'continue', icon: MMIcons.play, child: Text(l.noteContinue)),
+                            MMDropdownItem(
+                              value: 'regenerate',
+                              icon: MMIcons.regenerate,
+                              child: Text(l.noteRegenerate),
+                            ),
+                            MMDropdownItem(value: 'export', icon: MMIcons.export, child: Text(l.exportStudyNote)),
+                            MMDropdownItem(value: 'share', icon: MMIcons.share, child: Text('${l.noteShareTitle}…')),
                             if (globalMenu) ...[
                               const PopupMenuDivider(),
                               for (final action in scope!.actions)
                                 if (action.id != 'assistant' && action.menuEntry is PopupMenuItem<VoidCallback>)
                                   MMDropdownItem<Object>(
                                     value: (action.menuEntry as PopupMenuItem<VoidCallback>).value,
-                                    child: (action.menuEntry as PopupMenuItem<VoidCallback>).child,
+                                    child: action.menuEntry is MMDropdownItem<VoidCallback>
+                                        ? (action.menuEntry as MMDropdownItem<VoidCallback>).menuChild
+                                        : (action.menuEntry as PopupMenuItem<VoidCallback>).child,
                                   ),
                               for (final entry in scope.menuEntries)
                                 if (entry is PopupMenuItem<VoidCallback>)
@@ -593,7 +603,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                                     key: entry.key,
                                     value: entry.value,
                                     enabled: entry.enabled,
-                                    child: entry.child,
+                                    child: entry is MMDropdownItem<VoidCallback> ? entry.menuChild : entry.child,
                                   ),
                             ],
                           ],
@@ -1290,6 +1300,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         MMMenuItem(
           block.contextOpen ? context.l10n.noteCollapseContext : context.l10n.noteExpandContext,
           () => _toggleContext(note.id, block.id),
+          icon: MMIcons.context,
         ),
         MMMenuItem(
           context.l10n.revealSource,
@@ -1297,10 +1308,12 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
               ? null
               : () => _owner.revealNoteAnnotation(block.annotationId),
           shortcut: '⌘L',
+          icon: MMIcons.revealSource,
         ),
         MMMenuItem(
           context.l10n.noteExplain,
           ref.read(assistantConfiguredProvider).value == true && !_aiBusy ? () => _explain(note, block) : null,
+          icon: MMIcons.explain,
         ),
         const MMMenuDivider(),
         MMMenuItem(
@@ -1311,6 +1324,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                   await _owner.addHighlightToMap(block.annotationId);
                   if (mounted) MMHud.show(context, context.l10n.noteAddedToMap);
                 },
+          icon: MMIcons.mindMap,
         ),
         MMMenuItem(
           context.l10n.noteCreateReview,
@@ -1326,6 +1340,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                     ),
                   );
                 },
+          icon: MMIcons.review,
         ),
       ],
       if (block is! OwnBlock && block is! QuoteBlock) ...[
@@ -1340,31 +1355,38 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
               ref.read(assistantConfiguredProvider).value == true && !_aiBusy
                   ? () => _rewrite(note, block, mode)
                   : null,
+              icon: MMIcons.editNote,
             ),
         if (block.origin != NoteOrigin.user)
           MMMenuItem(context.l10n.noteMakeMine, () async {
             await _owner.markStudyNoteBlockMine(note.id, block.id);
             if (mounted) _undoHud(context.l10n.noteMakeMine);
-          }),
+          }, icon: MMIcons.editNote),
         MMMenuItem(context.l10n.addToMapAction, () async {
           await _owner.addNote(_blockText(block));
           if (mounted) _undoHud(context.l10n.noteAddedToMap);
-        }),
+        }, icon: MMIcons.mindMap),
         MMMenuItem(
           context.l10n.noteCreateReview,
           ref.read(assistantConfiguredProvider).value == true && !_aiBusy ? () => _createAiReview(note, block) : null,
+          icon: MMIcons.review,
         ),
       ],
       if (block is OwnBlock && block.source == OwnSource.marginNote)
         MMMenuItem(context.l10n.addToMapAction, () async {
           await _owner.attachMarginNote(block.sourceId);
           if (mounted) MMHud.show(context, context.l10n.noteAddedToMap);
-        }),
+        }, icon: MMIcons.mindMap),
       const MMMenuDivider(),
-      MMMenuItem(context.l10n.noteRemoveBlock, () async {
-        await _owner.removeStudyNoteBlock(note.id, block.id);
-        if (mounted) _undoHud(context.l10n.noteRemoved);
-      }, destructive: true),
+      MMMenuItem(
+        context.l10n.noteRemoveBlock,
+        () async {
+          await _owner.removeStudyNoteBlock(note.id, block.id);
+          if (mounted) _undoHud(context.l10n.noteRemoved);
+        },
+        destructive: true,
+        icon: MMIcons.trash,
+      ),
     ],
   );
 

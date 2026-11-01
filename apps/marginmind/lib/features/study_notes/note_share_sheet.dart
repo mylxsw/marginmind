@@ -116,7 +116,7 @@ class _NoteShareSheetState extends State<NoteShareSheet> {
             ),
             itemBuilder: (_) => [
               for (final (i, section) in widget.note.sections.indexed)
-                MMDropdownItem(value: i, child: Text('${i + 1}. ${section.title}')),
+                MMDropdownItem(value: i, icon: MMIcons.section, child: Text('${i + 1}. ${section.title}')),
             ],
             onSelected: (i) => setState(() {
               _section = i;
@@ -133,6 +133,7 @@ class _NoteShareSheetState extends State<NoteShareSheet> {
                 for (final (i, block) in widget.note.sections[_section].blocks.whereType<QuoteBlock>().indexed)
                   MMDropdownItem(
                     value: i,
+                    icon: MMIcons.context,
                     child: Text(
                       resolveNoteSource(widget.content, block.annotationId).annotation?.quote ?? l.noteNoQuotes,
                       maxLines: 2,

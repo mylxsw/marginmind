@@ -81,18 +81,23 @@ class DocumentSwitcher extends ConsumerWidget {
     final actions = _commands(context, ref);
     return [
       for (final document in documents)
-        MMMenuItem(document.title, () => actions.select(document.id), checked: document.id == activeDocumentId),
+        MMMenuItem(
+          document.title,
+          () => actions.select(document.id),
+          checked: document.id == activeDocumentId,
+          icon: documentIcon(document),
+        ),
       const MMMenuDivider(),
-      MMMenuItem(l.importDocument, () => actions.select(':import')),
-      if (ref.read(canAddWebPageProvider)) MMMenuItem(l.addWebPage, () => actions.select(':web')),
+      MMMenuItem(l.importDocument, () => actions.select(':import'), icon: MMIcons.import),
+      if (ref.read(canAddWebPageProvider)) MMMenuItem(l.addWebPage, () => actions.select(':web'), icon: MMIcons.web),
       if (actions.sourceCommands.isNotEmpty) ...[
         const MMMenuDivider(),
-        MMMenuItem(l.openOriginalPage, () => actions.select(':original')),
+        MMMenuItem(l.openOriginalPage, () => actions.select(':original'), icon: MMIcons.openExternal),
         if (actions.sourceCommands.containsKey(WebSourceCommand.refetch))
-          MMMenuItem(l.refetchPage, () => actions.select(':refetch')),
+          MMMenuItem(l.refetchPage, () => actions.select(':refetch'), icon: MMIcons.regenerate),
       ],
       const MMMenuDivider(),
-      MMMenuItem(l.closeCurrentDocument, onClose == null ? null : () => actions.select('')),
+      MMMenuItem(l.closeCurrentDocument, onClose == null ? null : () => actions.select(''), icon: MMIcons.close),
     ];
   }
 

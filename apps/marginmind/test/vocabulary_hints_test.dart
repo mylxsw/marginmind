@@ -266,18 +266,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(paint().gloss, true);
     await tapReaderCommand(tester, find.byKey(const ValueKey('reader-vocabulary')));
-    await tester.tap(find.byKey(const ValueKey('vocabulary-hint-toggle')));
+    await tester.tap(find.byKey(const ValueKey('reader-vocabulary-off')));
     await tester.pumpAndSettle();
     expect(paint().hits, isEmpty);
     await tapReaderCommand(tester, find.byKey(const ValueKey('reader-vocabulary')));
-    await tester.tap(find.byKey(const ValueKey('vocabulary-hint-toggle')));
+    await tester.tap(find.byKey(const ValueKey('reader-vocabulary-gloss')));
     await tester.pumpAndSettle();
     expect(paint().gloss, true);
     await hints.setDocumentHidden(doc.id, true);
     await tester.pumpAndSettle();
     expect(paint().hits, isEmpty);
     await tapReaderCommand(tester, find.byKey(const ValueKey('reader-vocabulary')));
-    await tester.tap(find.byKey(const ValueKey('vocabulary-hint-toggle')));
+    await tester.tap(find.byKey(const ValueKey('reader-vocabulary-gloss')));
     await tester.pumpAndSettle();
     expect(c.read(vocabularyHintProvider).hiddenDocuments, isEmpty);
     await hints.setShowKnown(true);
@@ -315,7 +315,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Meaning'));
+    await tester.tap(find.text('Mark words with meanings'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('vocabulary-hint-hidden')));
     await tester.pumpAndSettle();

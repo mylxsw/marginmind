@@ -3724,22 +3724,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyAddForm => '添加';
 
   @override
+  String get vocabularyHintsModeScope => '显示方式（所有文档）';
+
+  @override
   String get vocabularyHints => '生词提示';
 
   @override
   String get vocabularyHintsOff => '关闭';
 
   @override
-  String get vocabularyHintsUnderline => '仅下划线';
+  String get vocabularyHintsUnderline => '仅标记生词';
 
   @override
-  String get vocabularyHintsGloss => '显示释义';
+  String get vocabularyHintsGloss => '标记并显示释义';
 
   @override
-  String get vocabularyHintsHidden => '本文档隐藏';
+  String get vocabularyHintsHidden => '仅在本文档隐藏';
 
   @override
-  String get vocabularyHintsKnown => '标出已掌握';
+  String get vocabularyHintsKnown => '包含已掌握的单词';
 
   @override
   String get mapIdeaMenu => 'AI 扩展想法';

@@ -245,20 +245,26 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                       final folded = _collapsed.contains(entry.id);
                       final siblingIndex = siblings.indexWhere((e) => e.id == entry.id);
                       final menu = <MMMenuEntry>[
-                        MMMenuItem(l.editOutlineEntry, () => _rename(entry)),
-                        MMMenuItem(l.addOutlineEntry, () => _add(target: entry)),
-                        MMMenuItem(l.addOutlineChild, () => _add(target: entry, child: true)),
+                        MMMenuItem(l.editOutlineEntry, () => _rename(entry), icon: MMIcons.editNote),
+                        MMMenuItem(l.addOutlineEntry, () => _add(target: entry), icon: MMIcons.addTopic),
+                        MMMenuItem(l.addOutlineChild, () => _add(target: entry, child: true), icon: MMIcons.syncToMap),
                         const MMMenuDivider(),
-                        MMMenuItem(l.moveUp, siblingIndex == 0 ? null : () => _shift(entry, siblings, -1)),
+                        MMMenuItem(
+                          l.moveUp,
+                          siblingIndex == 0 ? null : () => _shift(entry, siblings, -1),
+                          icon: MMIcons.moveUp,
+                        ),
                         MMMenuItem(
                           l.moveDown,
                           siblingIndex == siblings.length - 1 ? null : () => _shift(entry, siblings, 1),
+                          icon: MMIcons.moveDown,
                         ),
                         const MMMenuDivider(),
                         MMMenuItem(
                           entry.children.isEmpty ? l.deleteOutlineEntry : l.deleteOutlineBranch,
                           () => _edit((roots) => OutlineTree.remove(roots, entry.id)),
                           destructive: true,
+                          icon: MMIcons.trash,
                         ),
                       ];
                       final row = MMContextMenuRegion(

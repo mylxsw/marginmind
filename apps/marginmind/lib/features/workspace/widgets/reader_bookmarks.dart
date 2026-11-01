@@ -94,11 +94,20 @@ class ReaderBookmarks extends ConsumerWidget {
                     final bookmark = bookmarks[index];
                     final named = bookmark.title.isNotEmpty;
                     final entries = <MMMenuEntry>[
-                      MMMenuItem(l.editBookmark, () => edit(bookmark)),
-                      MMMenuItem(l.moveUp, index == 0 ? null : () => reorder(index, index - 1)),
-                      MMMenuItem(l.moveDown, index == bookmarks.length - 1 ? null : () => reorder(index, index + 1)),
+                      MMMenuItem(l.editBookmark, () => edit(bookmark), icon: MMIcons.editNote),
+                      MMMenuItem(l.moveUp, index == 0 ? null : () => reorder(index, index - 1), icon: MMIcons.moveUp),
+                      MMMenuItem(
+                        l.moveDown,
+                        index == bookmarks.length - 1 ? null : () => reorder(index, index + 1),
+                        icon: MMIcons.moveDown,
+                      ),
                       const MMMenuDivider(),
-                      MMMenuItem(l.deleteBookmark, () => controller.removeBookmark(bookmark.id), destructive: true),
+                      MMMenuItem(
+                        l.deleteBookmark,
+                        () => controller.removeBookmark(bookmark.id),
+                        destructive: true,
+                        icon: MMIcons.trash,
+                      ),
                     ];
                     return Row(
                       key: ValueKey('bookmark-${bookmark.id}'),

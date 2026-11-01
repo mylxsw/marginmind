@@ -399,9 +399,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
     );
     if (card == null) {
       return [
-        MMMenuItem(l.mapIdeaExpandMap, () => _expandIdeas()),
-        MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
-        MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
+        MMMenuItem(l.mapIdeaExpandMap, () => _expandIdeas(), icon: MMIcons.expandIdeas),
+        MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true), icon: MMIcons.organize),
+        MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true), icon: MMIcons.review),
       ];
     }
     final selection = ref.read(workspaceProvider(widget.studySetId));
@@ -418,6 +418,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           MMMenuItem(
             label,
             sameParent ? () => _expandIdeas(scope: scope) : null,
+            icon: scope == ExpansionScope.group ? MMIcons.groupParent : MMIcons.fillSiblings,
             disabledReason: sameParent ? null : l.mapEditDifferentParents,
           ),
       MMMenuItem(
@@ -426,18 +427,21 @@ class _MapPaneState extends ConsumerState<MapPane> {
         shortcut: defaultTargetPlatform == TargetPlatform.macOS
             ? describeShortcut(const SingleActivator(LogicalKeyboardKey.tab, alt: true))
             : null,
+        icon: MMIcons.expandIdeas,
       ),
       MMMenuItem(
         topic ? l.assistantExplainTopic : l.assistantExplainCard,
         () => ask(AssistantSkill.explain),
         shortcut: describeShortcut(AppShortcuts.askAssistant),
+        icon: MMIcons.explain,
       ),
       if (topic) ...[
-        MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
-        MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
+        MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true), icon: MMIcons.organize),
+        MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true), icon: MMIcons.review),
       ],
-      if (card.kind == CardKind.excerpt) MMMenuItem(l.assistantVerifyCard, () => ask(AssistantSkill.verify)),
-      MMMenuItem(l.assistantAskWith, () => ask(null)),
+      if (card.kind == CardKind.excerpt)
+        MMMenuItem(l.assistantVerifyCard, () => ask(AssistantSkill.verify), icon: MMIcons.verify),
+      MMMenuItem(l.assistantAskWith, () => ask(null), icon: MMIcons.ai),
     ];
   }
 
@@ -542,13 +546,19 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 branch: BranchScope(ref.read(workspaceProvider(widget.studySetId)).activeMapId, card.id),
               ),
               badge: const MMBetaBadge(),
+              icon: MMIcons.organizeNote,
             ),
-          MMMenuItem(l.exportBranch, () => showMapExportSheet(context, ref, widget.studySetId, branchId: card.id)),
-          MMMenuItem(l.cardTags, () => showCardTagsSheet(context, ref, widget.studySetId, card.id)),
+          MMMenuItem(
+            l.exportBranch,
+            () => showMapExportSheet(context, ref, widget.studySetId, branchId: card.id),
+            icon: MMIcons.export,
+          ),
+          MMMenuItem(l.cardTags, () => showCardTagsSheet(context, ref, widget.studySetId, card.id), icon: MMIcons.tag),
           MMMenuItem(
             l.showCardDetails,
             () => controller.showDetails(card.id),
             shortcut: describeShortcut(AppShortcuts.cardDetails),
+            icon: MMIcons.info,
           ),
           MMMenuItem(
             card.kind == CardKind.image
@@ -558,34 +568,47 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 : l.renameTitle,
             () => rename(card.id),
             shortcut: 'F2',
+            icon: card.kind == CardKind.image ? MMIcons.image : MMIcons.editNote,
           ),
           if (card.source != null || content.annotation(card.annotationId ?? '') != null)
-            MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
-          if (node?.width != null) MMMenuItem(l.resetCardWidth, () => controller.setCardWidth(card.id, null)),
+            MMMenuItem(
+              l.revealSource,
+              () => controller.revealCard(card.id),
+              shortcut: '⌘L',
+              icon: MMIcons.revealSource,
+            ),
+          if (node?.width != null)
+            MMMenuItem(l.resetCardWidth, () => controller.setCardWidth(card.id, null), icon: MMIcons.fitWidth),
           const MMMenuDivider(),
         ],
         if (branchDue || suspendable) ...[
-          if (branchDue) MMMenuItem(l.reviewBranch, () => controller.startReview(mapId: mapId, branchId: card.id)),
+          if (branchDue)
+            MMMenuItem(
+              l.reviewBranch,
+              () => controller.startReview(mapId: mapId, branchId: card.id),
+              icon: MMIcons.review,
+            ),
           if (suspendable)
             MMMenuItem(
               card.suspended ? l.resumeCard : l.suspendCard,
               () => controller.setSuspended(card.id, suspended: !card.suspended),
+              icon: card.suspended ? MMIcons.play : MMIcons.pause,
             ),
           const MMMenuDivider(),
         ],
-        MMMenuItem(l.addChildTopic, () => addTopic(asChild: true), shortcut: '⇥'),
-        MMMenuItem(l.addNote, addNote),
-        MMMenuItem(l.insertImage, () => pickAndInsertImages(context, ref, widget.studySetId)),
+        MMMenuItem(l.addChildTopic, () => addTopic(asChild: true), shortcut: '⇥', icon: MMIcons.addTopic),
+        MMMenuItem(l.addNote, addNote, icon: MMIcons.addNote),
+        MMMenuItem(l.insertImage, () => pickAndInsertImages(context, ref, widget.studySetId), icon: MMIcons.image),
         if (card != null && hasChildren) ...[
           const MMMenuDivider(),
           MMMenuItem((node?.collapsed ?? false) ? l.expandNode : l.collapseNode, () {
             controller.toggleCollapsed(card.id);
-          }),
+          }, icon: (node?.collapsed ?? false) ? MMIcons.expand : MMIcons.collapse),
         ],
         if (card != null) ...[
           const MMMenuDivider(),
-          MMMenuItem(l.moveUp, () => controller.shiftSelected(-1), shortcut: '⌘↑'),
-          MMMenuItem(l.moveDown, () => controller.shiftSelected(1), shortcut: '⌘↓'),
+          MMMenuItem(l.moveUp, () => controller.shiftSelected(-1), shortcut: '⌘↑', icon: MMIcons.moveUp),
+          MMMenuItem(l.moveDown, () => controller.shiftSelected(1), shortcut: '⌘↓', icon: MMIcons.moveDown),
           if (ref
               .read(workspaceProvider(widget.studySetId))
               .selectedCardIds
@@ -595,6 +618,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
               MMMenuItem(
                 l.colorName(color),
                 () => controller.recolorCards(ref.read(workspaceProvider(widget.studySetId)).selectedCardIds, color),
+                icon: MMIcons.palette,
               ),
           ],
           const MMMenuDivider(),
@@ -603,18 +627,21 @@ class _MapPaneState extends ConsumerState<MapPane> {
               l.mergeNodes(ref.read(workspaceProvider(widget.studySetId)).selectedCardIds.length),
               controller.mergeReason == null ? _merge : null,
               shortcut: '⌥⌘J',
+              icon: MMIcons.mergeIntoMap,
             ),
           if (card.segments.length > 1)
-            MMMenuItem(l.splitNodes(card.segments.length), () => controller.splitCard(card.id)),
+            MMMenuItem(l.splitNodes(card.segments.length), () => controller.splitCard(card.id), icon: MMIcons.split),
           MMMenuItem(
             l.addRelation,
             () => _command(MindMapCommand.relation),
             shortcut: describeShortcut(_shortcutOf(MindMapCommand.relation)),
+            icon: MMIcons.relation,
           ),
           MMMenuItem(
             l.addSummary,
             () => _command(MindMapCommand.summary),
             shortcut: describeShortcut(_shortcutOf(MindMapCommand.summary)),
+            icon: MMIcons.summary,
           ),
           const MMMenuDivider(),
           for (final map in content.maps)
@@ -622,8 +649,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
               MMMenuItem(
                 l.addToNamedMap(map.title.isEmpty ? l.mainMap : map.title),
                 () => controller.placeCardInMap(card.id, map.id),
+                icon: MMIcons.mindMap,
               ),
-          MMMenuItem(l.removeFromMap, remove, destructive: true, shortcut: '⌫'),
+          MMMenuItem(l.removeFromMap, remove, destructive: true, shortcut: '⌫', icon: MMIcons.trash),
         ],
       ],
     );
@@ -641,13 +669,14 @@ class _MapPaneState extends ConsumerState<MapPane> {
       context,
       position: position,
       entries: [
-        MMMenuItem(l.editMarkLabel, () => controller.beginMarkEditing(markId), shortcut: 'F2'),
+        MMMenuItem(l.editMarkLabel, () => controller.beginMarkEditing(markId), shortcut: 'F2', icon: MMIcons.editNote),
         const MMMenuDivider(),
         MMMenuItem(
           isRelation ? l.deleteRelation : l.deleteSummary,
           controller.removeSelectedMark,
           destructive: true,
           shortcut: '⌫',
+          icon: MMIcons.trash,
         ),
       ],
     );

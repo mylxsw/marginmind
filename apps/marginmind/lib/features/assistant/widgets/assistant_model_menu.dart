@@ -22,8 +22,8 @@ bool sameModel(AssistantModel a, AssistantModel b) =>
     a.model == b.model &&
     (a.serviceId == null || b.serviceId == null ? a.provider == b.provider : a.serviceId == b.serviceId);
 
-/// The model menu above [anchor]: enabled models grouped by service, names
-/// only, then “Manage Models…”. A choice changes this conversation only,
+/// The model menu above [anchor]: enabled models grouped by service,
+/// then “Manage Models…”. A choice changes this conversation only,
 /// and retries [retryMessageId] when opened from an answer's recovery action.
 Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor, {String? retryMessageId}) async {
   final l = context.l10n;
@@ -46,10 +46,15 @@ Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor, {St
         if (i > 0) const MMMenuDivider(),
         MMMenuHeader(service.name),
         for (final m in models)
-          MMMenuItem(modelLabel(services, m), () {
-            if (!context.mounted || ref.read(assistantControllerProvider).id != conversation.id) return;
-            unawaited(controller.switchModel(m, retryMessageId: retryMessageId).catchError((Object _) {}));
-          }, checked: sameModel(m, current)),
+          MMMenuItem(
+            modelLabel(services, m),
+            () {
+              if (!context.mounted || ref.read(assistantControllerProvider).id != conversation.id) return;
+              unawaited(controller.switchModel(m, retryMessageId: retryMessageId).catchError((Object _) {}));
+            },
+            checked: sameModel(m, current),
+            icon: MMIcons.model,
+          ),
       ],
       if (groups.isNotEmpty) const MMMenuDivider(),
       MMMenuItem(
@@ -57,6 +62,7 @@ Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor, {St
         () => showSettings(context, tab: SettingsTab.models),
         shortcut: describeShortcut(AppShortcuts.settings),
         checked: groups.isEmpty ? null : false,
+        icon: MMIcons.settings,
       ),
     ],
   );

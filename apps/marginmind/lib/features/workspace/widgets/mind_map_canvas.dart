@@ -1745,7 +1745,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               if (start == null) return;
               // The pointer moves in screen pixels; the card in map points.
               final delta = (d.globalPosition.dx - start.pointer) / mapScale(widget.transformation.value);
-              final width = (start.width + (left ? -delta : delta)).clamp(MapNode.minWidth, MapNode.maxWidth);
+              final card = widget.content.card(id)!;
+              final width = (start.width + (left ? -delta : delta)).clamp(MapNode.minWidthFor(card), MapNode.maxWidth);
               if (width != _resize?.$2) setState(() => _resize = (id, width.roundToDouble()));
             },
             onHorizontalDragEnd: (_) => _endResize(),

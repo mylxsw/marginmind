@@ -534,9 +534,9 @@ class MapGhostNodeState extends State<MapGhostNode> {
                   context,
                   position: details.globalPosition,
                   entries: [
-                    MMMenuItem(d.kept ? l.mapIdeaDraftSkip : l.mapIdeaDraftKeep, widget.onToggle),
-                    MMMenuItem(l.mapIdeaDraftEdit, beginEdit),
-                    if (widget.onMore != null) MMMenuItem(l.mapIdeaDraftMore, widget.onMore),
+                    MMMenuItem(d.kept ? l.mapIdeaDraftSkip : l.mapIdeaDraftKeep, widget.onToggle, icon: MMIcons.skip),
+                    MMMenuItem(l.mapIdeaDraftEdit, beginEdit, icon: MMIcons.editNote),
+                    if (widget.onMore != null) MMMenuItem(l.mapIdeaDraftMore, widget.onMore, icon: MMIcons.expandIdeas),
                   ],
                 ),
           child: MMInteractive(

@@ -70,8 +70,13 @@ void showConversationMenu(
     context,
     position: position,
     entries: [
-      MMMenuItem(l.rename, () => renameConversation(context, ref, studySetId, s)),
-      MMMenuItem(l.assistantDeleteEllipsis, () => deleteConversation(context, ref, studySetId, s), destructive: true),
+      MMMenuItem(l.rename, () => renameConversation(context, ref, studySetId, s), icon: MMIcons.editNote),
+      MMMenuItem(
+        l.assistantDeleteEllipsis,
+        () => deleteConversation(context, ref, studySetId, s),
+        destructive: true,
+        icon: MMIcons.trash,
+      ),
     ],
   );
 }

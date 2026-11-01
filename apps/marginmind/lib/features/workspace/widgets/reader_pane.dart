@@ -518,6 +518,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             MMMenuHeader(:final label) => MMDropdownHeader<VoidCallback>(label),
             MMMenuItem() => MMDropdownItem<VoidCallback>(
               value: item.onSelected,
+              icon: item.icon,
               enabled: item.onSelected != null,
               child: Row(
                 children: [
@@ -667,16 +668,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           key: const ValueKey('reader-vocabulary'),
           label: l.vocabularyHints,
           icon: MMIcons.vocabulary,
-          selected: hintMode != VocabularyHintMode.off,
           itemBuilder: (_) => [
-            entry(
-              l.vocabularyHints,
-              () => unawaited(toggleVocabularyHints(context, ref, document.id)),
-              selected: hintMode != VocabularyHintMode.off,
-              id: 'vocabulary-hint-toggle',
-              routeThroughPane: false,
-            ),
-            const PopupMenuDivider(),
+            MMDropdownHeader<VoidCallback>(l.vocabularyHintsModeScope),
             for (final (mode, label) in vocabularyHintModes(context))
               entry(
                 label,
@@ -687,7 +680,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     if (mode != VocabularyHintMode.off) await owner.setDocumentHidden(document.id, false);
                   }),
                 ),
-                selected: mode == hintMode,
+                selected: mode == hints.mode,
                 id: 'reader-vocabulary-${mode.name}',
                 routeThroughPane: false,
               ),
@@ -1215,6 +1208,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     height: 32,
     child: Row(
       children: [
+        Icon(switch (value) {
+          MMReaderStyle.white => MMReaderIcons.white,
+          MMReaderStyle.dark => MMReaderIcons.dark,
+          MMReaderStyle.paper => MMReaderIcons.paper,
+          MMReaderStyle.green => MMReaderIcons.green,
+        }, size: MMSizes.dropdownIcon),
+        const SizedBox(width: MMSpacing.s),
         Container(
           key: ValueKey('reader-style-preview-${value.name}'),
           width: 30,
@@ -1626,15 +1626,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         context,
                         position: position,
                         entries: [
-                          MMMenuItem(l.ocrNoText, null),
+                          MMMenuItem(l.ocrNoText, null, icon: MMIcons.ocr),
                           MMMenuItem(l.ocrThisPage, () {
                             ref
                                 .read(readerOcrProvider(source).notifier)
                                 .recognize(page, page, PdfOcrLanguage.chineseEnglish);
-                          }),
+                          }, icon: MMIcons.ocr),
                           MMMenuItem(
                             l.ocrRecognize,
                             () => showReaderOcrOptions(context, ref, widget.studySetId, documentId: doc.id),
+                            icon: MMIcons.ocr,
                           ),
                         ],
                       );

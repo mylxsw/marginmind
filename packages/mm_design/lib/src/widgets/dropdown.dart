@@ -168,7 +168,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
                               size: MMSizes.tabletToolbarIcon,
                               color: !widget.enabled ? c.label.withValues(alpha: .3) : (_open ? c.accent : c.label),
                             ),
-                            child: widget.icon ?? const Icon(Icons.more_vert),
+                            child: widget.icon ?? const Icon(MMIcons.more),
                           ),
                         ),
                   ),
@@ -226,7 +226,21 @@ class MMDropdownItem<T> extends PopupMenuItem<T> {
     super.padding = const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
     super.labelTextStyle,
     required super.child,
+    this.icon,
   });
+
+  final IconData? icon;
+
+  /// Shared content for both popup routes and cascading menus.
+  Widget? get menuChild => icon == null
+      ? child
+      : Row(
+          children: [
+            Icon(icon, size: MMSizes.dropdownIcon),
+            const SizedBox(width: MMSpacing.s),
+            Expanded(child: child ?? const SizedBox.shrink()),
+          ],
+        );
 
   @override
   PopupMenuItemState<T, MMDropdownItem<T>> createState() => _MMDropdownItemState<T>();
@@ -234,12 +248,17 @@ class MMDropdownItem<T> extends PopupMenuItem<T> {
 
 class _MMDropdownItemState<T> extends PopupMenuItemState<T, MMDropdownItem<T>> {
   @override
+  Widget? buildChild() => widget.menuChild;
+  @override
   Widget build(BuildContext context) => Material(
     type: MaterialType.transparency,
     borderRadius: BorderRadius.circular(MMRadii.row),
     clipBehavior: Clip.antiAlias,
     child: IconTheme.merge(
-      data: IconThemeData(size: MMSizes.dropdownIcon, color: context.mmColors.label),
+      data: IconThemeData(
+        size: MMSizes.dropdownIcon,
+        color: widget.enabled ? context.mmColors.label : context.mmColors.secondaryLabel,
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight: context.mmTouch || context.mmTouchPlatform ? MMSizes.touchTarget : widget.height,
@@ -382,7 +401,7 @@ List<Widget> _dropdownChildren<T>(
           key: entry.key,
           style: _dropdownMenuItemStyle(context),
           onPressed: entry.enabled && entry.value != null ? () => select(entry.value as T) : null,
-          child: entry.child,
+          child: entry is MMDropdownItem<T> ? entry.menuChild : entry.child,
         ),
         PopupMenuDivider() => Divider(height: 12, thickness: .5, color: context.mmColors.separator),
         _ => entry,
@@ -434,6 +453,7 @@ class _MMDropdownSubmenuState<T> extends State<MMDropdownSubmenu<T>> {
           for (final entry in widget.entries)
             MMDropdownItem<T>(
               value: entry.value,
+              icon: widget.icon,
               child: Row(
                 children: [
                   Expanded(child: Text(entry.label, maxLines: 1, overflow: TextOverflow.ellipsis)),

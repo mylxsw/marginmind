@@ -21,6 +21,7 @@ class MMMenuItem extends MMMenuEntry {
   const MMMenuItem(
     this.label,
     this.onSelected, {
+    this.icon,
     this.destructive = false,
     this.shortcut,
     this.checked,
@@ -28,6 +29,7 @@ class MMMenuItem extends MMMenuEntry {
     this.badge,
   });
 
+  final IconData? icon;
   final String label;
   final String? disabledReason;
 
@@ -366,8 +368,7 @@ class _MenuRow extends StatelessWidget {
             ),
             child: Row(
               children: [
-                if (item.checked != null)
-                  SizedBox(width: 20, child: item.checked! ? Icon(MMIcons.check, size: 14, color: fg) : null),
+                if (item.icon != null) ...[Icon(item.icon, size: 16, color: fg), const SizedBox(width: 8)],
                 Expanded(
                   flex: 3,
                   child: Row(
@@ -384,6 +385,10 @@ class _MenuRow extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (item.checked != null) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(width: 16, child: item.checked! ? Icon(MMIcons.check, size: 14, color: fg) : null),
+                ],
                 if (item.shortcut != null) ...[
                   const SizedBox(width: 24),
                   // Long notes (a model name) give way before the label does.
@@ -423,6 +428,7 @@ class _ActionSheet extends StatelessWidget {
         switch (e) {
           MMMenuItem() => _ActionSheetRow(
             label: e.label,
+            icon: e.icon,
             checked: e.checked,
             destructive: e.destructive,
             badge: e.badge,
@@ -499,6 +505,7 @@ class _ActionSheetRow extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.checked,
+    this.icon,
     this.destructive = false,
     this.bold = false,
     this.badge,
@@ -515,6 +522,7 @@ class _ActionSheetRow extends StatelessWidget {
   final bool? checked;
   final bool destructive;
   final bool bold;
+  final IconData? icon;
   final Widget? badge;
 
   @override
@@ -541,6 +549,7 @@ class _ActionSheetRow extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    if (icon != null) ...[Icon(icon, size: 20, color: fg), const SizedBox(width: 8)],
                     Flexible(
                       child: Text(
                         label,

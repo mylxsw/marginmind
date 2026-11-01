@@ -42,6 +42,7 @@ class NoteWorkspacePanes extends ConsumerWidget {
           ),
           menuEntry: MMDropdownItem<VoidCallback>(
             value: owner.closeNoteReference,
+            icon: MMIcons.close,
             child: Text(context.l10n.closePanel),
           ),
         );

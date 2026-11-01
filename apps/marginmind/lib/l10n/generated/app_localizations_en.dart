@@ -3875,22 +3875,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vocabularyAddForm => 'Add';
 
   @override
+  String get vocabularyHintsModeScope => 'Display mode (all documents)';
+
+  @override
   String get vocabularyHints => 'Vocabulary hints';
 
   @override
   String get vocabularyHintsOff => 'Off';
 
   @override
-  String get vocabularyHintsUnderline => 'Underline';
+  String get vocabularyHintsUnderline => 'Mark words only';
 
   @override
-  String get vocabularyHintsGloss => 'Meaning';
+  String get vocabularyHintsGloss => 'Mark words with meanings';
 
   @override
-  String get vocabularyHintsHidden => 'Hide in this document';
+  String get vocabularyHintsHidden => 'Hide only in this document';
 
   @override
-  String get vocabularyHintsKnown => 'Mark known words';
+  String get vocabularyHintsKnown => 'Include learned words';
 
   @override
   String get mapIdeaMenu => 'Expand Ideas with AI';
