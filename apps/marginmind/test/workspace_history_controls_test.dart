@@ -17,7 +17,9 @@ void main() {
     expect(enabled(redo), isFalse);
     final tabs = tester.getRect(find.byKey(const ValueKey('workspace-main-tabs')));
     expect(tester.getCenter(undo).dy, closeTo(tabs.center.dy, 1));
-    expect(tester.getRect(redo).right, lessThanOrEqualTo(tabs.left));
+    final layouts = tester.getRect(find.byKey(const ValueKey('workspace-layout-controls')));
+    expect(tester.getRect(undo).left, greaterThanOrEqualTo(tabs.right));
+    expect(tester.getRect(redo).right, lessThan(layouts.left));
 
     final annotation = owner.content.annotations.first;
     final originalColor = annotation.colorIndex;

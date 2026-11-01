@@ -103,8 +103,6 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                                 tooltip: l.showSidebar,
                                 onPressed: onShowSidebar,
                               ),
-                            WorkspaceHistoryControls(studySetId: studySetId),
-                            const SizedBox(width: 8),
                           ],
                         ),
                       ),
@@ -118,6 +116,16 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          WorkspaceHistoryControls(studySetId: studySetId),
+                          if (documents ||
+                              (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant))
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: SizedBox(
+                                height: 18,
+                                child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
+                              ),
+                            ),
                           if (documents) ...[
                             Container(
                               key: const ValueKey('workspace-layout-controls'),
