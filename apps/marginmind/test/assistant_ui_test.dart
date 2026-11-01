@@ -687,7 +687,7 @@ void main() {
       expect(find.byKey(const ValueKey('assistant-history')), findsOneWidget);
       expect(tester.widget<MMIconButton>(historyButton).selected, isFalse);
       expect(
-        tester.widget<Icon>(find.descendant(of: historyButton, matching: find.byIcon(MMIcons.recent))).color,
+        tester.widget<Icon>(find.descendant(of: historyButton, matching: find.byIcon(MMIcons.conversationHistory))).color,
         tester.element(historyButton).mmColors.icon,
       );
       await tester.tap(historyButton);

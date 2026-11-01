@@ -285,19 +285,19 @@ class AssistantHeader extends ConsumerWidget {
             ),
           ),
           MMIconButton(
+            key: const ValueKey('assistant-new'),
+            icon: MMIcons.newConversation,
+            tooltip: l.assistantNewConversation,
+            onPressed: () => startNewConversation(ref, studySetId),
+          ),
+          MMIconButton(
             key: const ValueKey('assistant-history-button'),
-            icon: MMIcons.recent,
+            icon: MMIcons.conversationHistory,
             tooltip: l.assistantHistory,
             onPressed: () {
               ref.read(researchPanelProvider(studySetId).notifier).closeNote();
               ui.showHistory(!history);
             },
-          ),
-          MMIconButton(
-            key: const ValueKey('assistant-new'),
-            icon: MMIcons.newConversation,
-            tooltip: l.assistantNewConversation,
-            onPressed: () => startNewConversation(ref, studySetId),
           ),
           MMIconButton(
             key: const ValueKey('assistant-close'),
