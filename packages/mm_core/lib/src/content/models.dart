@@ -635,6 +635,9 @@ class MapNode {
   static const minWidth = 200.0;
   static const maxWidth = 480.0;
 
+  /// Plain topics have short labels; source topics also need room for a page chip.
+  static double minWidthFor(Card card) => card.kind == CardKind.topic && card.source == null ? 64.0 : minWidth;
+
   MapNode copyWith({
     String? parentId,
     bool toRoot = false,

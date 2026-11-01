@@ -614,7 +614,7 @@ class _NodeSpec {
         ? doc.title
         : '${doc.title} · ${l.pageNumber(a.page)}';
     final cardWidth = (width ?? (card.kind == CardKind.excerpt ? cache._excerptWidthFor(card) : excerptWidth))
-        .clamp(MapNode.minWidth, MapNode.maxWidth)
+        .clamp(MapNode.minWidthFor(card), MapNode.maxWidth)
         .toDouble();
     // Title text beside the color dot (9) and its gap (7).
     final titleWidth = cardWidth - _cardInset - 16;

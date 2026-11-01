@@ -2979,11 +2979,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   // ---- card width and map density (P2-C06) --------------------------------------
 
   /// Sets the width of [cardId] in the active map (kept within
-  /// [MapNode.minWidth]..[MapNode.maxWidth]); null restores the default width.
+  /// [MapNode.minWidthFor]..[MapNode.maxWidth]); null restores the default width.
   Future<void> setCardWidth(String cardId, double? width) async {
     final node = content.node(cardId, mapId: state.activeMapId);
-    if (node == null || _editing != null || _creating) return;
-    final next = width?.clamp(MapNode.minWidth, MapNode.maxWidth).roundToDouble();
+    final card = content.card(cardId);
+    if (node == null || card == null || _editing != null || _creating) return;
+    final next = width?.clamp(MapNode.minWidthFor(card), MapNode.maxWidth).roundToDouble();
     if (next == node.width) return;
     await _update((c) => _editor.setCardWidth(c, cardId, next));
   }
