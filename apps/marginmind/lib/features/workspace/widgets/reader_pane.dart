@@ -817,6 +817,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         MMDropdownSubmenu<VoidCallback>.items(
           key: const ValueKey('reader-appearance'),
           label: l.readerTheme,
+          icon: MMIcons.palette,
           width: 220,
           itemBuilder: (_) => [
             for (final value in MMReaderStyle.values)

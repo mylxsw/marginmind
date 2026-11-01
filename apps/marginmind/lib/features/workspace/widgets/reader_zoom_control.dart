@@ -91,6 +91,8 @@ class _ReaderZoomControlState extends State<ReaderZoomControl> {
         padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
         child: Row(
           children: [
+            Icon(MMIcons.zoomControl, size: MMSizes.dropdownIcon, color: context.mmColors.secondaryLabel),
+            const SizedBox(width: MMSpacing.s),
             Expanded(child: Text(l.readerZoomLabel, style: context.mmText.callout)),
             MMToolbarButton(
               icon: MMReaderIcons.zoomOut,
