@@ -385,7 +385,10 @@ class _WorkspaceTitlebarLayout extends MultiChildLayoutDelegate {
       maxHeight: 2 * math.min(centerY, size.height - centerY),
     );
     final leading = layoutChild(_TitlebarSlot.leading, sideConstraints);
-    final trailing = layoutChild(_TitlebarSlot.trailing, sideConstraints);
+    final trailing = layoutChild(
+      _TitlebarSlot.trailing,
+      sideConstraints.copyWith(maxWidth: math.max(0, size.width - leading.width)),
+    );
     positionChild(_TitlebarSlot.leading, Offset(0, centerY - leading.height / 2));
     positionChild(_TitlebarSlot.trailing, Offset(size.width - trailing.width, centerY - trailing.height / 2));
     layoutChild(

@@ -34,6 +34,7 @@ import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_margin_notes.dart';
 import 'reader_page_field.dart';
+import 'reader_entry_editor.dart';
 import 'reflow_scroll_reader.dart';
 import 'reflow_thumbnail.dart';
 import 'reflow_tools.dart';
@@ -1411,12 +1412,15 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         onTap: onTap,
         selected: selected,
         builder: (context, interaction) => Container(
-          color: selected
-              ? context.mmColors.accentTint
-              : interaction.hovered
-              ? context.mmColors.hover
-              : null,
-          padding: const EdgeInsets.all(MMSpacing.m),
+          decoration: BoxDecoration(
+            color: selected
+                ? context.mmColors.selectedRow
+                : interaction.hovered
+                ? context.mmColors.hover
+                : null,
+            borderRadius: BorderRadius.circular(MMRadii.row),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.s),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1518,6 +1522,29 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
           return byChapter != 0 ? byChapter : a.offset.compareTo(b.offset);
         });
     final reviewCount = annotations.where(needsReview).length + unresolvedInk.length;
+    final chapters = book.chapters.map((c) => c.id).toList();
+    final bookmarks = workspace.content
+        .bookmarksOn(widget.document.id, chapters: chapters)
+        .where((b) => b.position is TextReadingPosition)
+        .toList();
+    Widget empty(String label) => Center(
+      child: Text(label, style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel)),
+    );
+    void sortBookmarks(ReaderEntrySort order) {
+      final sorted = [...bookmarks]
+        ..sort(
+          (a, b) => switch (order) {
+            ReaderEntrySort.pageAscending => compareReadingPositions(a.position!, b.position!, chapters: chapters),
+            ReaderEntrySort.pageDescending => compareReadingPositions(b.position!, a.position!, chapters: chapters),
+            ReaderEntrySort.title =>
+              (a.title.isEmpty ? book.title(a.position! as TextReadingPosition) : a.title).toLowerCase().compareTo(
+                (b.title.isEmpty ? book.title(b.position! as TextReadingPosition) : b.title).toLowerCase(),
+              ),
+          },
+        );
+      workspace.orderBookmarks(widget.document.id, sorted.map((b) => b.id).toList());
+    }
+
     final panel = Container(
       width: MMSizeClass.of(context) == MMSizeClass.compact
           ? double.infinity
@@ -1564,109 +1591,125 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
             ),
           ),
           Divider(height: 1, thickness: 1, color: context.mmColors.separator),
-          Expanded(
-            child: ListView(
-              children: switch (mode) {
-                ReaderPanelMode.thumbnails => [
-                  for (var i = 0; i < book.chapters.length; i++)
-                    ReflowThumbnail(
-                      key: ValueKey('reflow-thumbnail-${book.chapters[i].id}'),
-                      book: book,
-                      chapterId: book.chapters[i].id,
-                      page: i + 1,
-                      selected: s.position?.chapterId == book.chapters[i].id,
-                      style: ref.watch(settingsProvider).readerStyle,
-                      onTap: () => navigate(book.position(book.chapters[i].id, 0)),
-                    ),
-                ],
-                ReaderPanelMode.outline => [
-                  if (book.outline.isEmpty) entry(l.readerNoOutline, () {}),
-                  for (final e in book.outline)
-                    entry(
-                      e.title,
-                      () => navigate(book.position(e.chapterId, e.offset)),
-                      selected: e.chapterId == s.position?.chapterId && e.title == book.title(s.position!),
-                    ),
-                ],
-                ReaderPanelMode.bookmarks => [
-                  MMButton(label: l.addBookmark, icon: MMIcons.bookmark, onPressed: workspace.toggleBookmark),
-                  if (workspace.content.bookmarksOn(widget.document.id).isEmpty) entry(l.noBookmarks, () {}),
-                  for (final b in workspace.content.bookmarksOn(
-                    widget.document.id,
-                    chapters: book.chapters.map((c) => c.id).toList(),
-                  ))
-                    if (b.position case final TextReadingPosition p)
-                      Dismissible(
-                        key: ValueKey(b.id),
-                        onDismissed: (_) => workspace.removeBookmark(b.id),
-                        child: entry(
-                          b.title.isEmpty ? book.title(p, fallback: widget.document.title) : b.title,
-                          () => navigate(p),
-                          onDelete: () => workspace.removeBookmark(b.id),
-                          onRename: () async {
-                            final name = await showRenameSheet(context, title: l.rename, initial: b.title);
-                            if (name != null) await workspace.renameBookmark(b.id, name);
-                          },
-                          subtitle:
-                              '${book.chapter(p.chapterId)?.canonicalText.substring(p.offset.clamp(0, book.chapter(p.chapterId)!.canonicalText.length)).characters.take(24).string ?? ''} · ${(book.progress(p) * 100).round()}%',
-                        ),
-                      ),
-                ],
-                ReaderPanelMode.annotations => [
-                  if (annotations.isEmpty && unresolvedInk.isEmpty && inkChapters.isEmpty)
-                    entry(l.noAnnotations, () {}),
-                  if (reviewCount > 0) ...[
-                    Padding(
-                      padding: const EdgeInsets.all(MMSpacing.m),
-                      child: Row(
-                        children: [
-                          Icon(
-                            MMIcons.warning,
-                            color: context.mmColors.caution,
-                            size: context.mmText.subheadline.fontSize,
-                          ),
-                          const SizedBox(width: MMSpacing.s),
-                          Text(
-                            l.annotationsNeedReview(reviewCount),
-                            style: context.mmText.subheadline.copyWith(color: context.mmColors.caution),
-                          ),
-                        ],
-                      ),
-                    ),
-                    for (final stroke in unresolvedInk)
-                      entry(
-                        stroke.textAnchor!.anchor.quote,
-                        () {
-                          final chapter = book.chapter(stroke.textAnchor!.anchor.chapterId);
-                          if (chapter != null) navigate(book.position(chapter.id, 0));
-                          _missing();
-                        },
-                        subtitle: l.readerNeedsReview,
-                        onDelete: () => workspace.eraseInkStrokes({stroke.id}),
-                      ),
-                    for (final a in annotations.where(needsReview))
-                      entry(
-                        a.capture == null ? a.quote : l.imageExcerpt,
-                        () async {
-                          final chapter = book.chapter(a.textAnchors.first.chapterId) ?? book.chapters.firstOrNull;
-                          if (chapter != null) await navigate(book.position(chapter.id, 0));
-                          if (mounted) MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);
-                        },
-                        key: ValueKey('annotation-${a.id}'),
-                        onDelete: () => workspace.deleteHighlight(a.id),
-                        color: MMAnnotationColor.fromIndex(a.colorIndex).color,
-                        subtitle: book.title(
-                          book.position((book.chapter(a.textAnchors.first.chapterId) ?? book.chapters.first).id, 0),
-                          fallback: widget.document.title,
-                        ),
-                        subtitleColor: context.mmColors.caution,
-                      ),
-                    Divider(height: MMSpacing.m, thickness: 0.5, color: context.mmColors.separator),
-                  ],
-                  for (final item in annotationRows) item.row,
-                ],
-              },
+          if (mode == ReaderPanelMode.bookmarks)
+            ReaderEntryHeader(
+              title: l.readerBookmarks,
+              addLabel: l.addBookmark,
+              onAdd: workspace.addCurrentBookmark,
+              onSort: sortBookmarks,
+              canSort: bookmarks.length > 1,
             ),
+          Expanded(
+            child: mode == ReaderPanelMode.bookmarks && bookmarks.isEmpty
+                ? empty(l.noBookmarks)
+                : mode == ReaderPanelMode.outline && book.outline.isEmpty
+                ? empty(l.readerNoOutline)
+                : mode == ReaderPanelMode.annotations &&
+                      annotations.isEmpty &&
+                      unresolvedInk.isEmpty &&
+                      inkChapters.isEmpty
+                ? empty(l.noAnnotations)
+                : ListView(
+                    padding: mode == ReaderPanelMode.thumbnails
+                        ? EdgeInsets.zero
+                        : const EdgeInsets.all(MMSizes.sidebarInset),
+                    children: switch (mode) {
+                      ReaderPanelMode.thumbnails => [
+                        for (var i = 0; i < book.chapters.length; i++)
+                          ReflowThumbnail(
+                            key: ValueKey('reflow-thumbnail-${book.chapters[i].id}'),
+                            book: book,
+                            chapterId: book.chapters[i].id,
+                            page: i + 1,
+                            selected: s.position?.chapterId == book.chapters[i].id,
+                            style: ref.watch(settingsProvider).readerStyle,
+                            onTap: () => navigate(book.position(book.chapters[i].id, 0)),
+                          ),
+                      ],
+                      ReaderPanelMode.outline => [
+                        for (final e in book.outline)
+                          entry(
+                            e.title,
+                            () => navigate(book.position(e.chapterId, e.offset)),
+                            selected: e.chapterId == s.position?.chapterId && e.title == book.title(s.position!),
+                          ),
+                      ],
+                      ReaderPanelMode.bookmarks => [
+                        for (final b in bookmarks)
+                          if (b.position case final TextReadingPosition p)
+                            Dismissible(
+                              key: ValueKey(b.id),
+                              onDismissed: (_) => workspace.removeBookmark(b.id),
+                              child: entry(
+                                b.title.isEmpty ? book.title(p, fallback: widget.document.title) : b.title,
+                                () => navigate(p),
+                                onDelete: () => workspace.removeBookmark(b.id),
+                                onRename: () async {
+                                  final name = await showRenameSheet(context, title: l.rename, initial: b.title);
+                                  if (name != null) await workspace.renameBookmark(b.id, name);
+                                },
+                                subtitle:
+                                    '${book.chapter(p.chapterId)?.canonicalText.substring(p.offset.clamp(0, book.chapter(p.chapterId)!.canonicalText.length)).characters.take(24).string ?? ''} · ${(book.progress(p) * 100).round()}%',
+                              ),
+                            ),
+                      ],
+                      ReaderPanelMode.annotations => [
+                        if (reviewCount > 0) ...[
+                          Padding(
+                            padding: const EdgeInsets.all(MMSpacing.m),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  MMIcons.warning,
+                                  color: context.mmColors.caution,
+                                  size: context.mmText.subheadline.fontSize,
+                                ),
+                                const SizedBox(width: MMSpacing.s),
+                                Text(
+                                  l.annotationsNeedReview(reviewCount),
+                                  style: context.mmText.subheadline.copyWith(color: context.mmColors.caution),
+                                ),
+                              ],
+                            ),
+                          ),
+                          for (final stroke in unresolvedInk)
+                            entry(
+                              stroke.textAnchor!.anchor.quote,
+                              () {
+                                final chapter = book.chapter(stroke.textAnchor!.anchor.chapterId);
+                                if (chapter != null) navigate(book.position(chapter.id, 0));
+                                _missing();
+                              },
+                              subtitle: l.readerNeedsReview,
+                              onDelete: () => workspace.eraseInkStrokes({stroke.id}),
+                            ),
+                          for (final a in annotations.where(needsReview))
+                            entry(
+                              a.capture == null ? a.quote : l.imageExcerpt,
+                              () async {
+                                final chapter =
+                                    book.chapter(a.textAnchors.first.chapterId) ?? book.chapters.firstOrNull;
+                                if (chapter != null) await navigate(book.position(chapter.id, 0));
+                                if (mounted) MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);
+                              },
+                              key: ValueKey('annotation-${a.id}'),
+                              onDelete: () => workspace.deleteHighlight(a.id),
+                              color: MMAnnotationColor.fromIndex(a.colorIndex).color,
+                              subtitle: book.title(
+                                book.position(
+                                  (book.chapter(a.textAnchors.first.chapterId) ?? book.chapters.first).id,
+                                  0,
+                                ),
+                                fallback: widget.document.title,
+                              ),
+                              subtitleColor: context.mmColors.caution,
+                            ),
+                          Divider(height: MMSpacing.m, thickness: 0.5, color: context.mmColors.separator),
+                        ],
+                        for (final item in annotationRows) item.row,
+                      ],
+                    },
+                  ),
           ),
         ],
       ),

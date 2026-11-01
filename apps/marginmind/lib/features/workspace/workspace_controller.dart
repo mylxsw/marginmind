@@ -1600,7 +1600,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   /// ⌘D: bookmarks the page being read, or removes the bookmark it has.
-  Future<void> toggleBookmark() async {
+  Future<void> toggleBookmark() => _changeCurrentBookmark(removeExisting: true);
+
+  /// Adds the current location without removing an existing bookmark there.
+  Future<void> addCurrentBookmark() => _changeCurrentBookmark(removeExisting: false);
+
+  Future<void> _changeCurrentBookmark({required bool removeExisting}) async {
     final documentId = state.activeDocumentId;
     final page = activePage;
     final revision = documentId == null ? null : content.document(documentId)?.revision;
@@ -1609,11 +1614,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (!ref.mounted || documentId == null || content.document(documentId)?.revision != revision) return;
     final position = content.document(documentId)?.readingPosition;
     if (position is TextReadingPosition) {
-      await _update((c) => _editor.toggleTextBookmark(c, documentId, position));
+      await _update(
+        (c) => !removeExisting && c.bookmarkAtPosition(documentId, position) != null
+            ? c
+            : _editor.toggleTextBookmark(c, documentId, position),
+      );
       return;
     }
     if (page == null) return;
-    await _update((c) => _editor.toggleBookmark(c, documentId, page));
+    await _update(
+      (c) => removeExisting ? _editor.toggleBookmark(c, documentId, page) : _editor.addBookmark(c, documentId, page),
+    );
   }
 
   Future<void> setReadingPosition(String documentId, ReadingPosition position) => _update((c) {

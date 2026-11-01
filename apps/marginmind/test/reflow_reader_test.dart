@@ -211,9 +211,13 @@ void main() {
     await tester.pumpAndSettle();
     workspace.setReaderPanelMode(ReaderPanelMode.bookmarks);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Add Bookmark'));
+    await tester.tap(find.byTooltip('Add Bookmark'));
     await tester.pumpAndSettle();
     expect(workspace.content.bookmarks.single.position, isA<TextReadingPosition>());
+    final bookmarkId = workspace.content.bookmarks.single.id;
+    await tester.tap(find.byTooltip('Add Bookmark'));
+    await tester.pumpAndSettle();
+    expect(workspace.content.bookmarks.single.id, bookmarkId);
     workspace.setReaderPanelMode(ReaderPanelMode.annotations);
     await tester.pumpAndSettle();
     expect(find.text('No Annotations'), findsOneWidget);

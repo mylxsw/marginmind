@@ -10,6 +10,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/settings/app_settings.dart';
 import 'package:marginmind/features/workspace/reader_compare.dart';
 import 'package:marginmind/features/workspace/reader_crop.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -84,6 +85,41 @@ void main() {
     await _fonts();
   });
   for (final dark in [true, false]) {
+    testWidgets(
+      'reflow navigation card ${dark ? 'dark' : 'light'}',
+      (tester) async {
+        final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
+        final doc = await storeBook(repo);
+        final container = await pumpApp(
+          tester,
+          content: repo,
+          prefs: {'settings.appearance': dark ? 'dark' : 'light', 'settings.language': 'zh'},
+        );
+        container.read(navigationProvider.notifier).openStudySet('demo-1');
+        await tester.pumpAndSettle();
+        final owner = container.read(workspaceProvider('demo-1').notifier);
+        owner.openDocument(doc.id);
+        owner.showReaderPanel(ReaderPanelMode.bookmarks);
+        await tester.pumpAndSettle();
+        final resize = tester.getRect(find.byKey(const ValueKey('reflow-sidebar-resize')));
+        final bounds = Rect.fromLTRB(
+          resize.left - container.read(settingsProvider).readerSidebarWidth,
+          resize.top,
+          resize.right,
+          resize.bottom,
+        );
+        await _save(tester, 'reflow-bookmarks-empty-${dark ? 'dark' : 'light'}', bounds: bounds);
+        await owner.addCurrentBookmark();
+        await tester.pumpAndSettle();
+        await _save(tester, 'reflow-bookmarks-${dark ? 'dark' : 'light'}', bounds: bounds);
+        owner.setReaderPanelMode(ReaderPanelMode.annotations);
+        await tester.pumpAndSettle();
+        await _save(tester, 'reflow-annotations-empty-${dark ? 'dark' : 'light'}', bounds: bounds);
+        expect(tester.takeException(), isNull);
+      },
+      skip: skip,
+      variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+    );
     testWidgets(
       'reflow grouped menu ${dark ? 'dark' : 'light'}',
       (tester) async {
