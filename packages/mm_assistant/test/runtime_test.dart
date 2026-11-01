@@ -55,7 +55,7 @@ void main() {
       call(
         'propose_map_edits',
         '{"ops":[{"id":"one","kind":"addTopic","parentId":"root","title":"New"},'
-            '{"id":"two","kind":"addNote","parentId":"new:one","title":"Details","body":"Page content"}]}',
+            '{"id":"two","kind":"addTopic","parentId":"new:one","title":"Key point"}]}',
       ),
     ]);
     final run = createAssistantRun(
@@ -85,6 +85,7 @@ void main() {
     expect(run.citations.items.single.page, 1);
     expect(run.proposals.proposals, hasLength(1));
     expect(run.proposals.proposals.values.single.operations.last.parentId, 'new:one');
+    expect(run.proposals.proposals.values.single.operations.map((op) => op.kind), everyElement(MapEditKind.addTopic));
   });
   test('invalid proposal returns actionable field and reference guidance to the model', () async {
     final client = ScriptClient([

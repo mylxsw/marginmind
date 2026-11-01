@@ -9,14 +9,19 @@ import 'permissions.dart';
 
 const mapEditProposalInstructions = '''Submit edits for user confirmation. Never executes writes.
 Each operation has a unique id and ONLY the fields listed for its kind:
-addTopic: id, kind, parentId, title (no body; use addNote for details).
-addNote: id, kind, parentId, title, body.
+addTopic: id, kind, parentId, title (no body). Use it for concepts, key points,
+examples and actionable steps that should be visible as mind-map nodes.
+Express detail through concise child topics and meaningful parent-child hierarchy.
+addNote: id, kind, parentId, title, body. An attached annotation, collapsed inside
+its owner, NOT a visible child topic. Use only for supplementary prose or an
+explicit request for notes; never put the main outline or all key points in notes.
 addReviewCard: id, kind, parentId, question, answer.
 move: id, kind, nodeId, parentId. rename: id, kind, nodeId, title.
 Use existing node IDs from the supplied graph. To reference a node added earlier
 in the SAME ops array, use new:<opId>, never the bare operation ID.
 Example: {"ops":[{"id":"topic1","kind":"addTopic","parentId":"<existing-node-id>","title":"Topic"},
-{"id":"note1","kind":"addNote","parentId":"new:topic1","title":"Details","body":"Content"}]}''';
+{"id":"topic2","kind":"addTopic","parentId":"new:topic1","title":"Key point"},
+{"id":"topic3","kind":"addTopic","parentId":"new:topic2","title":"Supporting point"}]}''';
 
 class AssistantTools {
   AssistantTools({
@@ -452,7 +457,11 @@ const skillPrompts = {
   'summarize': '总结：摘要只覆盖实际读取的范围。',
   'quiz': '出题：基于原文生成复习卡提议，不能直接写入。',
   'organize':
-      '整理：先读取原文。需要读取额外脑图分支时可调用 read_branch 请求用户授权；拒绝后使用已读内容及当前可编辑脑图的节点父子关系生成提议。保留用户内容，通过 propose_map_edits 提议修改脑图。',
+      '整理：先读取原文。需要读取额外脑图分支时可调用 read_branch 请求用户授权；拒绝后使用已读内容及当前可编辑脑图的节点父子关系生成提议。保留用户内容，通过 propose_map_edits 提议修改脑图。'
+      '默认产出可直接看到的主题节点与子节点（addTopic），把主要观点、论据、步骤按语义组织成层级。'
+      '围绕选中的节点或分支完善结构；优先复用已有节点，必要时重命名（rename）、调整层级（move），避免重复创建同义总标题。'
+      'addNote 是收在节点内的附属笔记，不能代替子节点；不要把一组主要观点全部塞进笔记。'
+      '只有补充性的长段解释或用户明确要求笔记时才用 addNote；不要擅自生成复习卡。',
   'papers': '找论文：使用 OpenAlex 元数据，元数据不等于论文全文。',
   'videos': '找视频：只给具体视频链接，没有字幕不能声称看过视频。',
 };

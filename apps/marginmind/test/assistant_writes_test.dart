@@ -61,6 +61,40 @@ void main() {
     await expectLater(executor.apply(p, {'t'}), throwsStateError);
     await workspace.abortTransaction();
   });
+  test('organizing an existing topic preserves visible child hierarchy through undo and redo', () async {
+    final owner = workspace.content.cards.firstWhere((c) => c.kind == CardKind.topic).id;
+    final proposal = MapEditProposal(
+      id: 'organized-branch',
+      studySetId: 'demo-1',
+      mapId: 'main',
+      baseRevision: assistantMapRevision(workspace.content, 'main'),
+      operations: [
+        MapEditOperation(id: 'rename', kind: MapEditKind.rename, nodeId: owner, title: '间隔重复'),
+        MapEditOperation(id: 'point', kind: MapEditKind.addTopic, parentId: owner, title: '在快要遗忘时复习'),
+        MapEditOperation(id: 'detail', kind: MapEditKind.addTopic, parentId: 'new:point', title: '按掌握程度调整间隔'),
+      ],
+    );
+    final originalTitle = workspace.content.card(owner)!.title;
+    final receipt = await executor.apply(proposal, {'rename', 'point', 'detail'});
+    final point = workspace.content.cards.singleWhere((c) => c.title == '在快要遗忘时复习');
+    final detail = workspace.content.cards.singleWhere((c) => c.title == '按掌握程度调整间隔');
+    void expectHierarchy() {
+      expect(workspace.content.card(owner)!.title, '间隔重复');
+      expect(workspace.content.card(point.id)!.kind, CardKind.topic);
+      expect(workspace.content.card(detail.id)!.kind, CardKind.topic);
+      expect(workspace.content.parentOf(point.id, mapId: 'main'), owner);
+      expect(workspace.content.parentOf(detail.id, mapId: 'main'), point.id);
+    }
+
+    expectHierarchy();
+    await workspace.undo();
+    expect(workspace.content.card(owner)!.title, originalTitle);
+    for (final id in receipt.nodeIds) {
+      expect(workspace.content.card(id), isNull);
+    }
+    await workspace.redo();
+    expectHierarchy();
+  });
   test('100 expansion topics commit once and undo/redo with one receipt', () async {
     final before = workspace.content.cards.length;
     final request = ExpansionRequest(studySetId: 'demo-1', mapId: 'main', targetIds: ['main']);
