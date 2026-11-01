@@ -332,8 +332,7 @@ class AssistantHeader extends ConsumerWidget {
           ),
           MMIconButton(
             key: const ValueKey('assistant-new'),
-            icon: MMIcons.add,
-            iconSize: 13,
+            icon: MMIcons.newConversation,
             tooltip: l.assistantNewConversation,
             onPressed: () => startNewConversation(ref, studySetId),
           ),

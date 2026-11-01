@@ -137,6 +137,7 @@ abstract final class MMIcons {
   static const IconData reading = CupertinoIcons.book; // book
   static const IconData mention = CupertinoIcons.at; // at
   static const IconData command = CupertinoIcons.slash_circle; // slash.circle
+  static const IconData newConversation = LucideIcons.messageCirclePlus;
   static const IconData conversation = CupertinoIcons.chat_bubble; // bubble.left
 
   // AI idea expansion: expand a topic, group topics under a new parent,
