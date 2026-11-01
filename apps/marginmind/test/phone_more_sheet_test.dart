@@ -141,7 +141,13 @@ void main() {
 
     final content = demoContent();
     final overrides = await testOverrides(
-      prefs: {'settings.appearance': 'light', 'settings.readerStyle': 'white', 'settings.language': 'zh'},
+      // 整理笔记 is a Beta feature; this test covers its entry.
+      prefs: {
+        'settings.appearance': 'light',
+        'settings.readerStyle': 'white',
+        'settings.language': 'zh',
+        'settings.betaFeaturesEnabled': true,
+      },
       content: InMemoryStudySetContentRepository({'demo-1': content}),
     );
 

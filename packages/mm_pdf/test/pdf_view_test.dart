@@ -19,7 +19,11 @@ void main() {
   testWidgets('right-clicking the document does not show a context menu', (tester) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(MaterialApp(home: MMPdfView(filePath: 'document.pdf', controller: controller)));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(filePath: 'document.pdf', controller: controller),
+      ),
+    );
     await _waitReady(tester, controller);
     await tester.tapAt(tester.getCenter(find.byType(PdfViewer)), buttons: kSecondaryMouseButton);
     await tester.pumpAndSettle();

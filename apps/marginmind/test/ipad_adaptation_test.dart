@@ -70,14 +70,17 @@ void main() {
       expect(find.byKey(const ValueKey('map-style-button')), findsNothing);
       expect(t.getRect(view).width, greaterThan(0));
       final readerToolbar = t.widget<MMAdaptiveToolbar>(find.byType(MMAdaptiveToolbar).first);
-      Rect readerAction(String id) =>
-          t.getRect(find.byWidget(readerToolbar.items.firstWhere((item) => item.id == id).child));
-      final layout = readerAction('layout-map');
-      final documents = readerAction('documents');
-      final assistant = readerAction('assistant');
+      // Documents are tabs now; layout and the assistant sit in the window tab row,
+      // split by a hairline divider with 10pt on each side.
       expect(readerToolbar.items.any((item) => item.id == 'compare'), false);
-      expect(documents.left - layout.right, 12);
-      expect(assistant.left - documents.right, 12);
+      expect(readerToolbar.items.any((item) => item.id == 'documents'), false);
+      final tabRow = find.byKey(const ValueKey('workspace-tab-row'));
+      final layoutControls = find.byKey(const ValueKey('workspace-layout-controls'));
+      final assistantButton = find.byKey(const ValueKey('toolbar-assistant'));
+      expect(find.descendant(of: tabRow, matching: layoutControls), findsOneWidget);
+      expect(find.descendant(of: tabRow, matching: assistantButton), findsOneWidget);
+      expect(t.getRect(assistantButton).left - t.getRect(layoutControls).right, 21);
+      expect(t.getRect(assistantButton).center.dy, closeTo(t.getRect(layoutControls).center.dy, .5));
       expect(find.byKey(const ValueKey('toolbar-organize-note')), findsNothing);
       await t.tap(find.byKey(const ValueKey('reader-more')));
       await t.pumpAndSettle();
@@ -96,7 +99,11 @@ void main() {
       await t.pumpAndSettle();
       expect(find.byKey(const ValueKey('map-locate-selected')), findsOneWidget);
       expect(find.text('定位选中节点'), findsNothing);
-      for (final label in ['添加子主题', '在后面添加同级节点', '添加关联线', '添加概要', '添加笔记', '插入图片…', '标签…', '显示详情', '多选']) {
+      // Node commands moved to the node and selection bars; More keeps map-level actions.
+      for (final label in ['添加子主题', '在后面添加同级节点', '添加关联线', '添加概要', '添加笔记', '插入图片…', '标签…', '显示详情']) {
+        expect(find.text(label), findsNothing);
+      }
+      for (final label in ['多选']) {
         final row = find.ancestor(of: find.text(label), matching: find.byType(MMDropdownItem<VoidCallback>));
         expect(row, findsOneWidget);
         expect(

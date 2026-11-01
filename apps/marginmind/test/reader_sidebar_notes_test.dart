@@ -123,7 +123,14 @@ void main() {
       final repository = InMemoryStudySetContentRepository({
         'demo-1': demoContent().copyWith(annotations: [], marginNotes: [lineNote, quoteNote]),
       });
-      final container = await pumpApp(tester, renderPdf: true, content: repository, size: const Size(1800, 1000));
+      // Selecting highlight rows for note organization is a Beta feature.
+      final container = await pumpApp(
+        tester,
+        renderPdf: true,
+        content: repository,
+        size: const Size(1800, 1000),
+        prefs: const {'settings.betaFeaturesEnabled': true},
+      );
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await drain(tester);
       final workspace = container.read(workspaceProvider('demo-1').notifier);

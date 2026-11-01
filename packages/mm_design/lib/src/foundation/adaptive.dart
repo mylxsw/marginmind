@@ -63,6 +63,7 @@ class MMInputState {
   bool get tablet => touchPlatform && !phone;
   final bool touch;
   final bool touchInput;
+
   /// Host timing for mouse double clicks; touch retains Flutter's timing.
   final Duration doubleClickInterval;
 

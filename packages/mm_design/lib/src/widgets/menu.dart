@@ -372,10 +372,7 @@ class _MenuRow extends StatelessWidget {
                           style: t.body.copyWith(color: fg),
                         ),
                       ),
-                      if (item.badge != null) ...[
-                        const SizedBox(width: 6),
-                        item.badge!,
-                      ],
+                      if (item.badge != null) ...[const SizedBox(width: 6), item.badge!],
                     ],
                   ),
                 ),
@@ -530,10 +527,7 @@ class _ActionSheetRow extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (badge != null) ...[
-                      const SizedBox(width: 6),
-                      badge!,
-                    ],
+                    if (badge != null) ...[const SizedBox(width: 6), badge!],
                   ],
                 ),
               ),

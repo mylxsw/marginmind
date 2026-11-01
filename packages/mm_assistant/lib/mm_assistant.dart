@@ -31,3 +31,5 @@ export 'src/expansion.dart';
 
 export 'src/translation_scheduler.dart';
 export 'src/map_generation.dart';
+
+export 'src/model_policy/compiler.dart';

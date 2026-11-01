@@ -149,25 +149,29 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
             ? Semantics(
                 button: true,
                 enabled: widget.enabled,
-                child: MMControlFrame(
-                  child:
-                      widget.child ??
-                      Container(
-                        width: MMSizes.tabletControlVisual,
-                        height: MMSizes.tabletControlVisual,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: _open ? c.accentTint : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: IconTheme(
-                          data: IconThemeData(
-                            size: MMSizes.tabletToolbarIcon,
-                            color: !widget.enabled ? c.label.withValues(alpha: .3) : (_open ? c.accent : c.label),
+                // An icon button in a thumb dock keeps the dock's button geometry.
+                child: SizedBox.fromSize(
+                  size: MMThumbDockScope.of(context) && widget.child == null ? button : null,
+                  child: MMControlFrame(
+                    child:
+                        widget.child ??
+                        Container(
+                          width: MMSizes.tabletControlVisual,
+                          height: MMSizes.tabletControlVisual,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: _open ? c.accentTint : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: widget.icon ?? const Icon(Icons.more_vert),
+                          child: IconTheme(
+                            data: IconThemeData(
+                              size: MMSizes.tabletToolbarIcon,
+                              color: !widget.enabled ? c.label.withValues(alpha: .3) : (_open ? c.accent : c.label),
+                            ),
+                            child: widget.icon ?? const Icon(Icons.more_vert),
+                          ),
                         ),
-                      ),
+                  ),
                 ),
               )
             : widget.child,

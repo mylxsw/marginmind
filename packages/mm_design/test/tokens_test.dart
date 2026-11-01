@@ -205,7 +205,10 @@ void main() {
     // The sheet holds its label column; the diff panel leaves the map its
     // minimum width beside it on a regular window.
     expect(MMSizes.mapGenerateLabelWidth * 4, lessThan(MMSizes.mapGenerateSheetWidth));
-    expect(MMSizes.mapGenerateSheetWidth, MMSizes.noteSetupSheetWidth);
+    // The generation sheet now has separate settings and preview panes.
+    expect(MMSizes.mapGenerateSheetWidth, 760);
+    expect(MMSizes.mapGenerateSheetWidth, greaterThan(MMSizes.mapGenerateTwoPaneWidth));
+    expect(MMSizes.mapGenerateSettingsWidth, lessThan(MMSizes.mapGenerateTwoPaneWidth));
     expect(
       MMSizes.mapDiffPanelWidth + MMSizes.mapMinWidth,
       lessThanOrEqualTo(MMSizes.windowMinSize.width - MMSizes.sidebarWidth),

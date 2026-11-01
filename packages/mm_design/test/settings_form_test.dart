@@ -74,14 +74,22 @@ void main() {
     expect(find.text('Beta'), findsOneWidget);
     await tester.tap(find.text('Beta'));
     await tester.pumpAndSettle();
-    // The menu marks the current value.
+    // Scope the check to the interactive menu item, independent of nested
+    // label/badge rows. The other choice must remain unchecked.
     final beta = find.text('Beta').last;
     expect(
       find.descendant(
-        of: find.ancestor(of: beta, matching: find.byType(Row)).first,
+        of: find.ancestor(of: beta, matching: find.byType(MMInteractive)).first,
         matching: find.byIcon(MMIcons.check),
       ),
       findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.ancestor(of: find.text('Alpha'), matching: find.byType(MMInteractive)).first,
+        matching: find.byIcon(MMIcons.check),
+      ),
+      findsNothing,
     );
     await tester.tap(find.text('Alpha'));
     await tester.pumpAndSettle();
