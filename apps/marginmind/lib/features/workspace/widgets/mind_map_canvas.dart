@@ -3324,14 +3324,19 @@ class _NodeView extends StatelessWidget {
         child: Stack(
           children: [
             if (spec.kind == _Kind.research)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 3,
+              Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.horizontal(left: Radius.circular(radius)),
-                  child: ColoredBox(color: c.research),
+                  // Clip against the whole card, so the stripe follows its
+                  // corners instead of rounding a separate narrow rectangle.
+                  borderRadius: BorderRadius.circular(flatRadius),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: 3,
+                      height: double.infinity,
+                      child: ColoredBox(color: c.research),
+                    ),
+                  ),
                 ),
               ),
             Positioned(
