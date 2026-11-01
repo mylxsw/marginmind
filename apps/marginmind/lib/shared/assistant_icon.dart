@@ -6,11 +6,15 @@ import '../settings/app_settings.dart';
 
 /// Assistant identity, following the user's saved colour preference.
 class AssistantIcon extends ConsumerWidget {
-  const AssistantIcon({super.key, this.size});
+  const AssistantIcon({super.key, this.size, this.thinking = false});
 
   final double? size;
+  final bool thinking;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      MMAssistantIcon(palette: ref.watch(settingsProvider.select((settings) => settings.assistantIcon)), size: size);
+  Widget build(BuildContext context, WidgetRef ref) => MMAssistantIcon(
+    palette: ref.watch(settingsProvider.select((settings) => settings.assistantIcon)),
+    size: size,
+    thinking: thinking,
+  );
 }

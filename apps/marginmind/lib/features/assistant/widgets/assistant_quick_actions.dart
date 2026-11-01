@@ -472,7 +472,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                           tooltip: l.back,
                           onPressed: running ? null : () => setState(() => _menu = true),
                         ),
-                      const AssistantIcon(size: 17),
+                      AssistantIcon(size: 17, thinking: running),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

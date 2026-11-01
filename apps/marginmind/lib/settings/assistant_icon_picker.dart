@@ -27,7 +27,12 @@ class AssistantIconPicker extends ConsumerWidget {
               value: palette,
               label: label,
               tooltip: label,
-              child: MMAssistantIcon(key: ValueKey('assistant-icon-${palette.name}'), palette: palette, size: 20),
+              child: MMAssistantIcon(
+                key: ValueKey('assistant-icon-${palette.name}'),
+                palette: palette,
+                size: 20,
+                animated: false,
+              ),
             ),
         ],
       ),

@@ -280,6 +280,7 @@ class AssistantHeader extends ConsumerWidget {
     final t = context.mmText;
     final l = context.l10n;
     final history = ref.watch(assistantUiProvider(studySetId).select((s) => s.history));
+    final thinking = ref.watch(assistantControllerProvider.select((conversation) => conversation.running));
     final ui = ref.read(assistantUiProvider(studySetId).notifier);
     return Container(
       height: 52,
@@ -301,7 +302,12 @@ class AssistantHeader extends ConsumerWidget {
                     color: c.research.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(child: AssistantIcon(size: context.mmTouchPlatform ? 20 : context.mmToolbarIcon)),
+                  child: Center(
+                    child: AssistantIcon(
+                      size: context.mmTouchPlatform ? 20 : context.mmToolbarIcon,
+                      thinking: thinking,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: MMSpacing.s),
                 Expanded(
