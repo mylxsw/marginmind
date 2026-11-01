@@ -82,7 +82,8 @@ abstract final class MMSizes {
   static const double phoneSheetPadding = 8;
   static const double hairline = .5;
   static const double nodeStroke = 1;
-  static const double paneHeaderHeight = 52;
+  static const double paneHeaderHeight = 44;
+  static const double tabletPaneHeaderHeight = 52;
   static const double phoneWorkspaceToolbarHeight = 50;
   static const double thumbDock = 56;
   static const Size thumbDockButton = Size(46, 44);
