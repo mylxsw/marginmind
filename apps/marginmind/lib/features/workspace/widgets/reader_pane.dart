@@ -817,7 +817,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         MMDropdownSubmenu<VoidCallback>.items(
           key: const ValueKey('reader-appearance'),
           label: l.readerTheme,
-          icon: MMIcons.appearance,
           width: 220,
           itemBuilder: (_) => [
             for (final value in MMReaderStyle.values)
@@ -919,7 +918,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       MMDropdownSubmenu<Object>.items(
         key: const ValueKey('reader-appearance'),
         label: l.readerAppearance,
-        icon: MMIcons.appearance,
         width: 220,
         itemBuilder: (_) => [
           for (final value in MMReaderStyle.values)
@@ -1208,13 +1206,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     height: 32,
     child: Row(
       children: [
-        Icon(switch (value) {
-          MMReaderStyle.white => MMReaderIcons.white,
-          MMReaderStyle.dark => MMReaderIcons.dark,
-          MMReaderStyle.paper => MMReaderIcons.paper,
-          MMReaderStyle.green => MMReaderIcons.green,
-        }, size: MMSizes.dropdownIcon),
-        const SizedBox(width: MMSpacing.s),
         Container(
           key: ValueKey('reader-style-preview-${value.name}'),
           width: 30,
