@@ -114,7 +114,7 @@ class PhoneReaderTopControls extends StatelessWidget {
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Icon(
-                                                    value == MMSplitMode.primary ? MMIcons.ebook : MMIcons.network,
+                                                    value == MMSplitMode.primary ? MMIcons.ebook : MMIcons.mindMap,
                                                     size: MMSpacing.l,
                                                     color: mode == value ? c.label : c.secondaryLabel,
                                                   ),

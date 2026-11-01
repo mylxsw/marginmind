@@ -106,10 +106,9 @@ void main() {
         MMIcons.underline,
         MMIcons.copy,
         MMIcons.quoteBubble,
-        MMIcons.addNote,
-        MMIcons.network,
+        MMIcons.mindMap,
         MMIcons.translate,
-        MMIcons.ai,
+        null, // Assistant uses a custom icon widget.
       ]);
       await screenshot(tester, 'selection-toolbar-${dark ? 'dark' : 'light'}', target: toolbar);
       await tester.tap(find.descendant(of: toolbar, matching: find.byType(AnnotationColorButton)));

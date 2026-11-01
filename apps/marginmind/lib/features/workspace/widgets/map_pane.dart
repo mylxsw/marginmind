@@ -1241,20 +1241,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                                 constraints: BoxConstraints(
                                                   maxWidth: min(180.0, paneConstraints.maxWidth * .42),
                                                 ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(MMIcons.mindMap, size: 16, color: c.accent),
-                                                    const SizedBox(width: MMSpacing.s),
-                                                    Flexible(
-                                                      child: Text(
-                                                        rootTitle,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                        style: context.mmText.headline,
-                                                      ),
-                                                    ),
-                                                  ],
+                                                child: Text(
+                                                  rootTitle,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: context.mmText.headline,
                                                 ),
                                               ),
                                             ),
