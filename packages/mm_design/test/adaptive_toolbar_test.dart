@@ -3,6 +3,73 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  testWidgets('empty menus stay hidden until a command overflows', (tester) async {
+    final semantics = tester.ensureSemantics();
+    var invoked = false;
+    Widget toolbar(double width, {bool command = true, bool menuEntry = false}) => MaterialApp(
+      theme: MMTheme.light(),
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: width,
+            height: 52,
+            child: MMAdaptiveToolbar(
+              menuLabel: 'More',
+              items: [
+                if (command)
+                  MMToolbarItem(
+                    id: 'command',
+                    child: SizedBox(
+                      width: 100,
+                      child: TextButton(onPressed: () {}, child: const Text('Command')),
+                    ),
+                    menuEntry: MMDropdownItem<VoidCallback>(
+                      value: () => invoked = true,
+                      child: const Text('Overflow command'),
+                    ),
+                  ),
+              ],
+              menuEntries: [if (menuEntry) MMDropdownItem<VoidCallback>(value: () {}, child: const Text('Settings'))],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(toolbar(100, command: false));
+    expect(find.byTooltip('More').hitTestable(), findsNothing);
+    expect(find.bySemanticsLabel('More'), findsNothing);
+
+    // The command fits exactly when no empty menu reserves space.
+    await tester.pumpWidget(toolbar(100));
+    expect(find.text('Command').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('More').hitTestable(), findsNothing);
+    expect(find.bySemanticsLabel('More'), findsNothing);
+
+    await tester.pumpWidget(toolbar(60));
+    expect(find.text('Command').hitTestable(), findsNothing);
+    expect(find.byTooltip('More').hitTestable(), findsOneWidget);
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Overflow command'));
+    await tester.pumpAndSettle();
+    expect(invoked, isTrue);
+
+    await tester.pumpWidget(toolbar(100));
+    await tester.pumpAndSettle();
+    expect(find.text('Command').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('More').hitTestable(), findsNothing);
+
+    await tester.pumpWidget(toolbar(200, menuEntry: true));
+    expect(find.byTooltip('More').hitTestable(), findsOneWidget);
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('measures controls in first frame and invokes overflow commands', (tester) async {
     final semantics = tester.ensureSemantics();
     try {
