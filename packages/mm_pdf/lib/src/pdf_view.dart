@@ -1049,10 +1049,11 @@ class _MMPdfViewState extends State<MMPdfView> {
   /// keeps pdfrx's own bounds.
   EdgeInsets? _boundaryMargin(Size viewport) {
     if (widget.crop?.enabled == true && widget.cropEditorBuilder == null && _controller.isReady) {
-      // The original reading line can lie near the first/last page edge.
-      // Permit that point to stay on the 25% line after removing whitespace.
+      // Keep the last reading line reachable after removing whitespace.
+      // Do not extend the top boundary: restoring a first-page reading line
+      // must clamp to the document start rather than expose a blank viewport.
       final height = viewport.height / _fitZoom;
-      return EdgeInsets.only(top: height * .25, bottom: math.max(widget.bottomInset / _fitZoom, height * .75));
+      return EdgeInsets.only(bottom: math.max(widget.bottomInset / _fitZoom, height * .75));
     }
     return widget.bottomInset > 0 ? EdgeInsets.only(bottom: widget.bottomInset / _fitZoom) : null;
   }

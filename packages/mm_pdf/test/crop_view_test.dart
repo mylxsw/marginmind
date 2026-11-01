@@ -11,6 +11,47 @@ import 'reading_probe_test.dart' show ready, close;
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
+  testWidgets('the first page cannot be pulled down into a blank viewport after crop or zoom', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    for (final cropped in [false, true]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(
+            filePath: 'top-boundary.pdf',
+            controller: controller,
+            topInset: 48,
+            bottomInset: 60,
+            crop: cropped ? DocumentCrop(all: CropInsets(top: 36, bottom: 80)) : null,
+          ),
+        ),
+      );
+      await ready(tester, () => controller.isReady);
+      await tester.pumpAndSettle();
+      final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+      for (final factor in [.5, 1.0, 2.0]) {
+        final zoom = controller.setWidthZoom(factor);
+        await tester.pumpAndSettle();
+        await zoom;
+        await controller.scrollByScreenDistance(-100000);
+        await tester.pumpAndSettle();
+        final top = pdf.documentToLocal(pdf.layout.pageLayouts.first.topLeft).dy;
+        final expected = pdf.layout.pageLayouts.first.top * pdf.currentZoom;
+        expect(top, closeTo(expected, .01));
+        for (var i = 0; i < 5; i++) {
+          await tester.sendEventToBinding(
+            PointerScrollEvent(position: tester.getCenter(find.byType(PdfViewer)), scrollDelta: const Offset(0, -2000)),
+          );
+          await tester.pump();
+        }
+        await tester.drag(find.byType(PdfViewer), const Offset(0, 300));
+        await tester.pumpAndSettle();
+        expect(pdf.documentToLocal(pdf.layout.pageLayouts.first.topLeft).dy, closeTo(top, .01));
+      }
+      await close(tester);
+    }
+  });
+
   testWidgets('screen-distance scrolling stays exact across crop, zoom and clamped reversal', (tester) async {
     for (final cropped in [false, true]) {
       final controller = MMPdfViewController();
@@ -90,8 +131,8 @@ void main() {
     expect(controller.readingPosition!.page, firstPosition.page);
     expect(
       controller.readingPosition!.y,
-      closeTo(firstPosition.y, 1),
-      reason: 'the first page needs top boundary space',
+      closeTo(controller.clampedReadingPosition(firstPosition)!.y, 1),
+      reason: 'restoring near the first page clamps to the top without adding blank space',
     );
     await mount(null);
     final jump = controller.jumpToReadingPosition(PdfReadingPosition(page: 2, y: 420));
