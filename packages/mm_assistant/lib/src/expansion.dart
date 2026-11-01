@@ -358,6 +358,7 @@ class ModelIdeaExpander implements IdeaExpander {
       if (text.length > mapResponseCharacters) throw const ResearchFailure(ResearchFailureKind.budget);
       for (final line in text.split('\n')) {
         cancel.check();
+        if (_closed) throw const ResearchFailure(ResearchFailureKind.cancelled);
         if (line.trim().isNotEmpty) yield line;
       }
       if (check(text).issues.any((issue) => !{'missingDepth', 'missingTargets'}.contains(issue.code))) {

@@ -282,4 +282,40 @@ void main() {
       expect(job.isCancelled, isFalse);
     }
   });
+  test('closing after the first released line suppresses buffered late output', () async {
+    final map = ModelMapGenerator.runtime(
+      (system, payload, cancel, validate) async =>
+          covered('${fixtures.point}\n{"k":"point","id":"q","parent":"ROOT","title":"Late"}', payload),
+    );
+    final iterator = StreamIterator(map.readChapter(fixtures.chapter(), CancellationToken()));
+    expect(await iterator.moveNext(), isTrue);
+    await map.close();
+    await expectLater(
+      iterator.moveNext(),
+      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled)),
+    );
+    await iterator.cancel();
+    final ideas = ModelIdeaExpander.runtime(
+      (system, payload, cancel, validate) async =>
+          '{"ref":"a","parent":"T1","title":"First"}\n{"ref":"b","parent":"T1","title":"Late"}',
+    );
+    final ideaIterator = StreamIterator(
+      ideas.expand(
+        ExpansionRequest(studySetId: 's', mapId: 'm', targetIds: ['target']),
+        ExpansionContext(
+          targets: {'T1': 'target'},
+          details: {'T1': ExpansionTargetContext(title: 'Root')},
+          draftPrefix: 'd-',
+        ),
+        CancellationToken(),
+      ),
+    );
+    expect(await ideaIterator.moveNext(), isTrue);
+    ideas.close();
+    await expectLater(
+      ideaIterator.moveNext(),
+      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled)),
+    );
+    await ideaIterator.cancel();
+  });
 }

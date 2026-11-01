@@ -89,7 +89,8 @@ void _validatePoints(List<MapLine> points) {
 /// A stalled request can be retried without limiting the whole document.
 const mapGenerationRequestTimeout = Duration(minutes: 2);
 
-/// Single-call adapter. The host owns the three-worker queue, retries and cache.
+/// Domain stages and parsers. Production uses the runtime constructor; the host
+/// owns the three-worker chapter queue and durable chapter cache.
 class ModelMapGenerator implements MapGenerator {
   ModelMapGenerator(
     this.connection,
@@ -369,6 +370,7 @@ class ModelMapGenerator implements MapGenerator {
     if (prior?.complete == true) {
       for (final raw in prior!.accepted) {
         cancel.check();
+        if (_closed) throw const ResearchFailure(ResearchFailureKind.cancelled);
         final line = parseMapLine(raw, parser);
         if (line != null) yield line;
       }
@@ -573,6 +575,7 @@ class ModelMapGenerator implements MapGenerator {
       if (text.length > mapResponseCharacters) throw const ResearchFailure(ResearchFailureKind.budget);
       for (final line in text.split('\n')) {
         cancel.check();
+        if (_closed) throw const ResearchFailure(ResearchFailureKind.cancelled);
         if (line.trim().isNotEmpty) yield line;
       }
       return;
