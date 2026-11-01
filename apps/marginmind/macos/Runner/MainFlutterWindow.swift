@@ -154,7 +154,7 @@ class MainFlutterWindow: NSWindow {
     if #available(macOS 15.0, *) { nativeToolbar.allowsDisplayModeCustomization = false }
     toolbar = nativeToolbar
     nativeToolbar.isVisible = true
-    toolbarStyle = .unifiedCompact
+    toolbarStyle = .unified
   }
 
   // The toolbar only enlarges the native button container in windowed mode.

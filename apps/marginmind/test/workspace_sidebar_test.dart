@@ -112,13 +112,13 @@ void main() {
     final home = find.byKey(const ValueKey('workspace-home')).hitTestable();
     final hide = find.byKey(const ValueKey('workspace-hide-sidebar')).hitTestable();
     expect(inSidebar(find.text('认知科学入门')), findsNothing);
-    expect(tester.getCenter(home).dy, 20);
-    expect(tester.getCenter(hide).dy, 20);
+    expect(tester.getCenter(home).dy, 26);
+    expect(tester.getCenter(hide).dy, 26);
     expect(tester.getCenter(home).dx, lessThan(tester.getCenter(hide).dx));
     await tester.tap(hide);
     await tester.pumpAndSettle();
     final show = find.byKey(const ValueKey('workspace-show-sidebar')).hitTestable();
-    expect(tester.getCenter(show).dy, 20);
+    expect(tester.getCenter(show).dy, 26);
     expect(tester.getSize(find.byKey(const ValueKey('workspace-tab-row'))).height, MMSizes.desktopWindowTitlebarHeight);
     await tester.tap(show);
     await tester.pumpAndSettle();

@@ -140,7 +140,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
             key: ValueKey('workspace-tab-item-${state.tabs.open[i].id}'),
             padding: EdgeInsets.only(
               top: math.min(
-                context.mmTouchPlatform ? 6 : 0,
+                context.mmTouchPlatform ? 6 : 8,
                 math.max(0, bounds.maxHeight - (context.mmTouchPlatform ? 44 : 30)),
               ),
             ),

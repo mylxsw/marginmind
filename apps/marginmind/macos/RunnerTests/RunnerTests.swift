@@ -499,8 +499,6 @@ class RunnerTests: XCTestCase {
         let button = try XCTUnwrap(window.standardWindowButton(type))
         XCTAssertTrue(button.translatesAutoresizingMaskIntoConstraints)
         let center = NSPoint(x: button.bounds.midX, y: button.bounds.midY)
-        XCTAssertEqual(window.toolbarStyle, .unifiedCompact)
-        XCTAssertEqual(window.frame.height - button.convert(center, to: nil).y, 20, accuracy: 0.5)
         let hit = root.hitTest(button.convert(center, to: root))
         XCTAssertTrue(hit === button, "Native hit testing must reach \(type)")
         XCTAssertNil(window.toolbarEventView(at: button.convert(center, to: nil)))

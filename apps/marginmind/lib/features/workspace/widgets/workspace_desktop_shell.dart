@@ -84,7 +84,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   ),
                 ),
                 child: CustomMultiChildLayout(
-                  delegate: _WorkspaceTitlebarLayout(),
+                  delegate: _WorkspaceTitlebarLayout(controlCenterY: MMSizes.windowTitlebarHeight / 2),
                   children: [
                     LayoutId(
                       id: _TitlebarSlot.leading,
@@ -132,10 +132,6 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                             Container(
                               key: const ValueKey('workspace-layout-controls'),
                               padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: c.quaternaryFill,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -372,10 +368,18 @@ enum _TitlebarSlot { leading, title, trailing }
 /// Reserve each side control's actual width so tabs start beside the leading
 /// controls without overlapping the trailing actions.
 class _WorkspaceTitlebarLayout extends MultiChildLayoutDelegate {
+  _WorkspaceTitlebarLayout({required this.controlCenterY});
+
+  final double controlCenterY;
   @override
   void performLayout(Size size) {
-    final centerY = size.height / 2;
-    final sideConstraints = BoxConstraints(maxWidth: size.width / 2, maxHeight: size.height);
+    // Keep the native button center independent of the compact tab-row height.
+    // Constrain the control band so its hit targets stay inside the row.
+    final centerY = controlCenterY.clamp(0.0, size.height);
+    final sideConstraints = BoxConstraints(
+      maxWidth: size.width / 2,
+      maxHeight: 2 * math.min(centerY, size.height - centerY),
+    );
     final leading = layoutChild(_TitlebarSlot.leading, sideConstraints);
     final trailing = layoutChild(
       _TitlebarSlot.trailing,
@@ -391,5 +395,5 @@ class _WorkspaceTitlebarLayout extends MultiChildLayoutDelegate {
   }
 
   @override
-  bool shouldRelayout(_WorkspaceTitlebarLayout oldDelegate) => false;
+  bool shouldRelayout(_WorkspaceTitlebarLayout oldDelegate) => oldDelegate.controlCenterY != controlCenterY;
 }

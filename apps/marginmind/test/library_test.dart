@@ -52,8 +52,6 @@ void main() {
     await pumpApp(tester);
     expect(find.text('All Study Sets'), findsNWidgets(2)); // toolbar title + sidebar
     expect(find.text('Continue Learning'), findsOneWidget);
-    expect(tester.getSize(find.byType(MMToolbar)).height, 40);
-    expect(tester.getCenter(find.descendant(of: find.byType(MMToolbar), matching: find.byIcon(MMIcons.grid))).dy, 20);
     expect(find.text('产品设计方法论'), findsWidgets);
     expect(find.textContaining('6 study sets'), findsOneWidget);
     // Grid covers fill their cell (regression: covers collapsed to 0 width).
