@@ -86,6 +86,7 @@ abstract final class MMIcons {
   static const IconData inkArrow = LucideIcons.arrowUpRight;
   static const IconData inkEraser = LucideIcons.eraser;
   static const IconData undo = LucideIcons.undo2;
+  static const IconData redo = LucideIcons.redo2;
   static const IconData text = LucideIcons.type;
   static const IconData syncToMap = LucideIcons.gitBranch;
   static const IconData layoutReader = LucideIcons.fileText;

@@ -21,6 +21,7 @@ import 'reader_pane.dart';
 import 'right_panel.dart';
 import 'workspace_sidebar.dart';
 import 'workspace_toolbar.dart';
+import 'workspace_history_controls.dart';
 import 'workspace_tab_strip.dart';
 import 'workspace_tabbed_content.dart';
 
@@ -92,14 +93,20 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                             _ => 0,
                           },
                         ),
-                        child: !sidebarVisible || touch
-                            ? MMIconButton(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!sidebarVisible || touch)
+                              MMIconButton(
                                 key: const ValueKey('workspace-show-sidebar'),
                                 icon: MMIcons.sidebar,
                                 tooltip: l.showSidebar,
                                 onPressed: onShowSidebar,
-                              )
-                            : const SizedBox.shrink(),
+                              ),
+                            WorkspaceHistoryControls(studySetId: studySetId),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
                       ),
                     ),
                     LayoutId(
