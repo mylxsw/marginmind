@@ -61,36 +61,42 @@ place 示例：
 
 导出是纯函数：`NoteExportResult.attachments` 返回目标相对路径 → 学习集资源路径，调用方实际复制图片到附件目录。YAML 使用 JSON 标量/数组语法安全转义；出处页码链接为 `[[书名#p12]]`。默认中文导出标题属于导出文件内容，不新增界面文案。PDF、Word、富文本和 UI 不在本任务范围。
 
-## 模型实现（GUL-589）
+## Heavy Runtime（GUL-653）
 
-`mm_assistant.ModelNoteOrganizer` 实现原端口，应用使用
-`features/assistant/note_organizer_factory.dart:createModelNoteOrganizer` 从现有
-`AssistantServicesStore` 选择模型，通过 `assistantModelKey` 读取原钥匙串账户，复用
-`connectAssistant`。实现放在纯 Dart 的 `mm_assistant`，便于直接用假 `LLMClient` 测试；
-应用仅负责平台配置，不引入另一套 Key 或设置。
+生产入口 `noteSessionFactoryProvider` → `createModelNoteOrganizer` →
+`RuntimeNoteOrganizer` / `PersistentNoteStages` → `PersistentTaskAssembly`。
+组织、提纲、分节生成、增量安置、解释、改写和复习问题全部使用 `study_notes`，
+不再读取旧目录的默认模型，不在失败后自动切换到旧模型或本地 AI 替代实现。
+用户明确选择“只排版”仍使用 `LocalNoteOrganizer`。
 
-- 一个实例对应一次用户整理会话，不设置应用层累计输入字符数、输出 token、响应字节或总时长限制。
-  每次模型请求独立超时（默认 2 分钟），不会把等待编辑提纲的时间或前面章节的耗时算入下一次请求。
-  整理器不主动发送 `maxTokens`，单次输出容量由模型服务及其协议决定；实际截断仍作为模型输出未完成处理。
-  应用工厂创建连接时显式使用 `budget: null`，避免传输层重新引入默认的累计字节及会话时限。
-- `estimate(materials)` 在发送前返回划线数、其他素材数、原文及上下文字数、模型名。
-  字数是源材料预估，不是累计请求预算；协议、schema、重试和多轮请求也计入实际预算。
-- `writeSections` 返回 `Stream<NoteDraftSection>`：每个请求写一节，整节通过校验后立即发出；
-  `write` 是其兼容聚合接口。空提纲节跳过，跨节引用按过滤后的全局节序号解释。
-- `onProgress` 提供阶段及 1-based `current/total`。超过 200 条划线按章节分批，单章过大再切分，
-  保持原短 ID；先生成批次提纲，再合并。只排版和按原文/脑图组织的提纲走本地规则。
-- 每次结构错误只重试一次；outline/place 回退到 `LocalNoteOrganizer`，通过 `onFallback` 和
-  `failures` 暴露 `NoteSchemaFailure`。outline 失败后 write 使用本地输出；write 失败时保留已经
-  发出的节，当前及后续节仅输出本地引用。宿主应监听此诊断，不以领域 runner 的 `usedFallback`
-  推断模型服务内部是否回退。返回的内容仍需交给 `NoteAssembler` 核对 ID 和重复引用。
-- `cancel()` 中止当前请求；`completedSections` 保留完整节。网络、预算、截断和取消不会触发
-  结构回退。宿主在结束会话时调用 `close()` 释放连接。
-- `explain`、`rewrite`（rephrase/concise/expand）、`reviewQuestion` 返回校验后的文字。
-  编辑类操作结构错误两次后抛 `NoteSchemaFailure`，由宿主保留原段落，不伪造本地解释。
-- 提示词嵌入与契约同源的 schema；输出由领域 DTO 严格校验；额外校验单节响应及互斥插入锚点。
-  `schema.dart` 与 JSON 契约的一致性由测试检查。没有工具调用，原文仅作为不可信数据发送。
+领域导出 `studyNotesSpec`、`studyNotesKnowledge`（`notes.organize@2`）、
+`registerStudyNotesTask`。公共设置的 12 项 specs 聚合由父任务完成；
+本领域预检已经使用真实 spec（tools + historyReplay），未知能力在发送前拒绝。
+应用领域工厂提供知识版本与注册，不覆盖公共 provider 或兄弟任务工厂。
+历史 `ModelNoteOrganizer` 仅保留原有离线回归/独立诊断工具兼容，生产会话不构造它。
 
-真实接口复现入口：在 `packages/mm_assistant` 下运行
-`dart run tool/note_organizer_smoke.dart`，通过本地秘密管理器注入
-`NOTE_AI_PROVIDER=claude|compatible`、`NOTE_AI_ENDPOINT`、`NOTE_AI_MODEL`、`NOTE_AI_KEY`。
-脚本使用两条自写的示例学习材料，只输出模型名、提纲、笔记 JSON 和回退操作名，不打印 Key 或原始请求错误。
+- 每个用户会话冻结模型、思考策略、单次输出上限和知识版本。内部阶段继承父快照，
+  不随设置编辑更换模型。每次实际分发仍重新检查服务与凭据。
+- 没有任意整任务字符数、token 总额或会话总时长配额。单次输出上限为 8192，
+  与服务能力上限取小值；每个请求受 Runtime 的容量/传输/超时边界约束。
+  输入以完整 JSON 编码大小和冻结模型容量进行保守分块，包含上下文、schema、工具和修复预留。
+  少量超长材料也拆分，保留同一材料 ID 和片段偏移；不再以 200 条划线作为容量判断。
+  超长改写和解释也逐片段完成。无法容纳的单条元数据或复习问题明确拒绝，不截断原文。
+- 提纲保留各容量批次的主题组，在可编辑提纲中汇集，不把所有原文重新塞进一个合并请求。
+  分节内部也可拆分；只发布完整章节。引文/手写材料始终用 ID 返回，重复片段引用在领域装配前去重。
+- 校验材料 ID、材料类型、唯一覆盖、请求章节标题、全局跨节索引和真实插入锚点。
+  结构错误由 Runtime 有限修复；覆盖遗漏以 partial 持久化，只对缺失 ID 发起一次修复阶段。
+  已验证内容不再次消费。修复仍缺失或非法时保留阶段存档并报错，不能伪装成功。
+  用户在提纲中有意未分配的材料保留在未用清单，并使会话摘要为 partial。
+- 每个阶段有持久化指纹与结果。恢复已完成阶段直接加载结果；中断阶段须由用户“继续”明确恢复。
+  取消/失败的再次尝试使用新阶段 ID，旧记录不变。保存失败保留待保存的验证结果；
+  下一次继续先保存，不能重新请求模型。笔记写入失败后的改写重试也复用原会话阶段。
+- 每个完整章节通过既有 `acceptNoteDraft` / `NoteAssembler` 保存，续写状态（材料字典、提纲、
+  已验证章节、冻结会话 ID）按版本持久化，重启后可继续。保存前核对现有来源仍存在且文字相同。
+  原始摘录、用户手写块、revision、人工确认、撤销与增量预览继续使用原领域层。
+  模型/提示版本更新不会自动删除已有成果；不兼容的续写版本拒绝恢复并保留原存档。
+- 固定规则与 JSON schema 处于系统层；原文和用户笔记只进入用户/工具数据。
+  `read_selection` 只能读取当前阶段的授权材料，不能扩大范围或执行写入。
+
+本地验证仅覆盖命名回归、定向分析和格式检查。SDK/HTTP fixture 不是实际模型质量证明；
+未使用真实服务凭据，未知生产组合仍然 unknown。实体 macOS/iOS 操作和语义质量留待真实环境验收。

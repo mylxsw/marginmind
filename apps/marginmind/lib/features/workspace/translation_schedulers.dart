@@ -8,7 +8,7 @@ import 'package:mm_core/mm_core.dart';
 
 import '../../app/providers.dart';
 import '../assistant/assistant_settings.dart';
-import 'reader_translation.dart';
+import 'document_translation_runtime.dart';
 
 final translationStoreProvider = FutureProvider.family<TranslationStore, String>((ref, setId) {
   final repository = ref.watch(contentRepositoryProvider);
@@ -57,9 +57,6 @@ final translationSchedulersProvider = Provider.autoDispose.family<TranslationSch
   ref.listen<bool>(translationOnlineProvider(setId), (_, online) {
     unawaited(registry.setOnline(online));
   });
-  ref.listen(assistantDefaultModelProvider, (_, model) {
-    unawaited(registry.updateModel(model));
-  });
   ref.onDispose(() => unawaited(registry.close()));
   return registry;
 });
@@ -85,6 +82,7 @@ class TranslationSchedulers {
     String language,
     List<TranslationParagraph> paragraphs, {
     required StudySetContent content,
+    ModelReference? modelOverride,
   }) async {
     if (_closed) throw StateError('Workspace closed');
     final key = (id, language);
@@ -93,11 +91,8 @@ class TranslationSchedulers {
     final previous = _owners[key];
     _revisions[key] = revision;
     final storeFuture = ref.read(translationStoreProvider(setId).future);
-    final factory = ref.read(paragraphTranslatorProvider);
-    final model = ref.read(assistantDefaultModelProvider);
-    final modelId = model == null ? '' : '${model.serviceId ?? model.provider.name}/${model.model}';
-    final isOllama = model?.provider == AssistantProvider.ollama;
-    final isOnline = isOllama || ref.read(translationOnlineProvider(setId));
+    final factory = ref.read(documentTranslatorFactoryProvider);
+    final isOnline = ref.read(translationOnlineProvider(setId));
     final opening = () async {
       await _subscriptions.remove(key)?.cancel();
       _ready.remove(key);
@@ -114,14 +109,12 @@ class TranslationSchedulers {
         language: language,
         paragraphs: paragraphs,
         store: store,
-        model: modelId,
+        model: 'document_translate',
         budget: const ResearchBudget(outputTokens: 16384, duration: Duration(minutes: 3)),
         online: isOnline,
         createTranslator: () {
           if (_closed || !ref.mounted) throw StateError('Workspace closed');
-          final selected = ref.read(assistantDefaultModelProvider);
-          if (selected == null) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
-          return factory(selected);
+          return factory((setId: setId, documentId: id, language: language, model: modelOverride), paragraphs);
         },
       );
       await scheduler.initialize(snapshot: snapshot);
@@ -130,10 +123,7 @@ class TranslationSchedulers {
       } else {
         _ready[key] = scheduler;
         _subscriptions[key] = scheduler.states.listen((_) => _notify(key));
-        await scheduler.setOnline(
-          ref.read(assistantDefaultModelProvider)?.provider == AssistantProvider.ollama ||
-              ref.read(translationOnlineProvider(setId)),
-        );
+        await scheduler.setOnline(ref.read(translationOnlineProvider(setId)));
         _notify(key);
       }
       return scheduler;
@@ -153,8 +143,7 @@ class TranslationSchedulers {
         try {
           final scheduler = await future;
           if (_closed || !ref.mounted) return;
-          final isOllama = ref.read(assistantDefaultModelProvider)?.provider == AssistantProvider.ollama;
-          await scheduler.setOnline(isOllama || online);
+          await scheduler.setOnline(online);
         } catch (_) {
           /* Failed owners have no running task. */
         }
@@ -162,14 +151,9 @@ class TranslationSchedulers {
     );
   }
 
-  Future<void> updateModel(AssistantModel? model) async {
-    final isOllama = model?.provider == AssistantProvider.ollama;
-    final isOnline = ref.read(translationOnlineProvider(setId));
-    await setOnline(isOllama || isOnline);
-  }
-
   Future<void> removeTranslations(String id, String language) async {
     final storeFuture = ref.read(translationStoreProvider(setId).future);
+    final prefs = ref.read(sharedPreferencesProvider);
     final key = (id, language);
     final existing = _owners.remove(key);
     await _subscriptions.remove(key)?.cancel();
@@ -182,6 +166,10 @@ class TranslationSchedulers {
       } catch (_) {}
     }
     final store = await storeFuture;
+    final epochKey = documentTranslationEpochKey(setId, id, language);
+    if (!await prefs.setInt(epochKey, (prefs.getInt(epochKey) ?? 0) + 1)) {
+      throw StateError('Translation cache invalidation failed');
+    }
     await store.remove(id, language);
     _notify(key);
   }

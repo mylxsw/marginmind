@@ -32,6 +32,7 @@ Future<void> resumeNoteOrganization(BuildContext context, NoteContinuation saved
     materials: saved.materials,
     existingId: saved.noteId,
     continuation: saved,
+    modelOverride: saved.modelOverride,
   ),
 );
 
@@ -45,6 +46,7 @@ Future<void> showNoteOrganizeSheet(
   required NoteMaterials materials,
   bool previewOutline = false,
   String? existingId,
+  ModelReference? modelOverride,
 }) => showMMSheet<void>(
   context: context,
   width: MMSizes.noteProgressSheetWidth,
@@ -57,6 +59,7 @@ Future<void> showNoteOrganizeSheet(
     materials: materials,
     previewOutline: previewOutline,
     existingId: existingId,
+    modelOverride: modelOverride,
   ),
 );
 
@@ -72,6 +75,7 @@ class NoteOrganizeSheet extends ConsumerStatefulWidget {
     this.previewOutline = false,
     this.existingId,
     this.continuation,
+    this.modelOverride,
   });
   final String setId, title;
   final NoteScope scope;
@@ -79,6 +83,7 @@ class NoteOrganizeSheet extends ConsumerStatefulWidget {
   final NoteTemplate template;
   final NoteMaterials materials;
   final bool previewOutline;
+  final ModelReference? modelOverride;
   final String? existingId;
   final NoteContinuation? continuation;
   @override
@@ -89,6 +94,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
   final _sections = <NoteOutlineSection>[];
   final _draft = <NoteDraftSection>[];
   NoteSession? _session;
+  late final String _sessionId = widget.continuation?.sessionId ?? newId();
   late NoteSettings _settings;
   String? _savedId;
   Object? _error;
@@ -128,7 +134,11 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
     try {
       session = local || _settings.depth == NoteDepth.none
           ? NoteSession(const LocalNoteOrganizer())
-          : await ref.read(noteSessionFactoryProvider)();
+          : await ref.read(noteSessionFactoryProvider)(
+              studySetId: widget.setId,
+              sessionId: _sessionId,
+              modelOverride: widget.modelOverride,
+            );
       if (!mounted || generation != _generation) {
         session.close();
         return;
@@ -179,6 +189,8 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
         // Validate injected ports too; only complete structured sections reach the note.
         final validated = NoteDraft.fromJson(NoteDraft([section]).toJson());
         setState(() => _draft.add(validated.sections.single));
+        await _persist();
+        await _remember();
       }
       if (!mounted || generation != _generation) return;
       _fallback = session.usedFallback;
@@ -186,7 +198,8 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
       await _persist();
       if (!mounted || generation != _generation) return;
       if (_savedId == null) throw StateError('Source changed');
-      ref.read(noteContinuationsProvider.notifier).remove(_savedId);
+      await ref.read(noteContinuationsProvider.notifier).remove(_savedId);
+      if (!mounted || generation != _generation) return;
       final message = _fallback ? context.l10n.noteAiFallback : context.l10n.noteGenerated;
       Navigator.of(context).pop();
       MMHud.show(context, message);
@@ -200,6 +213,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
         if (_draft.isNotEmpty) {
           try {
             await _persist();
+            await _remember();
           } catch (_) {
             /* Keep preview available for retry. */
           }
@@ -211,10 +225,46 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
     }
   }
 
+  Future<void> _remember() async {
+    await ref
+        .read(noteContinuationsProvider.notifier)
+        .put(
+          NoteContinuation(
+            setId: widget.setId,
+            title: widget.title,
+            scope: widget.scope,
+            settings: _settings,
+            template: widget.template,
+            materials: widget.materials,
+            outline: NoteOutline(_sections),
+            draft: NoteDraft(_draft),
+            noteId: _savedId,
+            sessionId: _sessionId,
+            modelOverride: widget.modelOverride,
+          ),
+        );
+  }
+
   Future<void> _persist() async {
     if (_draft.isEmpty) return;
+    // An incomplete reorganization must not remove the destination of a
+    // handwritten cross-reference. Keep the existing note until all sections
+    // are ready; the continuation and individual runtime stages are durable.
+    if (widget.existingId != null && _draft.length < _sections.where((s) => s.refs.isNotEmpty).length) return;
     setState(() => _saving = true);
     try {
+      final current = const NoteMaterialCollector().collect(
+        ref.read(workspaceProvider(widget.setId).notifier).content,
+        widget.scope,
+        _settings,
+        now: widget.materials.collectedAt,
+      );
+      for (final material in widget.materials.items) {
+        final live = current.items
+            .where((m) => m.sourceId == material.sourceId && m.source == material.source)
+            .firstOrNull;
+        if (live == null || live.text != material.text) throw StateError('Source changed');
+      }
       final note = await ref
           .read(workspaceProvider(widget.setId).notifier)
           .acceptNoteDraft(
@@ -252,8 +302,11 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
         outline: NoteOutline(_sections),
         draft: NoteDraft(_draft),
         noteId: _savedId,
+        sessionId: _sessionId,
+        modelOverride: widget.modelOverride,
       );
-      ref.read(noteContinuationsProvider.notifier).put(saved);
+      await ref.read(noteContinuationsProvider.notifier).put(saved);
+      if (!mounted) return;
       final host = Navigator.of(context).context;
       final l = context.l10n;
       Navigator.of(context).pop();
@@ -412,6 +465,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
             child: !_editing
                 ? NoteOrganizationProgress(
                     phase: _phase,
+                    status: _failed ? (_draft.isNotEmpty ? RunStatus.partial : RunStatus.failed) : null,
                     materials: widget.materials,
                     sections: _sections.where((s) => s.refs.isNotEmpty).toList(),
                     draft: List.of(_draft),

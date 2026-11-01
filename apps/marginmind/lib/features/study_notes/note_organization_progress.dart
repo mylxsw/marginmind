@@ -4,6 +4,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../shared/l10n.dart';
+import '../assistant/settings/ai_task_status.dart';
 
 enum NoteOrganizationPhase { outline, write, verify }
 
@@ -18,6 +19,7 @@ class NoteOrganizationProgress extends StatefulWidget {
     required this.local,
     required this.busy,
     this.error,
+    this.status,
     this.sources = const {},
     this.quoteColors = const {},
   });
@@ -28,6 +30,7 @@ class NoteOrganizationProgress extends StatefulWidget {
   final List<NoteDraftSection> draft;
   final bool local, busy;
   final String? error;
+  final RunStatus? status;
   final Map<String, String> sources;
   final Map<String, Color> quoteColors;
 
@@ -216,6 +219,11 @@ class _NoteOrganizationProgressState extends State<NoteOrganizationProgress> {
   Widget _preview(BuildContext context, {bool showActivity = true}) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      if (widget.status case final status?)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: RunStatusCapsule(status: status, unfinished: widget.sections.length - widget.draft.length),
+        ),
       if (showActivity)
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),

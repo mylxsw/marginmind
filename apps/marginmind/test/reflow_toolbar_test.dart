@@ -1,10 +1,10 @@
+import 'package:marginmind/features/assistant/quick_tasks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_quick_actions.dart';
-import 'package:marginmind/features/workspace/reader_translation.dart';
 import 'package:marginmind/features/workspace/reflow_session.dart';
 import 'package:marginmind/features/workspace/widgets/selection_translation.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -28,7 +28,7 @@ void main() {
       content: repo,
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
