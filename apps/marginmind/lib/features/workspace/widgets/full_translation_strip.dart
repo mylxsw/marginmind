@@ -5,7 +5,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../settings/settings_window.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/assistant_settings.dart';
+import '../../assistant/settings/ai_task_settings.dart';
 import '../full_translation.dart';
 
 class FullTranslationStrip extends ConsumerWidget {
@@ -33,13 +33,12 @@ class FullTranslationStrip extends ConsumerWidget {
     if (job == null) return const SizedBox.shrink();
 
     final controller = ref.read(provider.notifier);
-    final defaultModel = ref.watch(assistantDefaultModelProvider);
 
     void openSettings() {
       if (onOpenSettings != null) {
         onOpenSettings!();
       } else {
-        showSettings(context, tab: SettingsTab.models);
+        showSettings(context, tab: SettingsTab.aiTasks, focus: const AiTaskFocusTask(TaskType.documentTranslate));
       }
     }
 
@@ -51,7 +50,7 @@ class FullTranslationStrip extends ConsumerWidget {
 
     switch (job.state) {
       case TranslationJobState.error:
-        final isNoModel = job.errorKind == 'model' || (job.errorKind == null && defaultModel == null);
+        final isNoModel = job.errorKind == 'model' || (job.errorKind == null && job.runContext == null);
         final isStorageError = job.errorKind == 'storage';
         iconColor = c.critical;
         if (isStorageError) {

@@ -1,3 +1,6 @@
+import '../agent/runs.dart';
+import '../agent/run_codec.dart';
+
 /// Durable task lifecycle; paragraph progress lives in the segment journal.
 enum TranslationJobState { running, review, paused, offline, error, budget, done, stopped }
 
@@ -75,6 +78,7 @@ class TranslationJob {
     this.note = '',
     required this.model,
     this.promptVersion = 1,
+    this.runContext,
     required this.state,
     this.pauseReason,
     this.errorKind,
@@ -104,6 +108,7 @@ class TranslationJob {
   }
   final String id, documentId, targetLang, note, model;
   final String? sourceLang;
+  final RunContext? runContext;
   final String? errorKind;
   final TranslationRange range;
   final TranslationMode mode;
@@ -127,6 +132,7 @@ class TranslationJob {
     String? note,
     String? model,
     int? promptVersion,
+    RunContext? runContext,
     TranslationJobState? state,
     TranslationPauseReason? pauseReason,
     String? errorKind,
@@ -147,6 +153,7 @@ class TranslationJob {
     note: note ?? this.note,
     model: model ?? this.model,
     promptVersion: promptVersion ?? this.promptVersion,
+    runContext: runContext ?? this.runContext,
     state: state ?? this.state,
     pauseReason: pauseReason ?? (state == null ? this.pauseReason : null),
     errorKind: errorKind ?? (state == null ? this.errorKind : null),
@@ -172,6 +179,7 @@ class TranslationJob {
     'note': note,
     'model': model,
     'promptVersion': promptVersion,
+    if (runContext != null) 'runContext': encodeRunContext(runContext!),
     'state': state.name,
     'pauseReason': pauseReason?.name,
     'errorKind': errorKind,
@@ -198,6 +206,7 @@ class TranslationJob {
       note: j['note'] as String,
       model: j['model'] as String,
       promptVersion: j['promptVersion'] as int,
+      runContext: j['runContext'] == null ? null : decodeRunContext(Map<String, dynamic>.from(j['runContext'] as Map)),
       state: TranslationJobState.values.byName(j['state'] as String),
       pauseReason: j['pauseReason'] == null ? null : TranslationPauseReason.values.byName(j['pauseReason'] as String),
       errorKind: j['errorKind'] as String?,

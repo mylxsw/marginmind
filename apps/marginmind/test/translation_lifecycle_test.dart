@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/document_translation_runtime.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -19,6 +21,42 @@ import 'package:mm_core/testing.dart';
 import 'full_translation_test.dart' show TestTranslator, testHost, MockReaderCompareSession;
 import 'helpers.dart';
 import 'reader_compare_test.dart' show compareFixture;
+
+// Network behavior is supplied by the frozen task port, independent of the
+// legacy assistant default used by older fixtures.
+class LocalTranslator extends TestTranslator implements ScheduledParagraphTranslator {
+  @override
+  Future<void> prepareScope() async {}
+  @override
+  bool get localOnly => true;
+  @override
+  String get modelIdentity => 'local/fixture';
+  @override
+  Future<TranslationJob> bindJob(TranslationJob job, {ModelReference? modelOverride}) async => job;
+  @override
+  Future<void> saveJob(TranslationJob job) async {}
+  @override
+  Future<TranslationUsage> readUsage() async => TranslationUsage(requests: calls.length);
+  @override
+  void authorizeRecovery() {}
+  @override
+  void pauseDispatch({bool paused = true}) {}
+  @override
+  void newTranslation(TranslationParagraph paragraph) {}
+  @override
+  Future<void> cancelPending() async {}
+  @override
+  Future<PackedParagraphTranslation> translatePack(
+    List<TranslationParagraph> paragraphs,
+    String language,
+    CancellationToken cancel,
+    int maxTokens, {
+    String? sourceLanguage,
+    String note = '',
+  }) async => PackedParagraphTranslation([
+    for (final p in paragraphs) (await translate(p, language, cancel, maxTokens, sourceLanguage: sourceLanguage)).text,
+  ]);
+}
 
 final paragraphs = [
   for (var i = 0; i < 8; i++)
@@ -65,7 +103,9 @@ Future<ProviderContainer> containerFor({
         ),
       translationConnectivityProvider.overrideWith((ref) => Stream.value(true)),
       translationStoreProvider('demo-1').overrideWith((ref) async => store ?? InMemoryTranslationStore()),
-      paragraphTranslatorProvider.overrideWithValue((_) async => translator ?? TestTranslator()),
+      documentTranslatorFactoryProvider.overrideWithValue(
+        (_, _) async => translator ?? (ollama ? LocalTranslator() : TestTranslator()),
+      ),
       assistantDefaultModelProvider.overrideWithValue(
         AssistantModel(
           provider: ollama ? AssistantProvider.ollama : AssistantProvider.claude,
@@ -106,7 +146,7 @@ void main() {
     test(
       'network events ${ollama ? 'leave Ollama running' : 'pause and resume cloud without overriding manual pause'}',
       () async {
-        final translator = TestTranslator()..delayMs = 150;
+        final translator = (ollama ? LocalTranslator() : TestTranslator())..delayMs = 150;
         final container = await containerFor(ollama: ollama, translator: translator);
         final subscription = container.listen(translationSchedulersProvider('demo-1'), (_, _) {});
         final registry = container.read(translationSchedulersProvider('demo-1'));
