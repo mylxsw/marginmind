@@ -194,7 +194,8 @@ void main() {
   });
 
   testWidgets('sidebar creates renames switches deletes and undoes maps', (tester) async {
-    final container = await openFirstSet(tester);
+    // Generating a map from a document is a Beta feature.
+    final container = await openFirstSet(tester, prefs: const {'settings.betaFeaturesEnabled': true});
     final controller = container.read(workspaceProvider('demo-1').notifier);
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: Offset.zero);

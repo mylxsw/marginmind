@@ -243,10 +243,11 @@ void main() {
     final repo = InMemoryStudySetContentRepository({'demo-1': before});
     var body = 'original';
     var reads = 0;
+    // Map updates are part of Beta map generation; Beta keeps the update watchers mounted.
     final container = await pumpApp(
       tester,
       content: repo,
-      prefs: {'settings.language': 'zh'},
+      prefs: {'settings.language': 'zh', 'settings.betaFeaturesEnabled': true},
       overrides: [
         assistantPageTextProvider.overrideWithValue((path, page) async {
           reads++;

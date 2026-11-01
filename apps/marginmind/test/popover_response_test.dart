@@ -16,9 +16,11 @@ import 'package:marginmind/features/workspace/widgets/underline_style_toolbar.da
 import 'package:marginmind/features/workspace/widgets/underline_tool_button.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
+import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
+import 'reflow_fixtures.dart';
 import 'selection_toolbar_test.dart' show selection;
 
 void expectFullyVisible(WidgetTester tester, Finder surface) {
@@ -128,13 +130,10 @@ void main() {
   }
 
   testWidgets('reading, translation, AI and service popovers are complete in their first frame', (tester) async {
-    final container = await pumpApp(tester);
+    final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
+    final book = await storeBook(repo);
+    final container = await pumpApp(tester, content: repo);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
-    await tester.pumpAndSettle();
-    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-settings')));
-    await tester.pump();
-    expectFullyVisible(tester, find.byType(ReadingSettingsPanel));
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
 
     final controller = container.read(workspaceProvider('demo-1').notifier);
@@ -154,6 +153,15 @@ void main() {
     showServiceList(tester.element(find.byType(SelectionToolbar)));
     await tester.pump();
     expectFullyVisible(tester, find.byKey(const ValueKey('service-list')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    // Reading settings belong to reflowed documents; PDFs disable that command.
+    controller.openDocument(book.id);
+    await tester.pumpAndSettle();
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-settings')));
+    await tester.pump();
+    expectFullyVisible(tester, find.byType(ReadingSettingsPanel));
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
   });

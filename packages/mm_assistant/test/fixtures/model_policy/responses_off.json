@@ -1,0 +1,20 @@
+{
+  "model": "fixture-model",
+  "stream": false,
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "input"
+        }
+      ]
+    }
+  ],
+  "max_output_tokens": 4096,
+  "reasoning": {
+    "effort": "none"
+  }
+}

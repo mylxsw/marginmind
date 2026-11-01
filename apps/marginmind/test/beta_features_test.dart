@@ -18,10 +18,7 @@ import 'study_notes_ui_test.dart' show noteFixture;
 
 void main() {
   testWidgets('Settings General page has Advanced card with Enable Beta Features switch', (tester) async {
-    final container = await pumpApp(
-      tester,
-      prefs: const {'settings.language': 'zh'},
-    );
+    final container = await pumpApp(tester, prefs: const {'settings.language': 'zh'});
     expect(container.read(settingsProvider).betaFeaturesEnabled, isFalse);
 
     final context = tester.element(find.byType(Navigator).first);
@@ -56,9 +53,7 @@ void main() {
       size: const Size(1440, 900),
       prefs: const {'settings.language': 'zh'},
       content: InMemoryStudySetContentRepository({'demo-1': noteFixture()}),
-      overrides: [
-        assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready),
-      ],
+      overrides: [assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready)],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();

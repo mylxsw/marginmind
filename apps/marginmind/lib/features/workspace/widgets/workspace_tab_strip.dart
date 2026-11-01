@@ -76,6 +76,11 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
         final widths = [for (final title in titles) _tabWidth(context, title)];
         final tabsWidth = count == 0 ? 0.0 : widths.fold(0.0, (total, width) => total + width) + (count - 1) * 4 + 24;
         final overflow = tabsWidth > bounds.maxWidth;
+        // Same size MMDropdownButton gives its icon button; a squeezed strip drops the
+        // open-tabs menu rather than overflow (the tab list still scrolls).
+        final menuWidth =
+            (context.mmTouch || context.mmTouchPlatform ? context.mmToolbarButton : MMSizes.readerToolbarButton).width;
+        final showMenu = overflow && bounds.maxWidth >= menuWidth;
         if (_lastActive != state.tabs.activeId ||
             _lastWidth != bounds.maxWidth ||
             !listEquals(_lastTabWidths, widths)) {
@@ -145,7 +150,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
               SizedBox(width: tabsWidth, child: tabs),
               const Expanded(child: MMWindowDragRegion(key: ValueKey('workspace-tab-drag-area'))),
             ],
-            if (overflow)
+            if (showMenu)
               MMDropdownButton<WorkspaceTab>(
                 key: const ValueKey('workspace-tab-overflow'),
                 tooltip: context.l10n.workspaceOpenTabs,

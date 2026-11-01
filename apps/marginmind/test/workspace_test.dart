@@ -20,9 +20,11 @@ Future<ProviderContainer> openFirstSet(
   WidgetTester tester, {
   InMemoryStudySetContentRepository? content,
   bool showMapCommandBar = false,
+  Map<String, Object> prefs = const {},
 }) async {
   final container = await pumpApp(
     tester,
+    prefs: prefs,
     content: content,
     overrides: [if (showMapCommandBar) mapCommandBarVisibleProvider.overrideWithValue(true)],
   );

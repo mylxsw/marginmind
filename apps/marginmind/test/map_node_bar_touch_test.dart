@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
 import 'package:mm_design/mm_design.dart';
+
+import 'helpers.dart';
 
 void main() {
   for (final dark in [false, true]) {
@@ -65,26 +68,31 @@ Future<void> _pumpBar(
   bool dark = false,
   bool root = false,
 }) async {
+  // The assistant action draws AssistantIcon, which reads app settings.
+  final overrides = await testOverrides();
   await tester.pumpWidget(
-    MaterialApp(
-      theme: dark ? MMTheme.dark() : MMTheme.light(),
-      locale: const Locale('zh'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: MMInput(
-        touchPlatform: true,
-        child: Scaffold(
-          body: Center(
-            child: MapNodeBar(
-              root: root,
-              onChild: () => invoked.add('child'),
-              onSibling: () => invoked.add('sibling'),
-              onEdit: root ? null : () => invoked.add('edit'),
-              onRelation: () => invoked.add('relation'),
-              onNote: () => invoked.add('note'),
-              onImage: () => invoked.add('image'),
-              onDelete: () => invoked.add('delete'),
-              onAssistant: (_) => invoked.add('assistant'),
+    ProviderScope(
+      overrides: overrides,
+      child: MaterialApp(
+        theme: dark ? MMTheme.dark() : MMTheme.light(),
+        locale: const Locale('zh'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MMInput(
+          touchPlatform: true,
+          child: Scaffold(
+            body: Center(
+              child: MapNodeBar(
+                root: root,
+                onChild: () => invoked.add('child'),
+                onSibling: () => invoked.add('sibling'),
+                onEdit: root ? null : () => invoked.add('edit'),
+                onRelation: () => invoked.add('relation'),
+                onNote: () => invoked.add('note'),
+                onImage: () => invoked.add('image'),
+                onDelete: () => invoked.add('delete'),
+                onAssistant: (_) => invoked.add('assistant'),
+              ),
             ),
           ),
         ),

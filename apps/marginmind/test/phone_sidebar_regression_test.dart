@@ -10,9 +10,10 @@ import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 
-Future<ProviderContainer> openPhoneSidebar(WidgetTester tester) async {
+Future<ProviderContainer> openPhoneSidebar(WidgetTester tester, {bool beta = false}) async {
   final container = await pumpApp(
     tester,
+    prefs: {if (beta) 'settings.betaFeaturesEnabled': true},
     // Keep the full tag preview visible while retaining the phone compact path.
     size: const Size(393, 1700),
     overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
@@ -32,7 +33,8 @@ List<String> groups(WidgetTester tester) =>
 
 void main() {
   testWidgets('phone drawer preserves imported document flash and scene 8 learning hierarchy', (tester) async {
-    final container = await openPhoneSidebar(tester);
+    // Study notes is a Beta feature.
+    final container = await openPhoneSidebar(tester, beta: true);
     final context = tester.element(find.byType(PhoneWorkspaceSidebar));
     final colors = context.mmColors;
     const documentKey = ValueKey('document-row-c1');
@@ -43,8 +45,9 @@ void main() {
     expect((tester.widget<DecoratedBox>(find.byKey(documentKey)).decoration as BoxDecoration).color, colors.accentTint);
     expect(find.descendant(of: find.byKey(documentKey), matching: find.byType(MMPhoneNavigationRow)), findsOneWidget);
 
-    final notes = tester.widget<MMPhoneNavigationRow>(phoneRow('Study notes'));
-    expect(notes.item.trailing, isA<Icon>().having((icon) => icon.icon, 'chevron', MMIcons.chevronRight));
+    // The notes row is a disclosure with a Beta mark, not a count.
+    expect(find.descendant(of: phoneRow('Study notes'), matching: find.byIcon(MMIcons.chevronRight)), findsOneWidget);
+    expect(find.descendant(of: phoneRow('Study notes'), matching: find.byType(MMBetaBadge)), findsOneWidget);
     expect(find.descendant(of: phoneRow('Study notes'), matching: find.byType(MMBadge)), findsNothing);
     final cards = tester.widget<MMPhoneNavigationRow>(phoneRow('Cards'));
     final review = tester.widget<MMPhoneNavigationRow>(phoneRow('Review'));
