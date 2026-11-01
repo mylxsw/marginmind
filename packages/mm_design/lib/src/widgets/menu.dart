@@ -113,6 +113,12 @@ Future<void> showMMMenu(
 
 const _contextMenuRoute = 'marginmind-context-menu';
 
+/// A menu item's secondary text and why it is unavailable, read after its name.
+String? _semanticDetail(String? detail, String? disabledReason) {
+  final parts = [?detail, ?disabledReason];
+  return parts.isEmpty ? null : parts.join(', ');
+}
+
 /// Dismisses an open context menu when a held pointer becomes a drag.
 /// The predicate stops at every other route, including the underlying page.
 void dismissMMMenu(BuildContext context) {
@@ -343,6 +349,7 @@ class _MenuRow extends StatelessWidget {
                 }
               },
         semanticLabel: item.label,
+        semanticValue: _semanticDetail(item.shortcut, enabled ? null : item.disabledReason),
         builder: (context, s) {
           final highlighted = s.hovered || s.focused;
           final fg = !enabled
@@ -363,6 +370,7 @@ class _MenuRow extends StatelessWidget {
               children: [
                 if (item.icon != null) ...[Icon(item.icon, size: 16, color: fg), const SizedBox(width: 8)],
                 Expanded(
+                  flex: 3,
                   child: Row(
                     children: [
                       Flexible(
@@ -383,7 +391,16 @@ class _MenuRow extends StatelessWidget {
                 ],
                 if (item.shortcut != null) ...[
                   const SizedBox(width: 24),
-                  Text(item.shortcut!, style: t.body.copyWith(color: highlighted ? c.onAccent : c.secondaryLabel)),
+                  // Long notes (a model name) give way before the label does.
+                  Flexible(
+                    flex: 2,
+                    child: Text(
+                      item.shortcut!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.body.copyWith(color: highlighted ? c.onAccent : c.secondaryLabel),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -415,6 +432,8 @@ class _ActionSheet extends StatelessWidget {
             checked: e.checked,
             destructive: e.destructive,
             badge: e.badge,
+            detail: e.shortcut,
+            disabledReason: e.disabledReason,
             onTap: e.onSelected == null ? null : () => onSelected(e.onSelected),
           ),
           MMMenuHeader(:final label) => Padding(
@@ -490,9 +509,15 @@ class _ActionSheetRow extends StatelessWidget {
     this.destructive = false,
     this.bold = false,
     this.badge,
+    this.detail,
+    this.disabledReason,
   });
 
   final String label;
+
+  /// The menu item's right-aligned secondary text, kept in the sheet.
+  final String? detail;
+  final String? disabledReason;
   final VoidCallback? onTap;
   final bool? checked;
   final bool destructive;
@@ -506,6 +531,7 @@ class _ActionSheetRow extends StatelessWidget {
     return MMInteractive(
       onTap: onTap,
       semanticLabel: label,
+      semanticValue: _semanticDetail(detail, onTap == null ? disabledReason : null),
       builder: (context, s) {
         final fg = !s.enabled
             ? c.secondaryLabel
@@ -540,7 +566,17 @@ class _ActionSheetRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              if (detail != null)
+                Flexible(
+                  child: Text(
+                    detail!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                  ),
+                )
+              else
+                const SizedBox(width: 20),
             ],
           ),
         );

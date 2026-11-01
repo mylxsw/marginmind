@@ -69,6 +69,8 @@ abstract final class MMIcons {
   static const IconData studySet = LucideIcons.libraryBig;
   static const organizeNote = LucideIcons.notebookPen;
   static const IconData ai = LucideIcons.sparkles;
+  /// Settings › AI Features: which model each feature routes to.
+  static const IconData aiTasks = LucideIcons.split;
   static const IconData research = LucideIcons.fileSearch;
   static const IconData info = LucideIcons.info;
   static const IconData select = LucideIcons.mousePointer2;

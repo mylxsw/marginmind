@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
+import '../features/assistant/settings/ai_task_settings.dart';
 import '../features/assistant/settings/model_settings.dart';
 import '../features/assistant/map_generation_cache.dart';
 import '../features/assistant/settings/web_search_settings.dart';
@@ -15,18 +19,35 @@ import 'app_settings.dart';
 import 'app_icon_picker.dart';
 import 'assistant_icon_picker.dart';
 
-enum SettingsTab { general, reading, maps, models, webSearch, voice }
+enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice }
 
 /// The app's settings (⌘,): a centered dialog in the main window's own
 /// language — a floating glass sidebar of sections beside a titled,
-/// scrolling page. Service forms use explicit Save actions.
-Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general}) => showMMDialog<void>(
-  context: context,
-  builder: (_) => SettingsWindow(initialTab: tab),
-);
+/// scrolling page. Service forms use explicit Save actions. [focus] locates
+/// a feature or model on the AI Features page.
+Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) =>
+    showMMDialog<void>(
+      context: context,
+      builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+    );
 
-class SettingsWindow extends StatefulWidget {
-  const SettingsWindow({super.key, this.initialTab = SettingsTab.general});
+/// Moves between sections inside an open settings window.
+class SettingsNavigation extends InheritedWidget {
+  const SettingsNavigation({super.key, required this.go, required super.child});
+
+  /// Shows [tab]: AI Features located at [focus], or Models with [serviceId]'s
+  /// card open (or the add-service list when [addService]).
+  final void Function(SettingsTab tab, {AiTaskFocus? focus, String? serviceId, bool addService}) go;
+
+  static SettingsNavigation? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SettingsNavigation>();
+
+  @override
+  bool updateShouldNotify(SettingsNavigation old) => false;
+}
+
+class SettingsWindow extends ConsumerStatefulWidget {
+  const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.initialFocus});
 
   static const size = Size(780, 560), minSize = Size(640, 440);
 
@@ -36,18 +57,104 @@ class SettingsWindow extends StatefulWidget {
   static const sidebarWidth = 176.0;
 
   final SettingsTab initialTab;
+  final AiTaskFocus? initialFocus;
 
   @override
-  State<SettingsWindow> createState() => _SettingsWindowState();
+  ConsumerState<SettingsWindow> createState() => _SettingsWindowState();
 }
 
-class _SettingsWindowState extends State<SettingsWindow> {
+class _SettingsWindowState extends ConsumerState<SettingsWindow> {
   final _activeSection = GlobalKey();
+
+  /// AI Features edits survive switching sections until saved or discarded.
+  final _aiDraft = AiTaskDraft();
+  late AiTaskFocus? _aiFocus = widget.initialFocus;
+  ModelSettingsRequest? _modelsRequest;
+  bool _closing = false;
+  final _windowFocus = FocusNode(debugLabel: 'Settings window');
 
   @override
   void initState() {
     super.initState();
+    _aiDraft.addListener(_draftChanged);
     _revealSection();
+  }
+
+  @override
+  void dispose() {
+    _windowFocus.dispose();
+    _aiDraft
+      ..removeListener(_draftChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _draftChanged() {
+    if (!mounted) return;
+    // The page adopts stored settings while it builds; rebuild after that frame.
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _draftChanged());
+    } else {
+      setState(() {});
+    }
+  }
+
+  void _go(SettingsTab tab, {AiTaskFocus? focus, String? serviceId, bool addService = false}) {
+    // The old page's controls go away: hold focus on the window, never on a removed node.
+    if (tab != _tab) _windowFocus.requestFocus();
+    setState(() {
+      _tab = tab;
+      if (tab == SettingsTab.aiTasks) _aiFocus = focus;
+      if (tab == SettingsTab.models) {
+        _modelsRequest = serviceId == null && !addService
+            ? null
+            : ModelSettingsRequest(serviceId: serviceId, addService: addService);
+      }
+    });
+    _revealSection();
+  }
+
+  /// Closing with unsaved AI Features edits asks to save them first.
+  Future<void> _confirmClose() async {
+    if (_closing) return;
+    _closing = true;
+    final l = context.l10n;
+    try {
+      final save = await showMMSheet<bool>(
+        context: context,
+        builder: (context) => MMSheet(
+          title: l.aiTasksCloseTitle,
+          actions: [
+            MMButton(
+              key: const ValueKey('ai-tasks-discard'),
+              label: l.aiTasksDontSave,
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            MMButton(
+              key: const ValueKey('ai-tasks-close-save'),
+              label: l.save,
+              variant: MMButtonVariant.primary,
+              autofocus: true,
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+          child: const SizedBox.shrink(),
+        ),
+      );
+      if (save == null || !mounted) return;
+      if (save) {
+        if (!await saveAiTaskDraft(ref, _aiDraft)) {
+          // Stay open on the page that shows why the save did not happen.
+          if (mounted) _go(SettingsTab.aiTasks);
+          return;
+        }
+      } else if (_aiDraft.base case final base?) {
+        _aiDraft.reload(base);
+      }
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      _closing = false;
+    }
   }
 
   void _revealSection() => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,6 +178,35 @@ class _SettingsWindowState extends State<SettingsWindow> {
 
   @override
   Widget build(BuildContext context) {
+    void save() {
+      if (_tab == SettingsTab.aiTasks) unawaited(saveAiTaskDraft(ref, _aiDraft));
+    }
+
+    return SettingsNavigation(
+      go: _go,
+      child: PopScope(
+        canPop: !_aiDraft.dirty,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) unawaited(_confirmClose());
+        },
+        // ⌘S / Ctrl+S saves the AI Features page. The window holds focus when
+        // no control does, so the shortcut works right after opening.
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.keyS, meta: true): save,
+            const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
+          },
+          child: Focus(
+            focusNode: _windowFocus,
+            autofocus: true,
+            child: Builder(builder: _build),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     final c = context.mmColors;
     final l = context.l10n;
     final tabs = [
@@ -78,6 +214,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
       (SettingsTab.reading, MMIcons.reading, l.settingsReading),
       (SettingsTab.maps, MMIcons.mindMap, l.mapView),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.models, MMIcons.ai, l.settingsModels),
+      if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.aiTasks, MMIcons.aiTasks, l.aiTasksTitle),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
     ];
@@ -86,7 +223,13 @@ class _SettingsWindowState extends State<SettingsWindow> {
       SettingsTab.general => const _GeneralPage(),
       SettingsTab.reading => const _ReadingPage(),
       SettingsTab.maps => const _MapsPage(),
-      SettingsTab.models => const ModelSettingsPage(),
+      SettingsTab.models => ModelSettingsPage(request: _modelsRequest),
+      SettingsTab.aiTasks => AiTaskSettingsPage(
+        draft: _aiDraft,
+        focus: _aiFocus,
+        onOpenModels: ({serviceId, addService = false}) =>
+            _go(SettingsTab.models, serviceId: serviceId, addService: addService),
+      ),
       SettingsTab.webSearch => const WebSearchSettingsPage(),
       SettingsTab.voice => const VoiceSettingsPage(),
     };
@@ -134,10 +277,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
                       ),
                   ],
                   value: _tab,
-                  onChanged: (tab) {
-                    setState(() => _tab = tab);
-                    _revealSection();
-                  },
+                  onChanged: _go,
                 ),
               ),
               const SizedBox(height: MMSpacing.s),
@@ -179,7 +319,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
                     icon: icon,
                     label: label,
                     selected: tab == _tab,
-                    onTap: () => setState(() => _tab = tab),
+                    onTap: () => _go(tab),
                   ),
               ],
             ),

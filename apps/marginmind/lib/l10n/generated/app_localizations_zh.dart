@@ -5643,4 +5643,258 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mapBackgroundBlue => '浅蓝';
+
+  @override
+  String get aiTasksTitle => 'AI 功能';
+
+  @override
+  String get aiTasksQuick => '快速任务';
+
+  @override
+  String get aiTasksHeavy => '重型任务';
+
+  @override
+  String get aiTasksThinking => '思考';
+
+  @override
+  String get aiTasksThinkingAuto => '自动';
+
+  @override
+  String get aiTasksThinkingOff => '关闭';
+
+  @override
+  String get aiTasksThinkingStandard => '标准';
+
+  @override
+  String get aiTasksThinkingDeep => '深入';
+
+  @override
+  String get aiTasksUseDefault => '跟随默认';
+
+  @override
+  String get aiTasksUseSetting => '跟随设置';
+
+  @override
+  String get aiTasksChooseModel => '选择模型';
+
+  @override
+  String get aiTasksNotSet => '需配置';
+
+  @override
+  String get aiTasksReasonThinking => '无法关闭思考';
+
+  @override
+  String get aiTasksReasonTools => '不支持工具调用';
+
+  @override
+  String get aiTasksReasonStructured => '不支持结构化输出';
+
+  @override
+  String get aiTasksReasonContext => '上下文不足';
+
+  @override
+  String get aiTasksReasonUnsupported => '不支持';
+
+  @override
+  String get aiTasksUnverified => '需验证';
+
+  @override
+  String get aiTasksIssueThinking => '此模型无法关闭思考';
+
+  @override
+  String get aiTasksIssueUnknown => '需验证兼容性';
+
+  @override
+  String get aiTasksIssueReachable => '已连接 · 兼容性未验证';
+
+  @override
+  String get aiTasksIssueTools => '此模型不支持工具调用';
+
+  @override
+  String get aiTasksIssueStructured => '此模型不支持结构化输出';
+
+  @override
+  String get aiTasksIssueContext => '此模型上下文不足';
+
+  @override
+  String get aiTasksIssueUnsupported => '此模型不支持该功能';
+
+  @override
+  String get aiTasksIssueDeleted => '模型已删除';
+
+  @override
+  String get aiTasksIssueModelOff => '模型已停用';
+
+  @override
+  String get aiTasksIssueServiceOff => '服务已停用';
+
+  @override
+  String get aiTasksIssueServiceRemoved => '服务已删除';
+
+  @override
+  String get aiTasksIssueConnection => '连接不可用';
+
+  @override
+  String get aiTasksIssueInvalid => '设置无法读取';
+
+  @override
+  String get aiTasksChangeModel => '更换模型';
+
+  @override
+  String get aiTasksTest => '测试';
+
+  @override
+  String get aiTasksChooseAgain => '重新选择';
+
+  @override
+  String get aiTasksOpenModelSettings => '打开模型设置';
+
+  @override
+  String get aiTasksReset => '恢复跟随默认';
+
+  @override
+  String get aiTasksConflict => '设置已在其他窗口更改';
+
+  @override
+  String get aiTasksReload => '重新载入';
+
+  @override
+  String get aiTasksAddModel => '添加模型';
+
+  @override
+  String get aiTasksCloseTitle => '保存对 AI 功能的更改？';
+
+  @override
+  String get aiTasksDontSave => '不保存';
+
+  @override
+  String get aiTasksAssign => '分配…';
+
+  @override
+  String aiTasksAddedModels(int count) {
+    return '已添加 $count 个模型';
+  }
+
+  @override
+  String get aiTasksAssignToFeatures => '分配给功能';
+
+  @override
+  String aiTasksRemoveTitle(String name) {
+    return '移除“$name”？';
+  }
+
+  @override
+  String get aiTasksQuickDefault => '快速任务默认模型';
+
+  @override
+  String get aiTasksHeavyDefault => '重型任务默认模型';
+
+  @override
+  String aiTasksConversations(int count) {
+    return '$count 个对话';
+  }
+
+  @override
+  String aiTasksMore(int count) {
+    return '另有 $count 项';
+  }
+
+  @override
+  String get aiTasksUsageUnavailable => '无法确认使用情况';
+
+  @override
+  String aiTasksRunLabel(String task, String source) {
+    return '$task · $source';
+  }
+
+  @override
+  String get aiTasksModel => '模型';
+
+  @override
+  String get aiTasksRunAwaiting => '待确认';
+
+  @override
+  String get aiTasksRunPaused => '已暂停';
+
+  @override
+  String aiTasksRunPausedCount(int done, int total) {
+    return '已暂停 $done/$total';
+  }
+
+  @override
+  String get aiTasksRunInterrupted => '已中断';
+
+  @override
+  String aiTasksRunInterruptedCount(int done, int total) {
+    return '已中断 $done/$total';
+  }
+
+  @override
+  String aiTasksRunPartial(int count, String unit) {
+    return '部分完成 · $count $unit未完成';
+  }
+
+  @override
+  String get aiTasksRunFailed => '失败';
+
+  @override
+  String get aiTasksRunStopped => '已停止';
+
+  @override
+  String aiTasksRunStoppedCount(int done, int total) {
+    return '已停止 $done/$total';
+  }
+
+  @override
+  String get aiTasksRunCompleted => '已完成';
+
+  @override
+  String get aiTasksRunUnfinished => '上次运行未完成';
+
+  @override
+  String aiTasksRetryUnfinished(int count, String unit) {
+    return '重试 $count $unit';
+  }
+
+  @override
+  String get aiTaskSelectionTranslate => '选区翻译';
+
+  @override
+  String get aiTaskWordLookup => '单词释义';
+
+  @override
+  String get aiTaskTitleGenerate => '标题生成';
+
+  @override
+  String get aiTaskAssistantChat => '助手对话与解释';
+
+  @override
+  String get aiTaskConversationSummarize => '对话总结';
+
+  @override
+  String get aiTaskDocumentSummarize => '文档归纳';
+
+  @override
+  String get aiTaskDocumentTranslate => '全文翻译';
+
+  @override
+  String get aiTaskMapExpand => '思维导图扩写';
+
+  @override
+  String get aiTaskMapGenerate => '思维导图生成与更新';
+
+  @override
+  String get aiTaskResearch => '调研与查证';
+
+  @override
+  String get aiTaskStudyNotes => '学习笔记整理与改写';
+
+  @override
+  String get aiTaskReviewCards => '复习卡与问题生成';
+
+  @override
+  String get aiTasksProfilesUnavailable => '无法读取模型能力';
+
+  @override
+  String get aiTasksProbeUnsaved => '测试结果未保存';
 }

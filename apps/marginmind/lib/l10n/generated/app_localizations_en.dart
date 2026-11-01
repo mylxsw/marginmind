@@ -5868,4 +5868,270 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapBackgroundBlue => 'Pale Blue';
+
+  @override
+  String get aiTasksTitle => 'AI Features';
+
+  @override
+  String get aiTasksQuick => 'Quick Tasks';
+
+  @override
+  String get aiTasksHeavy => 'Heavy Tasks';
+
+  @override
+  String get aiTasksThinking => 'Thinking';
+
+  @override
+  String get aiTasksThinkingAuto => 'Auto';
+
+  @override
+  String get aiTasksThinkingOff => 'Off';
+
+  @override
+  String get aiTasksThinkingStandard => 'Standard';
+
+  @override
+  String get aiTasksThinkingDeep => 'Deep';
+
+  @override
+  String get aiTasksUseDefault => 'Use Default';
+
+  @override
+  String get aiTasksUseSetting => 'Use Setting';
+
+  @override
+  String get aiTasksChooseModel => 'Choose Model';
+
+  @override
+  String get aiTasksNotSet => 'Not Set';
+
+  @override
+  String get aiTasksReasonThinking => 'Can\'t turn off thinking';
+
+  @override
+  String get aiTasksReasonTools => 'No tool use';
+
+  @override
+  String get aiTasksReasonStructured => 'No structured output';
+
+  @override
+  String get aiTasksReasonContext => 'Context too small';
+
+  @override
+  String get aiTasksReasonUnsupported => 'Not supported';
+
+  @override
+  String get aiTasksUnverified => 'Unverified';
+
+  @override
+  String get aiTasksIssueThinking => 'This model can\'t turn off thinking';
+
+  @override
+  String get aiTasksIssueUnknown => 'Compatibility not verified';
+
+  @override
+  String get aiTasksIssueReachable => 'Connected · compatibility not verified';
+
+  @override
+  String get aiTasksIssueTools => 'This model doesn\'t support tool use';
+
+  @override
+  String get aiTasksIssueStructured => 'This model doesn\'t support structured output';
+
+  @override
+  String get aiTasksIssueContext => 'This model\'s context is too small';
+
+  @override
+  String get aiTasksIssueUnsupported => 'This model doesn\'t support this feature';
+
+  @override
+  String get aiTasksIssueDeleted => 'Model removed';
+
+  @override
+  String get aiTasksIssueModelOff => 'Model off';
+
+  @override
+  String get aiTasksIssueServiceOff => 'Service off';
+
+  @override
+  String get aiTasksIssueServiceRemoved => 'Service removed';
+
+  @override
+  String get aiTasksIssueConnection => 'Connection unavailable';
+
+  @override
+  String get aiTasksIssueInvalid => 'Setting can\'t be read';
+
+  @override
+  String get aiTasksChangeModel => 'Change Model';
+
+  @override
+  String get aiTasksTest => 'Test';
+
+  @override
+  String get aiTasksChooseAgain => 'Choose Again';
+
+  @override
+  String get aiTasksOpenModelSettings => 'Open Model Settings';
+
+  @override
+  String get aiTasksReset => 'Reset to Defaults';
+
+  @override
+  String get aiTasksConflict => 'Changed in another window';
+
+  @override
+  String get aiTasksReload => 'Reload';
+
+  @override
+  String get aiTasksAddModel => 'Add Model';
+
+  @override
+  String get aiTasksCloseTitle => 'Save changes to AI Features?';
+
+  @override
+  String get aiTasksDontSave => 'Don\'t Save';
+
+  @override
+  String get aiTasksAssign => 'Assign…';
+
+  @override
+  String aiTasksAddedModels(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count models',
+      one: 'Added 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiTasksAssignToFeatures => 'Assign to Features';
+
+  @override
+  String aiTasksRemoveTitle(String name) {
+    return 'Remove “$name”?';
+  }
+
+  @override
+  String get aiTasksQuickDefault => 'Quick default';
+
+  @override
+  String get aiTasksHeavyDefault => 'Heavy default';
+
+  @override
+  String aiTasksConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversations',
+      one: '1 conversation',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiTasksMore(int count) {
+    return '$count more';
+  }
+
+  @override
+  String get aiTasksUsageUnavailable => 'Couldn\'t check where it\'s used';
+
+  @override
+  String aiTasksRunLabel(String task, String source) {
+    return '$task · $source';
+  }
+
+  @override
+  String get aiTasksModel => 'Model';
+
+  @override
+  String get aiTasksRunAwaiting => 'Needs confirmation';
+
+  @override
+  String get aiTasksRunPaused => 'Paused';
+
+  @override
+  String aiTasksRunPausedCount(int done, int total) {
+    return 'Paused $done/$total';
+  }
+
+  @override
+  String get aiTasksRunInterrupted => 'Interrupted';
+
+  @override
+  String aiTasksRunInterruptedCount(int done, int total) {
+    return 'Interrupted $done/$total';
+  }
+
+  @override
+  String aiTasksRunPartial(int count, String unit) {
+    return 'Partially complete · $count $unit unfinished';
+  }
+
+  @override
+  String get aiTasksRunFailed => 'Failed';
+
+  @override
+  String get aiTasksRunStopped => 'Stopped';
+
+  @override
+  String aiTasksRunStoppedCount(int done, int total) {
+    return 'Stopped $done/$total';
+  }
+
+  @override
+  String get aiTasksRunCompleted => 'Completed';
+
+  @override
+  String get aiTasksRunUnfinished => 'Last run didn\'t finish';
+
+  @override
+  String aiTasksRetryUnfinished(int count, String unit) {
+    return 'Retry $count $unit';
+  }
+
+  @override
+  String get aiTaskSelectionTranslate => 'Selection Translation';
+
+  @override
+  String get aiTaskWordLookup => 'Word Lookup';
+
+  @override
+  String get aiTaskTitleGenerate => 'Title Generation';
+
+  @override
+  String get aiTaskAssistantChat => 'Assistant Chat & Explain';
+
+  @override
+  String get aiTaskConversationSummarize => 'Conversation Summary';
+
+  @override
+  String get aiTaskDocumentSummarize => 'Document Summary';
+
+  @override
+  String get aiTaskDocumentTranslate => 'Full Translation';
+
+  @override
+  String get aiTaskMapExpand => 'Mind Map Expansion';
+
+  @override
+  String get aiTaskMapGenerate => 'Mind Map Generation & Update';
+
+  @override
+  String get aiTaskResearch => 'Research & Verification';
+
+  @override
+  String get aiTaskStudyNotes => 'Study Note Organizing';
+
+  @override
+  String get aiTaskReviewCards => 'Review Cards & Questions';
+
+  @override
+  String get aiTasksProfilesUnavailable => 'Couldn\'t load model capabilities';
+
+  @override
+  String get aiTasksProbeUnsaved => 'Test result not saved';
 }

@@ -8,13 +8,16 @@ import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
-import '../../../settings/settings_window.dart' show SettingsPage;
+import '../../../settings/settings_window.dart' show SettingsNavigation, SettingsPage, SettingsTab, showSettings;
 import '../../../settings/settings_save_actions.dart';
 import '../../../shared/l10n.dart';
 import '../../workspace/widgets/notices.dart' show showConfirmSheet;
 import '../assistant_services.dart';
 import '../assistant_settings.dart';
+import '../assistant_routing.dart';
 import '../widgets/service_logo.dart';
+import 'ai_routing_usage.dart';
+import 'ai_task_settings.dart' show AiTaskFocusModel;
 
 /// “Model ID” key of a model in pop-ups: unique across services.
 String modelKey(String serviceId, String modelId) => '$serviceId\u0000$modelId';
@@ -23,9 +26,29 @@ String modelKey(String serviceId, String modelId) => '$serviceId\u0000$modelId';
 String connectionFailure(AppLocalizations l, ConnectionStatus status) =>
     status == ConnectionStatus.authFailed ? l.assistantErrorKey : l.assistantCannotConnect;
 
-/// Settings › Models: the default model, then one card per service.
+/// Opens Settings › Models at a service's card, or at the add-service list.
+class ModelSettingsRequest {
+  const ModelSettingsRequest({this.serviceId, this.addService = false});
+  final String? serviceId;
+  final bool addService;
+}
+
+/// Shows AI Features located at [model] (every row using it).
+void assignModel(BuildContext context, ModelReference model) {
+  final navigation = SettingsNavigation.maybeOf(context);
+  if (navigation != null) {
+    navigation.go(SettingsTab.aiTasks, focus: AiTaskFocusModel(model));
+  } else {
+    unawaited(showSettings(context, tab: SettingsTab.aiTasks, focus: AiTaskFocusModel(model)));
+  }
+}
+
+/// Settings › Models: one card per service. Which feature uses which model
+/// is set on the AI Features page.
 class ModelSettingsPage extends ConsumerStatefulWidget {
-  const ModelSettingsPage({super.key});
+  const ModelSettingsPage({super.key, this.request});
+
+  final ModelSettingsRequest? request;
 
   @override
   ConsumerState<ModelSettingsPage> createState() => _ModelSettingsPageState();
@@ -36,6 +59,38 @@ class _ModelSettingsPageState extends ConsumerState<ModelSettingsPage> {
 
   /// A service just added: its card opens with the key field focused.
   String? _fresh;
+  final _addButton = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _handle(widget.request);
+  }
+
+  @override
+  void didUpdateWidget(ModelSettingsPage old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.request, widget.request)) _handle(widget.request);
+  }
+
+  void _handle(ModelSettingsRequest? request) {
+    if (request == null) return;
+    if (request.serviceId != null) _open = request.serviceId;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await ref.read(assistantServicesProvider.future);
+      if (!mounted) return;
+      if (request.addService) {
+        final button = _addButton.currentContext;
+        if (button != null && button.mounted) await _add(button);
+      } else if (request.serviceId != null) {
+        final card = _cardKeys[request.serviceId!]?.currentContext;
+        if (card != null && card.mounted) await Scrollable.ensureVisible(card, alignment: .1, duration: MMMotion.quick);
+      }
+    });
+  }
+
+  final _cardKeys = <String, GlobalKey>{};
 
   Future<void> _add(BuildContext button) async {
     final l = context.l10n;
@@ -58,7 +113,6 @@ class _ModelSettingsPageState extends ConsumerState<ModelSettingsPage> {
     final c = context.mmColors;
     final services = ref.watch(assistantServicesProvider);
     final value = services.value;
-    final controller = ref.read(assistantServicesProvider.notifier);
     return SettingsPage(
       key: const ValueKey('settings-models'),
       children: [
@@ -70,48 +124,27 @@ class _ModelSettingsPageState extends ConsumerState<ModelSettingsPage> {
                 : const Center(child: CupertinoActivityIndicator(radius: 8)),
           )
         else ...[
-          const SizedBox(height: MMSpacing.s),
-          MMSettingsGroup(
-            children: [
-              MMSettingsRow(
-                label: l.settingsDefaultModel,
-                trailing: MMPopUpButton<String>(
-                  key: const ValueKey('settings-default-model'),
-                  semanticLabel: l.settingsDefaultModel,
-                  value: value.defaultModel == null
-                      ? null
-                      : modelKey(value.defaultModel!.serviceId, value.defaultModel!.modelId),
-                  items: [
-                    for (final s in value.services)
-                      for (final m in value.enabledModelsByService[s.id] ?? const <AssistantModel>[])
-                        (modelKey(s.id, m.model), modelLabel(value, m)),
-                  ],
-                  onChanged: (key) {
-                    final [service, model] = key.split('\u0000');
-                    unawaited(controller.setDefault(ModelReference(service, model)));
-                  },
-                ),
-              ),
-            ],
-          ),
           MMSettingsHeader(l.settingsServices),
           for (final s in value.services) ...[
-            ServiceCard(
-              key: ValueKey('service-${s.id}'),
-              service: s,
-              defaultModel: value.defaultModel,
-              open: _open == s.id,
-              focusKey: _fresh == s.id,
-              onToggle: () => setState(() {
-                _open = _open == s.id ? null : s.id;
-                _fresh = null;
-              }),
+            KeyedSubtree(
+              key: _cardKeys.putIfAbsent(s.id, GlobalKey.new),
+              child: ServiceCard(
+                key: ValueKey('service-${s.id}'),
+                service: s,
+                open: _open == s.id,
+                focusKey: _fresh == s.id,
+                onToggle: () => setState(() {
+                  _open = _open == s.id ? null : s.id;
+                  _fresh = null;
+                }),
+              ),
             ),
             const SizedBox(height: 10),
           ],
           Align(
             alignment: Alignment.centerLeft,
             child: Builder(
+              key: _addButton,
               builder: (button) => MMButton(
                 key: const ValueKey('settings-add-service'),
                 label: l.settingsAddService,
@@ -246,14 +279,12 @@ class ServiceCard extends ConsumerStatefulWidget {
   const ServiceCard({
     super.key,
     required this.service,
-    required this.defaultModel,
     required this.open,
     required this.onToggle,
     this.focusKey = false,
   });
 
   final AssistantService service;
-  final ModelReference? defaultModel;
   final bool open;
   final VoidCallback onToggle;
 
@@ -431,7 +462,36 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     final revision = _revision;
     if (!await _savePending() || !mounted || revision != _revision) return;
     final service = ref.read(assistantServicesProvider).value!.services.firstWhere((s) => s.id == _service.id);
-    await _runCheck(service);
+    if (await _runCheck(service) && mounted) await _offerAssignment();
+  }
+
+  /// After a passing save: if no default or feature uses this service's
+  /// enabled models yet, the HUD offers to assign one.
+  Future<void> _offerAssignment() async {
+    final service = ref.read(assistantServicesProvider).value?.services.where((s) => s.id == _service.id).firstOrNull;
+    final model = service?.models.where((m) => m.enabled).firstOrNull;
+    if (service == null || !service.enabled || model == null) return;
+    final RoutingConfig routing;
+    try {
+      routing = await ref.read(assistantRoutingProvider.future);
+    } catch (_) {
+      return;
+    }
+    final used =
+        TaskCategory.values.any((c) => routing.defaultModel(c)?.serviceId == service.id) ||
+        TaskType.values.any((t) => routing.binding(t).model?.serviceId == service.id);
+    if (used || !mounted) return;
+    final l = context.l10n;
+    MMHud.show(
+      context,
+      l.voiceSaved,
+      action: (
+        l.aiTasksAssignToFeatures,
+        () {
+          if (context.mounted) assignModel(context, ModelReference(service.id, model.id));
+        },
+      ),
+    );
   }
 
   Future<void> _addModels() async {
@@ -440,21 +500,34 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     _cancelCheck();
     try {
       final service = ref.read(assistantServicesProvider).value!.services.firstWhere((s) => s.id == _service.id);
-      await showAddModels(context, service);
+      final added = await showAddModels(context, service);
+      if (added != null && added.isNotEmpty && mounted) {
+        MMHud.show(
+          context,
+          context.l10n.aiTasksAddedModels(added.length),
+          action: (
+            context.l10n.aiTasksAssignToFeatures,
+            () {
+              if (context.mounted) assignModel(context, added.first);
+            },
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _openingModels = _checking = false);
     }
   }
 
-  Future<void> _runCheck(AssistantService service) async {
-    if (!mounted) return;
+  /// Whether the service answered.
+  Future<bool> _runCheck(AssistantService service) async {
+    if (!mounted) return false;
     final l = context.l10n;
     if (_needsKey && _key.text.trim().isEmpty) {
       setState(() {
         _checking = false;
         _failure = null;
       });
-      return;
+      return false;
     }
     final token = _check = CancellationToken();
     setState(() => _checking = true);
@@ -462,23 +535,35 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     try {
       status = await ref.read(serviceCatalogProvider).check(service, _key.text.trim(), cancellation: token);
     } on ResearchFailure {
-      return; // Cancelled by a newer edit.
+      return false; // Cancelled by a newer edit.
     }
-    if (!mounted || !identical(token, _check)) return;
+    if (!mounted || !identical(token, _check)) return false;
     setState(() {
       _checking = false;
       _failure = status == ConnectionStatus.ok ? null : connectionFailure(l, status);
     });
+    return status == ConnectionStatus.ok;
   }
 
   Future<void> _remove() async {
     final l = context.l10n;
-    final ok = await showConfirmSheet(
+    // In use: the confirmation lists what will stop resolving.
+    final routed = await confirmRoutedRemoval(
       context,
-      title: l.settingsRemoveServiceTitle(_service.name),
-      message: l.settingsRemoveServiceMessage,
+      ref,
+      name: _service.name,
+      serviceId: _service.id,
       confirmLabel: l.settingsRemoveService,
     );
+    if (!mounted) return;
+    final ok =
+        routed ??
+        await showConfirmSheet(
+          context,
+          title: l.settingsRemoveServiceTitle(_service.name),
+          message: l.settingsRemoveServiceMessage,
+          confirmLabel: l.settingsRemoveService,
+        );
     if (!ok || !mounted) return;
     try {
       await ref.read(assistantServicesProvider.notifier).remove(_service.id);
@@ -496,13 +581,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     final enabled = s.models.where((m) => m.enabled).length;
     final Widget status = _checking
         ? const SizedBox(width: 10, height: 10, child: CupertinoActivityIndicator(radius: 5))
-        : !s.enabled
-        ? Text(
-            l.settingsServiceOff,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: t.footnote.copyWith(color: c.secondaryLabel),
-          )
         : _failure != null
         ? Row(
             key: const ValueKey('service-failure'),
@@ -519,6 +597,16 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
                 ),
               ),
             ],
+          )
+        // A failed credential save leaves the service off (its data fence);
+        // the reason above is shown first, the switch already says it is off.
+        : !s.enabled
+        ? Text(
+            l.settingsServiceOff,
+            key: const ValueKey('service-off'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: t.footnote.copyWith(color: c.secondaryLabel),
           )
         : Text(
             s.models.isEmpty ? l.settingsServiceNoModels : l.settingsServiceModels(enabled),
@@ -601,7 +689,9 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             failed: _saveFailed,
             onSave: _saveAndCheck,
           ),
-          if (_keyUnavailable) Text(l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
+          // Asks for the key again only until a new one is typed.
+          if (_keyUnavailable && !_keyEdited)
+            Text(l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
           if (serviceEndpointOptional(s.protocol) && !_showsEndpoint)
             MMButton(
               key: const ValueKey('service-custom-address'),
@@ -671,26 +761,19 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             onPressed: _openingModels || _dirty || _pendingWrites > 0 ? null : _addModels,
           ),
         ),
-        for (final m in s.models)
-          _ModelRow(
-            key: ValueKey('model-${m.id}'),
-            service: s,
-            model: m,
-            isDefault: widget.defaultModel?.serviceId == s.id && widget.defaultModel?.modelId == m.id,
-          ),
+        for (final m in s.models) _ModelRow(key: ValueKey('model-${m.id}'), service: s, model: m),
       ],
     );
   }
 }
 
 /// A model of a service: its name (double-click renames; the ID is in the
-/// tooltip), “Make Default” and remove on hover, and its switch.
+/// tooltip), “Assign…” and remove on hover, and its switch.
 class _ModelRow extends ConsumerStatefulWidget {
-  const _ModelRow({super.key, required this.service, required this.model, required this.isDefault});
+  const _ModelRow({super.key, required this.service, required this.model});
 
   final AssistantService service;
   final ServiceModel model;
-  final bool isDefault;
 
   @override
   ConsumerState<_ModelRow> createState() => _ModelRowState();
@@ -713,6 +796,26 @@ class _ModelRowState extends ConsumerState<_ModelRow> {
     _name.selection = TextSelection(baseOffset: 0, extentOffset: _name.text.length);
     setState(() => _editing = true);
     WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
+  }
+
+  /// Removes the model; when a default, feature, conversation or resumable
+  /// task uses it, only after confirming the list.
+  Future<void> _remove() async {
+    final l = context.l10n;
+    final model = ModelReference(widget.service.id, widget.model.id);
+    final confirmed = await confirmRoutedRemoval(
+      context,
+      ref,
+      name: widget.model.displayName,
+      model: model,
+      confirmLabel: l.settingsRemoveModel,
+    );
+    if (confirmed == false || !mounted) return;
+    try {
+      await ref.read(assistantServicesProvider.notifier).removeModel(model.serviceId, model.modelId);
+    } catch (_) {
+      if (mounted) MMHud.show(context, l.assistantErrorFailed, icon: MMIcons.warning);
+    }
   }
 
   void _commit() {
@@ -765,22 +868,12 @@ class _ModelRowState extends ConsumerState<_ModelRow> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (widget.isDefault)
-              Row(
-                key: const ValueKey('model-default'),
-                children: [
-                  Icon(MMIcons.check, size: 11, color: c.secondaryLabel),
-                  const SizedBox(width: 2),
-                  Text(l.settingsIsDefault, style: t.footnote.copyWith(color: c.secondaryLabel)),
-                ],
-              )
-            else if (_hover && m.enabled && widget.service.enabled)
+            if (_hover && m.enabled && widget.service.enabled)
               MMButton(
-                key: ValueKey('model-set-default-${m.id}'),
-                label: l.settingsSetDefault,
+                key: ValueKey('model-assign-${m.id}'),
+                label: l.aiTasksAssign,
                 variant: MMButtonVariant.plain,
-                onPressed: () =>
-                    unawaited(controller.setDefault(ModelReference(widget.service.id, m.id)).catchError((Object _) {})),
+                onPressed: () => assignModel(context, ModelReference(widget.service.id, m.id)),
               ),
             const SizedBox(width: MMSpacing.xs),
             Opacity(
@@ -791,7 +884,7 @@ class _ModelRowState extends ConsumerState<_ModelRow> {
                 iconSize: 13,
                 size: 22,
                 tooltip: l.settingsRemoveModel,
-                onPressed: () => unawaited(controller.removeModel(widget.service.id, m.id)),
+                onPressed: () => unawaited(_remove()),
               ),
             ),
             const SizedBox(width: MMSpacing.s),
@@ -811,11 +904,13 @@ class _ModelRowState extends ConsumerState<_ModelRow> {
 
 /// The “Add Models” sheet: lists what the service offers, filtered as one
 /// types; an ID it does not list can be added by name.
-Future<void> showAddModels(BuildContext context, AssistantService service) => showMMSheet<void>(
-  context: context,
-  width: 460,
-  builder: (_) => AddModelsSheet(service: service),
-);
+/// Returns the models added, or null when cancelled.
+Future<List<ModelReference>?> showAddModels(BuildContext context, AssistantService service) =>
+    showMMSheet<List<ModelReference>>(
+      context: context,
+      width: 460,
+      builder: (_) => AddModelsSheet(service: service),
+    );
 
 class AddModelsSheet extends ConsumerStatefulWidget {
   const AddModelsSheet({super.key, required this.service});
@@ -898,7 +993,12 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
       await controller.addModels(widget.service.id, [
         for (final id in _picked) (listed[id] ?? ServiceModel(id: id)).copyWith(enabled: true),
       ]);
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop([
+          for (final id in _picked)
+            if (!widget.service.models.any((m) => m.id == id)) ModelReference(widget.service.id, id),
+        ]);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _adding = false);
