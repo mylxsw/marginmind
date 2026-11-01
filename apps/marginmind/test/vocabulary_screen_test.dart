@@ -66,7 +66,7 @@ class Speech {
 }
 
 class Lookup extends WordLookup {
-  Lookup() : super(connect: (_) => throw UnimplementedError());
+  Lookup() : super.tasks((_, _, _) => throw UnimplementedError());
   bool refreshed = false, fail = false;
   Completer<WordLookupResult>? pending;
   CancellationToken? token;
@@ -76,7 +76,7 @@ class Lookup extends WordLookup {
     required String sentence,
     String? sourceLanguage,
     required String targetLanguage,
-    required AssistantModel? model,
+    AssistantModel? model,
     required CancellationToken cancel,
     bool online = true,
     bool refresh = false,
@@ -143,7 +143,7 @@ Future<(ProviderContainer, InMemoryVocabularyRepository)> open(
     overrides: [
       if (compact) touchPlatformProvider.overrideWithValue(true),
       assistantDefaultModelProvider.overrideWithValue(lookup == null ? null : model),
-      if (lookup != null) wordLookupProvider.overrideWithValue(lookup),
+      if (lookup != null) wordLookupProvider('demo-1').overrideWithValue(lookup),
       translationParagraphsProvider(('demo-1', 'c1')).overrideWith(
         (ref) async => [
           TranslationParagraph(documentId: 'c1', page: 1, index: 0, text: 'Cats and cats.', fingerprint: 'f'),

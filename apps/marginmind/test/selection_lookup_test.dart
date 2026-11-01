@@ -13,6 +13,7 @@ import 'package:marginmind/features/vocabulary/vocabulary_screen.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_controller.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_source_flash.dart';
 import 'package:marginmind/features/workspace/reader_translation.dart';
+import 'package:marginmind/features/assistant/quick_tasks.dart';
 import 'package:marginmind/features/workspace/word_lookup.dart';
 import 'package:marginmind/features/workspace/widgets/selection_lookup.dart';
 import 'package:marginmind/features/workspace/widgets/selection_translation.dart';
@@ -44,7 +45,7 @@ final lookupResult = WordLookupResult(
 );
 
 class LookupFixture extends WordLookup {
-  LookupFixture() : super(connect: (_) => throw UnimplementedError());
+  LookupFixture() : super.tasks((_, _, _) => throw UnimplementedError());
   final pending = Completer<WordLookupResult>();
   int calls = 0, contextCalls = 0;
   String? sentence;
@@ -54,7 +55,7 @@ class LookupFixture extends WordLookup {
     required String sentence,
     String? sourceLanguage,
     required String targetLanguage,
-    required AssistantModel? model,
+    AssistantModel? model,
     required CancellationToken cancel,
     bool online = true,
     bool refresh = false,
@@ -70,7 +71,7 @@ class LookupFixture extends WordLookup {
     required String sentence,
     String? sourceLanguage,
     required String targetLanguage,
-    required AssistantModel? model,
+    AssistantModel? model,
     required CancellationToken cancel,
     bool online = true,
   }) async {
@@ -106,8 +107,13 @@ Future<ProviderContainer> openLookup(
               )
             : model,
       ),
-      wordLookupProvider.overrideWithValue(fixture),
-      if (translator != null) paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+      if (!setup && !offline) wordLookupProvider('demo-1').overrideWithValue(fixture),
+      if (setup || offline)
+        quickTaskExecutorProvider('demo-1').overrideWithValue((_, _, _) async {
+          if (setup) throw const ConfigurationFailure('modelNotConfigured');
+          throw const ResearchFailure(ResearchFailureKind.network);
+        }),
+      if (translator != null) selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
       translationParagraphsProvider(('demo-1', 'c1')).overrideWith(
         (ref) async => [
           TranslationParagraph(
@@ -340,7 +346,7 @@ void main() {
       prefs: {'settings.language': 'zh'},
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -381,7 +387,7 @@ void main() {
       prefs: {'settings.language': 'zh'},
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');

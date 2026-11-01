@@ -1,8 +1,6 @@
-import 'package:dart_agent_core/eval.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:test/test.dart';
-
-import 'support.dart';
 
 void main() {
   const current = AssistantModel(
@@ -37,17 +35,23 @@ void main() {
     expect(assistantTitleModel(current, [other]), current);
     expect(assistantTitleModel(current, [other, small]), current);
   });
-  test('title recording/replay is separate, bounded and language instructed', () async {
-    final store = InMemoryRecordingStore();
-    final fake = ScriptClient([answer('通用电气转型')]);
-    for (final client in [RecordingLLMClient(inner: fake, store: store), ReplayLLMClient(store: store)]) {
-      expect(await generateAssistantTitle(client, current.model, '解释通用电气的转型'), '通用电气转型');
-    }
-    expect(fake.requests.single.first.toJson().toString(), contains('24'));
-    expect(fake.calls, 1);
-  });
-  test('empty and failed title generation leave caller a recoverable result', () async {
-    expect(await generateAssistantTitle(ScriptClient([answer('')]), 'fake', 'question'), '');
-    await expectLater(generateAssistantTitle(ScriptClient([]), 'fake', 'question'), throwsRangeError);
+  test('title adapter selects its task and releases cancellation on success or failure', () async {
+    CancellationToken? token;
+    final result = await generateAssistantTitle((type, input, cancel) async {
+      expect(type, TaskType.titleGenerate);
+      expect(input, {'question': '解释通用电气的转型'});
+      token = cancel;
+      return '通用电气转型';
+    }, '解释通用电气的转型');
+    expect(result, '通用电气转型');
+    expect(token!.isCancelled, true);
+    await expectLater(
+      generateAssistantTitle((_, _, cancel) async {
+        token = cancel;
+        throw StateError('fixture');
+      }, 'question'),
+      throwsStateError,
+    );
+    expect(token!.isCancelled, true);
   });
 }

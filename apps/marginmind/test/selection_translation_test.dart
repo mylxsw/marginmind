@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
-import 'package:marginmind/features/workspace/reader_translation.dart';
+import 'package:marginmind/features/assistant/quick_tasks.dart';
 import 'package:marginmind/features/workspace/widgets/annotation_color_button.dart';
 import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
@@ -88,7 +88,7 @@ void main() {
         prefs: {'settings.appearance': dark ? 'dark' : 'light', 'settings.language': 'zh'},
         overrides: [
           assistantDefaultModelProvider.overrideWithValue(model),
-          paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+          selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
         ],
       );
       container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -172,7 +172,7 @@ void main() {
       tester,
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -199,7 +199,7 @@ void main() {
       prefs: {'settings.selectionTranslationDirection': 'chineseToEnglish'},
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translators[calls++]),
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async => translators[calls++]),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -246,8 +246,7 @@ void main() {
     );
   });
 
-  testWidgets('offline cloud translation makes no request', (tester) async {
-    var calls = 0;
+  testWidgets('offline runtime rejection offers settings and no result', (tester) async {
     final container = await pumpApp(
       tester,
       prefs: {'assistant.online.demo-1': false},
@@ -259,9 +258,8 @@ void main() {
             endpoint: 'https://example.invalid/v1',
           ),
         ),
-        paragraphTranslatorProvider.overrideWithValue((_) async {
-          calls++;
-          return SelectionTestTranslator();
+        quickTaskExecutorProvider('demo-1').overrideWithValue((_, _, _) async {
+          throw const ResearchFailure(ResearchFailureKind.network);
         }),
       ],
     );
@@ -272,7 +270,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('selection-translate')));
     await tester.pumpAndSettle();
     expect(find.text('Online access is off'), findsOneWidget);
-    expect(calls, 0);
+    expect(find.text('Open settings'), findsOneWidget);
+    expect(find.byTooltip('Copy translation'), findsNothing);
   });
 
   testWidgets('an existing Chinese highlight translates its quote without editing the document', (tester) async {
@@ -282,7 +281,7 @@ void main() {
       tester,
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -307,7 +306,7 @@ void main() {
       tester,
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async => translators[calls++]),
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async => translators[calls++]),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -360,7 +359,7 @@ void main() {
         },
         overrides: [
           assistantDefaultModelProvider.overrideWithValue(model),
-          paragraphTranslatorProvider.overrideWithValue((_) async => translators[calls++]),
+          selectionTranslatorProvider('demo-1').overrideWithValue(() async => translators[calls++]),
         ],
       );
       container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -410,7 +409,7 @@ void main() {
       prefs: {'settings.selectionTranslationDirection': 'englishToChinese'},
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) async {
+        selectionTranslatorProvider('demo-1').overrideWithValue(() async {
           calls++;
           return translator;
         }),
@@ -445,7 +444,8 @@ void main() {
       size: const Size(800, 600),
       overrides: [
         assistantDefaultModelProvider.overrideWithValue(model),
-        paragraphTranslatorProvider.overrideWithValue((_) => calls++ == 0 ? factory.future : Future.value(current)),
+        selectionTranslatorProvider('demo-1')
+            .overrideWithValue(() => calls++ == 0 ? factory.future : Future.value(current)),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -493,7 +493,7 @@ void main() {
         },
         overrides: [
           assistantDefaultModelProvider.overrideWithValue(model),
-          paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+          selectionTranslatorProvider('demo-1').overrideWithValue(() async => translator),
         ],
       );
       container.read(navigationProvider.notifier).openStudySet('demo-1');

@@ -7,8 +7,7 @@ import 'dart:io';
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_assistant/mm_assistant.dart'
-    show LegacyConversationMigration, assistantTitleModel, connectAssistant, generateAssistantTitle;
+import 'package:mm_assistant/mm_assistant.dart' show LegacyConversationMigration, generateAssistantTitle;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -21,6 +20,7 @@ import 'assistant_network.dart';
 import 'assistant_reader.dart';
 import 'assistant_settings.dart';
 import 'assistant_services.dart';
+import 'quick_tasks.dart';
 import 'assistant_writes.dart';
 
 // ---- composition -------------------------------------------------------------------
@@ -79,18 +79,7 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     executor: ref.watch(assistantMapEditExecutorProvider(studySetId)),
     notes: ref.watch(assistantNoteSaverProvider(studySetId)),
     online: assistantOnlineDefault(ref, studySetId),
-    generateTitle: (current, question) async {
-      final store = ref.read(assistantServicesStoreProvider);
-      final resolved = await store.resolve(current);
-      final model = assistantTitleModel(resolved, (await store.load()).enabledModels);
-      final key = await assistantModelKey(ref.read(assistantSecretsProvider), model);
-      final connection = connectAssistant(model, key ?? '');
-      try {
-        return await generateAssistantTitle(connection.client, model.model, question);
-      } finally {
-        connection.close();
-      }
-    },
+    generateTitle: (_, question) => generateAssistantTitle(ref.read(quickTaskExecutorProvider(studySetId)), question),
     runFactory: (agent, conversation, question) async {
       final network = ref.read(assistantNetworkProvider) ?? await assistantNetworkFor(ref, studySetId, conversation);
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
