@@ -206,9 +206,11 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                     final panelWidth = math.min(360.0, box.maxWidth);
                     final documentMap = LayoutBuilder(
                       builder: (context, panes) {
-                        final axis = context.mmTablet && panes.maxHeight > panes.maxWidth
-                            ? Axis.vertical
-                            : Axis.horizontal;
+                        // Keyboard insets shrink the viewport, not the window's
+                        // orientation. Changing Row/Column here remounts the
+                        // editor and closes its text input connection.
+                        final axis = _splitAxis(context);
+                        final collapseWhenNarrow = !context.mmTablet || MediaQuery.viewInsetsOf(context).bottom == 0;
                         final minReader =
                             (hasPanel ? 300.0 : 420.0) +
                             (state.readerPanelVisible ? MMSizes.readerSidebarMinWidth + MMSizes.dividerHitWidth : 0);
@@ -231,14 +233,14 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                             fraction: state.splitFraction,
                             minReader: minReader,
                             minMap: minMap,
-                            collapseWhenNarrow: true,
+                            collapseWhenNarrow: collapseWhenNarrow,
                           ),
                           child: ExcerptViewScope(
                             showInMap: owner.showCardInMap,
                             child: MMSplitView(
                               mode: layout,
                               showModeButtons: false,
-                              collapseWhenNarrow: true,
+                              collapseWhenNarrow: collapseWhenNarrow,
                               onModeChanged: owner.setLayout,
                               primaryLabel: l.layoutReader,
                               secondaryLabel: l.layoutMap,
@@ -351,11 +353,17 @@ class WorkspaceDesktopShell extends ConsumerWidget {
   // Tablet chrome uses 36pt controls inside a compact 40pt row.
   double _titlebarHeight(BuildContext context) => context.mmTouchPlatform ? 40 : MMSizes.desktopWindowTitlebarHeight;
 
+  Axis _splitAxis(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    return context.mmTablet && size.height > size.width ? Axis.vertical : Axis.horizontal;
+  }
+
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
+    if (context.mmTablet && MediaQuery.viewInsetsOf(context).bottom > 0) return layout;
     final hasPanel = state.panel != null;
     final width = box.maxWidth - (hasPanel && box.maxWidth >= 700 ? math.min(360.0, box.maxWidth) : 0);
     final height = box.maxHeight - _titlebarHeight(context);
-    final vertical = context.mmTablet && height > width;
+    final vertical = _splitAxis(context) == Axis.vertical;
     return MMSplitView.effectiveMode(
       layout,
       vertical ? height : width,

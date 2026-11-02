@@ -328,7 +328,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final tabletLayout = resolveTabletWorkspaceLayout(
       size: Size(
         media.width - safe.horizontal,
-        media.height - safe.vertical - MMSizes.toolbarHeight - MediaQuery.viewInsetsOf(context).bottom,
+        // Fit panes against the window; the keyboard only reduces their
+        // viewport. Hiding the map here would dismiss its active editor.
+        media.height - safe.vertical - MMSizes.toolbarHeight,
       ),
       layout: state.layout,
       panelOpen: state.panel != null,
