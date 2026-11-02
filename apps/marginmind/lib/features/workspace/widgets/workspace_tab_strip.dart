@@ -35,7 +35,7 @@ IconData _tabIcon(WorkspaceTab tab) => switch (tab.kind) {
 };
 
 TextStyle _tabTextStyle(BuildContext context) =>
-    DefaultTextStyle.of(context).style.merge(context.mmTouchPlatform ? context.mmText.body : context.mmText.callout);
+    DefaultTextStyle.of(context).style.merge(MMInput.of(context).phone ? context.mmText.body : context.mmText.callout);
 
 double _tabWidth(BuildContext context, String title) {
   // Reserve the close slot and measure the stronger selected weight so
@@ -50,7 +50,10 @@ double _tabWidth(BuildContext context, String title) {
     textScaler: MediaQuery.textScalerOf(context),
     locale: Localizations.localeOf(context),
   )..layout();
-  final width = math.min(224.0, painter.width.ceilToDouble() + (context.mmTouchPlatform ? 95 : 66));
+  final width = math.min(
+    224.0,
+    painter.width.ceilToDouble() + (context.mmTouchPlatform ? (context.mmTablet ? 77 : 95) : 66),
+  );
   painter.dispose();
   return width;
 }
@@ -91,7 +94,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
         const menuWidth = 56.0;
         final showMenu = overflow && bounds.maxWidth >= menuWidth;
         final arrows = overflow && bounds.maxWidth >= 260;
-        final arrowWidth = context.mmTouchPlatform ? 44.0 : 28.0;
+        final arrowWidth = context.mmTouchPlatform ? (context.mmTablet ? 36.0 : 44.0) : 28.0;
         final available = math.max(0.0, bounds.maxWidth - (showMenu ? menuWidth : 0) - (arrows ? arrowWidth * 2 : 0));
         final perTab = count == 0 ? 224.0 : (available - 24) / count;
         final widths = [for (final width in naturalWidths) overflow ? math.min(width, math.max(120.0, perTab)) : width];
@@ -140,8 +143,8 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
             key: ValueKey('workspace-tab-item-${state.tabs.open[i].id}'),
             padding: EdgeInsets.only(
               top: math.min(
-                context.mmTouchPlatform ? 6 : 8,
-                math.max(0, bounds.maxHeight - (context.mmTouchPlatform ? 44 : 30)),
+                context.mmTouchPlatform ? (context.mmTablet ? 4 : 6) : 8,
+                math.max(0, bounds.maxHeight - (context.mmTouchPlatform ? (context.mmTablet ? 36 : 44) : 30)),
               ),
             ),
             child: Align(
@@ -170,6 +173,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
               MMIconButton(
                 key: const ValueKey('workspace-tabs-scroll-left'),
                 size: arrowWidth,
+                compact: context.mmTablet,
                 icon: MMIcons.chevronLeft,
                 tooltip: context.l10n.workspaceScrollTabsLeft,
                 onPressed: () => _scrollBy(-1),
@@ -184,6 +188,7 @@ class _WorkspaceTabStripState extends ConsumerState<WorkspaceTabStrip> {
               MMIconButton(
                 key: const ValueKey('workspace-tabs-scroll-right'),
                 size: arrowWidth,
+                compact: context.mmTablet,
                 icon: MMIcons.chevronRight,
                 tooltip: context.l10n.workspaceScrollTabsRight,
                 onPressed: () => _scrollBy(1),
@@ -316,21 +321,21 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                           child: _dragHandle(
                             context,
                             SizedBox(
-                              height: touch ? 44 : 30,
+                              height: touch ? (context.mmTablet ? 36 : 44) : 30,
                               child: MMInteractive(
                                 selected: widget.selected,
                                 semanticLabel: widget.title,
                                 onTap: widget.onSelect,
                                 builder: (context, interaction) => Padding(
-                                  padding: EdgeInsets.only(left: touch ? 12 : 6, right: 4),
+                                  padding: EdgeInsets.only(left: touch ? (context.mmTablet ? 8 : 12) : 6, right: 4),
                                   child: Row(
                                     children: [
                                       Icon(
                                         _tabIcon(widget.tab),
-                                        size: touch ? 15 : 14,
+                                        size: touch && !context.mmTablet ? 15 : 14,
                                         color: widget.selected ? c.label : c.icon,
                                       ),
-                                      SizedBox(width: touch ? 8 : 6),
+                                      SizedBox(width: touch && !context.mmTablet ? 8 : 6),
                                       Expanded(
                                         child: LayoutBuilder(
                                           builder: (context, bounds) {
@@ -377,7 +382,8 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
                               key: ValueKey('close-workspace-tab-${widget.tab.id}'),
                               icon: MMIcons.close,
                               iconSize: 11,
-                              size: touch ? 44 : 28,
+                              compact: context.mmTablet,
+                              size: touch && !context.mmTablet ? 44 : 28,
                               tooltip: '${context.l10n.closeTab} · ${widget.title}',
                               onPressed: widget.onClose,
                             ),

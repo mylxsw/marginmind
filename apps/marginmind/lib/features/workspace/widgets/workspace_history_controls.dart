@@ -9,10 +9,11 @@ import 'notices.dart';
 
 /// Travels the shared document/map history, including edits in companions.
 class WorkspaceHistoryControls extends ConsumerWidget {
-  const WorkspaceHistoryControls({super.key, required this.studySetId, this.compact = false});
+  const WorkspaceHistoryControls({super.key, required this.studySetId, this.compact = false, this.dense = false});
 
   final String studySetId;
   final bool compact;
+  final bool dense;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,12 +56,14 @@ class WorkspaceHistoryControls extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         MMIconButton(
+          compact: dense,
           key: const ValueKey('workspace-undo'),
           icon: MMIcons.undo,
           tooltip: AppShortcuts.tip(l.undo, AppShortcuts.undo),
           onPressed: history.$1 ? () => travel(false) : null,
         ),
         MMIconButton(
+          compact: dense,
           key: const ValueKey('workspace-redo'),
           icon: MMIcons.redo,
           tooltip: AppShortcuts.tip(l.redo, AppShortcuts.redo),

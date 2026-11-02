@@ -84,7 +84,9 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                   ),
                 ),
                 child: CustomMultiChildLayout(
-                  delegate: _WorkspaceTitlebarLayout(controlCenterY: MMSizes.windowTitlebarHeight / 2),
+                  delegate: _WorkspaceTitlebarLayout(
+                    controlCenterY: touch ? toolbarHeight / 2 : MMSizes.windowTitlebarHeight / 2,
+                  ),
                   children: [
                     LayoutId(
                       id: _TitlebarSlot.leading,
@@ -100,6 +102,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                           children: [
                             if (!sidebarVisible || touch)
                               MMIconButton(
+                                compact: touch,
                                 key: const ValueKey('workspace-show-sidebar'),
                                 icon: MMIcons.sidebar,
                                 tooltip: l.showSidebar,
@@ -118,11 +121,11 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          WorkspaceHistoryControls(studySetId: studySetId),
+                          WorkspaceHistoryControls(studySetId: studySetId, dense: touch),
                           if (layoutControls ||
                               (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant))
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: EdgeInsets.symmetric(horizontal: touch ? 6 : 10),
                               child: SizedBox(
                                 height: 18,
                                 child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
@@ -141,6 +144,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                                     (MMSplitMode.secondary, MMIcons.layoutMap, l.layoutMap),
                                   ])
                                     MMIconButton(
+                                      compact: touch,
                                       key: ValueKey(
                                         'toolbar-layout-${switch (entry.$1) {
                                           MMSplitMode.primary => 'reader',
@@ -165,13 +169,14 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                           if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant) ...[
                             if (layoutControls)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                padding: EdgeInsets.symmetric(horizontal: touch ? 6 : 10),
                                 child: SizedBox(
                                   height: 18,
                                   child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
                                 ),
                               ),
                             MMIconButton(
+                              compact: touch,
                               key: const ValueKey('toolbar-assistant'),
                               iconWidget: const AssistantIcon(),
                               iconSize: 18,
@@ -181,7 +186,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                               onPressed: () => toggleAssistant(ref, studySetId),
                             ),
                           ],
-                          const SizedBox(width: 12),
+                          SizedBox(width: touch ? 6 : 12),
                         ],
                       ),
                     ),
@@ -342,9 +347,8 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     );
   }
 
-  // Desktop tabs use the compact title row; touch keeps room for 44pt targets.
-  double _titlebarHeight(BuildContext context) =>
-      context.mmTouchPlatform ? MMSizes.windowTitlebarHeight : MMSizes.desktopWindowTitlebarHeight;
+  // Tablet chrome uses 36pt controls inside a compact 40pt row.
+  double _titlebarHeight(BuildContext context) => context.mmTouchPlatform ? 40 : MMSizes.desktopWindowTitlebarHeight;
 
   MMSplitMode _shownLayout(BuildContext context, BoxConstraints box, WorkspaceState state) {
     final hasPanel = state.panel != null;

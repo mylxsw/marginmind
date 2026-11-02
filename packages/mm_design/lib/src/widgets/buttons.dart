@@ -154,6 +154,7 @@ class MMIconButton extends StatelessWidget {
     this.iconSize = 16,
     this.color,
     this.selected = false,
+    this.compact = false,
   }) : assert(icon != null || iconWidget != null);
 
   final IconData? icon;
@@ -165,6 +166,9 @@ class MMIconButton extends StatelessWidget {
   final Color? color;
   final bool selected;
 
+  /// Compact window chrome uses a 36pt touch cell and the requested icon size.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
@@ -174,10 +178,15 @@ class MMIconButton extends StatelessWidget {
       tooltip: tooltip,
       semanticLabel: tooltip,
       builder: (context, s) => MMControlFrame(
+        minTouchSize: compact ? 36 : MMSizes.touchTarget,
         child: AnimatedContainer(
           duration: MMMotion.quick,
-          width: context.mmTouchPlatform && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
-          height: context.mmTouchPlatform && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
+          width: !compact && context.mmTouchPlatform && size <= MMSizes.touchTarget
+              ? MMSizes.tabletControlVisual
+              : size,
+          height: !compact && context.mmTouchPlatform && size <= MMSizes.touchTarget
+              ? MMSizes.tabletControlVisual
+              : size,
           decoration: BoxDecoration(
             color: s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent),
             borderRadius: BorderRadius.circular(context.mmTouchPlatform ? MMRadii.row : size / 3.5),
@@ -185,7 +194,7 @@ class MMIconButton extends StatelessWidget {
           child: iconWidget == null
               ? Icon(
                   icon,
-                  size: context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
+                  size: !compact && context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
                       ? MMSizes.tabletToolbarIcon
                       : iconSize,
                   color: s.enabled ? (color ?? (selected ? c.accent : c.icon)) : c.icon.withValues(alpha: 0.3),
@@ -193,7 +202,7 @@ class MMIconButton extends StatelessWidget {
               : Center(
                   child: IconTheme.merge(
                     data: IconThemeData(
-                      size: context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
+                      size: !compact && context.mmTouchPlatform && iconSize < MMSizes.tabletToolbarIcon
                           ? MMSizes.tabletToolbarIcon
                           : iconSize,
                       color: color ?? (selected ? c.accent : c.icon),
