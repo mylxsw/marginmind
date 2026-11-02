@@ -99,6 +99,11 @@ void main() {
       await idle(tester);
     }
 
+    const reference = bool.fromEnvironment('MOBILE_UI_REFERENCE');
+    if (reference && Platform.isIOS) {
+      await nativeInteraction('Portrait');
+      expect(MediaQuery.sizeOf(context()).height, greaterThan(MediaQuery.sizeOf(context()).width));
+    }
     await shot('01-library');
     expect(find.byKey(const ValueKey('phone-tabs')), findsNothing);
     await tester.tap(find.byWidgetPredicate((w) => w is MMIconButton && w.icon == MMIcons.sidebar).hitTestable().first);
@@ -110,7 +115,6 @@ void main() {
     }
     await idle(tester);
 
-    const reference = bool.fromEnvironment('MOBILE_UI_REFERENCE');
     for (final tab in SettingsTab.values.where(
       (tab) => !reference || tab == SettingsTab.general || tab == SettingsTab.reading,
     )) {
@@ -212,7 +216,9 @@ void main() {
       controller.setLayout(MMSplitMode.secondary);
       await shot('06-map');
       await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);
+      if (Platform.isIOS) await nativeInteraction('Landscape');
       await idle(tester);
+      expect(MediaQuery.sizeOf(context()).width, greaterThan(MediaQuery.sizeOf(context()).height));
       await shot('06a-ipad-map-landscape');
       controller.toggleAssistantPanel();
       await shot('06b-ipad-assistant-landscape');
@@ -494,6 +500,17 @@ void main() {
     await shot('14a-assistant-landscape');
     await tester.tap(find.byKey(const ValueKey('assistant-input')));
     await tester.enterText(find.byKey(const ValueKey('assistant-input')), '横屏草稿');
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 900)));
+    await idle(tester);
+    final keyboardTop =
+        (tester.view.physicalSize.height - tester.view.viewInsets.bottom) / tester.view.devicePixelRatio;
+    final send = find.byKey(const ValueKey('assistant-send'));
+    expect(tester.view.viewInsets.bottom, greaterThan(0));
+    expect(tester.getRect(send).bottom, lessThanOrEqualTo(keyboardTop + 1));
+    expect(send.hitTestable(), findsOneWidget);
+    final assistantClose = find.byKey(const ValueKey('assistant-close'));
+    expect(tester.getRect(assistantClose).bottom, lessThanOrEqualTo(keyboardTop + 1));
+    expect(assistantClose.hitTestable(), findsOneWidget);
     await shot('14aa-assistant-landscape-keyboard');
     FocusManager.instance.primaryFocus?.unfocus();
     await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');

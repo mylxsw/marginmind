@@ -4,6 +4,7 @@ import '../../workspace/workspace_content_host.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
@@ -169,65 +170,74 @@ class AssistantPanel extends ConsumerWidget {
     return CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): escape},
       child: LayoutBuilder(
-        builder: (context, bounds) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (MMInput.of(context).phone)
-              ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: bounds.maxHeight),
-                child: ClipRect(child: header),
-              )
-            else
-              header,
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(child: body),
-                      // Browsing history must not discard the current draft.
-                      if (!conversation.readOnly)
-                        Visibility(
-                          visible: !ui.history,
-                          maintainState: true,
-                          child: ExcludeFocus(
-                            excluding: ui.history,
-                            child: MMInput.of(context).phone
-                                ? ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxHeight: (bounds.maxHeight - MMSizes.tabletPaneHeaderHeight).clamp(
-                                        0.0,
-                                        double.infinity,
+        builder: (context, bounds) {
+          // Some Android keyboards leave less than 150pt in landscape.
+          // Keep the editor and send/stop controls visible above the keyboard.
+          final compactComposer =
+              MMInput.of(context).phone &&
+              defaultTargetPlatform == TargetPlatform.android &&
+              MediaQuery.sizeOf(context).height < 500 &&
+              bounds.maxHeight < 180;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!compactComposer && MMInput.of(context).phone)
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: bounds.maxHeight),
+                  child: ClipRect(child: header),
+                )
+              else if (!compactComposer)
+                header,
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: compactComposer ? const SizedBox.shrink() : body),
+                        // Browsing history must not discard the current draft.
+                        if (!conversation.readOnly)
+                          Visibility(
+                            visible: !ui.history,
+                            maintainState: true,
+                            child: ExcludeFocus(
+                              excluding: ui.history,
+                              child: MMInput.of(context).phone
+                                  ? ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxHeight:
+                                            (bounds.maxHeight - (compactComposer ? 0 : MMSizes.tabletPaneHeaderHeight))
+                                                .clamp(0.0, double.infinity),
                                       ),
-                                    ),
-                                    child: SingleChildScrollView(
-                                      child: AssistantComposer(
-                                        key: ValueKey(conversation.id),
-                                        studySetId: studySetId,
-                                        configured: true,
+                                      child: SingleChildScrollView(
+                                        child: AssistantComposer(
+                                          key: ValueKey(conversation.id),
+                                          studySetId: studySetId,
+                                          configured: true,
+                                          compact: compactComposer,
+                                        ),
                                       ),
+                                    )
+                                  : AssistantComposer(
+                                      key: ValueKey(conversation.id),
+                                      studySetId: studySetId,
+                                      configured: true,
                                     ),
-                                  )
-                                : AssistantComposer(
-                                    key: ValueKey(conversation.id),
-                                    studySetId: studySetId,
-                                    configured: true,
-                                  ),
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                  if (source != null)
-                    _DrawerTransition(
-                      child: SourceDrawer(studySetId: studySetId, citation: source, number: number),
+                      ],
                     ),
-                ],
+                    if (source != null)
+                      _DrawerTransition(
+                        child: SourceDrawer(studySetId: studySetId, citation: source, number: number),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }

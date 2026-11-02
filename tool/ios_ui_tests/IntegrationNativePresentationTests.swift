@@ -19,6 +19,16 @@ final class IntegrationNativePresentationTests: XCTestCase {
     discard.tap()
     XCTAssertTrue(discard.waitForNonExistence(timeout: 5))
   }
+  func testPortrait() {
+    XCUIDevice.shared.orientation = .portrait
+    expectation(for: NSPredicate { _, _ in self.app.frame.height > self.app.frame.width }, evaluatedWith: app)
+    waitForExpectations(timeout: 8)
+  }
+  func testLandscape() {
+    XCUIDevice.shared.orientation = .landscapeLeft
+    expectation(for: NSPredicate { _, _ in self.app.frame.width > self.app.frame.height }, evaluatedWith: app)
+    waitForExpectations(timeout: 8)
+  }
   func testReaderNavigation() {
     let section = app.buttons["native-reader-section"]
     XCTAssertTrue(section.waitForExistence(timeout: 8), app.debugDescription)
