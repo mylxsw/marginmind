@@ -12,7 +12,7 @@ import 'context_menu_region.dart';
 import 'flat_surface.dart';
 import 'window_scaffold.dart';
 
-/// Edge-to-edge desktop navigation; touch drawers retain their floating glass.
+/// Edge-to-edge navigation with touch controls inside the safe area.
 /// Both leave room at the top for the system window buttons.
 class MMSidebar extends StatelessWidget {
   const MMSidebar({
@@ -41,41 +41,46 @@ class MMSidebar extends StatelessWidget {
     final flat = !MMInput.of(context).touchPlatform;
     final reduce = flat || MMAppearance.reduceTransparencyOf(context) || MMFlatSurface.of(context);
     final chrome = MMWindowChrome.maybeOf(context);
-    final radius = flat ? BorderRadius.zero : const BorderRadius.all(Radius.circular(MMRadii.sidebar));
+    const radius = BorderRadius.zero;
 
     Widget panel = Container(
       decoration: BoxDecoration(
         color: flat ? c.workspaceChrome : (reduce ? c.sidebarOpaque : c.sidebar),
         borderRadius: radius,
-        border: flat ? null : Border.all(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: 0.5),
       ),
       // Desktop removes the outer inset; keep window-button controls at y=26.
       padding: EdgeInsets.fromLTRB(10, flat ? 12 : 3.5, 10, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: MMSizes.windowButtonsHeight,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Title gestures belong behind controls so double-click
-                // recognition never holds a button's first click.
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
-                  onDoubleTap: chrome?.onTitleDoubleTap,
-                ),
-                Row(children: [const Spacer(), ?topTrailing]),
-              ],
+      child: SafeArea(
+        top: !flat,
+        bottom: !flat,
+        left: !flat,
+        right: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: MMSizes.windowButtonsHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Title gestures belong behind controls so double-click
+                  // recognition never holds a button's first click.
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
+                    onDoubleTap: chrome?.onTitleDoubleTap,
+                  ),
+                  Row(children: [const Spacer(), ?topTrailing]),
+                ],
+              ),
             ),
-          ),
-          if (header != null) Padding(padding: const EdgeInsets.only(top: 10), child: header),
-          Expanded(
-            child: ListView(padding: const EdgeInsets.only(top: 2, bottom: 8), children: children),
-          ),
-          ?footer,
-        ],
+            if (header != null) Padding(padding: const EdgeInsets.only(top: 10), child: header),
+            Expanded(
+              child: ListView(padding: const EdgeInsets.only(top: 2, bottom: 8), children: children),
+            ),
+            ?footer,
+          ],
+        ),
       ),
     );
     if (!reduce) {
@@ -83,9 +88,7 @@ class MMSidebar extends StatelessWidget {
     }
     return Container(
       width: width,
-      margin: flat
-          ? EdgeInsets.zero
-          : const EdgeInsets.fromLTRB(MMSizes.sidebarInset, MMSizes.sidebarInset, 0, MMSizes.sidebarInset),
+      margin: EdgeInsets.zero,
       decoration: BoxDecoration(
         borderRadius: radius,
         boxShadow: [

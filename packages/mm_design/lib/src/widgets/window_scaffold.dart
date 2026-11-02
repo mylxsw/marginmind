@@ -122,7 +122,7 @@ class MMWindowScaffold extends StatelessWidget {
     final c = context.mmColors;
     final open = sidebar != null && sidebarVisible;
     final inline = open && !sidebarOverlay;
-    final fullWidth = sidebarWidth + (MMInput.of(context).touchPlatform ? MMSizes.sidebarInset : 0);
+    final fullWidth = sidebarWidth;
     final duration = MMAppearance.duration(context, MMMotion.layout);
     if (MMInput.of(context).touchPlatform && contentBuilder == null) {
       return _touch(context, c, open, inline, fullWidth, duration);
@@ -195,12 +195,7 @@ class MMWindowScaffold extends StatelessWidget {
                       ),
                     ),
                     if (sidebar != null)
-                      MMDrawer(
-                        open: open,
-                        width: fullWidth + safe.left,
-                        onDismiss: onSidebarDismiss,
-                        child: SafeArea(right: false, child: sidebar!),
-                      ),
+                      MMDrawer(open: open, width: fullWidth + safe.left, onDismiss: onSidebarDismiss, child: sidebar!),
                   ],
                 )
               : SafeArea(child: row),
@@ -356,7 +351,7 @@ class MMWindowScaffold extends StatelessWidget {
                           open: open,
                           width: fullWidth + safe.left,
                           onDismiss: onSidebarDismiss,
-                          child: SafeArea(right: false, child: sidebar!),
+                          child: sidebar!,
                         ),
                     ],
                   ),
