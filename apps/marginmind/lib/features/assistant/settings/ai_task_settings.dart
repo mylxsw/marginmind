@@ -11,8 +11,8 @@ import '../../../settings/settings_save_actions.dart';
 import '../../../shared/l10n.dart';
 import '../assistant_routing.dart';
 import '../assistant_services.dart';
-import 'ai_task_status.dart';
 import 'model_route_picker.dart';
+import 'ai_task_status.dart' show aiTaskName;
 
 /// Where Settings › AI Features opens: one feature's row, or every row using
 /// a model. A new instance re-runs the highlight.
@@ -48,8 +48,7 @@ final aiTaskRoutingSpecsProvider = Provider<Map<TaskType, TaskSpec>>(
   }),
 );
 
-/// A category default has no domain-specific capabilities. Individual feature
-/// rows below it independently report their actual requirements.
+/// Category defaults use a neutral spec; feature overrides keep their real specs.
 TaskSpec _categorySettingsSpec(TaskType type) => TaskSpec(
   type: type,
   inputSchema: 'settings',
@@ -208,8 +207,7 @@ Future<bool> saveAiTaskDraft(WidgetRef ref, AiTaskDraft draft) => draft.save((co
 
 /// A capability test of one model: running, or how it ended.
 
-/// Settings › AI Features: the quick and heavy defaults, then each feature's
-/// model. Rows show the model that will run; colour tells bound from inherited.
+/// Settings › AI Features: two defaults and collapsed per-feature overrides.
 class AiTaskSettingsPage extends ConsumerStatefulWidget {
   const AiTaskSettingsPage({super.key, required this.draft, required this.onOpenModels, this.focus});
 
@@ -232,12 +230,12 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
   Set<String> _highlighted = const {};
   Timer? _highlightTimer;
   AiTaskFocus? _pendingFocus;
+  bool _advancedExpanded = false;
   int _generation = 0;
   int? _catalogRevision;
 
-  /// Capability profiles were read at least once / the last read failed.
-  bool _profilesLoaded = false, _profilesFailed = false;
-  static const _storeFailures = {'corruptCapabilityStore', 'unsupportedCapabilityStoreVersion'};
+  /// Optional metadata has finished its first load attempt.
+  bool _profilesLoaded = false;
 
   AiTaskDraft get _draft => widget.draft;
   static String _defaultId(TaskCategory c) => 'default-${c.name}';
@@ -311,15 +309,13 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
           ),
       ];
     } catch (_) {
-      // Keep the previous rows and the draft; the page offers a retry.
-      if (mounted && generation == _generation) setState(() => _profilesFailed = _profilesLoaded = true);
+      // Keep the previous labels and draft; dispatch reports actual failures.
+      if (mounted && generation == _generation) setState(() => _profilesLoaded = true);
       return;
     }
     if (!mounted || generation != _generation) return;
-    final failed = results.any((r) => _storeFailures.contains(r.failureCode));
     setState(() {
       _profilesLoaded = true;
-      _profilesFailed = failed;
       for (final (i, type) in TaskType.values.indexed) {
         _rows[type] = results[i];
       }
@@ -335,6 +331,11 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
   void _applyFocus() {
     final focus = _pendingFocus;
     if (!mounted || focus == null || !_draft.loaded || _rows.isEmpty) return;
+    if (!_advancedExpanded) {
+      setState(() => _advancedExpanded = true);
+      _applyFocusLater();
+      return;
+    }
     _pendingFocus = null;
     final ids = <String>[];
     switch (focus) {
@@ -376,13 +377,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
         if (mounted) setState(() => _highlighted = const {});
       });
     }
-  }
-
-  void _openPicker(String id) {
-    final key = _picker(id);
-    final picker = key.currentWidget;
-    final context = key.currentContext;
-    if (picker is ModelRoutePicker && context != null && picker.onChanged != null) unawaited(picker.open(context));
   }
 
   Future<void> _reload() async {
@@ -514,17 +508,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_profilesFailed)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(MMSpacing.xs, MMSpacing.s, MMSpacing.xs, 0),
-                    child: RoutingIssueLine(
-                      key: const ValueKey('ai-tasks-profiles-failed'),
-                      text: l.aiTasksProfilesUnavailable,
-                      action: l.assistantRetry,
-                      actionKey: const ValueKey('ai-tasks-profiles-retry'),
-                      onAction: () => unawaited(_inspect()),
-                    ),
-                  ),
                 for (final category in TaskCategory.values) ...[
                   if (category != TaskCategory.values.first) const SizedBox(height: MMSpacing.xs),
                   MMSettingsHeader(category == TaskCategory.quick ? l.aiTasksQuick : l.aiTasksHeavy),
@@ -532,15 +515,33 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
                     key: ValueKey('ai-tasks-defaults-${category.name}'),
                     children: [_defaultRow(catalog, category, saving), _thinkingRow(catalog, category, saving)],
                   ),
-                  const SizedBox(height: MMSpacing.s),
-                  MMSettingsGroup(
-                    key: ValueKey('ai-tasks-features-${category.name}'),
-                    children: [
-                      for (final type in TaskType.values)
-                        if (type.category == category) _featureRow(catalog, type, specs[type], saving),
-                    ],
-                  ),
                 ],
+                const SizedBox(height: MMSpacing.m),
+                MMSettingsGroup(
+                  key: const ValueKey('ai-tasks-advanced'),
+                  children: [
+                    MMSettingsRow(
+                      label: l.settingsAdvancedGroup,
+                      trailing: Icon(
+                        _advancedExpanded ? MMIcons.chevronDown : MMIcons.chevronRight,
+                        size: 14,
+                        color: context.mmColors.secondaryLabel,
+                      ),
+                      onTap: () => setState(() => _advancedExpanded = !_advancedExpanded),
+                    ),
+                    if (_advancedExpanded) ...[
+                      Padding(
+                        padding: const EdgeInsets.all(MMSpacing.m),
+                        child: Text(l.aiTasksAdvancedHint, style: context.mmText.bodySecondary),
+                      ),
+                      for (final category in TaskCategory.values) ...[
+                        MMSettingsHeader(category == TaskCategory.quick ? l.aiTasksQuick : l.aiTasksHeavy),
+                        for (final type in TaskType.values)
+                          if (type.category == category) _featureRow(catalog, type, specs[type], saving),
+                      ],
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -574,7 +575,7 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     if (model == null) {
       return (
         label: placeholder ?? l.aiTasksNotSet,
-        tone: ModelRouteTone.caution,
+        tone: ModelRouteTone.inherited,
         semantic: placeholder ?? l.aiTasksNotSet,
         tooltip: null,
       );
@@ -583,55 +584,13 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     final serviceLabel = snapshot ? row?.serviceLabel : null, modelLabel = snapshot ? row?.modelLabel : null;
     final (service, name) = routeModelNames(catalog, model, serviceLabel: serviceLabel, modelLabel: modelLabel);
     final label = routeModelLabel(catalog, model, serviceLabel: serviceLabel, modelLabel: modelLabel);
-    final invalid = row != null && row.effective == model && routingIssueInvalid(row.issue);
     final spoken = '$service · $name';
     return (
       label: label,
-      tone: invalid
-          ? ModelRouteTone.invalid
-          : inherited
-          ? ModelRouteTone.inherited
-          : ModelRouteTone.explicit,
-      semantic: invalid
-          ? '$spoken${_separator(l)}${routingIssueText(l, row.issue)}'
-          : inherited
-          ? '${l.aiTasksUseDefault}${_separator(l)}$spoken'
-          : spoken,
+      tone: inherited ? ModelRouteTone.inherited : ModelRouteTone.explicit,
+      semantic: inherited ? '${l.aiTasksUseDefault}${_separator(l)}$spoken' : spoken,
       tooltip: '$service · ${model.modelId}',
     );
-  }
-
-  /// The line under a row, if its state needs a decision.
-  Widget? _issue(String id, RoutingRowState? row, {VoidCallback? onChoose, bool showThinking = true}) {
-    if (row == null) return null;
-    final l = context.l10n;
-    final text = routingIssueText(l, row.issue, failureCode: row.failureCode);
-    if (text == null) return null;
-    if (row.issue == RoutingIssue.thinkingAlwaysOn && !showThinking) return null;
-    // A store that cannot be read is reported once for the page, not per row.
-    if (_storeFailures.contains(row.failureCode)) return null;
-    final model = row.effective;
-    switch (row.issue) {
-      case RoutingIssue.unknown:
-        return null;
-      case RoutingIssue.secretUnavailable:
-        return RoutingIssueLine(
-          key: ValueKey('ai-issue-$id'),
-          text: text,
-          critical: false,
-          action: l.aiTasksOpenModelSettings,
-          actionKey: ValueKey('ai-action-$id'),
-          onAction: model == null ? null : () => widget.onOpenModels(serviceId: model.serviceId),
-        );
-      default:
-        return RoutingIssueLine(
-          key: ValueKey('ai-issue-$id'),
-          text: text,
-          action: row.issue == RoutingIssue.thinkingAlwaysOn ? l.aiTasksChangeModel : l.aiTasksChooseAgain,
-          actionKey: ValueKey('ai-action-$id'),
-          onAction: _draft.saving ? null : onChoose,
-        );
-    }
   }
 
   Widget _defaultRow(AssistantServices catalog, TaskCategory category, bool saving) {
@@ -666,9 +625,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
                 }
               },
       ),
-      issue: category == TaskCategory.quick && row?.issue == RoutingIssue.thinkingAlwaysOn
-          ? null
-          : _issue(id, row, onChoose: () => _openPicker(id)),
     );
   }
 
@@ -676,7 +632,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     final l = context.l10n;
     final c = context.mmColors;
     if (category == TaskCategory.quick) {
-      final id = _defaultId(category);
       final row = _defaultRows[category];
       // Prefer off when the provider has a known control; otherwise use its defaults.
       return _RouteRow(
@@ -688,7 +643,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
             style: context.mmText.body.copyWith(color: c.secondaryLabel),
           ),
         ),
-        issue: row?.issue == RoutingIssue.thinkingAlwaysOn ? _issue(id, row, onChoose: () => _openPicker(id)) : null,
       );
     }
     final model = _draft.defaultModel(TaskCategory.heavy);
@@ -717,19 +671,9 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
     final row = _rows[type];
     final fallback = _defaultRows[type.category];
     final defaultModel = _draft.defaultModel(type.category);
-    final defaultBroken =
-        defaultModel == null ||
-        (fallback != null && (routingIssueInvalid(fallback.issue) || fallback.issue == RoutingIssue.unset));
-    final model = explicit ? binding.model : (defaultBroken ? null : defaultModel);
+    final model = explicit ? binding.model : defaultModel;
     final display = _display(catalog, model, row, inherited: !explicit);
-    final quickAlwaysOn =
-        !explicit && type.category == TaskCategory.quick && fallback?.issue == RoutingIssue.thinkingAlwaysOn;
-    // An inherited row repeats nothing the default row already says.
-    final ownIssue =
-        explicit ||
-        row?.issue != fallback?.issue ||
-        (row?.issue != RoutingIssue.unknown && row?.failureCode != fallback?.failureCode);
-    final followNote = defaultModel == null || defaultBroken
+    final followNote = defaultModel == null
         ? l.aiTasksNotSet
         : routeModelLabel(
             catalog,
@@ -745,7 +689,7 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
         key: _picker(id),
         focusNode: _node(id),
         label: display.label,
-        tone: quickAlwaysOn && display.tone == ModelRouteTone.inherited ? ModelRouteTone.caution : display.tone,
+        tone: display.tone,
         tooltip: display.tooltip,
         highlighted: _highlighted.contains(id),
         semanticLabel: aiTaskName(l, type),
@@ -770,7 +714,6 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
                 _draft.setBinding(type, TaskModelBinding.explicit(choice, reasoning: keep ? binding.reasoning : null));
               },
       ),
-      issue: !ownIssue || (!explicit && defaultBroken) ? null : _issue(id, row, onChoose: () => _openPicker(id)),
     );
   }
 }
@@ -779,11 +722,10 @@ class _AiTaskSettingsPageState extends ConsumerState<AiTaskSettingsPage> {
 /// pair cannot share a narrow line without cutting the model name, the picker
 /// moves under the name, right-aligned.
 class _RouteRow extends StatelessWidget {
-  const _RouteRow({super.key, required this.label, required this.picker, this.issue});
+  const _RouteRow({super.key, required this.label, required this.picker});
 
   final String label;
   final Widget picker;
-  final Widget? issue;
 
   @override
   Widget build(BuildContext context) {
@@ -838,19 +780,11 @@ class _RouteRow extends StatelessWidget {
                 ],
               );
         return Padding(
-          padding: EdgeInsets.fromLTRB(
-            14,
-            stacked ? MMSpacing.s : 0,
-            14,
-            issue == null ? (stacked ? MMSpacing.s : 0) : 7,
-          ),
+          padding: EdgeInsets.fromLTRB(14, stacked ? MMSpacing.s : 0, 14, stacked ? MMSpacing.s : 0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (stacked) content else SizedBox(height: touch ? 52 : 40, child: content),
-              ?issue,
-            ],
+            children: [if (stacked) content else SizedBox(height: touch ? 52 : 40, child: content)],
           ),
         );
       },

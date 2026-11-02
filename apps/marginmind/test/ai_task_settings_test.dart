@@ -128,6 +128,7 @@ Future<ProviderContainer> _open(
   List<Override> overrides = const [],
   SettingsTab tab = SettingsTab.aiTasks,
   AiTaskFocus? focus,
+  bool expandAdvanced = true,
   Size size = const Size(1280, 820),
 }) async {
   final container = await pumpApp(
@@ -138,6 +139,13 @@ Future<ProviderContainer> _open(
   );
   showSettings(tester.element(find.byType(MMWindowScaffold)), tab: tab, focus: focus);
   await tester.pumpAndSettle();
+  if (expandAdvanced && find.text('高级').evaluate().isNotEmpty && find.byType(ModelRoutePicker).evaluate().length == 2) {
+    await tester.ensureVisible(find.text('高级'));
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('高级'));
+    await tester.pumpAndSettle();
+  }
   return container;
 }
 
@@ -146,8 +154,19 @@ ModelRoutePicker _pickerOf(WidgetTester tester, String semanticLabel) =>
     tester.widget<ModelRoutePicker>(_row(semanticLabel));
 
 Future<void> _choose(WidgetTester tester, String row, String item, {int index = 0}) async {
+  if (_row(row).evaluate().isEmpty) {
+    await tester.ensureVisible(find.text('高级'));
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('高级'));
+    await tester.pumpAndSettle();
+  }
   await tester.ensureVisible(_row(row));
   await tester.pumpAndSettle();
+  await tester.ensureVisible(_row(row));
+
+  await tester.pumpAndSettle();
+
   await tester.tap(_row(row));
   await tester.pumpAndSettle();
   await tester.tap(find.text(item).hitTestable().at(index));
@@ -202,6 +221,15 @@ void main() {
     }
   });
 
+  test('invocation errors explain configuration fixes without exposing credentials', () {
+    expect(aiInvocationError(l, const ConfigurationFailure('unset')), contains('选择快速任务或重型任务'));
+    expect(aiInvocationError(l, const ConfigurationFailure('secretUnavailable')), contains('重新填写并保存'));
+    expect(aiInvocationError(l, const ConfigurationFailure('serviceOff')), l.aiTasksIssueServiceOff);
+    expect(aiInvocationError(l, const ConfigurationFailure('deleted')), l.aiTasksIssueDeleted);
+    expect(aiInvocationError(l, const ConfigurationFailure('invalidEndpoint')), contains('服务地址'));
+    expect(aiInvocationError(l, const ResearchFailure(ResearchFailureKind.network)), l.assistantErrorNetwork);
+  });
+
   testWidgets('missing capability records do not warn or block any feature', (tester) async {
     const model = ModelReference('openai', 'gpt-4.1-2025-04-14');
     final profiles = _FlakyProfiles()
@@ -224,6 +252,24 @@ void main() {
     );
     // Every feature can use the configured model without capability records.
     expect(find.text('此模型尚未适配此功能，请更换模型'), findsNothing);
+  });
+
+  testWidgets('only two models show initially; advanced overrides survive collapsing', (tester) async {
+    final container = await _open(tester, expandAdvanced: false);
+    expect(find.byType(ModelRoutePicker), findsNWidgets(2));
+    expect(find.byType(RoutingIssueLine), findsNothing);
+    await _choose(tester, aiTaskName(l, TaskType.wordLookup), 'Claude Opus');
+    await tester.ensureVisible(find.text('高级'));
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('高级'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ModelRoutePicker), findsNWidgets(2));
+    await tester.tap(find.byKey(const ValueKey('ai-tasks-save')));
+    await tester.pumpAndSettle();
+    expect(_stored(container).binding(TaskType.wordLookup).model, _opus);
+    expect(_stored(container).binding(TaskType.selectionTranslate).mode, TaskBindingMode.inherit);
+    await settleHud(tester);
   });
 
   testWidgets('saving task defaults leaves the legacy catalog byte-for-byte unchanged', (tester) async {
@@ -300,8 +346,8 @@ void main() {
     testWidgets('lists both classes and all twelve features; inherited rows show the effective model', (tester) async {
       await _open(tester);
       expect(find.text('AI 功能'), findsWidgets);
-      expect(find.text('快速任务'), findsOneWidget);
-      expect(find.text('重型任务'), findsOneWidget);
+      expect(find.text('快速任务'), findsNWidgets(2));
+      expect(find.text('重型任务'), findsNWidgets(2));
       for (final type in TaskType.values) {
         expect(_row(aiTaskName(l, type)), findsOneWidget, reason: type.key);
       }
@@ -329,6 +375,10 @@ void main() {
     testWidgets('binding a feature drafts and saves with the read revision', (tester) async {
       final container = await _open(tester);
       final name = aiTaskName(l, TaskType.titleGenerate);
+      await tester.ensureVisible(_row(name));
+
+      await tester.pumpAndSettle();
+
       await tester.tap(_row(name));
       await tester.pumpAndSettle();
       // The menu: follow (with the effective model), then models grouped by service.
@@ -392,12 +442,20 @@ void main() {
       final research = aiTaskName(l, TaskType.research);
       // Anthropic Opus is unverified: no thinking section for it.
       await _choose(tester, research, 'Claude Opus');
+      await tester.ensureVisible(_row(research));
+
+      await tester.pumpAndSettle();
+
       await tester.tap(_row(research));
       await tester.pumpAndSettle();
       expect(find.text('深入'), findsNothing);
       await tester.tap(find.text('Claude Opus').hitTestable().last);
       await tester.pumpAndSettle();
       expect(_pickerOf(tester, research).selected, _proxyOpus);
+      await tester.ensureVisible(_row(research));
+
+      await tester.pumpAndSettle();
+
       await tester.tap(_row(research));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('深入'));
@@ -463,12 +521,12 @@ void main() {
         ),
       );
       final quick = _pickerOf(tester, '快速任务 · 默认模型');
-      expect((quick.label, quick.tone), ('Sonnet 3', ModelRouteTone.invalid));
-      expect(quick.semanticValue, 'Anthropic · Sonnet 3，模型已删除');
-      expect(find.text('模型已删除'), findsOneWidget);
-      expect(find.text('服务已停用'), findsOneWidget);
+      expect((quick.label, quick.tone), ('Sonnet 3', ModelRouteTone.explicit));
+      expect(quick.semanticValue, 'Anthropic · Sonnet 3');
+      expect(find.text('模型已删除'), findsNothing);
+      expect(find.text('服务已停用'), findsNothing);
       final lookup = _pickerOf(tester, aiTaskName(l, TaskType.wordLookup));
-      expect((lookup.label, lookup.tone), ('需配置', ModelRouteTone.caution));
+      expect((lookup.label, lookup.tone), ('Sonnet 3', ModelRouteTone.inherited));
       expect(
         _pickerOf(tester, aiTaskName(l, TaskType.titleGenerate)).label,
         'Claude Haiku',
@@ -477,9 +535,16 @@ void main() {
       final research = tester.widget<Text>(
         find.descendant(of: _row(aiTaskName(l, TaskType.research)), matching: find.text('Proxy · Claude Opus')),
       );
-      expect(research.style?.decoration, TextDecoration.lineThrough);
+      expect(research.style?.decoration, isNot(TextDecoration.lineThrough));
       // “Choose Again” opens that row's menu.
-      await tester.tap(find.byKey(const ValueKey('ai-action-default-quick')));
+      await tester.ensureVisible(_row('快速任务 · 默认模型'));
+
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_row('快速任务 · 默认模型'));
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(_row('快速任务 · 默认模型'));
       await tester.pumpAndSettle();
       expect(find.text('Anthropic').hitTestable(), findsOneWidget);
     });
@@ -490,7 +555,7 @@ void main() {
         prefs: _prefs(services: [_anthropic.copyWith(enabled: false)], routing: _routing()),
       );
       expect(find.byKey(const ValueKey('ai-tasks-add-model')), findsNothing);
-      expect(find.text('服务已停用'), findsNWidgets(2));
+      expect(find.text('服务已停用'), findsNothing);
       Navigator.of(tester.element(find.byType(SettingsWindow))).pop();
       await tester.pumpAndSettle();
 
@@ -633,8 +698,13 @@ void main() {
       expect(container.read(assistantServicesProvider).value!.services.first.models.map((m) => m.id), ['opus']);
       await tester.tap(find.byKey(const ValueKey('settings-tab-aiTasks')));
       await tester.pumpAndSettle();
-      expect(_pickerOf(tester, '快速任务 · 默认模型').tone, ModelRouteTone.invalid);
-      expect(_pickerOf(tester, aiTaskName(l, TaskType.research)).tone, ModelRouteTone.invalid);
+      expect(_pickerOf(tester, '快速任务 · 默认模型').tone, ModelRouteTone.explicit);
+      await tester.ensureVisible(find.text('高级'));
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('高级'));
+      await tester.pumpAndSettle();
+      expect(_pickerOf(tester, aiTaskName(l, TaskType.research)).tone, ModelRouteTone.explicit);
       expect(_stored(container).defaultModel(TaskCategory.quick), _haiku, reason: 'never reassigned');
     });
 
@@ -662,6 +732,13 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('settings-tab-aiTasks')));
       await tester.pumpAndSettle();
+      if (_row(aiTaskName(l, TaskType.studyNotes)).evaluate().isEmpty) {
+        await tester.ensureVisible(find.text('高级'));
+
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('高级'));
+        await tester.pumpAndSettle();
+      }
       expect(_pickerOf(tester, aiTaskName(l, TaskType.studyNotes)).tone, ModelRouteTone.explicit);
       await tester.tap(find.byKey(const ValueKey('settings-close')));
       await tester.pumpAndSettle();
@@ -698,13 +775,11 @@ void main() {
       }
     });
 
-    testWidgets('an unreadable key says “Connection unavailable” and opens the service', (tester) async {
-      await _open(tester, secrets: _UnreadableSecrets());
-      expect(find.text('连接不可用'), findsNWidgets(2));
-      await tester.tap(find.byKey(const ValueKey('ai-action-default-heavy')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
-      expect(find.byKey(const ValueKey('service-name')), findsOneWidget, reason: 'the Anthropic card is open');
+    testWidgets('unreadable credentials do not add model status to settings', (tester) async {
+      await _open(tester, secrets: _UnreadableSecrets(), expandAdvanced: false);
+      expect(find.text('连接不可用'), findsNothing);
+      expect(find.byType(RoutingIssueLine), findsNothing);
+      expect(find.byType(ModelRoutePicker), findsNWidgets(2));
     });
 
     testWidgets('narrow sheet: two-line rows, no overflow, menu becomes an action sheet', (tester) async {
@@ -748,6 +823,10 @@ void main() {
       await openMaintained(tester);
       expect(_pickerOf(tester, '重型任务 · 默认模型').label, '选择模型');
       expect(_pickerOf(tester, aiTaskName(l, TaskType.research)).label, '需配置');
+      await tester.ensureVisible(_row('重型任务 · 默认模型'));
+
+      await tester.pumpAndSettle();
+
       await tester.tap(_row('重型任务 · 默认模型'));
       await tester.pumpAndSettle();
       expect(find.text('GPT-4.1'), findsWidgets);
@@ -780,6 +859,10 @@ void main() {
             .map((e) => e.$1),
         [ReasoningPolicy.auto],
       );
+      await tester.ensureVisible(_row(aiTaskName(l, TaskType.research)));
+
+      await tester.pumpAndSettle();
+
       await tester.tap(_row(aiTaskName(l, TaskType.research)));
       await tester.pumpAndSettle();
       expect(find.text('尚未适配'), findsNothing);

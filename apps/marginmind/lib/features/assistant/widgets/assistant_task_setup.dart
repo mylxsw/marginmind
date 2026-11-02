@@ -14,7 +14,6 @@ import '../assistant_services.dart';
 import '../assistant_settings.dart';
 import '../settings/ai_task_status.dart';
 import '../settings/model_route_picker.dart';
-import '../../../settings/settings_window.dart';
 
 final assistantTaskRouteProvider = FutureProvider.autoDispose.family<RoutingRowState, (TaskType, ModelReference?)>((
   ref,
@@ -67,7 +66,6 @@ class _SetupState extends ConsumerState<_Setup> {
     final route = ref.watch(assistantTaskRouteProvider((widget.spec.type, _model)));
     final catalog = ref.watch(assistantServicesProvider).value;
     final row = route.value;
-    final issue = row == null ? null : routingIssueText(l, row.issue, failureCode: row.failureCode);
     final range = widget.spec.type == TaskType.conversationSummarize;
     return AlertDialog(
       title: Text(aiTaskName(l, widget.spec.type)),
@@ -81,9 +79,7 @@ class _SetupState extends ConsumerState<_Setup> {
               label: row?.effective == null || catalog == null
                   ? l.aiTasksNotSet
                   : routeModelLabel(catalog, row!.effective!),
-              tone: row?.issue == RoutingIssue.none
-                  ? (_model == null ? ModelRouteTone.inherited : ModelRouteTone.explicit)
-                  : ModelRouteTone.caution,
+              tone: _model == null ? ModelRouteTone.inherited : ModelRouteTone.explicit,
               groups: [
                 for (final service in catalog?.services ?? <AssistantService>[])
                   if (service.enabled && (service.protocol != ServiceProtocol.ollama || service.localEnabled))
@@ -99,12 +95,6 @@ class _SetupState extends ConsumerState<_Setup> {
               semanticLabel: l.assistantModel,
               semanticValue: row?.modelLabel ?? '',
             ),
-            if (issue != null)
-              Padding(
-                padding: const EdgeInsets.only(top: MMSpacing.s),
-                child: RoutingIssueLine(text: issue),
-              ),
-            if (route.hasError) RoutingIssueLine(text: l.aiTasksIssueConnection),
             if (range)
               Flexible(
                 child: SingleChildScrollView(
@@ -136,7 +126,7 @@ class _SetupState extends ConsumerState<_Setup> {
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
         TextButton(
-          onPressed: row?.issue == RoutingIssue.none && (!range || _messages.isNotEmpty)
+          onPressed: (!range || _messages.isNotEmpty)
               ? () => Navigator.pop(context, AssistantTaskSetup(_model, range ? _messages.toList() : null))
               : null,
           child: Text(l.assistantSend),
@@ -154,28 +144,18 @@ class AssistantConversationRouteControl extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final conversation = ref.watch(assistantControllerProvider);
     ModelReference? selected;
-    var invalid = false;
     try {
       selected = conversationRoutingOverride(conversation.toJson(), TaskType.assistantChat);
     } catch (_) {
-      invalid = true;
+      // Dispatch reports malformed saved configuration when the user sends.
     }
     final route = ref.watch(assistantTaskRouteProvider((TaskType.assistantChat, selected)));
     final catalog = ref.watch(assistantServicesProvider).value;
     final row = route.value;
     final l = context.l10n;
-    final issue = invalid
-        ? l.aiTasksIssueInvalid
-        : row == null
-        ? null
-        : routingIssueText(l, row.issue, failureCode: row.failureCode);
     final picker = ModelRoutePicker(
       label: row?.effective == null || catalog == null ? l.aiTasksNotSet : routeModelLabel(catalog, row!.effective!),
-      tone: !invalid && row?.issue == RoutingIssue.none
-          ? selected == null
-                ? ModelRouteTone.inherited
-                : ModelRouteTone.explicit
-          : ModelRouteTone.caution,
+      tone: selected == null ? ModelRouteTone.inherited : ModelRouteTone.explicit,
       groups: [
         for (final service in catalog?.services ?? <AssistantService>[])
           if (service.enabled && (service.protocol != ServiceProtocol.ollama || service.localEnabled))
@@ -202,20 +182,7 @@ class AssistantConversationRouteControl extends ConsumerWidget {
               if (service != null && model != null) await controller.switchModel(service.configuration(model));
             },
     );
-    final warning = issue != null || route.hasError
-        ? RoutingIssueLine(
-            text: issue ?? l.aiTasksIssueConnection,
-            action: l.assistantOpenModelSettings,
-            onAction: () => showSettings(context, tab: SettingsTab.models),
-            stacked: true,
-          )
-        : null;
-    return builder?.call(context, picker, warning) ??
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [picker, ?warning],
-        );
+    return builder?.call(context, picker, null) ?? picker;
   }
 }
 

@@ -10382,6 +10382,30 @@ abstract class AppLocalizations {
   /// **'AI Features'**
   String get aiTasksTitle;
 
+  /// No description provided for @aiTasksAdvancedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Features follow Quick Tasks or Heavy Tasks by default. Choose a model here only to override a specific feature.'**
+  String get aiTasksAdvancedHint;
+
+  /// No description provided for @aiTasksModelRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'No model is selected. Choose a Quick Tasks or Heavy Tasks model in Settings → AI Features.'**
+  String get aiTasksModelRequired;
+
+  /// No description provided for @aiTasksKeyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The API key is missing or could not be read. Open Settings → Models and save the service API key again.'**
+  String get aiTasksKeyUnavailable;
+
+  /// No description provided for @aiTasksConfigurationInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The model configuration is invalid. Check the service address, model name and model settings.'**
+  String get aiTasksConfigurationInvalid;
+
   /// No description provided for @aiTasksQuick.
   ///
   /// In en, this message translates to:

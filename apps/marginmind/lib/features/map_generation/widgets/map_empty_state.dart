@@ -122,10 +122,10 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
     if (_scanned()) return;
     final docId = _documentId();
     if (docId.isEmpty) return;
-    final configured = await ref.read(mapTaskReadyProvider((widget.studySetId, TaskType.mapGenerate)).future);
+    final configured = await checkMapTaskRoute(context, ref, widget.studySetId, TaskType.mapGenerate);
     if (!mounted) return;
     if (!configured) {
-      setState(() => _needsSetup = true);
+      setState(() => _needsSetup = false);
       return;
     }
     final docTitle = _documentTitle();

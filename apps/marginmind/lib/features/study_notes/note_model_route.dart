@@ -7,7 +7,6 @@ import 'package:mm_design/mm_design.dart';
 import '../../shared/l10n.dart';
 import '../assistant/assistant_routing.dart';
 import '../assistant/assistant_services.dart';
-import '../assistant/settings/ai_task_status.dart';
 import '../assistant/settings/model_route_picker.dart';
 
 final noteRoutingRowProvider = FutureProvider.family<RoutingRowState, ModelReference?>((ref, model) async {
@@ -46,7 +45,6 @@ class NoteModelRoute extends ConsumerWidget {
     final row = state.value;
     final effective = row?.effective;
     final label = catalog != null && effective != null ? routeModelLabel(catalog, effective) : l.aiTasksChooseModel;
-    final issue = row == null ? null : routingIssueText(l, row.issue, failureCode: row.failureCode);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
       child: Column(
@@ -54,11 +52,7 @@ class NoteModelRoute extends ConsumerWidget {
         children: [
           ModelRoutePicker(
             label: label,
-            tone: row == null || row.issue != RoutingIssue.none
-                ? ModelRouteTone.caution
-                : selected == null
-                ? ModelRouteTone.inherited
-                : ModelRouteTone.explicit,
+            tone: selected == null ? ModelRouteTone.inherited : ModelRouteTone.explicit,
             groups: [
               if (catalog != null)
                 for (final service in catalog.services.where((s) => s.enabled))
@@ -73,8 +67,6 @@ class NoteModelRoute extends ConsumerWidget {
             semanticLabel: l.aiTaskStudyNotes,
             semanticValue: label,
           ),
-          if (issue != null) RoutingIssueLine(text: issue),
-          if (state.hasError) RoutingIssueLine(text: l.aiTasksIssueInvalid),
         ],
       ),
     );

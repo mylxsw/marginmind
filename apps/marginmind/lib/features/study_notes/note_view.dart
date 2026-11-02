@@ -16,7 +16,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../shared/l10n.dart';
 import '../../app/providers.dart';
 import 'note_session.dart';
-import 'note_model_route.dart';
+import '../assistant/settings/ai_task_status.dart';
 import 'note_updates.dart';
 import 'note_update_sources.dart';
 import 'note_organize_sheet.dart';
@@ -381,7 +381,6 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(noteAiAvailableProvider);
     ref.watch(noteAiMarkersProvider(widget.noteId));
     final provider = workspaceProvider(widget.studySetId);
     ref.listen(provider.select((s) => s.pending), (_, pending) {
@@ -1317,11 +1316,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           shortcut: '⌘L',
           icon: MMIcons.revealSource,
         ),
-        MMMenuItem(
-          context.l10n.noteExplain,
-          ref.read(noteAiAvailableProvider).value == true && !_aiBusy ? () => _explain(note, block) : null,
-          icon: MMIcons.explain,
-        ),
+        MMMenuItem(context.l10n.noteExplain, !_aiBusy ? () => _explain(note, block) : null, icon: MMIcons.explain),
         const MMMenuDivider(),
         MMMenuItem(
           context.l10n.addToMapAction,
@@ -1359,7 +1354,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                 NoteRewrite.concise => context.l10n.noteConcise,
                 NoteRewrite.expand => context.l10n.noteExpand,
               },
-              ref.read(noteAiAvailableProvider).value == true && !_aiBusy ? () => _rewrite(note, block, mode) : null,
+              !_aiBusy ? () => _rewrite(note, block, mode) : null,
               icon: MMIcons.editNote,
             ),
         if (block.origin != NoteOrigin.user)
@@ -1373,7 +1368,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         }, icon: MMIcons.mindMap),
         MMMenuItem(
           context.l10n.noteCreateReview,
-          ref.read(noteAiAvailableProvider).value == true && !_aiBusy ? () => _createAiReview(note, block) : null,
+          !_aiBusy ? () => _createAiReview(note, block) : null,
           icon: MMIcons.review,
         ),
       ],
@@ -1448,8 +1443,8 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         await _review(annotation, question);
         await _editSessionId(attempt, release: true);
       }
-    } catch (_) {
-      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } catch (error) {
+      if (mounted) MMHud.show(context, aiInvocationError(context.l10n, error));
     } finally {
       session?.close();
       _editSession = null;
@@ -1484,8 +1479,8 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       );
       await _editSessionId(attempt, release: true);
       if (mounted) _undoHud(context.l10n.noteAiEdited);
-    } catch (_) {
-      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } catch (error) {
+      if (mounted) MMHud.show(context, aiInvocationError(context.l10n, error));
     } finally {
       session?.close();
       _editSession = null;
@@ -1538,8 +1533,8 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       );
       await _editSessionId(attempt, release: true);
       if (mounted) _undoHud(context.l10n.noteGenerated);
-    } catch (_) {
-      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } catch (error) {
+      if (mounted) MMHud.show(context, aiInvocationError(context.l10n, error));
     } finally {
       session?.close();
       _editSession = null;

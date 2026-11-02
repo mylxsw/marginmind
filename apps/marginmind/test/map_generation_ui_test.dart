@@ -1,4 +1,5 @@
 import 'package:marginmind/features/assistant/map_task_route.dart';
+import 'package:mm_assistant/mm_assistant.dart';
 
 import 'dart:async';
 
@@ -52,6 +53,7 @@ Future<ProviderContainer> openWorkspace(
   InMemoryStudySetContentRepository? content,
   Map<String, Object> prefs = const {},
   AssistantCredentialState credentialState = AssistantCredentialState.ready,
+  bool routeReadFails = false,
   Future<String?> Function(String, int)? pageText,
 }) async {
   final defaultContent = () {
@@ -73,7 +75,17 @@ Future<ProviderContainer> openWorkspace(
     overrides: [
       assistantPageTextProvider.overrideWithValue(pageText ?? (path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),
-      mapTaskReadyProvider.overrideWith((ref, scope) async => credentialState == AssistantCredentialState.ready),
+      mapTaskRouteProvider.overrideWith(
+        (ref, scope) async => routeReadFails
+            ? throw StateError('routing read failed')
+            : RoutingRowState(
+                effective: const ModelReference('fixture', 'model'),
+                source: RoutingSource.categoryDefault,
+                issue: credentialState == AssistantCredentialState.ready
+                    ? RoutingIssue.none
+                    : RoutingIssue.secretUnavailable,
+              ),
+      ),
       ...overrides,
     ],
   );
@@ -156,7 +168,7 @@ void main() {
       expect(find.byType(MapEmptyState), findsNothing);
     });
 
-    testWidgets('renders ModelSetupCard once a start finds AI not configured', (tester) async {
+    testWidgets('shows an actionable error only after starting with missing credentials', (tester) async {
       final container = await openWorkspace(tester, credentialState: AssistantCredentialState.missingKey);
       final wsController = container.read(workspaceProvider('demo-1').notifier);
       await wsController.addMap('空脑图');
@@ -167,8 +179,23 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('map-empty-state-start-button')));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ModelSetupCard), findsOneWidget);
-      expect(find.byKey(const ValueKey('map-empty-state-start-button')), findsNothing);
+      expect(find.byType(ModelSetupCard), findsNothing);
+      expect(find.textContaining('API Key 未配置或无法读取'), findsOneWidget);
+      await settleHud(tester);
+      expect(find.byKey(const ValueKey('map-empty-state-start-button')), findsOneWidget);
+    });
+
+    testWidgets('a configuration read failure keeps generation controls usable', (tester) async {
+      final container = await openWorkspace(tester, routeReadFails: true);
+      await container.read(workspaceProvider('demo-1').notifier).addMap('空脑图');
+      await tester.pumpAndSettle();
+      final start = find.byKey(const ValueKey('map-empty-state-start-button'));
+      await tester.tap(start);
+      await tester.pumpAndSettle();
+      expect(find.text('设置无法读取'), findsOneWidget);
+      expect(tester.widget<MMButton>(start).onPressed, isNotNull);
+      expect(tester.takeException(), isNull);
+      await settleHud(tester);
     });
 
     testWidgets('Cmd+Enter in MapEmptyState triggers generation', (tester) async {

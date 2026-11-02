@@ -220,11 +220,11 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
     if (content.documents.any((doc) => _selectedDocs.contains(doc.id) && _scanned(doc))) return;
     _starting = true;
-    final configured = await ref.read(mapTaskReadyProvider((widget.studySetId, TaskType.mapGenerate)).future);
+    final configured = await checkMapTaskRoute(context, ref, widget.studySetId, TaskType.mapGenerate);
     if (!mounted) return;
     _starting = false;
     if (!configured) {
-      setState(() => _needsSetup = true);
+      setState(() => _needsSetup = false);
       return;
     }
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);

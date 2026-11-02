@@ -164,6 +164,11 @@ void main() {
   testWidgets('AI features: normal, menu, draft', (tester) async {
     await _open(tester, prefs: _prefs());
     await _save(tester, '01-normal');
+    expect(find.byType(ModelRoutePicker), findsNWidgets(2));
+    await tester.tap(find.text('高级'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(_row('单词释义'));
+    await tester.pumpAndSettle();
     await tester.tap(_row('单词释义'));
     await tester.pumpAndSettle();
     await _save(tester, '02-quick-menu');
@@ -226,9 +231,14 @@ void main() {
     'AI features: phone sheet',
     (tester) async {
       await _open(tester, prefs: _prefs(), size: const Size(375, 760), phone: true);
-      await tester.drag(find.byKey(const ValueKey('settings-ai-tasks')), const Offset(0, -260));
-      await tester.pumpAndSettle();
       await _save(tester, '08-phone');
+      await tester.ensureVisible(find.text('高级'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('高级'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_row('单词释义'));
+      await tester.pumpAndSettle();
+      await _save(tester, '09-phone-advanced');
     },
     skip: skip,
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),

@@ -10,6 +10,7 @@ import 'package:mm_assistant/mm_assistant.dart' show PolicyHook, AssistantModel,
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../settings/ai_task_status.dart';
 import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
 import '../assistant_entry.dart';
@@ -869,7 +870,7 @@ class _Tail extends ConsumerWidget {
       ),
       _ => switch (kind) {
         _ when m.diagnostics?.failure == 'secret_store' => (
-          l.assistantModelUnavailableTitle,
+          l.aiTasksKeyUnavailable,
           false,
           [
             _ActionButton(
@@ -954,7 +955,9 @@ class _Tail extends ConsumerWidget {
     return _StatusBlock(
       key: ValueKey('assistant-status-${m.id}'),
       message: m,
-      reason: reason,
+      reason: m.diagnostics?.failure != null && kind == ResearchFailureKind.invalidRequest
+          ? aiConfigurationError(l, m.diagnostics!.failure!)
+          : reason,
       caution: caution,
       actions: actions,
       details: m.status == MessageStatus.error ? diagnosticRows(l, ref, m) : const [],

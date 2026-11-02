@@ -9,12 +9,10 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
-import '../../../settings/settings_window.dart';
 import '../../../shared/l10n.dart';
 import '../../assistant/assistant_services.dart';
-import '../../assistant/settings/ai_task_status.dart';
-import '../../assistant/settings/ai_task_settings.dart';
 import '../../assistant/settings/model_route_picker.dart';
+import '../../assistant/settings/ai_task_status.dart' show aiInvocationError;
 import '../document_translation_runtime.dart';
 import '../full_translation.dart';
 import '../reader_compare.dart';
@@ -172,11 +170,11 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
       if (doc.contentManifest == null) compareController.pdf(widget.documentId).jumpToPage(f);
       if (!viewSaved) MMHud.show(context, hudMessage);
       Navigator.of(context).pop();
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(() {
           _starting = false;
-          _startError = context.l10n.fullTranslationStartFailed;
+          _startError = aiInvocationError(context.l10n, error);
         });
       }
     }
@@ -247,7 +245,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         fullState.loading ||
         fullState.loadError != null ||
         !valid ||
-        (!viewSaved && (nothing || isScanned || row?.ready != true)) ||
+        (!viewSaved && (nothing || isScanned)) ||
         (_sourceChoice ?? _sourceLang) == _targetLang;
     final firstTo = _mode == TranslationMode.batch ? math.min(t, f + _batchSize - 1) : t;
     final primaryLabel = viewSaved
@@ -273,15 +271,6 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
             showReaderOcrOptions(context, ref, widget.studySetId);
           },
         ),
-      );
-    } else if (!viewSaved && (route.hasError || row?.ready == false)) {
-      blockedBanner = RoutingIssueLine(
-        text: route.hasError
-            ? l.aiTasksIssueInvalid
-            : routingIssueText(l, row!.issue, failureCode: row.failureCode) ?? l.aiTasksNotSet,
-        action: l.fullTranslationActionSettings,
-        onAction: () =>
-            showSettings(context, tab: SettingsTab.aiTasks, focus: const AiTaskFocusTask(TaskType.documentTranslate)),
       );
     } else if (!viewSaved && isOffline) {
       blockedBanner = _buildBanner(
@@ -339,11 +328,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                   label: l.aiTasksModel,
                   child: ModelRoutePicker(
                     label: modelName,
-                    tone: row?.ready != true
-                        ? ModelRouteTone.caution
-                        : _modelOverride == null
-                        ? ModelRouteTone.inherited
-                        : ModelRouteTone.explicit,
+                    tone: _modelOverride == null ? ModelRouteTone.inherited : ModelRouteTone.explicit,
                     groups: [
                       for (final service in catalog.services.where((s) => s.enabled))
                         ModelRouteGroup(service.name, [

@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
 
 import '../../shared/l10n.dart';
 import 'assistant_routing.dart';
 import 'assistant_services.dart';
-import 'settings/ai_task_status.dart';
 import 'settings/model_route_picker.dart';
+import 'settings/ai_task_status.dart' show aiInvocationError;
 
 final mapTaskChoicesProvider = NotifierProvider<MapTaskChoices, Map<String, ModelReference>>(MapTaskChoices.new);
 
@@ -45,6 +46,23 @@ final mapTaskReadyProvider = FutureProvider.family<bool, (String, TaskType)>(
   (ref, scope) async => (await ref.watch(mapTaskRouteProvider(scope).future)).ready,
 );
 
+/// Validate when generation is requested, keeping the form usable on failure.
+Future<bool> checkMapTaskRoute(BuildContext context, WidgetRef ref, String studySetId, TaskType type) async {
+  try {
+    final route = await ref.read(mapTaskRouteProvider((studySetId, type)).future);
+    if (!route.ready) throw ConfigurationFailure(route.failureCode ?? route.issue.name);
+    return true;
+  } catch (error) {
+    if (context.mounted) {
+      final message = error is ConfigurationFailure
+          ? aiInvocationError(context.l10n, error)
+          : context.l10n.aiTasksIssueInvalid;
+      MMHud.show(context, message, icon: MMIcons.warning);
+    }
+    return false;
+  }
+}
+
 /// Domain setup uses the same resolver and real specs as execution.
 class MapTaskRoute extends ConsumerWidget {
   const MapTaskRoute({super.key, required this.studySetId, required this.type});
@@ -58,21 +76,18 @@ class MapTaskRoute extends ConsumerWidget {
     final selected = ref.watch(mapTaskChoicesProvider)[mapRouteKey(studySetId, type)];
     return row.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => RoutingIssueLine(text: l.aiTasksIssueInvalid),
+      error: (_, _) => const SizedBox.shrink(),
       data: (value) {
         final label = catalog == null || value.effective == null
             ? l.aiTasksUseSetting
             : routeModelLabel(catalog, value.effective!);
-        final issue = routingIssueText(l, value.issue, failureCode: value.failureCode);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             ModelRoutePicker(
               label: label,
-              tone: value.issue == RoutingIssue.none
-                  ? (selected == null ? ModelRouteTone.inherited : ModelRouteTone.explicit)
-                  : ModelRouteTone.caution,
+              tone: selected == null ? ModelRouteTone.inherited : ModelRouteTone.explicit,
               groups: [
                 for (final service in catalog?.services ?? <AssistantService>[])
                   if (service.enabled)
@@ -89,7 +104,6 @@ class MapTaskRoute extends ConsumerWidget {
               onChanged: (model) =>
                   ref.read(mapTaskChoicesProvider.notifier).select(mapRouteKey(studySetId, type), model),
             ),
-            if (issue != null) RoutingIssueLine(text: issue),
           ],
         );
       },

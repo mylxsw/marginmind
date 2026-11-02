@@ -48,6 +48,29 @@ String? routingIssueText(AppLocalizations l, RoutingIssue issue, {String? failur
   },
 };
 
+/// Explain dispatch failures only after the user invokes an AI task.
+String aiInvocationError(AppLocalizations l, Object error) {
+  if (error is ConfigurationFailure) return aiConfigurationError(l, error.code);
+  if (error is ResearchFailure && error.code == 'secret_store') return l.aiTasksKeyUnavailable;
+  return switch (assistantFailureKind(error)) {
+    ResearchFailureKind.authentication => l.assistantErrorKey,
+    ResearchFailureKind.network => l.assistantErrorNetwork,
+    ResearchFailureKind.rateLimited || ResearchFailureKind.unavailable => l.assistantErrorService,
+    ResearchFailureKind.timeout || ResearchFailureKind.budget => l.assistantErrorBudget,
+    _ => l.assistantErrorFailed,
+  };
+}
+
+String aiConfigurationError(AppLocalizations l, String code) => switch (code) {
+  'unset' => l.aiTasksModelRequired,
+  'secretUnavailable' || 'secret_store' => l.aiTasksKeyUnavailable,
+  'deleted' => l.aiTasksIssueDeleted,
+  'modelOff' => l.aiTasksIssueModelOff,
+  'serviceOff' => l.aiTasksIssueServiceOff,
+  'serviceRemoved' => l.aiTasksIssueServiceRemoved,
+  _ => l.aiTasksConfigurationInvalid,
+};
+
 /// Whether the issue stops the feature until the user changes something.
 /// Matches resolver admission: only a ready route can dispatch a task.
 bool routingIssueBlocks(RoutingIssue issue) => !{RoutingIssue.none, RoutingIssue.unknown}.contains(issue);

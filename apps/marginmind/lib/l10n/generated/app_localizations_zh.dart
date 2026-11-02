@@ -5666,6 +5666,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiTasksTitle => 'AI 功能';
 
   @override
+  String get aiTasksAdvancedHint => '各功能默认跟随快速任务或重型任务的模型，仅在需要单独指定时修改。';
+
+  @override
+  String get aiTasksModelRequired => '尚未选择模型，请在设置 → AI 功能中选择快速任务或重型任务的模型。';
+
+  @override
+  String get aiTasksKeyUnavailable => 'API Key 未配置或无法读取，请在设置 → 模型中重新填写并保存该服务的 API Key。';
+
+  @override
+  String get aiTasksConfigurationInvalid => '模型配置有误，请检查服务地址、模型名称和模型设置。';
+
+  @override
   String get aiTasksQuick => '快速任务';
 
   @override

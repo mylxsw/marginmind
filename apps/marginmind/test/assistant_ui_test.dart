@@ -162,7 +162,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('assistant-send')));
     await pumpFor(tester, 20);
     expect(conversationOf(tester).messages.last.diagnostics?.failure, 'secret_store');
-    expect(find.text('模型暂不可用'), findsOneWidget);
+    expect(find.textContaining('API Key 未配置或无法读取'), findsOneWidget);
     expect(find.text('重试读取'), findsNothing);
     expect(find.text('API Key 无效'), findsNothing);
     secrets.blocked = false;
@@ -186,17 +186,20 @@ void main() {
     expect(conversationOf(tester).messages.last.status, MessageStatus.done);
   });
 
-  testWidgets('locked credentials leave the reader and model settings link usable', (tester) async {
+  testWidgets('locked credentials show no preflight warning and report an actionable error on send', (tester) async {
     final app = await openAssistantApp(tester, secretStore: _LockedSecrets());
     expect(app.workspace.content.documents, isNotEmpty);
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
-    expect(find.byKey(const ValueKey('connect-key')), findsNothing);
-    expect(find.text('请重新填写 API Key'), findsOneWidget);
-    expect(find.textContaining('这不代表 Key 无效'), findsNothing);
-    expect(find.text('重试读取'), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
+    expect(find.text('连接不可用'), findsNothing);
+    expect(find.text('请重新填写 API Key'), findsNothing);
+    await _type(tester, '解释这段内容');
+    await tester.tap(find.byKey(const ValueKey('assistant-send')));
+    await pumpFor(tester, 20);
+    expect(conversationOf(tester).messages.last.status, MessageStatus.error);
+    expect(find.byKey(const ValueKey('assistant-open-settings')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('assistant-open-settings')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -879,7 +882,7 @@ void main() {
     await _press(tester, LogicalKeyboardKey.enter);
     await pumpFor(tester, 20);
     expect(conversationOf(tester).messages.last.status, MessageStatus.error);
-    expect(find.text('请求失败'), findsOneWidget);
+    expect(find.textContaining('模型配置有误'), findsOneWidget);
   });
 
   testWidgets('a migrated research conversation is read only: no input, copy only', (tester) async {

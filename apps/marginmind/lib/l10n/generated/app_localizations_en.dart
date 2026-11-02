@@ -5891,6 +5891,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTasksTitle => 'AI Features';
 
   @override
+  String get aiTasksAdvancedHint =>
+      'Features follow Quick Tasks or Heavy Tasks by default. Choose a model here only to override a specific feature.';
+
+  @override
+  String get aiTasksModelRequired =>
+      'No model is selected. Choose a Quick Tasks or Heavy Tasks model in Settings → AI Features.';
+
+  @override
+  String get aiTasksKeyUnavailable =>
+      'The API key is missing or could not be read. Open Settings → Models and save the service API key again.';
+
+  @override
+  String get aiTasksConfigurationInvalid =>
+      'The model configuration is invalid. Check the service address, model name and model settings.';
+
+  @override
   String get aiTasksQuick => 'Quick Tasks';
 
   @override

@@ -52,11 +52,11 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
   Future<void> _start() async {
     if (_starting || _documents.isEmpty) return;
     setState(() => _starting = true);
-    final configured = await ref.read(mapTaskReadyProvider((widget.studySetId, TaskType.mapGenerate)).future);
+    final configured = await checkMapTaskRoute(context, ref, widget.studySetId, TaskType.mapGenerate);
     if (!mounted) return;
     if (!configured) {
       setState(() {
-        _needsSetup = true;
+        _needsSetup = false;
         _starting = false;
       });
       if (_bodyScroll.hasClients) _bodyScroll.jumpTo(0);

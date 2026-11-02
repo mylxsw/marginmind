@@ -20,10 +20,6 @@ import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../../../settings/settings_window.dart';
 import '../assistant_settings.dart';
-import 'assistant_task_setup.dart';
-
-import 'package:mm_assistant/mm_assistant.dart' show conversationRoutingOverride, RoutingIssue;
-import 'package:mm_core/mm_core.dart' show TaskType, ModelReference;
 
 import 'assistant_conversations.dart';
 import 'assistant_composer.dart';
@@ -124,14 +120,6 @@ class AssistantPanel extends ConsumerWidget {
     final ui = ref.watch(assistantUiProvider(studySetId));
     final uiNotifier = ref.read(assistantUiProvider(studySetId).notifier);
     final conversation = ref.watch(assistantControllerProvider);
-    ModelReference? override;
-    try {
-      override = conversationRoutingOverride(conversation.toJson(), TaskType.assistantChat);
-    } catch (_) {
-      /* The composer keeps the repair selector visible. */
-    }
-    final route = ref.watch(assistantTaskRouteProvider((TaskType.assistantChat, override))).value;
-    final needsCredentials = route?.issue == RoutingIssue.secretUnavailable;
     final noteId = ref.watch(researchPanelProvider(studySetId).select((s) => s.noteId));
     final workspace = ref.read(workspaceProvider(studySetId).notifier);
     final header = AssistantHeader(studySetId: studySetId);
@@ -173,8 +161,6 @@ class AssistantPanel extends ConsumerWidget {
     final Widget body;
     if (ui.history) {
       body = ConversationHistory(studySetId: studySetId);
-    } else if (needsCredentials && conversation.messages.isEmpty) {
-      body = const Center(child: SingleChildScrollView(child: ModelSetupCard(needsKey: true)));
     } else if (conversation.messages.isEmpty) {
       body = AssistantSuggestions(studySetId: studySetId);
     } else {
@@ -193,8 +179,6 @@ class AssistantPanel extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (!ui.history && needsCredentials && conversation.messages.isNotEmpty)
-                      const ModelSetupCard(inline: true, needsKey: true),
                     Expanded(child: body),
                     // Browsing history must not discard the current draft.
                     if (!conversation.readOnly)

@@ -97,8 +97,10 @@ void main() {
     await tester.pumpAndSettle();
     final source = tester.widget<MMButton>(find.byKey(const ValueKey('organization-source')));
     expect(source.variant, MMButtonVariant.primary);
-    expect(tester.widget<MMButton>(find.byKey(const ValueKey('organization-theme'))).onPressed, isNull);
-    expect(tester.widget<MMButton>(find.byKey(const ValueKey('depth-deep'))).onPressed, isNull);
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('organization-theme'))).onPressed, isNotNull);
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('depth-deep'))).onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('depth-none')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('material-margin')));
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('material-margin'))).variant, MMButtonVariant.secondary);
     await tester.tap(find.byKey(const ValueKey('organization-map')));

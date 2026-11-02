@@ -23,6 +23,23 @@ the existing request error handling.
   enabled/deleted model state and endpoint/configuration identity are still
   checked; an edit during a pending request cannot dispatch an obsolete snapshot.
 
+## Default models and feature overrides
+
+AI Features shows only the Quick Tasks and Heavy Tasks defaults on first open.
+The Advanced card is collapsed by default; each feature inherits its category's
+model unless an explicit override is saved there. Existing overrides survive
+collapsing, saving defaults and reopening settings. “Reset to Defaults” clears
+feature overrides without changing the two category defaults. Links to a
+specific feature reveal the Advanced card before locating its row.
+
+AI Features and task model selectors do not show availability warnings, warning
+colours or strikethrough model names. The assistant keeps its composer and normal
+empty state even when credentials are missing. Translation and note actions stay
+available; dispatch still validates credentials, enabled models and service
+identity. A failed invocation displays an actionable error, with request
+information available in assistant diagnostics. Connection testing remains in
+Models settings.
+
 ## Metadata and connection tests
 
 `maintained.dart` supplies exact provider/model reasoning recipes and known

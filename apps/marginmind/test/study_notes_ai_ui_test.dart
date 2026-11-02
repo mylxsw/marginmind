@@ -132,6 +132,10 @@ Future<ProviderContainer> openAi(
   Future<NoteSession> Function()? factory,
   Size size = const Size(1600, 1100),
 }) async {
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    const MethodChannel('marginmind/system_ui'),
+    (call) async => null,
+  );
   final container = await pumpApp(
     tester,
     size: size,

@@ -1,5 +1,3 @@
-import '../../assistant/map_task_route.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -76,18 +74,6 @@ class DocumentMapBanner extends ConsumerWidget {
           ? null
           : () async {
               navigation.dismiss();
-              final configured = await ref.read(mapTaskReadyProvider((studySetId, TaskType.mapGenerate)).future);
-              if (!context.mounted) return;
-              if (!configured) {
-                await showGenerateMapSheet(
-                  context,
-                  ref,
-                  studySetId,
-                  preselectedDocId: document.id,
-                  initialNeedsSetup: true,
-                );
-                return;
-              }
               if (ref.read(assistantControllerProvider.notifier).busy) return;
               final prefs = ref.read(sharedPreferencesProvider);
               final key = 'map_gen.$studySetId';

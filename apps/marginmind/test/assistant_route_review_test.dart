@@ -73,7 +73,7 @@ void main() {
       RoutingIssue.serviceOff,
       RoutingIssue.secretUnavailable,
     ]) {
-      testWidgets('real composer bounds $issue warning and keeps repair controls at $width', (tester) async {
+      testWidgets('real composer hides $issue status and keeps the model picker at $width', (tester) async {
         await openAssistantApp(
           tester,
           size: Size(width, 744),
@@ -93,16 +93,7 @@ void main() {
         expect(find.byKey(const ValueKey('assistant-model')), findsOneWidget);
         expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
         final model = find.byType(AssistantConversationRouteControl);
-        expect(
-          find.descendant(of: model, matching: find.byType(RoutingIssueLine)),
-          {RoutingIssue.none, RoutingIssue.unknown}.contains(issue) ? findsNothing : findsOneWidget,
-        );
-        if (find.byType(RoutingIssueLine).evaluate().isNotEmpty) {
-          final warning = tester.getRect(find.byType(RoutingIssueLine));
-          final send = tester.getRect(find.byKey(const ValueKey('assistant-send')));
-          expect(warning.top, greaterThanOrEqualTo(send.bottom));
-          expect(warning.height, lessThan(140));
-        }
+        expect(find.descendant(of: model, matching: find.byType(RoutingIssueLine)), findsNothing);
         final picker = tester.getRect(find.byType(ModelRoutePicker));
         expect(picker.width, greaterThan(60));
         expect(tester.takeException(), isNull);
@@ -135,7 +126,7 @@ void main() {
       overrides: [assistantCapabilityProfilesProvider.overrideWithValue(profiles(s))],
     );
     await openAssistantConversation(tester, 'broken');
-    expect(find.text('设置无法读取'), findsOneWidget);
+    expect(find.text('设置无法读取'), findsNothing);
     expect(find.byKey(const ValueKey('assistant-model')), findsOneWidget);
     await tester.tap(find.byType(ModelRoutePicker));
     await tester.pumpAndSettle();
@@ -182,9 +173,9 @@ void main() {
     expect((await row()).issue, RoutingIssue.serviceOff);
     await services.setEnabled('local', true);
     // Re-enabling advances identity. Old evidence must not grant the new revision.
-    expect((await row()).issue, RoutingIssue.unknown);
+    expect((await row()).issue, RoutingIssue.none);
     await services.updateDetails('local', endpoint: 'http://localhost:11435/v1');
-    expect((await row()).issue, RoutingIssue.unknown);
+    expect((await row()).issue, RoutingIssue.none);
     var current = (await container.read(assistantServicesProvider.future)).services.single;
     evidence = profiles(current);
     container.invalidate(assistantCapabilityProfilesProvider);
@@ -266,6 +257,6 @@ void main() {
     expect((await container.read(provider.future)).issue, RoutingIssue.serviceOff);
     await container.read(assistantServicesProvider.notifier).setEnabled('local', true);
     await container.pump();
-    expect((await container.read(provider.future)).issue, RoutingIssue.unknown);
+    expect((await container.read(provider.future)).issue, RoutingIssue.none);
   });
 }
