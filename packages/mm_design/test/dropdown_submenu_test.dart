@@ -7,6 +7,49 @@ import 'package:mm_design/mm_design.dart';
 import 'harness.dart';
 
 void main() {
+  testWidgets('tablet menus fit content and keep contiguous 44 point targets with a trackpad', (tester) async {
+    tester.view.physicalSize = const Size(1133, 744);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      harness(
+        MMInput(
+          touchPlatform: true,
+          child: MMDropdownMenuButton<String>(
+            icon: MMIcons.more,
+            tooltip: 'More',
+            itemBuilder: (_) => const [
+              MMDropdownSubmenu<String>(
+                label: 'Switch Map',
+                width: 340,
+                entries: [(value: 'main', label: 'Main Map', selected: true)],
+              ),
+              MMDropdownItem(value: 'style', child: Text('Style')),
+            ],
+          ),
+        ),
+      ),
+    );
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer();
+    await mouse.moveTo(tester.getCenter(find.byTooltip('More')));
+    await tester.pump();
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    final parent = tester.getRect(find.byType(SubmenuButton));
+    final style = tester.getRect(find.byType(MenuItemButton));
+    expect(parent.height, MMSizes.touchTarget);
+    expect(style.height, MMSizes.touchTarget);
+    expect(style.top, parent.bottom);
+    expect(parent.width, lessThan(228));
+    await tester.tap(find.text('Switch Map'));
+    await tester.pumpAndSettle();
+    final leaf = tester.getRect(find.byType(MenuItemButton).last);
+    expect(leaf.width, lessThan(328));
+    expect(leaf.height, MMSizes.touchTarget);
+    expect(tester.takeException(), isNull);
+    await mouse.removePointer();
+  });
   testWidgets('popup submenu flips left at the window edge without a gap', (tester) async {
     await tester.pumpWidget(
       harness(

@@ -1367,8 +1367,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                                           style: context.mmText.callout,
                                                         ),
                                                       ),
-                                                      if (target.id == state.activeMapId)
+                                                      if (target.id == state.activeMapId) ...[
+                                                        const SizedBox(width: 12),
                                                         const Icon(MMIcons.check, size: 14),
+                                                      ],
                                                     ],
                                                   ),
                                                 ),

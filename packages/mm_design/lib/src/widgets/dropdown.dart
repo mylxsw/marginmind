@@ -396,7 +396,11 @@ ButtonStyle _dropdownMenuItemStyle(BuildContext context) => ButtonStyle(
         : Colors.transparent,
   ),
   padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
-  minimumSize: WidgetStatePropertyAll(Size(0, context.mmTouch ? MMSizes.touchTarget : 32)),
+  // Keep the whole row finger-sized, including when an iPad uses a trackpad.
+  // Material's padded target otherwise adds invisible space around a shorter row.
+  minimumSize: WidgetStatePropertyAll(Size(0, context.mmTouch || context.mmTouchPlatform ? MMSizes.touchTarget : 32)),
+  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  visualDensity: context.mmTouchPlatform ? VisualDensity.standard : null,
   shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(MMRadii.row))),
 );
 
@@ -407,8 +411,12 @@ List<Widget> _dropdownChildren<T>(
   ValueChanged<T> select,
 ) => [
   for (final entry in entries)
-    SizedBox(
-      width: width - 12,
+    ConstrainedBox(
+      // The panel measures its widest entry. On touch devices the requested
+      // width is a ceiling, so a one-item submenu needn't fill a wide panel.
+      constraints: context.mmTouchPlatform
+          ? BoxConstraints(minWidth: (width - 12).clamp(0, 164), maxWidth: width - 12)
+          : BoxConstraints.tightFor(width: width - 12),
       child: switch (entry) {
         PopupMenuItem<T>(:final child) when child is PopupMenuEntry => child,
         PopupMenuItem<T>() => MenuItemButton(

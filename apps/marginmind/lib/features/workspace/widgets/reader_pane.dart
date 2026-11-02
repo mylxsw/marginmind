@@ -486,7 +486,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       style: context.mmText.callout,
                     ),
                   ),
-                  if (item.checked == true) const Icon(MMIcons.check, size: 14),
+                  if (item.checked == true) ...[const SizedBox(width: 12), const Icon(MMIcons.check, size: 14)],
                 ],
               ),
             ),
