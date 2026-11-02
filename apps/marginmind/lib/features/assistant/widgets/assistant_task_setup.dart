@@ -147,7 +147,9 @@ class _SetupState extends ConsumerState<_Setup> {
 }
 
 class AssistantConversationRouteControl extends ConsumerWidget {
-  const AssistantConversationRouteControl({super.key});
+  const AssistantConversationRouteControl({super.key, this.builder});
+
+  final Widget Function(BuildContext context, Widget picker, Widget? issue)? builder;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final conversation = ref.watch(assistantControllerProvider);
@@ -167,53 +169,53 @@ class AssistantConversationRouteControl extends ConsumerWidget {
         : row == null
         ? null
         : routingIssueText(l, row.issue, failureCode: row.failureCode);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        ModelRoutePicker(
-          label: row?.effective == null || catalog == null
-              ? l.aiTasksNotSet
-              : routeModelLabel(catalog, row!.effective!),
-          tone: !invalid && row?.issue == RoutingIssue.none
-              ? selected == null
-                    ? ModelRouteTone.inherited
-                    : ModelRouteTone.explicit
-              : ModelRouteTone.caution,
-          groups: [
-            for (final service in catalog?.services ?? <AssistantService>[])
-              if (service.enabled && (service.protocol != ServiceProtocol.ollama || service.localEnabled))
-                ModelRouteGroup(service.name, [
-                  for (final model in service.models)
-                    if (model.enabled)
-                      ModelRouteOption(model: ModelReference(service.id, model.id), label: model.displayName),
-                ]),
-          ],
-          selected: selected,
-          followLabel: l.aiTasksUseSetting,
-          semanticLabel: l.assistantModel,
-          semanticValue: row?.modelLabel ?? '',
-          onChanged: conversation.running
-              ? null
-              : (value) async {
-                  final controller = ref.read(assistantControllerProvider.notifier);
-                  if (value == null) {
-                    await controller.followTaskSettings();
-                    return;
-                  }
-                  final service = catalog?.services.where((s) => s.id == value.serviceId).firstOrNull;
-                  final model = service?.models.where((m) => m.id == value.modelId).firstOrNull;
-                  if (service != null && model != null) await controller.switchModel(service.configuration(model));
-                },
-        ),
-        if (issue != null || route.hasError)
-          RoutingIssueLine(
+    final picker = ModelRoutePicker(
+      label: row?.effective == null || catalog == null ? l.aiTasksNotSet : routeModelLabel(catalog, row!.effective!),
+      tone: !invalid && row?.issue == RoutingIssue.none
+          ? selected == null
+                ? ModelRouteTone.inherited
+                : ModelRouteTone.explicit
+          : ModelRouteTone.caution,
+      groups: [
+        for (final service in catalog?.services ?? <AssistantService>[])
+          if (service.enabled && (service.protocol != ServiceProtocol.ollama || service.localEnabled))
+            ModelRouteGroup(service.name, [
+              for (final model in service.models)
+                if (model.enabled)
+                  ModelRouteOption(model: ModelReference(service.id, model.id), label: model.displayName),
+            ]),
+      ],
+      selected: selected,
+      followLabel: l.aiTasksUseSetting,
+      semanticLabel: l.assistantModel,
+      semanticValue: row?.modelLabel ?? '',
+      onChanged: conversation.running
+          ? null
+          : (value) async {
+              final controller = ref.read(assistantControllerProvider.notifier);
+              if (value == null) {
+                await controller.followTaskSettings();
+                return;
+              }
+              final service = catalog?.services.where((s) => s.id == value.serviceId).firstOrNull;
+              final model = service?.models.where((m) => m.id == value.modelId).firstOrNull;
+              if (service != null && model != null) await controller.switchModel(service.configuration(model));
+            },
+    );
+    final warning = issue != null || route.hasError
+        ? RoutingIssueLine(
             text: issue ?? l.aiTasksIssueConnection,
             action: l.assistantOpenModelSettings,
             onAction: () => showSettings(context, tab: SettingsTab.models),
-          ),
-      ],
-    );
+            stacked: true,
+          )
+        : null;
+    return builder?.call(context, picker, warning) ??
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [picker, ?warning],
+        );
   }
 }
 

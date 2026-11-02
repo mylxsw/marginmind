@@ -68,8 +68,10 @@ class RoutingIssueLine extends StatelessWidget {
     this.busy = false,
     this.onCancel,
     this.actionKey,
+    this.stacked = false,
   });
 
+  final bool stacked;
   final String text;
   final bool critical;
   final String? action;
@@ -88,25 +90,46 @@ class RoutingIssueLine extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       container: true,
-      child: Row(
-        children: [
-          Icon(MMIcons.warning, size: 11, color: color),
-          const SizedBox(width: MMSpacing.xs),
-          Expanded(
-            child: Text(text, style: t.footnote.copyWith(color: color)),
-          ),
-          if (busy)
-            MMInteractive(
-              key: actionKey,
-              onTap: onCancel,
-              semanticLabel: MaterialLocalizations.of(context).cancelButtonLabel,
-              builder: (context, _) =>
-                  const SizedBox(width: 24, height: 20, child: Center(child: CupertinoActivityIndicator(radius: 6))),
+      child: stacked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(MMIcons.warning, size: 11, color: color),
+                    const SizedBox(width: MMSpacing.xs),
+                    Expanded(
+                      child: Text(text, style: t.footnote.copyWith(color: color)),
+                    ),
+                  ],
+                ),
+                if (action != null)
+                  MMButton(key: actionKey, label: action!, variant: MMButtonVariant.plain, onPressed: onAction),
+              ],
             )
-          else if (action != null)
-            MMButton(key: actionKey, label: action!, variant: MMButtonVariant.plain, onPressed: onAction),
-        ],
-      ),
+          : Row(
+              children: [
+                Icon(MMIcons.warning, size: 11, color: color),
+                const SizedBox(width: MMSpacing.xs),
+                Expanded(
+                  child: Text(text, style: t.footnote.copyWith(color: color)),
+                ),
+                if (busy)
+                  MMInteractive(
+                    key: actionKey,
+                    onTap: onCancel,
+                    semanticLabel: MaterialLocalizations.of(context).cancelButtonLabel,
+                    builder: (context, _) => const SizedBox(
+                      width: 24,
+                      height: 20,
+                      child: Center(child: CupertinoActivityIndicator(radius: 6)),
+                    ),
+                  )
+                else if (action != null)
+                  MMButton(key: actionKey, label: action!, variant: MMButtonVariant.plain, onPressed: onAction),
+              ],
+            ),
     );
   }
 }

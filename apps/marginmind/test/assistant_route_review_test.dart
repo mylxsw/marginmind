@@ -65,7 +65,7 @@ Map<String, Object> preferences(AssistantService s) => {
 };
 
 void main() {
-  for (final width in [1000.0, 1400.0]) {
+  for (final width in [1024.0, 1133.0, 1400.0]) {
     for (final issue in [
       RoutingIssue.none,
       RoutingIssue.unknown,
@@ -76,7 +76,8 @@ void main() {
       testWidgets('real composer bounds $issue warning and keeps repair controls at $width', (tester) async {
         await openAssistantApp(
           tester,
-          size: Size(width, 800),
+          size: Size(width, 744),
+          prefs: {'settings.language': 'en'},
           overrides: [
             assistantTaskRouteProvider((TaskType.assistantChat, null)).overrideWith(
               (ref) async => RoutingRowState(
@@ -91,13 +92,21 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('assistant-model')), findsOneWidget);
         expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
-        final model = find.byKey(const ValueKey('assistant-model'));
+        final model = find.byType(AssistantConversationRouteControl);
         expect(
           find.descendant(of: model, matching: find.byType(RoutingIssueLine)),
-          issue == RoutingIssue.none ? findsNothing : findsOneWidget,
+          {RoutingIssue.none, RoutingIssue.unknown}.contains(issue) ? findsNothing : findsOneWidget,
         );
+        if (find.byType(RoutingIssueLine).evaluate().isNotEmpty) {
+          final warning = tester.getRect(find.byType(RoutingIssueLine));
+          final send = tester.getRect(find.byKey(const ValueKey('assistant-send')));
+          expect(warning.top, greaterThanOrEqualTo(send.bottom));
+          expect(warning.height, lessThan(140));
+        }
+        final picker = tester.getRect(find.byType(ModelRoutePicker));
+        expect(picker.width, greaterThan(60));
         expect(tester.takeException(), isNull);
-      });
+      }, variant: const TargetPlatformVariant({TargetPlatform.macOS, TargetPlatform.iOS}));
     }
   }
 

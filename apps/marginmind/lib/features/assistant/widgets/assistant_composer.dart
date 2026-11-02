@@ -501,59 +501,76 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
-                      child: Row(
-                        children: [
-                          _BarButton(
-                            key: _mentionButton,
-                            icon: MMIcons.mention,
-                            tooltip: '${l.assistantMention}（@）',
-                            onPressed: configured && !_voice.active ? _mention : null,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => AssistantConversationRouteControl(
+                          builder: (context, picker, issue) => Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  _BarButton(
+                                    key: _mentionButton,
+                                    icon: MMIcons.mention,
+                                    tooltip: '${l.assistantMention}（@）',
+                                    onPressed: configured && !_voice.active ? _mention : null,
+                                  ),
+                                  if (!context.mmTouchPlatform)
+                                    _BarButton(
+                                      key: const ValueKey('assistant-slash'),
+                                      icon: MMIcons.command,
+                                      tooltip: '${l.assistantCommands}（/）',
+                                      onPressed: configured && !_voice.active
+                                          ? () {
+                                              _text.value = const TextEditingValue(
+                                                text: '/',
+                                                selection: TextSelection.collapsed(offset: 1),
+                                              );
+                                              _focus.requestFocus();
+                                            }
+                                          : null,
+                                    ),
+                                  _BarButton(
+                                    key: const ValueKey('assistant-online'),
+                                    icon: MMIcons.web,
+                                    label: constraints.maxWidth < 400
+                                        ? null
+                                        : (conversation.online ? l.assistantOnline : l.assistantOffline),
+                                    color: conversation.online ? c.research : c.secondaryLabel,
+                                    tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
+                                    selected: conversation.online,
+                                    onPressed: configured ? () => unawaited(_setOnline(!conversation.online)) : null,
+                                  ),
+                                  Expanded(
+                                    child: Align(
+                                      key: const ValueKey('assistant-model'),
+                                      alignment: Alignment.centerRight,
+                                      child: picker,
+                                    ),
+                                  ),
+                                  const SizedBox(width: MMSpacing.xs),
+                                  _BarButton(
+                                    key: const ValueKey('assistant-voice'),
+                                    icon: _voice.phase == VoicePhase.recording ? MMIcons.stop : MMIcons.microphone,
+                                    tooltip: _voice.phase == VoicePhase.recording ? l.voiceFinish : l.voiceStart,
+                                    color: _voice.active ? c.research : null,
+                                    onPressed: configured && (!_voice.active || _voice.phase == VoicePhase.recording)
+                                        ? () => unawaited(_toggleVoice())
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _SendButton(
+                                    running: running,
+                                    enabled: canSend,
+                                    onSend: () => _send(),
+                                    onStop: () => unawaited(ref.read(assistantControllerProvider.notifier).stop()),
+                                  ),
+                                ],
+                              ),
+                              if (issue != null) Padding(padding: const EdgeInsets.fromLTRB(6, 4, 6, 0), child: issue),
+                            ],
                           ),
-                          if (!context.mmTouchPlatform)
-                            _BarButton(
-                              key: const ValueKey('assistant-slash'),
-                              icon: MMIcons.command,
-                              tooltip: '${l.assistantCommands}（/）',
-                              onPressed: configured && !_voice.active
-                                  ? () {
-                                      _text.value = const TextEditingValue(
-                                        text: '/',
-                                        selection: TextSelection.collapsed(offset: 1),
-                                      );
-                                      _focus.requestFocus();
-                                    }
-                                  : null,
-                            ),
-                          _BarButton(
-                            key: const ValueKey('assistant-online'),
-                            icon: MMIcons.web,
-                            label: conversation.online ? l.assistantOnline : l.assistantOffline,
-                            color: conversation.online ? c.research : c.secondaryLabel,
-                            tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
-                            selected: conversation.online,
-                            onPressed: configured ? () => unawaited(_setOnline(!conversation.online)) : null,
-                          ),
-                          const Expanded(
-                            child: AssistantConversationRouteControl(key: ValueKey('assistant-model')),
-                          ),
-                          const SizedBox(width: MMSpacing.xs),
-                          _BarButton(
-                            key: const ValueKey('assistant-voice'),
-                            icon: _voice.phase == VoicePhase.recording ? MMIcons.stop : MMIcons.microphone,
-                            tooltip: _voice.phase == VoicePhase.recording ? l.voiceFinish : l.voiceStart,
-                            color: _voice.active ? c.research : null,
-                            onPressed: configured && (!_voice.active || _voice.phase == VoicePhase.recording)
-                                ? () => unawaited(_toggleVoice())
-                                : null,
-                          ),
-                          const SizedBox(width: 8),
-                          _SendButton(
-                            running: running,
-                            enabled: canSend,
-                            onSend: () => _send(),
-                            onStop: () => unawaited(ref.read(assistantControllerProvider.notifier).stop()),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
