@@ -1,4 +1,9 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:marginmind/app/app.dart';
@@ -8,12 +13,20 @@ import 'package:marginmind/features/workspace/widgets/reader_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 
 import 'helpers.dart';
+import 'vocabulary_screenshots.dart';
 
 import 'package:marginmind/features/workspace/workspace_layout.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 
 void main() {
+  setUpAll(loadVocabularyScreenshotFonts);
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('marginmind/system_ui'),
+      (_) async => null,
+    );
+  });
   testWidgets('headers follow sidebar animation, split dragging and the assistant in the same frame', (tester) async {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -80,8 +93,8 @@ void main() {
         expect(headers, findsNWidgets(2));
         final reader = tester.getRect(find.byType(ReaderToolbar));
         final map = tester.getRect(headers.last);
-        expect(reader.height, touch ? 52 : MMSizes.desktopPaneHeaderHeight);
-        expect(map.height, touch ? 52 : MMSizes.desktopPaneHeaderHeight);
+        expect(reader.height, touch ? 44 : MMSizes.desktopPaneHeaderHeight);
+        expect(map.height, touch ? 44 : MMSizes.desktopPaneHeaderHeight);
         if (size.width > size.height) {
           expect(reader.top, map.top);
           expect(reader.right + 1, closeTo(map.left, .01));
@@ -101,6 +114,25 @@ void main() {
         expect(tester.getRect(locate).right, lessThan(tester.getRect(more).left));
         expect(tester.getRect(more).left - tester.getRect(locate).right, lessThanOrEqualTo(16));
         expect(tester.getCenter(locate).dy, tester.getCenter(more).dy);
+        if (touch) {
+          expect(tester.getSize(locate), const Size(44, 44));
+          final visual = find.descendant(of: locate, matching: find.byType(AnimatedContainer)).first;
+          expect(tester.getSize(visual), const Size(28, 28));
+          expect(tester.widget<Icon>(find.descendant(of: locate, matching: find.byType(Icon))).size, 16);
+          if (vocabularyScreenshotsEnabled) {
+            final view = tester.binding.renderViews.first;
+            final image = (await tester.runAsync(
+              () => (view.debugLayer! as OffsetLayer).toImage(Rect.fromLTWH(0, 0, view.size.width, 84), pixelRatio: 2),
+            ))!;
+            final png = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.png)))!;
+            await tester.runAsync(
+              () => File(
+                '${Platform.environment['MM_SCREENSHOTS']}/toolbar-${size.width.toInt()}-${dark ? 'dark' : 'light'}.png',
+              ).writeAsBytes(png.buffer.asUint8List()),
+            );
+            image.dispose();
+          }
+        }
         await toggleMapStyle(tester);
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('map-density')), findsOneWidget);

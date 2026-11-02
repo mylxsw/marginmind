@@ -6,6 +6,7 @@ import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import 'dropdown.dart';
 import 'control_frame.dart';
+import 'toolbar.dart';
 
 /// Lower priorities move into the menu first. Commands retain one identity
 /// regardless of whether they are painted inline or invoked from the menu.
@@ -151,6 +152,9 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
           groups: widget.groups,
           hasMenuEntries: widget.menuEntries.isNotEmpty,
           groupColor: context.mmColors.quaternaryFill,
+          groupHeight: MMCompactToolbarScope.of(context) && context.mmTablet
+              ? MMSizes.compactToolbarControlVisual + 4
+              : MMSizes.toolbarGroupHeight,
           onLayout: _reconcileFocus,
           children: [
             for (final item in widget.items)
@@ -237,6 +241,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
     required this.trailingIds,
     required this.groups,
     required this.groupColor,
+    required this.groupHeight,
     required this.hasMenuEntries,
     required this.onLayout,
     required super.children,
@@ -250,6 +255,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
   final Set<String> trailingIds;
   final List<Set<String>> groups;
   final Color groupColor;
+  final double groupHeight;
   final bool hasMenuEntries;
   final VoidCallback onLayout;
   @override
@@ -264,6 +270,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
     trailingIds,
     groups,
     groupColor,
+    groupHeight,
     hasMenuEntries,
     onLayout,
   );
@@ -278,6 +285,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
       ..trailingIds = trailingIds
       ..groups = groups
       ..groupColor = groupColor
+      ..groupHeight = groupHeight
       ..hasMenuEntries = hasMenuEntries
       ..onLayout = onLayout
       ..markNeedsLayout();
@@ -301,12 +309,14 @@ class _ToolbarBox extends RenderBox
     this.trailingIds,
     this.groups,
     this.groupColor,
+    this.groupHeight,
     this.hasMenuEntries,
     this.onLayout,
   );
   Set<String> trailingIds;
   List<Set<String>> groups;
   Color groupColor;
+  double groupHeight;
   bool hasMenuEntries;
   VoidCallback onLayout;
   String? menuBeforeId;
@@ -432,7 +442,7 @@ class _ToolbarBox extends RenderBox
           width: bounds.width + 6,
           // Keep compact desktop groups close to their controls while retaining
           // the existing visual capsule inside larger touch targets.
-          height: (bounds.height + 4).clamp(0, MMSizes.toolbarGroupHeight).toDouble(),
+          height: (bounds.height + 4).clamp(0, groupHeight).toDouble(),
         );
         context.canvas.drawRRect(
           RRect.fromRectAndRadius(rect, const Radius.circular(MMRadii.capsule)),

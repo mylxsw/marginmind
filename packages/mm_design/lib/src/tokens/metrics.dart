@@ -84,7 +84,7 @@ abstract final class MMSizes {
   static const double nodeStroke = 1;
   static const double paneHeaderHeight = 44;
   static const double desktopPaneHeaderHeight = 40;
-  static const double tabletPaneHeaderHeight = 52;
+  static const double tabletPaneHeaderHeight = 44;
   static const double phoneWorkspaceToolbarHeight = 50;
   static const double thumbDock = 56;
   static const Size thumbDockButton = Size(46, 44);
@@ -176,6 +176,8 @@ abstract final class MMSizes {
   static const double touchTarget = 44;
 
   /// Painted tablet chrome is compact; its touch cells remain 44 points.
+  static const double compactToolbarControlVisual = 28;
+  static const double compactToolbarIcon = 16;
   static const double tabletControlVisual = 32;
   static const double tabletToolbarVisual = 36;
   static const double tabletToolbarIcon = 18;

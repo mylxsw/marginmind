@@ -8,6 +8,7 @@ import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'control_frame.dart';
 import 'flat_surface.dart';
+import 'toolbar.dart';
 
 @immutable
 class MMSegment<T> {
@@ -106,6 +107,7 @@ class MMSegmentedControl<T> extends StatelessWidget {
   Widget _tablet(BuildContext context) {
     final c = context.mmColors;
     final grouped = MMControlGroupScope.contains(context);
+    final compact = MMCompactToolbarScope.of(context) && context.mmTablet;
     return SizedBox(
       height: MMSizes.touchTarget,
       child: Stack(
@@ -113,8 +115,8 @@ class MMSegmentedControl<T> extends StatelessWidget {
         children: [
           if (!grouped)
             Positioned.fill(
-              top: 6,
-              bottom: 6,
+              top: compact ? 8 : 6,
+              bottom: compact ? 8 : 6,
               child: DecoratedBox(
                 decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(16)),
               ),
@@ -135,9 +137,13 @@ class MMSegmentedControl<T> extends StatelessWidget {
                         child: AnimatedContainer(
                           duration: MMAppearance.duration(context, MMMotion.standard),
                           curve: MMMotion.standardCurve,
-                          height: grouped ? MMSizes.tabletControlVisual : MMSizes.segmented,
+                          height: compact
+                              ? MMSizes.compactToolbarControlVisual
+                              : grouped
+                              ? MMSizes.tabletControlVisual
+                              : MMSizes.segmented,
                           constraints: const BoxConstraints(minWidth: MMSizes.touchTarget),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: seg.value == value
@@ -165,6 +171,7 @@ class MMSegmentedControl<T> extends StatelessWidget {
                                 softWrap: false,
                                 overflow: TextOverflow.ellipsis,
                                 style: context.mmText.callout.copyWith(
+                                  fontSize: compact ? 12 : null,
                                   fontWeight: seg.value == value ? FontWeight.w600 : FontWeight.w500,
                                 ),
                               ),

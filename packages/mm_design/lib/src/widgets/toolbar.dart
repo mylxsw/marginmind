@@ -124,7 +124,7 @@ class MMToolbarGroup extends StatelessWidget {
   }
 }
 
-/// Compact desktop controls for pane toolbars; touch metrics stay unchanged.
+/// Compact pane controls; touch cells retain their full hit area.
 class MMCompactToolbarScope extends InheritedWidget {
   const MMCompactToolbarScope({super.key, required super.child});
 
@@ -178,6 +178,8 @@ class MMToolbarButton extends StatelessWidget {
     final t = context.mmText;
     final dock = MMThumbDockScope.of(context);
     final dense = MMCompactToolbarScope.of(context);
+    final compactTablet = dense && context.mmTablet;
+    final touchVisual = compactTablet ? MMSizes.compactToolbarControlVisual : MMSizes.tabletControlVisual;
     final size = compact && !dock && !context.mmTouch && !context.mmTouchPlatform
         ? const Size(30, 26)
         : dense && !dock && !context.mmTouch && !context.mmTouchPlatform
@@ -200,8 +202,8 @@ class MMToolbarButton extends StatelessWidget {
         return MMControlFrame(
           child: AnimatedContainer(
             duration: MMMotion.quick,
-            height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : size.height,
-            constraints: BoxConstraints(minWidth: context.mmTouchPlatform ? MMSizes.tabletControlVisual : size.width),
+            height: context.mmTouchPlatform ? touchVisual : size.height,
+            constraints: BoxConstraints(minWidth: context.mmTouchPlatform ? touchVisual : size.width),
             padding: EdgeInsets.symmetric(horizontal: label != null ? 10 : (count > 0 ? MMSpacing.xs : 0)),
             decoration: BoxDecoration(
               color: bg,
@@ -209,7 +211,7 @@ class MMToolbarButton extends StatelessWidget {
                 dock
                     ? 22
                     : context.mmTouchPlatform
-                    ? MMSizes.tabletControlVisual / 2
+                    ? touchVisual / 2
                     : MMRadii.capsuleButton,
               ),
               border: s.focused ? Border.all(color: c.accent, width: 2) : null,
@@ -224,7 +226,7 @@ class MMToolbarButton extends StatelessWidget {
                       size: dock
                           ? 20
                           : context.mmTouchPlatform
-                          ? MMSizes.tabletToolbarIcon
+                          ? (compactTablet ? MMSizes.compactToolbarIcon : MMSizes.tabletToolbarIcon)
                           : dense
                           ? 15
                           : 16,
@@ -239,7 +241,7 @@ class MMToolbarButton extends StatelessWidget {
                     size: dock
                         ? 20
                         : context.mmTouchPlatform
-                        ? MMSizes.tabletToolbarIcon
+                        ? (compactTablet ? MMSizes.compactToolbarIcon : MMSizes.tabletToolbarIcon)
                         : dense
                         ? 15
                         : 16,

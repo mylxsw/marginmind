@@ -8,6 +8,7 @@ import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import 'flat_surface.dart';
 import 'control_frame.dart';
+import 'toolbar.dart';
 
 /// Reports menu lifetime to a host that must keep its anchors stationary.
 class MMPopupActivity extends InheritedWidget {
@@ -170,8 +171,12 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
                     child:
                         widget.child ??
                         Container(
-                          width: MMSizes.tabletControlVisual,
-                          height: MMSizes.tabletControlVisual,
+                          width: MMCompactToolbarScope.of(context) && context.mmTablet
+                              ? MMSizes.compactToolbarControlVisual
+                              : MMSizes.tabletControlVisual,
+                          height: MMCompactToolbarScope.of(context) && context.mmTablet
+                              ? MMSizes.compactToolbarControlVisual
+                              : MMSizes.tabletControlVisual,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: _open ? c.accentTint : Colors.transparent,
@@ -179,7 +184,9 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
                           ),
                           child: IconTheme(
                             data: IconThemeData(
-                              size: MMSizes.tabletToolbarIcon,
+                              size: MMCompactToolbarScope.of(context) && context.mmTablet
+                                  ? MMSizes.compactToolbarIcon
+                                  : MMSizes.tabletToolbarIcon,
                               color: !widget.enabled ? c.label.withValues(alpha: .3) : (_open ? c.accent : c.label),
                             ),
                             child: widget.icon ?? const Icon(MMIcons.more),
@@ -347,12 +354,19 @@ class _MMDropdownMenuButtonState<T> extends State<MMDropdownMenuButton<T>> {
         menuChildren: _dropdownChildren(context, widget.itemBuilder(context), widget.width, _select),
         builder: (_, controller, _) => Focus(
           focusNode: _buttonFocus,
-          child: MMIconButton(
-            icon: widget.icon,
-            tooltip: widget.tooltip,
-            selected: controller.isOpen,
-            onPressed: !widget.enabled ? null : () => controller.isOpen ? controller.close() : controller.open(),
-          ),
+          child: MMCompactToolbarScope.of(context) && context.mmTablet
+              ? MMToolbarButton(
+                  icon: widget.icon,
+                  tooltip: widget.tooltip,
+                  selected: controller.isOpen,
+                  onPressed: !widget.enabled ? null : () => controller.isOpen ? controller.close() : controller.open(),
+                )
+              : MMIconButton(
+                  icon: widget.icon,
+                  tooltip: widget.tooltip,
+                  selected: controller.isOpen,
+                  onPressed: !widget.enabled ? null : () => controller.isOpen ? controller.close() : controller.open(),
+                ),
         ),
       ),
     ),
