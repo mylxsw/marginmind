@@ -566,7 +566,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       AppCommand(
         l.newStudySet,
-        inLibrary ? () => newStudySetFromPdfs(context, ref) : null,
+        inLibrary ? () => showNewStudySet(context, ref) : null,
         shortcut: AppShortcuts.newStudySet,
       ),
       AppCommand(

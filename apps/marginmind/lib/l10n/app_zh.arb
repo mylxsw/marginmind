@@ -2460,5 +2460,14 @@
   "workspaceNoMatchingTabs": "没有匹配的标签页",
   "webSaveDocumentTitle": "保存为文档",
   "workspaceScrollTabsLeft": "向左滚动标签页",
-  "workspaceScrollTabsRight": "向右滚动标签页"
+  "workspaceScrollTabsRight": "向右滚动标签页",
+  "newStudySetBlank": "空白",
+  "newStudySetDocument": "文档",
+  "newStudySetWeb": "网页",
+  "newStudySetName": "学习集名称（可选）",
+  "newStudySetDefaultName": "未命名学习集",
+  "newStudySetBlankHint": "从空白开始，之后随时添加文档、思维导图和笔记。",
+  "newStudySetDocumentHint": "选择一个或多个文档，创建后自动导入。",
+  "newStudySetWebHint": "创建后打开网页，可使用「保存为文档」将内容保存到学习集。",
+  "newStudySetChooseDocuments": "选择文档…"
 }

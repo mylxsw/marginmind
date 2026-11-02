@@ -157,7 +157,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             child: MMIconButton(
                               icon: MMIcons.add,
                               tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
-                              onPressed: () => newStudySetFromPdfs(context, ref),
+                              onPressed: () => showNewStudySet(context, ref),
                             ),
                           ),
                         ),
@@ -219,7 +219,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       MMToolbarButton(
                         icon: MMIcons.add,
                         tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
-                        onPressed: () => newStudySetFromPdfs(context, ref),
+                        onPressed: () => showNewStudySet(context, ref),
                       ),
                     ],
                   ),
@@ -442,7 +442,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
             MMButton(
               label: l.newStudySet,
               variant: MMButtonVariant.primary,
-              onPressed: () => newStudySetFromPdfs(context, ref),
+              onPressed: () => showNewStudySet(context, ref),
             ),
             MMButton(
               label: l.openSample,

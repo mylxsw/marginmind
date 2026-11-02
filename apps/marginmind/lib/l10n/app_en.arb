@@ -3169,5 +3169,14 @@
   "workspaceNoMatchingTabs": "No matching tabs",
   "webSaveDocumentTitle": "Save as a document",
   "workspaceScrollTabsLeft": "Scroll tabs left",
-  "workspaceScrollTabsRight": "Scroll tabs right"
+  "workspaceScrollTabsRight": "Scroll tabs right",
+  "newStudySetBlank": "Blank",
+  "newStudySetDocument": "Document",
+  "newStudySetWeb": "Web Page",
+  "newStudySetName": "Study set name (optional)",
+  "newStudySetDefaultName": "Untitled Study Set",
+  "newStudySetBlankHint": "Start fresh. Add documents, mind maps and notes at any time.",
+  "newStudySetDocumentHint": "Choose one or more documents to import into the new study set.",
+  "newStudySetWebHint": "Open the page after creating the set. Use “Save as a document” to keep its content in the study set.",
+  "newStudySetChooseDocuments": "Choose Documents…"
 }

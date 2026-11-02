@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,8 @@ import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/library/library_controller.dart';
+import 'package:marginmind/features/workspace/workspace_browser.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/library/widgets/study_set_card.dart';
 import 'package:marginmind/features/library/widgets/study_set_cover.dart';
 import 'package:marginmind/shared/pdf_picker.dart';
@@ -20,6 +23,7 @@ import 'helpers.dart';
 /// Importing inspects the files for real; give that I/O real time until the
 /// new set is open.
 Future<void> importSettled(WidgetTester tester) async {
+  await tester.pumpAndSettle();
   final container = ProviderScope.containerOf(tester.element(find.byType(MarginMindApp)));
   for (
     var i = 0;
@@ -45,6 +49,14 @@ Future<PdfPicker> picker(WidgetTester tester, List<String> names, List<String> l
     labels.add(label);
     return [for (final name in names) (path: '${directory!.path}/$name', name: name)];
   };
+}
+
+Future<void> chooseDocuments(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Document'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Choose Documents…'));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -92,14 +104,135 @@ void main() {
   });
 
   group('new study set', () {
-    testWidgets('asks for documents first, then imports and opens a set named after the first file', (tester) async {
+    for (final size in [const Size(1280, 820), const Size(390, 844)]) {
+      testWidgets('creates a blank workspace without opening a file picker at $size', (tester) async {
+        final container = await pumpApp(
+          tester,
+          sets: const [],
+          size: size,
+          overrides: [
+            touchPlatformProvider.overrideWithValue(size.width < 600),
+            phoneProvider.overrideWithValue(size.width < 600),
+          ],
+          pdfPicker: (_) async {
+            fail('Blank creation must not open a document picker');
+          },
+        );
+        await tester.tap(find.text('New Study Set'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Create'));
+        await tester.pumpAndSettle();
+        final created = container.read(studySetsProvider).value!.single;
+        expect(created.title, 'Untitled Study Set');
+        expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+        final content = await container.read(contentRepositoryProvider).load(created.id);
+        expect(content.documents, isEmpty);
+        expect(content.cards, isEmpty);
+        expect(content.nodes, isEmpty);
+        // Empty sets remain usable without first attaching a document.
+        await container.read(workspaceProvider(created.id).notifier).addMap('My map');
+        await tester.pumpAndSettle();
+        expect(container.read(workspaceProvider(created.id)).content!.maps.any((m) => m.title == 'My map'), isTrue);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('blank creation uses the entered name and current folder', (tester) async {
+      final container = await pumpApp(tester);
+      container.read(libraryViewProvider.notifier).setFilter(const FolderFilter('design'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(MMIcons.add));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Study set name (optional)'), '  My research  ');
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+      final created = container.read(studySetsProvider).value!.singleWhere((s) => s.title == 'My research');
+      expect(created.folderId, 'design');
+    });
+
+    testWidgets('web creation validates the URL and hands it to the new workspace', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final container = await pumpApp(tester, sets: const []);
+      await tester.tap(find.text('New Study Set'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Web Page'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+      expect(find.text('Enter a URL'), findsOneWidget);
+      expect(container.read(studySetsProvider).value, isEmpty);
+      final address = find.widgetWithText(TextField, 'https://');
+      await tester.enterText(address, 'file:///private/page.html');
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+      expect(find.text('Only http and https are supported'), findsOneWidget);
+      expect(container.read(studySetsProvider).value, isEmpty);
+      await tester.enterText(address, 'example.com/article');
+      // No native WebView is needed to verify the navigation/session handoff.
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      await tester.tap(find.text('Create'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      final created = container.read(studySetsProvider).value!.single;
+      expect(created.title, 'example.com');
+      final browser = container.read(workspaceBrowserProvider(created.id));
+      expect(browser.session!.url.toString(), 'https://example.com/article');
+      expect(browser.visible, isTrue);
+      expect(container.read(workspaceProvider(created.id)).tabs.active!.kind, WorkspaceTabKind.browser);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('switching from picked documents to blank creates no documents', (tester) async {
+      final container = await pumpApp(tester, sets: const [], pdfPicker: await picker(tester, ['notes.md'], []));
+      await tester.tap(find.text('New Study Set'));
+      await chooseDocuments(tester);
+      await tester.tap(find.text('Blank'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Study set name (optional)'), 'Independent ideas');
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+      final created = container.read(studySetsProvider).value!.single;
+      expect(created.title, 'Independent ideas');
+      expect((await container.read(contentRepositoryProvider).load(created.id)).documents, isEmpty);
+    });
+
+    testWidgets('document creation accepts a custom study set name', (tester) async {
+      final container = await pumpApp(tester, sets: const [], pdfPicker: await picker(tester, ['notes.md'], []));
+      await tester.tap(find.text('New Study Set'));
+      await chooseDocuments(tester);
+      await tester.enterText(find.widgetWithText(TextField, 'Study set name (optional)'), '  Research  ');
+      await tester.tap(find.text('Create'));
+      await importSettled(tester);
+      final created = container.read(studySetsProvider).value!.single;
+      expect(created.title, 'Research');
+      expect((await container.read(contentRepositoryProvider).load(created.id)).documents.single.title, 'Document');
+      await settleHud(tester);
+    });
+
+    testWidgets('cancelling the creation sheet creates nothing', (tester) async {
+      final container = await pumpApp(tester, sets: const []);
+      await tester.tap(find.text('New Study Set'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(container.read(studySetsProvider).value, isEmpty);
+      expect(container.read(navigationProvider), isA<LibraryRoute>());
+    });
+
+    testWidgets('chooses documents, then imports and opens a set named after the first file', (tester) async {
       final labels = <String>[];
       final container = await pumpApp(tester, pdfPicker: await picker(tester, ['认知心理学.MD', 'b.markdown'], labels));
       await tester.tap(find.byIcon(MMIcons.add));
+      await chooseDocuments(tester);
+      await tester.tap(find.text('Create'));
       await importSettled(tester);
 
       expect(labels, ['Documents']);
-      expect(find.byType(MMSheet), findsNothing); // no name sheet in between
+      expect(find.byType(MMSheet), findsNothing); // creation sheet closed
       final sets = container.read(studySetsProvider).value!;
       final created = sets.singleWhere((s) => s.title == '认知心理学');
       expect(created.folderId, isNull);
@@ -114,6 +247,9 @@ void main() {
       final container = await pumpApp(tester, pdfPicker: await picker(tester, const [], []));
       final before = container.read(studySetsProvider).value!.length;
       await tester.tap(find.byIcon(MMIcons.add));
+      await chooseDocuments(tester);
+      expect(tester.widget<MMButton>(find.widgetWithText(MMButton, 'Create')).onPressed, isNull);
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(container.read(studySetsProvider).value!.length, before);
       expect(container.read(navigationProvider), isA<LibraryRoute>());
@@ -126,6 +262,8 @@ void main() {
       );
       final before = container.read(studySetsProvider).value!.length;
       await tester.tap(find.byIcon(MMIcons.add));
+      await chooseDocuments(tester);
+      await tester.tap(find.text('Create'));
       await importSettled(tester);
       expect(container.read(studySetsProvider).value!.length, before);
       expect(container.read(navigationProvider), isA<LibraryRoute>());
@@ -139,6 +277,8 @@ void main() {
       container.read(libraryViewProvider.notifier).setFilter(const FolderFilter('design'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(MMIcons.add));
+      await chooseDocuments(tester);
+      await tester.tap(find.text('Create'));
       await importSettled(tester);
       final created = container.read(studySetsProvider).value!.singleWhere((s) => s.title == 'notes');
       expect(created.folderId, 'design');
@@ -170,6 +310,8 @@ void main() {
     expect(find.byIcon(MMIcons.import), findsNothing); // drop hint only while dragging
 
     await tester.tap(find.text('New Study Set'));
+    await chooseDocuments(tester);
+    await tester.tap(find.text('Create'));
     await importSettled(tester);
     expect(container.read(studySetsProvider).value!.single.title, 'a');
     await settleHud(tester);

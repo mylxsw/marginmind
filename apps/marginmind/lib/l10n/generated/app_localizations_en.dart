@@ -6194,4 +6194,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workspaceScrollTabsRight => 'Scroll tabs right';
+
+  @override
+  String get newStudySetBlank => 'Blank';
+
+  @override
+  String get newStudySetDocument => 'Document';
+
+  @override
+  String get newStudySetWeb => 'Web Page';
+
+  @override
+  String get newStudySetName => 'Study set name (optional)';
+
+  @override
+  String get newStudySetDefaultName => 'Untitled Study Set';
+
+  @override
+  String get newStudySetBlankHint => 'Start fresh. Add documents, mind maps and notes at any time.';
+
+  @override
+  String get newStudySetDocumentHint => 'Choose one or more documents to import into the new study set.';
+
+  @override
+  String get newStudySetWebHint =>
+      'Open the page after creating the set. Use “Save as a document” to keep its content in the study set.';
+
+  @override
+  String get newStudySetChooseDocuments => 'Choose Documents…';
 }

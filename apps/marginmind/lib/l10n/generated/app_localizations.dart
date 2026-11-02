@@ -10915,6 +10915,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scroll tabs right'**
   String get workspaceScrollTabsRight;
+
+  /// No description provided for @newStudySetBlank.
+  ///
+  /// In en, this message translates to:
+  /// **'Blank'**
+  String get newStudySetBlank;
+
+  /// No description provided for @newStudySetDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get newStudySetDocument;
+
+  /// No description provided for @newStudySetWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web Page'**
+  String get newStudySetWeb;
+
+  /// No description provided for @newStudySetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Study set name (optional)'**
+  String get newStudySetName;
+
+  /// No description provided for @newStudySetDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled Study Set'**
+  String get newStudySetDefaultName;
+
+  /// No description provided for @newStudySetBlankHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start fresh. Add documents, mind maps and notes at any time.'**
+  String get newStudySetBlankHint;
+
+  /// No description provided for @newStudySetDocumentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one or more documents to import into the new study set.'**
+  String get newStudySetDocumentHint;
+
+  /// No description provided for @newStudySetWebHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the page after creating the set. Use “Save as a document” to keep its content in the study set.'**
+  String get newStudySetWebHint;
+
+  /// No description provided for @newStudySetChooseDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Documents…'**
+  String get newStudySetChooseDocuments;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

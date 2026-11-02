@@ -5951,4 +5951,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get workspaceScrollTabsRight => '向右滚动标签页';
+
+  @override
+  String get newStudySetBlank => '空白';
+
+  @override
+  String get newStudySetDocument => '文档';
+
+  @override
+  String get newStudySetWeb => '网页';
+
+  @override
+  String get newStudySetName => '学习集名称（可选）';
+
+  @override
+  String get newStudySetDefaultName => '未命名学习集';
+
+  @override
+  String get newStudySetBlankHint => '从空白开始，之后随时添加文档、思维导图和笔记。';
+
+  @override
+  String get newStudySetDocumentHint => '选择一个或多个文档，创建后自动导入。';
+
+  @override
+  String get newStudySetWebHint => '创建后打开网页，可使用「保存为文档」将内容保存到学习集。';
+
+  @override
+  String get newStudySetChooseDocuments => '选择文档…';
 }

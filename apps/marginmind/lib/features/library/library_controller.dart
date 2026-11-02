@@ -66,14 +66,20 @@ class LibraryViewController extends Notifier<LibraryViewState> {
   /// Documents dropped on the library or picked for a new study set: a set named
   /// after the first file, in the folder being viewed, with all of them
   /// imported, then opened.
-  Future<ImportedNotice> createFromFiles(List<DroppedFile> files) async {
+  Future<ImportedNotice> createFromFiles(List<DroppedFile> files, {String? title}) async {
     if (files.isEmpty) return const ImportedNotice(0, []);
     final repo = ref.read(studySetRepositoryProvider);
     final count = ref.read(studySetsProvider).value?.length ?? 0;
-    final title = files.first.name.replaceFirst(RegExp(r'\.[^.]+$'), '');
+    final defaultTitle = files.first.name.replaceFirst(RegExp(r'\.[^.]+$'), '');
     final filter = state.query.filter;
     final folderId = filter is FolderFilter ? filter.folderId : null;
-    final created = await repo.create(NewStudySet(title: title, colorIndex: count % 6, folderId: folderId));
+    final created = await repo.create(
+      NewStudySet(
+        title: title?.trim().isNotEmpty == true ? title!.trim() : defaultTitle,
+        colorIndex: count % 6,
+        folderId: folderId,
+      ),
+    );
     final notice = await ref.read(workspaceProvider(created.id).notifier).importDocuments(files);
     if (notice.count == 0) {
       await repo.delete(created.id);
@@ -85,6 +91,23 @@ class LibraryViewController extends Notifier<LibraryViewState> {
     setFilter(LibraryFilter.all);
     await open(created.id);
     return notice;
+  }
+
+  /// An empty set is a complete workspace; documents can be added later.
+  Future<StudySet> createBlank(String title) async {
+    final filter = state.query.filter;
+    final created = await ref
+        .read(studySetRepositoryProvider)
+        .create(
+          NewStudySet(
+            title: title.trim(),
+            colorIndex: (ref.read(studySetsProvider).value?.length ?? 0) % 6,
+            folderId: filter is FolderFilter ? filter.folderId : null,
+          ),
+        );
+    setFilter(LibraryFilter.all);
+    await open(created.id);
+    return created;
   }
 
   Future<void> delete(String id) async {
