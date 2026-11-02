@@ -10,6 +10,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../settings/settings_window.dart' show SettingsNavigation, SettingsPage, SettingsTab, showSettings;
 import '../../../settings/settings_save_actions.dart';
+import '../../../settings/settings_drafts.dart';
 import '../../../shared/l10n.dart';
 import '../../workspace/widgets/notices.dart' show showConfirmSheet;
 import '../assistant_services.dart';
@@ -310,6 +311,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   late final AssistantServicesController _controller;
   late AppLocalizations _l;
   int _pendingWrites = 0;
+  SettingsDrafts? _formDrafts;
 
   /// Why the last check failed; null when it passed or none ran.
   String? _failure;
@@ -336,6 +338,20 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _l = context.l10n;
+    final next = MMInput.of(context).phone ? SettingsDraftScope.of(context) : null;
+    if (next != _formDrafts) {
+      _formDrafts?.remove(this);
+      _formDrafts = next;
+      next?.register(
+        this,
+        dirty: () => _dirty,
+        save: () async {
+          await _saveAndCheck();
+          await WidgetsBinding.instance.endOfFrame;
+          return !_dirty && !_saveFailed && !_keyUnavailable;
+        },
+      );
+    }
   }
 
   void _focusFirst() {
@@ -361,6 +377,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
 
   @override
   void dispose() {
+    _formDrafts?.remove(this);
     _cancelCheck();
     _name.dispose();
     _endpoint.dispose();
@@ -396,6 +413,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
       _saved = _saveFailed = false;
       _failure = null;
     });
+    _formDrafts?.changed();
   }
 
   bool get _dirty => _nameDirty || _endpointDirty || _keyDirty;
@@ -682,6 +700,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
         children: [
           SettingsSaveActions(
             key: const ValueKey('service-save-status'),
+            trackDraft: false,
             buttonKey: const ValueKey('service-save'),
             dirty: _dirty,
             saving: _pendingWrites > 0,

@@ -1205,6 +1205,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (state.sidebarAutoCollapsed != value) state = state.copyWith(sidebarAutoCollapsed: value);
   }
 
+  void closeReaderPanel() {
+    if (state.readerPanelVisible) state = state.copyWith(readerPanelVisible: false);
+  }
+
   void toggleReaderPanel() {
     final available = ReaderPanelMode.values.where(canShowReaderPanel).toList();
     if (available.isEmpty) return;

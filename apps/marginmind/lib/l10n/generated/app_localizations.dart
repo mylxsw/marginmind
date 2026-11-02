@@ -10916,6 +10916,24 @@ abstract class AppLocalizations {
   /// **'Scroll tabs right'**
   String get workspaceScrollTabsRight;
 
+  /// No description provided for @settingsCloseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save settings changes?'**
+  String get settingsCloseTitle;
+
+  /// No description provided for @statsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No review history yet'**
+  String get statsEmptyTitle;
+
+  /// No description provided for @statsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a review to see your learning progress here.'**
+  String get statsEmptyMessage;
+
   /// No description provided for @newStudySetBlank.
   ///
   /// In en, this message translates to:

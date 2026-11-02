@@ -19,7 +19,6 @@ class ContinueCard extends StatelessWidget {
     final l = context.l10n;
     final position = set.lastPosition;
     final phone = MMInput.of(context).phone;
-    final compactPhone = phone && MMSizeClass.of(context) == MMSizeClass.compact;
     return MMInteractive(
       onTap: onOpen,
       builder: (context, s) => AnimatedContainer(
@@ -56,7 +55,7 @@ class ContinueCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  if (!compactPhone) ...[
+                  ...[
                     const SizedBox(height: 3),
                     Text(
                       position == null

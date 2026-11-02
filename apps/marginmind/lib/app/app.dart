@@ -21,7 +21,6 @@ import '../settings/system_appearance.dart';
 import '../shared/l10n.dart';
 import 'app_commands.dart';
 import 'navigation.dart';
-import 'phone_tabs.dart';
 import 'window_title.dart';
 import 'mobile_status_bar.dart';
 
@@ -75,12 +74,6 @@ class MarginMindApp extends ConsumerWidget {
         builder: (context, child) {
           final touchPlatform = ref.watch(touchPlatformProvider);
           final phone = ref.watch(phoneProvider);
-          final size = MediaQuery.sizeOf(context);
-          final safe = MediaQuery.paddingOf(context);
-          final tabs =
-              phone &&
-              MMSizeClass.fromSize(Size(size.width - safe.horizontal, size.height - safe.vertical)) ==
-                  MMSizeClass.compact;
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: systemBarsStyle(Theme.of(context).brightness),
             child: MMInput(
@@ -91,9 +84,7 @@ class MarginMindApp extends ConsumerWidget {
                 reduceTransparency: system.reduceTransparency,
                 reduceMotion: system.reduceMotion,
                 child: MMHudHost(
-                  bottom:
-                      (tabs ? MMTabBar.heightOf(context) : 0) +
-                      (pillShown ? pagePillClearance + MMSpacing.s : MMHudHost.defaultBottom),
+                  bottom: pillShown ? pagePillClearance + MMSpacing.s : MMHudHost.defaultBottom,
                   child: child ?? const SizedBox.shrink(),
                 ),
               ),
@@ -122,7 +113,7 @@ SystemUiOverlayStyle systemBarsStyle(Brightness brightness) {
 }
 
 /// Picks the screen for the current route and installs menus/shortcuts.
-/// A phone gets the bottom tabs; system back goes up a level once the
+/// System back goes up a level once the
 /// screen has nothing of its own to close (see [MMBackHandler]).
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
@@ -160,7 +151,6 @@ class AppShell extends ConsumerWidget {
       GalleryRoute() => const GalleryScreen(),
       VocabularyRoute() => VocabularyScreen(key: ValueKey(route), route: route),
     };
-    final tabs = showsPhoneTabs(context) && (route is LibraryRoute || route is ReviewRoute || route is StatsRoute);
     final switcher = AnimatedSwitcher(
       duration: MMAppearance.duration(context, MMMotion.standard),
       child: KeyedSubtree(key: ValueKey(route.runtimeType), child: screen),
@@ -171,11 +161,7 @@ class AppShell extends ConsumerWidget {
         child: Material(
           type: MaterialType.transparency,
           // Always in the tree, so rotating a phone keeps the screen's state.
-          child: MMWindowBottomBar(
-            bar: tabs ? const PhoneTabBar() : null,
-            extent: tabs ? MMTabBar.heightOf(context) : 0,
-            child: switcher,
-          ),
+          child: MMWindowBottomBar(bar: null, extent: 0, child: switcher),
         ),
       ),
     );

@@ -1,0 +1,6 @@
+{
+  "device": "emulator-5554",
+  "test": "mobile_pdf_gesture_acceptance_test.dart",
+  "commit": "4c8ee6cf0239cd69e7981d4772cf74d9d749c82e",
+  "dart_source_sha256": "397241a40c14ae966875ba61c67cd8f67952d5df65a7b442ec90f8cc782325b9"
+}

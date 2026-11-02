@@ -1,0 +1,6 @@
+{
+  "device": "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+  "test": "mobile_state_acceptance_test.dart",
+  "commit": "76b8ddd2763bf926e0d8a7da3a8093a082c20d0f",
+  "dart_source_sha256": "61a6fa031c0b262565a33dc169f8b2f6e0456dda0e1f6370a5ca3a69175e419f"
+}

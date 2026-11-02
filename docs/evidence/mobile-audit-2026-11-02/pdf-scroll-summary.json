@@ -1,0 +1,38 @@
+[
+  {
+    "profile": "legacy",
+    "speed": 300.0,
+    "zoom": 0.655,
+    "inertia": 26.752474872006133
+  },
+  {
+    "profile": "legacy",
+    "speed": 1500.0,
+    "zoom": 0.655,
+    "inertia": 133.75668903039696
+  },
+  {
+    "profile": "legacy",
+    "speed": 5000.0,
+    "zoom": 0.655,
+    "inertia": 445.60906164463813
+  },
+  {
+    "profile": "phone",
+    "speed": 300.0,
+    "zoom": 0.655,
+    "inertia": 289.3868389473373
+  },
+  {
+    "profile": "phone",
+    "speed": 1500.0,
+    "zoom": 0.655,
+    "inertia": 1488.4531144213033
+  },
+  {
+    "profile": "phone",
+    "speed": 5000.0,
+    "zoom": 0.655,
+    "inertia": 4984.924067413591
+  }
+]

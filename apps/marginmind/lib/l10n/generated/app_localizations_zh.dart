@@ -5953,6 +5953,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get workspaceScrollTabsRight => '向右滚动标签页';
 
   @override
+  String get settingsCloseTitle => '保存设置更改？';
+
+  @override
+  String get statsEmptyTitle => '还没有复习记录';
+
+  @override
+  String get statsEmptyMessage => '开始一次复习后，这里会显示你的学习进展。';
+
+  @override
   String get newStudySetBlank => '空白';
 
   @override

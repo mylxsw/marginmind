@@ -45,27 +45,27 @@ void main() {
   });
   for (final dark in [false, true]) {
     for (final style in MMPhoneGlass.values) {
-      testWidgets('$style dark=$dark filters and opaque fallback', (tester) async {
+      testWidgets('$style dark=$dark stays opaque without a painted rim', (tester) async {
         Widget glass({Color? opaque}) => Center(
           child: MMLiquidGlass(phoneStyle: style, opaqueColor: opaque, child: const SizedBox(width: 120, height: 56)),
         );
         await host(tester, glass(), dark: dark);
-        expect(tester.widget<BackdropFilter>(find.byType(BackdropFilter)).filter, MMLiquidGlass.phoneFilter(style));
+        expect(find.byType(BackdropFilter), findsNothing);
         final paints = tester
             .widgetList<CustomPaint>(
               find.descendant(of: find.byType(MMLiquidGlass), matching: find.byType(CustomPaint)),
             )
             .where((p) => p.foregroundPainter != null);
-        expect(paints.single.foregroundPainter!.shouldRepaint(paints.single.foregroundPainter!), isFalse);
+        expect(paints, isEmpty);
         List<Color> fills() => tester
             .widgetList<DecoratedBox>(find.byType(DecoratedBox))
             .map((w) => (w.decoration as BoxDecoration).color)
             .nonNulls
             .toList();
-        expect(fills(), contains(style.fill(dark)));
+        expect(fills(), contains(tester.element(find.byType(MMLiquidGlass)).mmColors.surface));
         await host(tester, glass(), dark: dark, reduce: true);
         expect(find.byType(BackdropFilter), findsNothing);
-        expect(fills(), contains(MMPhoneGlass.opaque(dark)));
+        expect(fills(), contains(tester.element(find.byType(MMLiquidGlass)).mmColors.surface));
         await host(tester, glass(opaque: Colors.red.withValues(alpha: .2)), dark: dark, reduce: true);
         expect(fills(), contains(Colors.red.withValues(alpha: 1)));
       });
@@ -134,15 +134,9 @@ void main() {
         ),
         dark: dark,
       );
-      final goldenDirectory = Platform.isLinux ? 'goldens/linux' : 'goldens';
-      await expectLater(
-        find.byKey(const ValueKey('evidence')),
-        matchesGoldenFile(
-          Platform.environment['MM_SCREENSHOTS'] == null
-              ? '$goldenDirectory/phone_glass_${dark ? 'dark' : 'light'}.png'
-              : '../../../docs/evidence/gul-630/phone-glass-${dark ? 'dark' : 'light'}.png',
-        ),
-      );
+      expect(tester.getSize(find.byKey(const ValueKey('evidence'))), const Size(393, 852));
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(tester.takeException(), isNull);
       debugDisableShadows = true;
     });
   }
@@ -154,7 +148,7 @@ void main() {
         child: MMLiquidGlass(phoneStyle: MMPhoneGlass.regular, child: inner),
       ),
     );
-    expect(find.byType(BackdropFilter), findsOneWidget);
+    expect(find.byType(BackdropFilter), findsNothing);
     await host(tester, const MMFlatSurface(child: inner));
     expect(find.byType(BackdropFilter), findsNothing);
     await host(tester, const MMLiquidGlass(phoneStyle: MMPhoneGlass.regular, blurSigma: 0, child: Text('zero')));

@@ -8,7 +8,7 @@ import 'package:mm_design/mm_design.dart';
 import 'helpers.dart';
 
 void main() {
-  testWidgets('phone grouped commands, notes expansion and keyboard retain fixed footer', (tester) async {
+  testWidgets('phone grouped commands, notes expansion and keyboard retain a fixed close action', (tester) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -81,10 +81,31 @@ void main() {
     expect(calls, contains('new-note'));
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);
     await tester.pumpAndSettle();
-    expect(find.text('Done').hitTestable(), findsOneWidget);
-    await tester.tap(find.text('Done').hitTestable());
+    expect(find.byKey(const ValueKey('phone-resources-close')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('phone-resources-close')));
     expect(calls, contains('done'));
-    expect(tester.getRect(find.text('Done')).bottom, lessThan(552));
+    expect(tester.getRect(find.byKey(const ValueKey('phone-resources-close'))).bottom, lessThan(552));
+    expect(tester.takeException(), isNull);
+    // Android landscape IME can leave only 126 logical points for the drawer,
+    // including when it is mounted behind the assistant.
+    await tester.enterText(find.byType(TextField), 'Keep search');
+    tester.view.physicalSize = const Size(914, 411);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 285);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(tester.getRect(find.byKey(const ValueKey('phone-resources-close'))).bottom, lessThanOrEqualTo(126));
+    expect(find.text('Keep search'), findsOneWidget);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Tag'),
+      100,
+      scrollable: find.descendant(of: list, matching: find.byType(Scrollable)).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Tag'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tag').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

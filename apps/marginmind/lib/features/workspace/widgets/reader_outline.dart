@@ -272,7 +272,14 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                             showMMMenu(context, position: details.globalPosition, entries: menu),
                         child: MMInteractive(
                           semanticLabel: entry.title,
-                          onTap: entry.page > 0 ? () => widget.pdf.jumpToPage(entry.page) : () {},
+                          onTap: entry.page > 0
+                              ? () {
+                                  widget.pdf.jumpToPage(entry.page);
+                                  if (MMInput.of(context).phone) {
+                                    ref.read(workspaceProvider(widget.studySetId).notifier).closeReaderPanel();
+                                  }
+                                }
+                              : () {},
                           selected: selected,
                           builder: (context, state) => Container(
                             constraints: BoxConstraints(minHeight: context.mmSidebarRow),

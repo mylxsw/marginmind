@@ -168,42 +168,66 @@ class AssistantPanel extends ConsumerWidget {
     }
     return CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): escape},
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          header,
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: body),
-                    // Browsing history must not discard the current draft.
-                    if (!conversation.readOnly)
-                      Visibility(
-                        visible: !ui.history,
-                        maintainState: true,
-                        child: ExcludeFocus(
-                          excluding: ui.history,
-                          child: AssistantComposer(
-                            key: ValueKey(conversation.id),
-                            studySetId: studySetId,
-                            configured: true,
+      child: LayoutBuilder(
+        builder: (context, bounds) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (MMInput.of(context).phone)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: bounds.maxHeight),
+                child: ClipRect(child: header),
+              )
+            else
+              header,
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: body),
+                      // Browsing history must not discard the current draft.
+                      if (!conversation.readOnly)
+                        Visibility(
+                          visible: !ui.history,
+                          maintainState: true,
+                          child: ExcludeFocus(
+                            excluding: ui.history,
+                            child: MMInput.of(context).phone
+                                ? ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxHeight: (bounds.maxHeight - MMSizes.tabletPaneHeaderHeight).clamp(
+                                        0.0,
+                                        double.infinity,
+                                      ),
+                                    ),
+                                    child: SingleChildScrollView(
+                                      child: AssistantComposer(
+                                        key: ValueKey(conversation.id),
+                                        studySetId: studySetId,
+                                        configured: true,
+                                      ),
+                                    ),
+                                  )
+                                : AssistantComposer(
+                                    key: ValueKey(conversation.id),
+                                    studySetId: studySetId,
+                                    configured: true,
+                                  ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                if (source != null)
-                  _DrawerTransition(
-                    child: SourceDrawer(studySetId: studySetId, citation: source, number: number),
+                    ],
                   ),
-              ],
+                  if (source != null)
+                    _DrawerTransition(
+                      child: SourceDrawer(studySetId: studySetId, citation: source, number: number),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

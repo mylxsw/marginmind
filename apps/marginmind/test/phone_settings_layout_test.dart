@@ -23,7 +23,7 @@ void main() {
         await tester.pumpAndSettle();
         showSettings(tester.element(find.byType(AppShell)));
         await tester.pumpAndSettle();
-        final sections = find.byKey(const ValueKey('settings-sections'));
+        final sections = find.byKey(const ValueKey('phone-settings-sections'));
         final labels = language == LanguagePreference.zh
             ? ['阅读', '模型', '网页搜索', '语音输入', '通用']
             : ['Reading', 'Models', 'Web Search', 'Voice Input', 'General'];
@@ -34,6 +34,8 @@ void main() {
           await tester.tap(segment);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull, reason: label);
+          await tester.tap(find.byKey(const ValueKey('phone-settings-back')));
+          await tester.pumpAndSettle();
         }
         final close = find.byKey(const ValueKey('settings-close'));
         expect(tester.getSize(close).height, greaterThanOrEqualTo(MMSizes.touchTarget));

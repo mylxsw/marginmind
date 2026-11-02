@@ -1,0 +1,6 @@
+{
+  "device": "C416D876-F307-4C8F-8F0E-80D03552D07D",
+  "test": "mobile_redesign_acceptance_test.dart",
+  "commit": "76b8ddd2763bf926e0d8a7da3a8093a082c20d0f",
+  "dart_source_sha256": "7f16f3390df6e3ef21218ad5b73254e6e426924f3b24cee196d20c1835c65176"
+}

@@ -1540,6 +1540,11 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   bool _phonePanActive = false;
   late final _phoneScrollPhysics = MMPhoneScrollPhysics(userGestureInProgress: () => _phonePanActive);
+  late final _tabletScrollPhysics = MMPhoneScrollPhysics(
+    userGestureInProgress: () => _phonePanActive,
+    velocityScale: 2,
+  );
+  late final _androidScrollPhysics = MMPhoneScrollPhysics(userGestureInProgress: () => _phonePanActive, bounce: false);
   PdfScrollPosition? _userScrollPosition;
   void _userScrollUpdate(ScaleUpdateDetails details) {
     final previous = _userScrollPosition;
@@ -2788,9 +2793,20 @@ class _MMPdfViewState extends State<MMPdfView> {
           initialPageNumber: widget.initialPage,
           params: PdfViewerParams(
             backgroundColor: widget.backgroundColor,
-            scrollPhysics: widget.scrollProfile != null ? _phoneScrollPhysics : null,
+            scrollPhysics: widget.scrollProfile == null
+                ? null
+                : widget.scrollProfile == MMPdfScrollProfile.touch
+                ? _tabletScrollPhysics
+                : Theme.of(context).platform == TargetPlatform.android
+                ? _androidScrollPhysics
+                : _phoneScrollPhysics,
             // Keep pinch/trackpad scale offsets separate from mobile pan inertia.
-            scrollPhysicsScale: widget.scrollProfile != null ? const BouncingScrollPhysics() : null,
+            scrollPhysicsScale: widget.scrollProfile == null
+                ? null
+                : widget.scrollProfile == MMPdfScrollProfile.phone &&
+                      Theme.of(context).platform == TargetPlatform.android
+                ? const ClampingScrollPhysics()
+                : const BouncingScrollPhysics(),
             onInteractionStart: (_) {
               _phonePanActive = true;
               _userScrollPosition = widget.controller.scrollPosition;

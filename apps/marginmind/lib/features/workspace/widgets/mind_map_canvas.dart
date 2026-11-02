@@ -591,7 +591,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// First view uses readable text and keeps the root visible (centered
   /// when branches grow on both sides). Remounts preserve the user's pan/zoom.
   void _fitOnce(TreeLayoutResult result, BoxConstraints viewport) {
-    if (_centered || !widget.loaded || !viewport.hasBoundedHeight || !viewport.hasBoundedWidth) return;
+    if (_centered ||
+        !widget.loaded ||
+        !viewport.hasBoundedHeight ||
+        !viewport.hasBoundedWidth ||
+        viewport.maxWidth < 1 ||
+        viewport.maxHeight < 1) {
+      return;
+    }
     _centered = true;
     if (widget.transformation.value != Matrix4.identity()) {
       if (widget.locateCardTick > 0 && widget.selectedCardId != null) {
@@ -603,7 +610,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     }
     final w = viewport.maxWidth, h = viewport.maxHeight;
     final scene = _sceneSize(result);
-    final scale = math.min(1.0, math.min((w - 24) / scene.width, (h - 24) / scene.height)).clamp(mapReadableScale, 1.0);
+    final scale = math
+        .min(1.0, math.min((w - 24) / scene.width, (h - 24) / scene.height))
+        .clamp(MMInput.of(context).phone ? mapMinScale : mapReadableScale, 1.0);
     final root = result.rects[rootNodeId]!;
     final fitsWidth = scene.width * scale <= w;
     final dx = fitsWidth

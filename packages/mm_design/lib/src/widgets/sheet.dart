@@ -13,7 +13,9 @@ import 'dialog_scope.dart';
 /// Esc cancels; clicking outside does nothing (sheets are modal to the
 /// window). A compact window shows it as a bottom sheet.
 Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder builder, double width = 420}) {
-  if (MMSizeClass.of(context) == MMSizeClass.compact) return showMMBottomSheet<T>(context: context, builder: builder);
+  if (MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact) {
+    return showMMBottomSheet<T>(context: context, builder: builder);
+  }
   final c = context.mmColors;
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
@@ -57,7 +59,9 @@ Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder
 /// slight scale (fade only when motion is reduced). A compact window shows
 /// it as a bottom sheet.
 Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilder builder}) {
-  if (MMSizeClass.of(context) == MMSizeClass.compact) return showMMBottomSheet<T>(context: context, builder: builder);
+  if (MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact) {
+    return showMMBottomSheet<T>(context: context, builder: builder);
+  }
   final reduceMotion = MMAppearance.reduceMotionOf(context);
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
@@ -193,10 +197,22 @@ class MMSheet extends StatelessWidget {
       ],
     );
     if (bottomSheet) {
-      return Material(
+      final frame = Material(
         type: MaterialType.transparency,
         child: MMDialogScope(
           child: Padding(padding: const EdgeInsets.fromLTRB(22, 4, 22, 18), child: column),
+        ),
+      );
+      if (!MMInput.of(context).phone) return frame;
+      return LayoutBuilder(
+        builder: (context, bounds) => SingleChildScrollView(
+          primary: false,
+          physics: bounds.maxHeight < 240 ? null : const NeverScrollableScrollPhysics(),
+          // Keep the field subtree mounted as the keyboard changes the height.
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: bounds.maxHeight < 240 ? double.infinity : bounds.maxHeight),
+            child: frame,
+          ),
         ),
       );
     }

@@ -18,6 +18,7 @@ import '../shared/l10n.dart';
 import 'app_settings.dart';
 import 'app_icon_picker.dart';
 import 'assistant_icon_picker.dart';
+import 'settings_drafts.dart';
 
 enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice }
 
@@ -25,11 +26,20 @@ enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice }
 /// language — a floating glass sidebar of sections beside a titled,
 /// scrolling page. Service forms use explicit Save actions. [focus] locates
 /// a feature or model on the AI Features page.
-Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) =>
-    showMMDialog<void>(
-      context: context,
-      builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) {
+  if (MMInput.of(context).phone) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+      ),
     );
+  }
+  return showMMDialog<void>(
+    context: context,
+    builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+  );
+}
 
 /// Moves between sections inside an open settings window.
 class SettingsNavigation extends InheritedWidget {
@@ -68,20 +78,40 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
 
   /// AI Features edits survive switching sections until saved or discarded.
   final _aiDraft = AiTaskDraft();
+  final _formDrafts = SettingsDrafts();
+  final _phoneVisited = <SettingsTab>{};
+  bool get _dirty => _aiDraft.dirty || _formDrafts.dirty;
   late AiTaskFocus? _aiFocus = widget.initialFocus;
   ModelSettingsRequest? _modelsRequest;
   bool _closing = false;
+  late bool _phoneSection = widget.initialTab != SettingsTab.general || widget.initialFocus != null;
+  final _phoneHistory = <SettingsTab>[];
+
+  void _phoneBack() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      if (_phoneHistory.isNotEmpty) {
+        _tab = _phoneHistory.removeLast();
+      } else {
+        _phoneSection = false;
+      }
+    });
+  }
+
   final _windowFocus = FocusNode(debugLabel: 'Settings window');
 
   @override
   void initState() {
     super.initState();
     _aiDraft.addListener(_draftChanged);
+    _formDrafts.addListener(_draftChanged);
     _revealSection();
   }
 
   @override
   void dispose() {
+    _formDrafts.removeListener(_draftChanged);
+    _formDrafts.dispose();
     _windowFocus.dispose();
     _aiDraft
       ..removeListener(_draftChanged)
@@ -103,6 +133,11 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
     // The old page's controls go away: hold focus on the window, never on a removed node.
     if (tab != _tab) _windowFocus.requestFocus();
     setState(() {
+      if (MMInput.of(context).phone) {
+        if (_phoneSection && _tab != tab) _phoneHistory.add(_tab);
+        _phoneSection = true;
+        _phoneVisited.add(tab);
+      }
       _tab = tab;
       if (tab == SettingsTab.aiTasks) _aiFocus = focus;
       if (tab == SettingsTab.models) {
@@ -123,7 +158,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       final save = await showMMSheet<bool>(
         context: context,
         builder: (context) => MMSheet(
-          title: l.aiTasksCloseTitle,
+          title: MMInput.of(context).phone ? l.settingsCloseTitle : l.aiTasksCloseTitle,
           actions: [
             MMButton(
               key: const ValueKey('ai-tasks-discard'),
@@ -142,9 +177,12 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       );
       if (save == null || !mounted) return;
       if (save) {
-        if (!await saveAiTaskDraft(ref, _aiDraft)) {
-          // Stay open on the page that shows why the save did not happen.
+        if (_aiDraft.dirty && !await saveAiTaskDraft(ref, _aiDraft)) {
           if (mounted) _go(SettingsTab.aiTasks);
+          return;
+        }
+        if (!await _formDrafts.save()) {
+          if (mounted) _go(_tab);
           return;
         }
       } else if (_aiDraft.base case final base?) {
@@ -181,26 +219,43 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       if (_tab == SettingsTab.aiTasks) unawaited(saveAiTaskDraft(ref, _aiDraft));
     }
 
-    return SettingsNavigation(
-      go: _go,
-      child: PopScope(
-        canPop: !_aiDraft.dirty,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) unawaited(_confirmClose());
-        },
-        // ⌘S / Ctrl+S saves the AI Features page. The window holds focus when
-        // no control does, so the shortcut works right after opening.
-        child: CallbackShortcuts(
-          bindings: {
-            const SingleActivator(LogicalKeyboardKey.keyS, meta: true): save,
-            const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
+    return SettingsDraftScope(
+      drafts: _formDrafts,
+      child: SettingsNavigation(
+        go: _go,
+        child: PopScope(
+          canPop: !_dirty && !(MMInput.of(context).phone && _phoneSection),
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              if (MMInput.of(context).phone && _phoneSection) {
+                _phoneBack();
+              } else {
+                unawaited(_confirmClose());
+              }
+            }
           },
-          child: Focus(
-            focusNode: _windowFocus,
-            autofocus: true,
-            child: MMButtonTheme(
-              radius: MMRadii.field,
-              child: Builder(builder: _build),
+          // ⌘S / Ctrl+S saves the AI Features page. The window holds focus when
+          // no control does, so the shortcut works right after opening.
+          child: CallbackShortcuts(
+            bindings: {
+              if (MMInput.of(context).phone)
+                const SingleActivator(LogicalKeyboardKey.escape): () {
+                  if (_phoneSection) {
+                    _phoneBack();
+                  } else {
+                    Navigator.of(context).maybePop();
+                  }
+                },
+              const SingleActivator(LogicalKeyboardKey.keyS, meta: true): save,
+              const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
+            },
+            child: Focus(
+              focusNode: _windowFocus,
+              autofocus: true,
+              child: MMButtonTheme(
+                radius: MMRadii.field,
+                child: Builder(builder: _build),
+              ),
             ),
           ),
         ),
@@ -221,7 +276,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
     ];
     final title = tabs.firstWhere((t) => t.$1 == _tab).$3;
-    final page = switch (_tab) {
+    Widget pageFor(SettingsTab tab) => switch (tab) {
       SettingsTab.general => const _GeneralPage(),
       SettingsTab.reading => const _ReadingPage(),
       SettingsTab.maps => const _MapsPage(),
@@ -235,6 +290,70 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       SettingsTab.webSearch => const WebSearchSettingsPage(),
       SettingsTab.voice => const VoiceSettingsPage(),
     };
+    final page = pageFor(_tab);
+    if (MMInput.of(context).phone) {
+      if (_phoneSection) _phoneVisited.add(_tab);
+      return Material(
+        key: const ValueKey('settings-window'),
+        color: c.windowBackground,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+                child: Row(
+                  children: [
+                    if (_phoneSection)
+                      MMIconButton(
+                        key: const ValueKey('phone-settings-back'),
+                        icon: MMIcons.chevronLeft,
+                        tooltip: l.settingsTitle,
+                        onPressed: _phoneBack,
+                      ),
+                    Expanded(child: Text(_phoneSection ? title : l.settingsTitle, style: context.mmText.title2)),
+                    if (!_phoneSection)
+                      MMIconButton(
+                        key: const ValueKey('settings-close'),
+                        icon: MMIcons.close,
+                        tooltip: l.closePanel,
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: IndexedStack(
+                  index: _phoneSection ? tabs.indexWhere((entry) => entry.$1 == _tab) + 1 : 0,
+                  children: [
+                    ListView(
+                      key: const ValueKey('phone-settings-sections'),
+                      padding: const EdgeInsets.all(MMSpacing.m),
+                      children: [
+                        for (final (tab, icon, label) in tabs)
+                          ListTile(
+                            key: ValueKey('settings-tab-${tab.name}'),
+                            leading: Icon(icon, color: c.secondaryLabel),
+                            title: Text(label),
+                            trailing: const Icon(Icons.chevron_right),
+                            minVerticalPadding: 16,
+                            onTap: () => _go(tab),
+                          ),
+                      ],
+                    ),
+                    for (final (tab, _, _) in tabs)
+                      ExcludeFocus(
+                        excluding: !_phoneSection || _tab != tab,
+                        child: _phoneVisited.contains(tab) ? pageFor(tab) : const SizedBox.shrink(),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     // A compact window's bottom sheet: the sections switch above the page,
     // which takes the sheet's full height.
     if (MMBottomSheet.contains(context)) {

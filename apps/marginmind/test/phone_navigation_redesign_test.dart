@@ -34,6 +34,12 @@ Future<void> evidence(WidgetTester tester, String name) async {
 }
 
 void main() {
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('marginmind/system_ui'),
+      (_) async => null,
+    );
+  });
   setUpAll(() async {
     if (Platform.environment['MM_SCREENSHOTS'] == null) return;
     final data = ByteData.sublistView(File(Platform.environment['MM_FONT']!).readAsBytesSync());
@@ -86,12 +92,16 @@ void main() {
         await tester.pump();
       }
       expect(pdf.isReady, true);
-      for (final size in [device.size, Size(device.size.height, device.size.width), const Size(393, 852)]) {
+      for (final size in [
+        device.size,
+        Size(device.size.height, device.size.width),
+        device.touch ? const Size(393, 852) : const Size(800, 820),
+      ]) {
         tester.view.physicalSize = size;
         await tester.pumpAndSettle();
         final expected = !device.touch
             ? null
-            : device.phone && size.width < 600
+            : device.phone
             ? MMPdfScrollProfile.phone
             : MMPdfScrollProfile.touch;
         expect(tester.widget<MMPdfView>(find.byType(MMPdfView)).scrollProfile, expected);
@@ -174,23 +184,22 @@ void main() {
       tester.view.padding = const FakeViewPadding(top: 59, bottom: 34);
       await tester.pumpAndSettle();
       expect(find.descendant(of: find.byType(StudySetCard), matching: find.textContaining('份文档')), findsNothing);
-      expect(find.descendant(of: find.byType(ContinueCard), matching: find.textContaining('上次')), findsNothing);
+      expect(find.byType(ContinueCard), findsWidgets);
       await evidence(tester, 'library-${dark ? 'dark' : 'light'}');
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
       await tester.dragFrom(const Offset(2, 400), const Offset(190, 0));
       await tester.pumpAndSettle();
       expect(find.byType(PhoneWorkspaceSidebar), findsOneWidget);
-      expect(tester.getRect(find.byKey(const ValueKey('phone-drawer-panel'))), const Rect.fromLTWH(0, 0, 328, 852));
-      expect(find.text('完成').hitTestable(), findsOneWidget);
-      expect(find.text('设置').hitTestable(), findsOneWidget);
+      expect(tester.getRect(find.byKey(const ValueKey('phone-drawer-panel'))), const Rect.fromLTWH(0, 0, 393, 852));
+      expect(find.text('完成').hitTestable(), findsNothing);
       await evidence(tester, 'drawer-${dark ? 'dark' : 'light'}');
       await tester.tap(find.text('学习的底层逻辑').hitTestable());
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('phone-drawer-scrim')), findsNothing);
       await tester.dragFrom(const Offset(2, 400), const Offset(190, 0));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('完成').hitTestable());
+      await tester.tap(find.byKey(const ValueKey('phone-resources-close')));
       await tester.pumpAndSettle();
       container.read(navigationProvider.notifier).startReview('demo-1');
       await tester.pumpAndSettle();
@@ -225,7 +234,8 @@ void main() {
     expect(find.text('学习的底层逻辑').hitTestable(), findsNothing);
     await tester.enterText(find.byType(EditableText).hitTestable(), '');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings').hitTestable());
+    await tester.tap(find.byKey(const ValueKey('phone-resources-close')));
+    showSettings(tester.element(find.byType(AppShell)));
     await tester.pumpAndSettle();
     expect(find.byType(SettingsWindow), findsOneWidget);
     expect(find.byKey(const ValueKey('phone-drawer-scrim')), findsNothing);
@@ -254,8 +264,8 @@ void main() {
       expect(find.textContaining('docs'), findsWidgets);
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
-      expect(find.byType(MMPhoneDrawer), findsNothing);
-      expect(find.byType(MMSidebar), findsOneWidget);
+      expect(find.byType(MMPhoneDrawer), device.$1 ? findsOneWidget : findsNothing);
+      expect(find.byType(MMSidebar), device.$1 ? findsNothing : findsOneWidget);
       container.read(navigationProvider.notifier).startReview('demo-1');
       await tester.pumpAndSettle();
       expect(find.byType(MMPhoneReviewProgress), findsNothing);

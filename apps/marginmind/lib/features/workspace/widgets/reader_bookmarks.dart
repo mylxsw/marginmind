@@ -130,7 +130,10 @@ class ReaderBookmarks extends ConsumerWidget {
                             label: named ? bookmark.title : l.pageNumber(bookmark.page),
                             trailing: named ? MMCount(bookmark.page) : null,
                             selected: bookmark.page == pdf.currentPage,
-                            onTap: () => pdf.jumpToPage(bookmark.page),
+                            onTap: () {
+                              pdf.jumpToPage(bookmark.page);
+                              if (MMInput.of(context).phone) controller.closeReaderPanel();
+                            },
                             onContextMenu: (position) => showMMMenu(context, position: position, entries: entries),
                           ),
                         ),

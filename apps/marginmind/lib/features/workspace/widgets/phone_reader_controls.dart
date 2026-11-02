@@ -572,6 +572,23 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
           ],
         );
     }
+    if (slots.slot == PhoneReaderSlot.page) {
+      content = Row(
+        children: [
+          _glass(
+            button('navigation', MMIcons.outline, l.readerOutline, () {
+              controller.showReaderPanel(
+                controller.canShowReaderPanel(ReaderPanelMode.outline)
+                    ? ReaderPanelMode.outline
+                    : ReaderPanelMode.bookmarks,
+              );
+            }),
+          ),
+          Expanded(child: content),
+          _glass(button('show-tools', MMIcons.highlight, l.phoneReaderTools, slots.openTools)),
+        ],
+      );
+    }
     if (slots.slot == PhoneReaderSlot.tools) {
       content = TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: 1),

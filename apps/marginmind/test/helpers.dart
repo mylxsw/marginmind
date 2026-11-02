@@ -1,6 +1,7 @@
 import 'package:marginmind/features/workspace/workspace_content_host.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -49,6 +50,12 @@ Future<List<Override>> testOverrides({
   PdfPicker? pdfPicker,
   DateTime Function()? clock,
 }) async {
+  if (WidgetsBinding.instance is AutomatedTestWidgetsFlutterBinding) {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('marginmind/system_ui'),
+      (_) async => null,
+    );
+  }
   SharedPreferences.setMockInitialValues(prefs);
   final instance = await SharedPreferences.getInstance();
   return [

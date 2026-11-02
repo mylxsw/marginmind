@@ -21,6 +21,7 @@ class MMPhoneDrawer extends StatefulWidget {
     required this.dismissLabel,
     required this.drawer,
     required this.child,
+    this.fullScreen = false,
   });
 
   final bool open;
@@ -28,6 +29,7 @@ class MMPhoneDrawer extends StatefulWidget {
   final String dismissLabel;
   final Widget drawer;
   final Widget child;
+  final bool fullScreen;
 
   @override
   State<MMPhoneDrawer> createState() => _MMPhoneDrawerState();
@@ -71,7 +73,9 @@ class _MMPhoneDrawerState extends State<MMPhoneDrawer> with SingleTickerProvider
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final width = math.min(MMSizes.phoneDrawerWidth, math.max(0.0, constraints.maxWidth - MMSpacing.xxxl));
+      final width = widget.fullScreen
+          ? constraints.maxWidth
+          : math.min(MMSizes.phoneDrawerWidth, math.max(0.0, constraints.maxWidth - MMSpacing.xxxl));
       void start(DragStartDetails _) {
         _position.stop();
         _drag = 0;

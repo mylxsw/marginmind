@@ -1,0 +1,45 @@
+{
+  "ios": [
+    {
+      "name": "ios-phone",
+      "device": "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+      "pid": 59023,
+      "hashes": {
+        "Runner": {
+          "build": "3c615d50e037125dc7dcbf9a4202ea0c332716a6112e9079f7810593d138101d",
+          "installed": "3c615d50e037125dc7dcbf9a4202ea0c332716a6112e9079f7810593d138101d"
+        },
+        "Frameworks/App.framework/flutter_assets/kernel_blob.bin": {
+          "build": "d51c2af2326d0986b304f998b63daea79c4c67749035f596f133035bbb406488",
+          "installed": "d51c2af2326d0986b304f998b63daea79c4c67749035f596f133035bbb406488"
+        }
+      }
+    },
+    {
+      "name": "ipad",
+      "device": "C416D876-F307-4C8F-8F0E-80D03552D07D",
+      "pid": 59126,
+      "hashes": {
+        "Runner": {
+          "build": "3c615d50e037125dc7dcbf9a4202ea0c332716a6112e9079f7810593d138101d",
+          "installed": "3c615d50e037125dc7dcbf9a4202ea0c332716a6112e9079f7810593d138101d"
+        },
+        "Frameworks/App.framework/flutter_assets/kernel_blob.bin": {
+          "build": "d51c2af2326d0986b304f998b63daea79c4c67749035f596f133035bbb406488",
+          "installed": "d51c2af2326d0986b304f998b63daea79c4c67749035f596f133035bbb406488"
+        }
+      }
+    }
+  ],
+  "android": {
+    "device": "emulator-5554",
+    "component": "io.github.mylxsw.marginmind/.MainActivity",
+    "pid": "9897",
+    "apk_sha256": {
+      "build": "2dcbe632afe7c3163588f3be877c759d3c62a737a3df45e5edf43964cb081f3f",
+      "installed": "2dcbe632afe7c3163588f3be877c759d3c62a737a3df45e5edf43964cb081f3f"
+    }
+  },
+  "dart_source_sha256": "1f0573da09b4fdb43ce4446e5c3dc8e0d71453b6c694f675983907e0ae50c59b",
+  "commit": "4c8ee6cf0239cd69e7981d4772cf74d9d749c82e"
+}

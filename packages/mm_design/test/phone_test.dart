@@ -5,7 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 /// A touch window of [size] with a home indicator inset.
-Future<void> _phone(WidgetTester tester, Widget child, {Size size = const Size(400, 800), bool touch = true}) async {
+Future<void> _phone(
+  WidgetTester tester,
+  Widget child, {
+  Size size = const Size(400, 800),
+  bool touch = true,
+  bool phone = true,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   tester.view.padding = const FakeViewPadding(top: 40, bottom: 30);
@@ -13,7 +19,7 @@ Future<void> _phone(WidgetTester tester, Widget child, {Size size = const Size(4
   await tester.pumpWidget(
     MaterialApp(
       theme: MMTheme.light(),
-      builder: (context, child) => MMInput(touchPlatform: touch, phone: true, child: child!),
+      builder: (context, child) => MMInput(touchPlatform: touch, phone: phone, child: child!),
       home: child,
     ),
   );
@@ -146,7 +152,52 @@ void main() {
       expect(sheet, findsNothing);
     });
 
-    testWidgets('a regular window keeps the centered sheet', (tester) async {
+    testWidgets('landscape phone forms stay bottom sheets and scroll above a tall keyboard', (tester) async {
+      late BuildContext context;
+      await _phone(
+        tester,
+        Builder(
+          builder: (c) {
+            context = c;
+            return const SizedBox.expand();
+          },
+        ),
+        size: const Size(914, 411),
+      );
+      showMMSheet<void>(
+        context: context,
+        builder: (_) => MMSheet(
+          title: 'Web address',
+          titleTrailing: MMButton(label: 'Open', onPressed: () {}),
+          actions: [MMButton(label: 'Cancel', onPressed: () {})],
+          child: const MMTextField(placeholder: 'URL'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsOneWidget);
+      final input = find.byType(TextField);
+      await tester.enterText(input, 'https://example.com');
+      final inputState = tester.state(input);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(tester.state(input), same(inputState));
+      expect(find.text('https://example.com'), findsOneWidget);
+      expect(tester.widget<TextField>(input).focusNode?.hasFocus ?? FocusManager.instance.primaryFocus != null, isTrue);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cancel').hitTestable(), findsOneWidget);
+      Navigator.of(context).pop();
+      await tester.pumpAndSettle();
+      showMMDialog<void>(context: context, builder: (_) => const Text('Phone dialog'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a regular tablet window keeps the centered sheet', (tester) async {
       late BuildContext context;
       await _phone(
         tester,
@@ -157,6 +208,7 @@ void main() {
           },
         ),
         size: const Size(1300, 900),
+        phone: false,
       );
       showMMSheet<void>(
         context: context,
@@ -167,7 +219,7 @@ void main() {
       expect(find.text('Wide'), findsOneWidget);
     });
 
-    testWidgets('an expanding sheet drags between medium and full height and dismisses', (tester) async {
+    testWidgets('a tablet expanding sheet keeps medium/full dragging and dismissal', (tester) async {
       var dismissed = 0;
       await _phone(
         tester,
@@ -178,6 +230,7 @@ void main() {
             ),
           ],
         ),
+        phone: false,
       );
       final sheet = find.byKey(const ValueKey('mm-bottom-sheet'));
       final handle = find.byKey(const ValueKey('mm-bottom-sheet-handle'));

@@ -77,71 +77,30 @@ void main() {
   for (final phone in phones) {
     final variant = TargetPlatformVariant.only(phone.platform);
 
-    testWidgets('${phone.name}: tabs switch library, source, map and review without overflow', (tester) async {
+    testWidgets('${phone.name}: navigation stays scoped to the current study set', (tester) async {
       final container = await pumpPhone(tester, phone);
       final nav = container.read(navigationProvider.notifier);
       expect(find.byType(LibraryScreen), findsOneWidget);
-      expect(selectedTab(tester), PhoneTab.library);
-      // Nothing opened yet: the study set tabs wait for one.
-      await tester.tap(tab(PhoneTab.map));
-      await tester.pumpAndSettle();
-      expect(find.byType(LibraryScreen), findsOneWidget);
-
-      // The bar floats above the home indicator inset, over the content.
-      final bar = tester.getRect(find.byKey(const ValueKey('mm-tab-bar-glass')));
-      expect(bar.bottom, phone.size.height - (phone.safe.bottom < 26 ? 26 : phone.safe.bottom));
-      expect(bar.height, MMSizes.phoneTabBarHeight);
-
+      expect(find.byType(MMTabBar), findsNothing);
       nav.openStudySet('demo-1');
       await tester.pumpAndSettle();
-      container.read(workspaceProvider('demo-1').notifier).openDocument('c1');
+      final owner = container.read(workspaceProvider('demo-1').notifier);
+      owner.openDocument('c1');
       await tester.pumpAndSettle();
-      expect(find.byType(PhoneTabBar), findsNothing);
-      expect(find.byType(ReaderPane), findsOneWidget);
-      // The workspace keeps its Reading | Map switch.
-      expect(find.byKey(const ValueKey('workspace-pane-switch')), findsOneWidget);
-      // The reader capsule occupies the safe bottom slot.
-      expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height - phone.safe.bottom);
-      expect(
-        tester.getRect(find.byKey(const ValueKey('phone-reader-page'))).bottom,
-        phone.size.height - phone.safe.bottom,
-      );
-
       await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
-      expect(find.byType(PhoneTabBar), findsNothing);
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
-      expect(find.byType(MapPane), findsOneWidget);
-      expect(tester.takeException(), isNull, reason: 'map');
-
       await tester.tap(find.text('Reading').first);
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
-
-      await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Review').last);
-      await tester.pumpAndSettle();
-      expect(find.byType(ReviewScreen), findsOneWidget);
-      expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.review.id);
-      expect(find.byType(PhoneTabBar), findsNothing);
-      expect(tester.takeException(), isNull, reason: 'review');
-
       nav.showLibrary();
       await tester.pumpAndSettle();
-      expect(find.byType(LibraryScreen), findsOneWidget);
-      expect(tester.takeException(), isNull, reason: 'library');
-
-      // From the library the tabs go back to the study set opened last.
-      await tester.tap(tab(PhoneTab.map));
+      expect(find.byType(MMTabBar), findsNothing);
+      nav.startReview('demo-1');
       await tester.pumpAndSettle();
-      expect(container.read(navigationProvider), isA<WorkspaceRoute>());
-      expect(find.byType(PhoneTabBar), findsNothing);
-
-      nav.showStats('demo-1');
-      await tester.pumpAndSettle();
-      expect(selectedTab(tester), PhoneTab.review);
-      expect(tester.takeException(), isNull, reason: 'stats');
+      expect(find.byType(ReviewScreen), findsOneWidget);
+      expect(find.byType(MMTabBar), findsNothing);
+      expect(tester.takeException(), isNull);
       await settleHud(tester);
     }, variant: variant);
 
@@ -154,21 +113,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-panel-sheet')), findsOneWidget);
       expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
-      // Over the tabs, at the medium height.
-      final medium = tester.getRect(sheet);
-      expect(medium.bottom, phone.size.height);
+      final full = tester.getRect(sheet);
+      expect(full.bottom, phone.size.height);
       final room = phone.size.height - phone.safe.top - MMSpacing.s;
-      expect(medium.height, moreOrLessEquals(room * MMSizes.bottomSheetMedium, epsilon: 1));
+      expect(full.height, moreOrLessEquals(room, epsilon: 1));
       expect(tester.takeException(), isNull, reason: 'details sheet');
-
-      // Dragging the handle up takes the full height; down returns.
-      final handle = find.byKey(const ValueKey('mm-bottom-sheet-handle'));
-      await tester.drag(handle, Offset(0, -room * 0.3));
-      await tester.pumpAndSettle();
-      expect(tester.getRect(sheet).height, moreOrLessEquals(room, epsilon: 1));
-      await tester.drag(handle, Offset(0, room * 0.3));
-      await tester.pumpAndSettle();
-      expect(tester.getRect(sheet).height, moreOrLessEquals(room * MMSizes.bottomSheetMedium, epsilon: 1));
 
       // The soft keyboard puts the sheet on it at full height.
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
@@ -183,7 +132,7 @@ void main() {
       expect(find.byType(MMTabBar), findsNothing);
 
       // Dragging it down closes the panel.
-      await tester.drag(handle, Offset(0, room * 0.5));
+      await systemBack(tester);
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).panel, isNull);
       expect(sheet, findsNothing);
@@ -192,7 +141,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(sheet, findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'assistant sheet');
-      await tester.tapAt(Offset(phone.size.width / 2, phone.safe.top + 20));
+      await tester.tap(find.byKey(const ValueKey('assistant-close')));
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).panel, isNull);
       await settleHud(tester);
@@ -357,15 +306,15 @@ void main() {
       await settleHud(tester);
     }, variant: variant);
 
-    testWidgets('${phone.name}: settings fill a bottom sheet with the sections on top', (tester) async {
+    testWidgets('${phone.name}: settings use a full screen list and return from details', (tester) async {
       await pumpPhone(tester, phone);
       await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(MMIcons.settings));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsOneWidget);
+      expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsNothing);
       expect(find.byKey(const ValueKey('settings-sidebar')), findsNothing);
-      final sections = find.byKey(const ValueKey('settings-sections'));
+      final sections = find.byKey(const ValueKey('phone-settings-sections'));
       expect(sections, findsOneWidget);
       expect(tester.getRect(find.byKey(const ValueKey('settings-window'))).width, phone.size.width);
       for (final label in ['Reading', 'Models', 'Web Search', 'Voice Input', 'General']) {
@@ -375,6 +324,7 @@ void main() {
         await tester.tap(section);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: label);
+        await systemBack(tester);
       }
       await systemBack(tester);
       expect(find.byKey(const ValueKey('settings-window')), findsNothing);

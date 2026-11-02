@@ -44,7 +44,7 @@ class MMGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (MMFlatSurface.of(context)) {
+    if (MMFlatSurface.of(context) || MMInput.of(context).phone) {
       final c = context.mmColors;
       final decoration = BoxDecoration(
         color: controlGroup ? c.quaternaryFill : (opaqueColor ?? color ?? c.surface).withValues(alpha: 1),
@@ -183,7 +183,7 @@ class MMLiquidGlass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    if (MMFlatSurface.of(context)) {
+    if (MMFlatSurface.of(context) || MMInput.of(context).phone) {
       return DecoratedBox(
         decoration: BoxDecoration(
           color: (opaqueColor ?? color ?? c.surface).withValues(alpha: 1),

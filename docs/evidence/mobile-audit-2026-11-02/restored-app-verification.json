@@ -1,0 +1,8 @@
+{
+  "target": "lib/main.dart",
+  "normal_debug_build": true,
+  "built_and_installed_hashes_match": {
+    "Runner": true,
+    "Frameworks/App.framework/flutter_assets/kernel_blob.bin": true
+  }
+}

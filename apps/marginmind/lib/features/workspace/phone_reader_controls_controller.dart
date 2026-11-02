@@ -113,8 +113,7 @@ class PhoneReaderControlsController extends ChangeNotifier {
   }
 }
 
-bool usePhoneReaderControls(BuildContext context) =>
-    MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+bool usePhoneReaderControls(BuildContext context) => MMInput.of(context).phone;
 
 class PhoneReaderControlsScope extends InheritedNotifier<PhoneReaderControlsController> {
   const PhoneReaderControlsScope({

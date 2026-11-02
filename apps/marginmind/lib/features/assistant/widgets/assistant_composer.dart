@@ -46,6 +46,28 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   String _voiceText = '';
   bool _applyingVoice = false;
   bool _voiceNoticeDismissed = false;
+  AssistantUiController? _phoneDraftOwner;
+  String? _draftConversation;
+  bool _draftRestored = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_draftRestored || !MMInput.of(context).phone) return;
+    _draftRestored = true;
+    final owner = ref.read(assistantUiProvider(widget.studySetId).notifier);
+    final id = ref.read(assistantControllerProvider).id;
+    final draft = owner.composerDraft(id);
+    _text.removeListener(_changed);
+    _text.value = TextEditingValue(
+      text: draft,
+      selection: TextSelection.collapsed(offset: draft.length),
+    );
+    _previous = draft;
+    _text.addListener(_changed);
+    _phoneDraftOwner = owner;
+    _draftConversation = id;
+  }
 
   @override
   void initState() {
@@ -54,7 +76,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     _text.addListener(_changed);
     _focus.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && widget.configured) _focus.requestFocus();
+      if (mounted && widget.configured && !MMInput.of(context).phone) _focus.requestFocus();
     });
   }
 
@@ -66,7 +88,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     }
     if (!oldWidget.configured && widget.configured) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && widget.configured) _focus.requestFocus();
+        if (mounted && widget.configured && !MMInput.of(context).phone) _focus.requestFocus();
       });
     }
   }
@@ -171,6 +193,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
 
   void _changed() {
     final value = _text.text;
+    if (_draftConversation case final id?) _phoneDraftOwner?.keepComposerDraft(id, value);
     // A typed "@" opens the reference menu and does not stay in the text.
     if (!_applyingVoice && value.length == _previous.length + 1 && !_text.value.composing.isValid) {
       final at = _text.selection.baseOffset - 1;
@@ -460,7 +483,9 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (configured && chips.isNotEmpty)
+                    if (configured &&
+                        chips.isNotEmpty &&
+                        !(MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500))
                       AssistantContextSummary(
                         key: ValueKey('composer-contexts-${conversation.id}-${conversation.messages.length}'),
                         items: chips,
@@ -484,7 +509,11 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                               focusNode: _focus,
                               enabled: configured,
                               readOnly: _voice.active,
-                              minLines: configured && chips.isNotEmpty ? 2 : 3,
+                              minLines: MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500
+                                  ? 1
+                                  : configured && chips.isNotEmpty
+                                  ? 2
+                                  : 3,
                               maxLines: null,
                               keyboardType: TextInputType.multiline,
                               style: t.body.copyWith(height: context.mmTouchPlatform ? 1.4 : 20 / 13, color: c.label),

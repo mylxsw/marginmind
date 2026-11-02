@@ -1,10 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../app/navigation.dart';
-import '../../../settings/settings_window.dart';
 import '../../../shared/l10n.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +21,7 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
     required this.tags,
     required this.results,
     required this.searching,
+    this.onSearch,
     required this.onAddDocument,
     this.onAddWebPage,
     required this.onAddMap,
@@ -32,6 +30,7 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
   });
 
   final String title;
+  final ValueChanged<String>? onSearch;
   final String? mapId;
   final VoidCallback onDismiss, onAddDocument, onAddMap, onAddNote;
   final VoidCallback? onAddWebPage, onGenerateMap;
@@ -44,6 +43,7 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
 }
 
 class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
+  final _headerKey = GlobalKey();
   bool _notesExpanded = false;
   bool _tagsExpanded = false;
   static const _tagPreviewCount = 10;
@@ -58,8 +58,6 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
-    final safe = MediaQuery.paddingOf(context);
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final visibleTags = _tagsExpanded ? widget.tags : widget.tags.take(_tagPreviewCount).toList();
     final selectedTag = widget.tags.indexWhere((row) => row.item.selected);
     if (!_tagsExpanded && selectedTag >= _tagPreviewCount) {
@@ -174,91 +172,90 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
         ),
       if (widget.results.isNotEmpty) MMPhoneNavigationGroup(title: l.sectionCards, children: widget.results),
     ];
-    return ColoredBox(
-      key: const ValueKey('phone-workspace-sidebar'),
-      color: MMPhoneNavigation.background(dark),
-      child: Padding(
-        padding: EdgeInsets.only(top: safe.top, bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ListView(
-                key: const ValueKey('phone-drawer-list'),
-                padding: const EdgeInsets.only(bottom: MMSpacing.l),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: MMPhoneNavigation.headerInset,
-                      vertical: MMSpacing.s,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: MMPhoneNavigationAction(
-                            label: l.librarySection,
-                            icon: MMIcons.chevronLeft,
-                            color: c.accent,
-                            onPressed: () => ref.read(navigationProvider.notifier).showLibrary(),
-                          ),
-                        ),
-                        const SizedBox(height: MMSpacing.s),
-                        Text(
-                          widget.title,
-                          style: context.mmText.title2.copyWith(fontSize: MMPhoneNavigation.titleSize),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+    final rows = <Widget>[
+      if (empty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Text(l.noSidebarMatches, textAlign: TextAlign.center, style: context.mmText.footnote),
+        ),
+      for (final group in groups) Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: group),
+    ];
+    final header = Column(
+      key: _headerKey,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: MMPhoneNavigationAction(
+                    label: l.librarySection,
+                    icon: MMIcons.chevronLeft,
+                    color: c.accent,
+                    onPressed: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      ref.read(navigationProvider.notifier).showLibrary();
+                    },
                   ),
-                  if (empty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: MMSpacing.xl),
-                      child: Text(l.noSidebarMatches, textAlign: TextAlign.center, style: context.mmText.footnote),
-                    ),
-                  for (final group in groups)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
-                      child: group,
-                    ),
-                ],
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.fromLTRB(
-                MMPhoneNavigation.headerInset,
-                MMSpacing.s,
-                MMPhoneNavigation.headerInset,
-                math.max(safe.bottom, MMSpacing.s),
-              ),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: c.separator, width: MMSizes.hairline),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              MMIconButton(
+                key: const ValueKey('phone-resources-close'),
+                icon: MMIcons.close,
+                tooltip: l.closePanel,
+                onPressed: () {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  widget.onDismiss();
+                },
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(widget.title, style: context.mmText.title2, maxLines: 2, overflow: TextOverflow.ellipsis),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: MMSearchField(placeholder: l.searchInSet, height: 44, onChanged: widget.onSearch),
+        ),
+      ],
+    );
+    return ColoredBox(
+      key: const ValueKey('phone-workspace-sidebar'),
+      color: c.windowBackground,
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: LayoutBuilder(
+            builder: (context, bounds) {
+              // Landscape keyboards may leave too little room for a fixed header.
+              // Scroll the complete page then, retaining the search field's state.
+              if (bounds.maxHeight < 240) {
+                return ListView(
+                  key: const ValueKey('phone-drawer-list'),
+                  padding: const EdgeInsets.only(bottom: 16),
+                  children: [header, ...rows],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Flexible(
-                    child: MMPhoneNavigationAction(
-                      label: l.settingsTitle,
-                      icon: MMIcons.settings,
-                      onPressed: () {
-                        widget.onDismiss();
-                        showSettings(context);
-                      },
+                  header,
+                  Expanded(
+                    child: ListView(
+                      key: const ValueKey('phone-drawer-list'),
+                      padding: const EdgeInsets.only(bottom: 16),
+                      children: rows,
                     ),
                   ),
-                  Flexible(
-                    child: MMPhoneNavigationAction(label: l.done, color: c.accent, onPressed: widget.onDismiss),
-                  ),
                 ],
-              ),
-            ),
-          ],
+              );
+            },
+          ),
         ),
       ),
     );

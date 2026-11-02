@@ -36,6 +36,7 @@ class StartingController extends MockFullTranslationController {
     String? note,
     String? sourceLang,
     required String modelName,
+    ModelReference? modelOverride,
     required int estimatedTokens,
   }) async {
     requested = true;

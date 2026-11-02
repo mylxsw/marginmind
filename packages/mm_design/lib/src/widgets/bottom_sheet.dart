@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../foundation/appearance.dart';
+import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
@@ -77,7 +78,8 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
     final c = context.mmColors;
     final safe = MediaQuery.paddingOf(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
-    final duration = _dragging ? Duration.zero : MMAppearance.duration(context, MMMotion.layout);
+    final phone = MMInput.of(context).phone;
+    final duration = _dragging || phone ? Duration.zero : MMAppearance.duration(context, MMMotion.layout);
     return LayoutBuilder(
       builder: (context, constraints) {
         final max = (constraints.maxHeight - safe.top - MMSpacing.s - keyboard).clamp(0.0, double.infinity);
@@ -120,11 +122,11 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
               ? AnimatedContainer(
                   duration: duration,
                   curve: MMMotion.layoutCurve,
-                  height: keyboard > 0 ? max : (_height ?? medium),
+                  height: keyboard > 0 || phone ? max : (_height ?? medium),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      handle,
+                      if (!phone) handle,
                       Expanded(child: body),
                       bottom,
                     ],

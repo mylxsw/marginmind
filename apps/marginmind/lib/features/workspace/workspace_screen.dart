@@ -1,7 +1,6 @@
 import '../../shared/assistant_icon.dart';
 import 'widgets/workspace_desktop_shell.dart';
 import 'widgets/workspace_tabbed_content.dart';
-import 'widgets/workspace_tab_strip.dart';
 import 'widgets/workspace_history_controls.dart';
 
 import 'package:flutter/material.dart';
@@ -222,7 +221,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       final width = constraints.maxWidth - safe.horizontal;
                       final height = constraints.maxHeight - safe.vertical;
                       final sizeClass = MMSizeClass.resolve(context, Size(width, height));
-                      controller.panelFloats = context.mmTablet || sizeClass != MMSizeClass.regular;
+                      controller.panelFloats =
+                          MMInput.of(context).phone || context.mmTablet || sizeClass != MMSizeClass.regular;
                       // A landscape phone is too short to stack the panes.
                       final canSplit =
                           sizeClass != MMSizeClass.medium ||
@@ -233,7 +233,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                 MMSizes.paneMinHeight,
                               ) ==
                               MMSplitMode.split;
-                      controller.onePane = sizeClass == MMSizeClass.compact || !canSplit;
+                      controller.onePane = MMInput.of(context).phone || sizeClass == MMSizeClass.compact || !canSplit;
                       // The assistant keeps the user's sidebar and pane choices. Other
                       // panels may temporarily hide them in narrow windows; the toolbar
                       // reflects the visible layout. Touch windows use a sidebar drawer.
@@ -290,6 +290,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       return true;
     }
     final state = ref.read(workspaceProvider(widget.studySetId));
+    if (MMInput.of(context).phone && state.readerPanelVisible) {
+      controller.closeReaderPanel();
+      return true;
+    }
     if (state.noteReference != null) {
       controller.closeNoteReference();
       return true;
@@ -354,7 +358,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         layout: layout,
       );
     }
-    final phoneDrawer = phone && compact;
+    final phoneDrawer = phone;
     final mergedToolbar = !compact || touchPlatform;
     final betaEnabled = ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled));
     final leading = sidebarVisible && !touchPlatform
@@ -620,7 +624,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (phone) SizedBox(height: 44, child: WorkspaceTabStrip(studySetId: widget.studySetId)),
               if (paneSwitch) compactSwitcher(chrome.top),
               Expanded(
                 child: MMChromeInsets.remove(
@@ -633,7 +636,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(child: split),
-                            if (panel != null && !floating)
+                            if (panel != null && !phone && !floating)
                               Padding(
                                 padding: EdgeInsets.only(top: chrome.top, bottom: chrome.bottom),
                                 child: SizedBox(width: panelWidth, child: panel),
@@ -641,7 +644,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                           ],
                         ),
                       ),
-                      if (panel != null && floating && !compact)
+                      if (panel != null && !phone && floating && !compact)
                         Positioned.fill(
                           top: chrome.top,
                           bottom: chrome.bottom,
@@ -671,7 +674,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       final scaffold = MMWindowScaffold.contentBuilder(
         // A compact window has no room beside or over the panes: the panel
         // rises from the bottom.
-        sheet: !tablet && compact && panel != null
+        sheet: !tablet && (phone || compact) && panel != null
             ? MMBottomSheet(
                 key: const ValueKey('workspace-panel-sheet'),
                 expand: true,
@@ -710,7 +713,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             tablet: tablet,
             collapseWhenNarrow: stacked || state.panel != RightPanel.assistant,
           ),
-          child: phone && !noteOpen
+          child: phone && state.tabs.active?.kind == WorkspaceTabKind.documentMap
               ? usePhoneReaderControls(context)
                     ? Stack(
                         children: [
@@ -723,63 +726,63 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                               child: body,
                             ),
                           ),
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            child: PhoneReaderTopControls(
-                              leading: SizedBox.square(
-                                dimension: MMSizes.phoneTopControl,
-                                child: MMIconButton(
-                                  icon: MMIcons.sidebar,
-                                  tooltip: l.showSidebar,
-                                  size: context.mmToolbarIcon,
-                                  onPressed: () => _setDrawer(true),
+                          if (!state.readerPanelVisible)
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              child: PhoneReaderTopControls(
+                                leading: SizedBox.square(
+                                  dimension: MMSizes.phoneTopControl,
+                                  child: MMIconButton(
+                                    icon: MMIcons.sidebar,
+                                    tooltip: l.showSidebar,
+                                    size: context.mmToolbarIcon,
+                                    onPressed: () => _setDrawer(true),
+                                  ),
                                 ),
-                              ),
-                              mode: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
-                              onMode: (mode) {
-                                _chrome.reveal();
-                                controller.setLayout(mode);
-                              },
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  WorkspaceHistoryControls(studySetId: widget.studySetId, compact: true),
-                                  if (MMPlatformCapabilities.current.assistant)
+                                mode: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
+                                onMode: (mode) {
+                                  _chrome.reveal();
+                                  controller.setLayout(mode);
+                                },
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (MMPlatformCapabilities.current.assistant)
+                                      SizedBox.square(
+                                        dimension: MMSizes.phoneTopControl,
+                                        child: MMToolbarButton(
+                                          key: const ValueKey('toolbar-assistant'),
+                                          iconWidget: const AssistantIcon(),
+                                          tooltip: l.assistant,
+                                          tint: context.mmColors.research,
+                                          onPressed: () => toggleAssistant(ref, widget.studySetId),
+                                        ),
+                                      ),
                                     SizedBox.square(
                                       dimension: MMSizes.phoneTopControl,
                                       child: MMToolbarButton(
-                                        key: const ValueKey('toolbar-assistant'),
-                                        iconWidget: const AssistantIcon(),
-                                        tooltip: l.assistant,
-                                        tint: context.mmColors.research,
-                                        onPressed: () => toggleAssistant(ref, widget.studySetId),
+                                        key: const ValueKey('phone-workspace-more'),
+                                        tooltip: l.moreTools,
+                                        icon: MMIcons.more,
+                                        onPressed: () {
+                                          _phoneControls.collapseTools();
+                                          _phoneControls.closeScrub();
+                                          showPhoneMoreSheet(
+                                            context,
+                                            studySetId: widget.studySetId,
+                                            paneChrome: _paneChrome,
+                                            onOpened: () => _chrome.hold('phone-more-sheet'),
+                                            onClosed: () => _chrome.release('phone-more-sheet'),
+                                          );
+                                        },
                                       ),
                                     ),
-                                  SizedBox.square(
-                                    dimension: MMSizes.phoneTopControl,
-                                    child: MMToolbarButton(
-                                      key: const ValueKey('phone-workspace-more'),
-                                      tooltip: l.moreTools,
-                                      icon: MMIcons.more,
-                                      onPressed: () {
-                                        _phoneControls.collapseTools();
-                                        _phoneControls.closeScrub();
-                                        showPhoneMoreSheet(
-                                          context,
-                                          studySetId: widget.studySetId,
-                                          paneChrome: _paneChrome,
-                                          onOpened: () => _chrome.hold('phone-more-sheet'),
-                                          onClosed: () => _chrome.release('phone-more-sheet'),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       )
                     : Stack(
@@ -810,7 +813,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                   child: Row(
                                     children: [
                                       ?leading,
-                                      WorkspaceHistoryControls(studySetId: widget.studySetId, compact: true),
                                       Expanded(
                                         child: MMSegmentedControl<MMSplitMode>(
                                           key: const ValueKey('workspace-pane-switch'),
@@ -889,7 +891,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       extendBody: true,
       // A compact window has no room beside or over the panes: the panel
       // rises from the bottom.
-      sheet: !tablet && compact && panel != null
+      sheet: !tablet && (phone || compact) && panel != null
           ? MMBottomSheet(
               key: const ValueKey('workspace-panel-sheet'),
               expand: true,
@@ -911,6 +913,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   }
 
   Widget _phoneDrawer(BuildContext context, Widget child) => MMPhoneDrawer(
+    fullScreen: true,
     open: _drawer,
     onChanged: _setDrawer,
     dismissLabel: context.l10n.phoneNavigationCloseDrawer,

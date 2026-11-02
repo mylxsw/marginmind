@@ -275,7 +275,7 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
           saving: _busy && !_testing,
           saved: _saved,
           failed: _failed && _status == l.voiceSaveError,
-          onSave: enabled ? () => unawaited(_perform()) : null,
+          onSave: enabled ? () => _perform() : null,
           secondaryAction: _provider == VoiceProvider.none
               ? null
               : MMButton(

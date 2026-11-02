@@ -1,0 +1,22 @@
+{
+  "ios": [
+    {
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-2",
+      "name": "iPhone 16e",
+      "udid": "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+      "state": "Booted"
+    },
+    {
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-2",
+      "name": "iPad mini (A17 Pro)",
+      "udid": "C416D876-F307-4C8F-8F0E-80D03552D07D",
+      "state": "Booted"
+    }
+  ],
+  "android": {
+    "ro.product.model": "sdk_gphone64_arm64",
+    "ro.build.version.release": "16",
+    "ro.build.version.sdk": "36",
+    "ro.build.version.incremental": "14574095"
+  }
+}

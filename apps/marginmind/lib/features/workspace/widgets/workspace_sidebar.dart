@@ -67,7 +67,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final query = state.sidebarQuery.trim().toLowerCase();
     bool matches(String text) => query.isEmpty || text.toLowerCase().contains(query);
 
-    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+    final phone = MMInput.of(context).phone;
     Widget phoneRow(Widget widget, {bool cautionCount = false, bool? mapDestination, bool document = false}) {
       if (widget is DecoratedBox) {
         return DecoratedBox(
@@ -422,6 +422,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         ],
         results: query.isEmpty ? const [] : [for (final row in cards) phoneRow(row)],
         searching: query.isNotEmpty,
+        onSearch: controller.setSidebarQuery,
         onAddDocument: () => pickAndImportDocuments(context, ref, studySetId),
         onAddWebPage: ref.watch(canAddWebPageProvider) ? () => dispatchAddWebPage(context, ref, studySetId) : null,
         onAddMap: () => showNewMapSheet(context, ref, studySetId),

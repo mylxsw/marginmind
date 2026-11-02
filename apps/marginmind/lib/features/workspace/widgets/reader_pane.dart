@@ -40,6 +40,7 @@ import '../reader_margin.dart';
 import 'reader_margin_notes.dart';
 import 'reader_crop_controls.dart';
 import 'reader_sidebar.dart';
+import 'reader_sidebar_tab_bar.dart';
 import 'reader_annotation_tools.dart';
 import 'reader_toolbar.dart';
 import '../workspace_chrome_controller.dart';
@@ -1306,6 +1307,32 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         overlay: overlay,
                       ),
                     );
+                    if (MMInput.of(context).phone) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          viewport,
+                          Positioned.fill(
+                            child: ExcludeFocus(
+                              excluding: !visible,
+                              child: Offstage(
+                                offstage: !visible,
+                                child: PhoneReaderNavigationFrame(
+                                  title: doc.title,
+                                  onClose: controller.closeReaderPanel,
+                                  child: ReaderSidebar(
+                                    studySetId: widget.studySetId,
+                                    document: doc,
+                                    pdf: _pdf,
+                                    width: constraints.maxWidth,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                     if (visible && overlay) {
                       return Stack(
                         fit: StackFit.expand,
@@ -1351,7 +1378,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   child: column,
                 ),
               ),
-              if (WorkspaceToolbarScope.maybeOf(context) != null)
+              if (WorkspaceToolbarScope.maybeOf(context) != null &&
+                  !(MMInput.of(context).phone && state.readerPanelVisible))
                 Positioned(
                   top: MMInput.of(context).phone ? null : 0,
                   bottom: MMInput.of(context).phone ? 30 : null,
@@ -1501,7 +1529,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               controller: pdf,
               scrollProfile: !context.mmTouchPlatform
                   ? null
-                  : MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact
+                  : MMInput.of(context).phone
                   ? MMPdfScrollProfile.phone
                   : MMPdfScrollProfile.touch,
               useTouchSelectionHandles: context.mmTouchPlatform,

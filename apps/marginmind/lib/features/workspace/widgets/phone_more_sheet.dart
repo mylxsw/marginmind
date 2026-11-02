@@ -17,7 +17,7 @@ import 'phone_reader_appearance_sheet.dart';
 
 enum PhoneMoreSheetPage { more, appearance }
 
-/// Floating Liquid Glass bottom sheet for "More" reader actions on phone
+/// Shared phone surface for the bottom sheet of reader actions
 /// (prototype scenes 6 & 7).
 class PhoneMoreSheet extends ConsumerStatefulWidget {
   const PhoneMoreSheet({

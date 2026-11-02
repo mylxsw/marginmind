@@ -84,7 +84,9 @@ void main() {
       content: InMemoryStudySetContentRepository(),
       overrides: [
         assistantConfiguredProvider.overrideWith((ref) async => true),
-        noteSessionFactoryProvider.overrideWithValue(() async => EvidenceSession(gate)),
+        noteSessionFactoryProvider.overrideWithValue(
+          ({ModelReference? modelOverride, String? sessionId, String? studySetId}) async => EvidenceSession(gate),
+        ),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');

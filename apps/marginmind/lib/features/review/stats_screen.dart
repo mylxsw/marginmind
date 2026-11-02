@@ -51,49 +51,69 @@ class StatsScreen extends ConsumerWidget {
       final upcoming = ReviewStats.upcoming(data.dues, now);
       final since = days.first.day;
       final retention = ReviewStats.retention(data.logs.where((log) => !log.reviewedAt.toLocal().isBefore(since)));
-      body = SingleChildScrollView(
-        padding: const EdgeInsets.all(MMSpacing.xxl),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _StatsSection(
-                  key: const ValueKey('stats-reviewed'),
-                  title: l.statsReviewed,
-                  value: '${days.fold<int>(0, (n, d) => n + d.reviewed)}',
-                  child: _BarChart(
-                    values: [for (final d in days) d.reviewed == 0 ? null : d.reviewed.toDouble()],
-                    semanticLabel: l.statsReviewed,
-                  ),
-                ),
-                const SizedBox(height: MMSpacing.xxl),
-                _StatsSection(
-                  key: const ValueKey('stats-retention'),
-                  title: l.statsRetention,
-                  value: retention == null ? '—' : '${(retention * 100).round()}%',
-                  child: _BarChart(
-                    values: [for (final d in days) d.retention],
-                    max: 1,
-                    semanticLabel: l.statsRetention,
-                  ),
-                ),
-                const SizedBox(height: MMSpacing.xxl),
-                _StatsSection(
-                  key: const ValueKey('stats-upcoming'),
-                  title: l.statsUpcoming,
-                  value: '${upcoming.fold<int>(0, (a, b) => a + b)}',
-                  child: _BarChart(
-                    values: [for (final n in upcoming) n == 0 ? null : n.toDouble()],
-                    semanticLabel: l.statsUpcoming,
-                  ),
+      body = MMInput.of(context).phone && data.logs.isEmpty && data.dues.isEmpty
+          ? MMEmptyState(
+              icon: MMIcons.review,
+              title: l.statsEmptyTitle,
+              message: l.statsEmptyMessage,
+              actions: [
+                MMButton(
+                  label: studySetId == null ? l.librarySection : l.review,
+                  variant: MMButtonVariant.primary,
+                  onPressed: () {
+                    final nav = ref.read(navigationProvider.notifier);
+                    if (studySetId == null) {
+                      nav.showLibrary();
+                    } else {
+                      nav.startReview(studySetId!);
+                    }
+                  },
                 ),
               ],
-            ),
-          ),
-        ),
-      );
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(MMSpacing.xxl),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _StatsSection(
+                        key: const ValueKey('stats-reviewed'),
+                        title: l.statsReviewed,
+                        value: '${days.fold<int>(0, (n, d) => n + d.reviewed)}',
+                        child: _BarChart(
+                          values: [for (final d in days) d.reviewed == 0 ? null : d.reviewed.toDouble()],
+                          semanticLabel: l.statsReviewed,
+                        ),
+                      ),
+                      const SizedBox(height: MMSpacing.xxl),
+                      _StatsSection(
+                        key: const ValueKey('stats-retention'),
+                        title: l.statsRetention,
+                        value: retention == null ? '—' : '${(retention * 100).round()}%',
+                        child: _BarChart(
+                          values: [for (final d in days) d.retention],
+                          max: 1,
+                          semanticLabel: l.statsRetention,
+                        ),
+                      ),
+                      const SizedBox(height: MMSpacing.xxl),
+                      _StatsSection(
+                        key: const ValueKey('stats-upcoming'),
+                        title: l.statsUpcoming,
+                        value: '${upcoming.fold<int>(0, (a, b) => a + b)}',
+                        child: _BarChart(
+                          values: [for (final n in upcoming) n == 0 ? null : n.toDouble()],
+                          semanticLabel: l.statsUpcoming,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
     }
 
     body = ColoredBox(color: context.mmColors.windowBackground, child: body);

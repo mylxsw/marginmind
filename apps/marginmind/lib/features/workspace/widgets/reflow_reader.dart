@@ -623,7 +623,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
           color: style.paperColor,
           child: Row(
             children: [
-              if (state.readerPanelVisible && s.book != null && MMSizeClass.of(context) != MMSizeClass.compact)
+              if (state.readerPanelVisible &&
+                  s.book != null &&
+                  !MMInput.of(context).phone &&
+                  MMSizeClass.of(context) != MMSizeClass.compact)
                 _sidebar(s, state),
               Expanded(
                 child: LayoutBuilder(
@@ -869,8 +872,23 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                   ),
                                 ),
                               ),
+                            if (s.book != null && MMInput.of(context).phone)
+                              Positioned.fill(
+                                child: ExcludeFocus(
+                                  excluding: !state.readerPanelVisible,
+                                  child: Offstage(
+                                    offstage: !state.readerPanelVisible,
+                                    child: PhoneReaderNavigationFrame(
+                                      title: widget.document.title,
+                                      onClose: workspace.closeReaderPanel,
+                                      child: _sidebar(s, state),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             if (state.readerPanelVisible &&
                                 s.book != null &&
+                                !MMInput.of(context).phone &&
                                 MMSizeClass.of(context) == MMSizeClass.compact)
                               Positioned(
                                 left: 0,
@@ -1410,7 +1428,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
               ],
             ),
       child: MMInteractive(
-        onTap: onTap,
+        onTap: () {
+          onTap();
+          if (MMInput.of(context).phone) workspace.closeReaderPanel();
+        },
         selected: selected,
         builder: (context, interaction) => Container(
           decoration: BoxDecoration(
@@ -1457,7 +1478,13 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     );
     Future<void> navigate(TextReadingPosition p) async {
       await _jump(p);
-      if (mounted && MMSizeClass.of(context) == MMSizeClass.compact) workspace.toggleReaderPanel();
+      if (mounted) {
+        if (MMInput.of(context).phone) {
+          workspace.closeReaderPanel();
+        } else if (MMSizeClass.of(context) == MMSizeClass.compact) {
+          workspace.toggleReaderPanel();
+        }
+      }
     }
 
     final annotations = workspace.content.annotationsOn(widget.document.id).where((a) => a.isText).toList();
@@ -1547,7 +1574,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     }
 
     final panel = Container(
-      width: MMSizeClass.of(context) == MMSizeClass.compact
+      width: MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact
           ? double.infinity
           : math.max(0, math.min(width, MediaQuery.sizeOf(context).width * .45) - 8),
       margin: const EdgeInsets.all(4),
@@ -1570,7 +1597,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
               ])
                 MMToolbarButton(
                   iconWidget: Icon(tab.$2, size: context.mmTouchPlatform ? 16 : 14),
-                  compact: true,
+                  compact: !MMInput.of(context).phone,
+                  label: MMInput.of(context).phone ? tab.$3 : null,
                   tooltip: tab.$3,
                   selected: mode == tab.$1,
                   onPressed: workspace.canShowReaderPanel(tab.$1) ? () => workspace.setReaderPanelMode(tab.$1) : null,
@@ -1699,7 +1727,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         ],
       ),
     );
-    if (MMSizeClass.of(context) == MMSizeClass.compact) return panel;
+    if (MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact) return panel;
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,

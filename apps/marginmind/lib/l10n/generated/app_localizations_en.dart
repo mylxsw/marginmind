@@ -6196,6 +6196,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceScrollTabsRight => 'Scroll tabs right';
 
   @override
+  String get settingsCloseTitle => 'Save settings changes?';
+
+  @override
+  String get statsEmptyTitle => 'No review history yet';
+
+  @override
+  String get statsEmptyMessage => 'Start a review to see your learning progress here.';
+
+  @override
   String get newStudySetBlank => 'Blank';
 
   @override

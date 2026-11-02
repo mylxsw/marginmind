@@ -10,6 +10,7 @@ Future<void> _window(
   WidgetTester tester,
   Widget child, {
   bool touch = true,
+  bool phone = false,
   bool reduceTransparency = false,
   Brightness brightness = Brightness.light,
   Size size = const Size(400, 800),
@@ -23,7 +24,7 @@ Future<void> _window(
       theme: brightness == Brightness.light ? MMTheme.light() : MMTheme.dark(),
       builder: (context, child) => MMInput(
         touchPlatform: touch,
-        phone: true,
+        phone: phone,
         child: MMAppearance(reduceTransparency: reduceTransparency, child: child!),
       ),
       home: Material(child: child),
@@ -190,14 +191,14 @@ void main() {
     );
 
     testWidgets('the highlight slides to the selected tab and hides without one', (tester) async {
-      await _window(tester, bar(1, (_) {}));
+      await _window(tester, bar(1, (_) {}), phone: true);
       final highlight = find.byKey(const ValueKey('mm-tab-highlight'));
       expect(
         tester.getRect(highlight).center.dx,
         closeTo(tester.getRect(find.byKey(const ValueKey('mm-tab-1'))).center.dx, 0.01),
       );
 
-      await _window(tester, bar(3, (_) {}));
+      await _window(tester, bar(3, (_) {}), phone: true);
       await tester.pump(const Duration(milliseconds: 50));
       final moving = tester.getRect(highlight).center.dx;
       await tester.pumpAndSettle();
@@ -205,7 +206,7 @@ void main() {
       expect(tester.getRect(highlight).center.dx, closeTo(target, 0.01));
       expect(moving, lessThan(target), reason: 'slides rather than jumps');
 
-      await _window(tester, bar(null, (_) {}));
+      await _window(tester, bar(null, (_) {}), phone: true);
       await tester.pumpAndSettle();
       expect(
         tester.widget<AnimatedOpacity>(find.descendant(of: highlight, matching: find.byType(AnimatedOpacity))).opacity,
@@ -215,7 +216,7 @@ void main() {
 
     testWidgets('a pressed tab swells, and settles back on release', (tester) async {
       final taps = <int>[];
-      await _window(tester, bar(0, taps.add));
+      await _window(tester, bar(0, taps.add), phone: true);
       double scale() => tester
           .widget<AnimatedScale>(
             find.descendant(of: find.byKey(const ValueKey('mm-tab-2')), matching: find.byType(AnimatedScale)),
@@ -232,7 +233,7 @@ void main() {
     });
 
     testWidgets('without a home indicator the capsule keeps a gap to the edge', (tester) async {
-      await _window(tester, bar(0, (_) {}));
+      await _window(tester, bar(0, (_) {}), phone: true);
       tester.view.padding = FakeViewPadding.zero;
       await tester.pump();
       final capsule = tester.getRect(find.byKey(const ValueKey('mm-tab-bar-glass')));
@@ -318,11 +319,12 @@ void main() {
 
     testWidgets('the drawer and its scrim cover the floating bar', (tester) async {
       var dismissed = 0;
-      await _window(tester, scaffold(sidebar: true, onDismiss: () => dismissed++));
+      await _window(tester, scaffold(sidebar: true, onDismiss: () => dismissed++), phone: true);
       await tester.pumpAndSettle();
       await tester.tapAt(tester.getCenter(find.byKey(const ValueKey('bar'))).translate(150, 0));
       expect(dismissed, 1);
-      expect(tester.getRect(find.byKey(const ValueKey('sidebar'))).top, 40);
+      // The drawer frame covers the full window; its content owns the safe inset.
+      expect(tester.getRect(find.byKey(const ValueKey('sidebar'))).top, 0);
     });
 
     testWidgets('an inline sidebar takes the leading inset and stays inside the safe area', (tester) async {

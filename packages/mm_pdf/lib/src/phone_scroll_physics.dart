@@ -14,15 +14,16 @@ enum MMPdfScrollProfile {
 
 /// Screen-pixel pan inertia, isolated from wheel and scale gestures by pdfrx.
 class MMPhoneScrollPhysics extends BouncingScrollPhysics {
-  const MMPhoneScrollPhysics({super.parent, this.userGestureInProgress});
+  const MMPhoneScrollPhysics({super.parent, this.userGestureInProgress, this.velocityScale = 1, this.bounce = true});
+
+  final double velocityScale;
+  final bool bounce;
 
   /// pdfrx applies this hook to ballistic frame deltas too. Rubber-band only
   /// direct input; filtering a spring's output again would leave it off its edge.
   final bool Function()? userGestureInProgress;
 
-  // Extend the release travel by 25% over the original 1.6x phone profile.
-  // Direct dragging stays 1:1; edge return velocity remains bounded below.
-  static const velocityMultiplier = 2.0;
+  // Preserve the release velocity. Tablet callers retain their existing profile explicitly.
   static const decelerationPerMillisecond = .998;
   static final dragPerSecond = math.pow(decelerationPerMillisecond, 1000).toDouble();
   static const maxSpringVelocity = 1600.0;
@@ -32,12 +33,20 @@ class MMPhoneScrollPhysics extends BouncingScrollPhysics {
   static final edgeSpring = SpringDescription.withDampingRatio(mass: 1, stiffness: 400, ratio: 1);
 
   @override
-  MMPhoneScrollPhysics applyTo(ScrollPhysics? ancestor) =>
-      MMPhoneScrollPhysics(parent: buildParent(ancestor), userGestureInProgress: userGestureInProgress);
+  MMPhoneScrollPhysics applyTo(ScrollPhysics? ancestor) => MMPhoneScrollPhysics(
+    parent: buildParent(ancestor),
+    userGestureInProgress: userGestureInProgress,
+    velocityScale: velocityScale,
+    bounce: bounce,
+  );
 
   @override
-  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) =>
-      userGestureInProgress?.call() == true ? super.applyPhysicsToUserOffset(position, offset) : offset;
+  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
+    if (!bounce) {
+      return position.pixels - (position.pixels - offset).clamp(position.minScrollExtent, position.maxScrollExtent);
+    }
+    return userGestureInProgress?.call() == true ? super.applyPhysicsToUserOffset(position, offset) : offset;
+  }
 
   @override
   Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
@@ -54,7 +63,8 @@ class MMPhoneScrollPhysics extends BouncingScrollPhysics {
     if (velocity.abs() < tolerance.velocity || position.maxScrollExtent <= position.minScrollExtent) return null;
     return _PhoneSimulation(
       position: position.pixels,
-      velocity: velocity * velocityMultiplier,
+      velocity: velocity * velocityScale,
+      bounce: bounce,
       min: position.minScrollExtent,
       max: position.maxScrollExtent,
       tolerance: tolerance,
@@ -70,6 +80,7 @@ class _PhoneSimulation extends Simulation {
     required double velocity,
     required double min,
     required double max,
+    required bool bounce,
     required super.tolerance,
   }) {
     _friction = FrictionSimulation(MMPhoneScrollPhysics.dragPerSecond, position, velocity, tolerance: tolerance);
@@ -80,7 +91,11 @@ class _PhoneSimulation extends Simulation {
         MMPhoneScrollPhysics.edgeSpring,
         edge,
         edge,
-        _friction.dx(_edgeTime).clamp(-MMPhoneScrollPhysics.maxSpringVelocity, MMPhoneScrollPhysics.maxSpringVelocity),
+        bounce
+            ? _friction
+                  .dx(_edgeTime)
+                  .clamp(-MMPhoneScrollPhysics.maxSpringVelocity, MMPhoneScrollPhysics.maxSpringVelocity)
+            : 0,
         tolerance: MMPhoneScrollPhysics.edgeTolerance,
       );
     }

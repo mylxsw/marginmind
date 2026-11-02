@@ -1,0 +1,19 @@
+{
+  "baseline_commit": "76b8ddd2",
+  "baseline_failures": [
+    "an unconfigured assistant routes to models and updates after setup",
+    "credential recovery opens Model Settings and uses its save flow",
+    "footer add menu imports documents and creates maps from the review tab",
+    "new service → key → fetch models → enable → default → listed in the model menu",
+    "the settings link keeps the selected service when providers are shared"
+  ],
+  "current_failures": [
+    "an unconfigured assistant routes to models and updates after setup",
+    "credential recovery opens Model Settings and uses its save flow",
+    "footer add menu imports documents and creates maps from the review tab",
+    "new service → key → fetch models → enable → default → listed in the model menu",
+    "the settings link keeps the selected service when providers are shared"
+  ],
+  "new_failures": [],
+  "resolved_failures": []
+}

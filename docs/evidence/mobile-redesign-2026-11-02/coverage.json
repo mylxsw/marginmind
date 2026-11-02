@@ -1,0 +1,850 @@
+{
+  "total_screenshots": 135,
+  "groups": {
+    "ios": {
+      "passed": true,
+      "screenshots": [
+        {
+          "file": "ios/01-library.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "813ee393d6b8c1e93633f02cd00bddbd03acf1e8747b2b035ef80a2f82ea9c3c"
+        },
+        {
+          "file": "ios/01a-library-sidebar.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "d274e5209b3187fe7866201c833a8a624f40fe00cab8d8157289c4f30944996e"
+        },
+        {
+          "file": "ios/02-settings-index.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "29b1e1e1914ccb78d76f70f5ebbf731784cbb5f8589c9f296ffa7beac1fe7567"
+        },
+        {
+          "file": "ios/02-settings-general.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "03597ae4d5116efb463a9d3c0e709427403732d0f232630595b56c8b7064dc4e"
+        },
+        {
+          "file": "ios/02-settings-reading.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "92766ca19893a9fccc8bc44d1d1f185a61d442692bd059d70b0c9e43b7a9fe39"
+        },
+        {
+          "file": "ios/02-settings-maps.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "480dd0eaf37c58c678a35770f18f544f4bb26aef51c2a6fc184bc2ede0c4a59e"
+        },
+        {
+          "file": "ios/02-settings-models.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "ba068d132feb68bfbc7c358f043571e475bda11ea2162e4fae08740852ba742b"
+        },
+        {
+          "file": "ios/02a-model-service.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "8f87d44be3f943877d664d1fc49a323acc17076f1ccaf938ca08363eed2d570b"
+        },
+        {
+          "file": "ios/02-settings-aiTasks.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "65412a8ed0050966766b4900957cb421d967bd1f1f20ea355d178f30a1f128aa"
+        },
+        {
+          "file": "ios/02-settings-webSearch.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "d0425a7b66fccfdedafd53c06c885edd62f09372e67196eea805efa9ed030e6e"
+        },
+        {
+          "file": "ios/02-settings-voice.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "43f1748a7b4332944643f39982e02444a9963d7d14a19be769d9bfbf956412a3"
+        },
+        {
+          "file": "ios/02b-settings-draft-retained.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "71d14a39118c89b87c20b3d9cbc4f04c5bc7bae23dc64a8a4a73de530947c8cd"
+        },
+        {
+          "file": "ios/02c-settings-unsaved-confirmation.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "3e09a899f0610783c5ee36565fd019e23c00aca58ca3b97d317d309d9c82b0ff"
+        },
+        {
+          "file": "ios/03-reader.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "a01296d56b9d2bd87c4df20556f22d51c85af7fe1f3faf239d772c385ddab230"
+        },
+        {
+          "file": "ios/03c-reader-tools.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "06ff3d81f54774f570f66a29f69cf87b0d8440be071b05b64e8d86962c646183"
+        },
+        {
+          "file": "ios/03d-reader-colors.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "9e189bed273a5ef338b8213b939ce7119d2a832c4a187cbe232852c1441d8dbd"
+        },
+        {
+          "file": "ios/03a-reader-menu.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "d642c66c356029e0bb56af0510ed6fee6039c7643865da182fa75c9c2fe45d03"
+        },
+        {
+          "file": "ios/03b-reader-selection.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "0182233e8f5a8f75ced32d0bc2531c20747ff8f169be162b88055767d8524051"
+        },
+        {
+          "file": "ios/04-reader-outline.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "2e6b9bb53edc3f6bb7f774a5f572588366d50c42ac13c0f4baf10d3090460640"
+        },
+        {
+          "file": "ios/04a-reader-bookmarks.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "05da27eb086455add5f1530f48c60e35c51d770d013b2a18360815cf9eaee3d6"
+        },
+        {
+          "file": "ios/05-assistant.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "53b222a89111fded0f1e126d8a97465598b3255d380665229e85ac56e5f3b679"
+        },
+        {
+          "file": "ios/05a-assistant-composer.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "53b222a89111fded0f1e126d8a97465598b3255d380665229e85ac56e5f3b679"
+        },
+        {
+          "file": "ios/05b-assistant-draft.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "1a2a30aef627962036c934b85e17f395684b6496d97c78e432b689a1049fcae1"
+        },
+        {
+          "file": "ios/06-map.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "a2ef849fe29e51ff5aa05c7164207e58fbf4597a9fc57a3830fa7cd6faae1b78"
+        },
+        {
+          "file": "ios/06a-map-selection.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "94c3166f9e825d1b3c37df8b54814b104592635aa6acf6db7a640f27c421e6dd"
+        },
+        {
+          "file": "ios/06b-card-details.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "e7791229aaf855a84fc6571a380d672eb2632f2d8d1668b3cbf1425875148345"
+        },
+        {
+          "file": "ios/06d-map-outline.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "3bdfecde7d0b6fb99efc302e3fea4d96a63b0c3e536dae9cd48a42a941412db9"
+        },
+        {
+          "file": "ios/06e-map-export.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "6a78291a1fc235c1fd5db4b9af6bc59b9c95d32c837dcdecf6613847e699b3a0"
+        },
+        {
+          "file": "ios/07-workspace-sidebar.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "3a60c9f116946d92cfac7c0f1659ffbcfd9010f8ab0ffb19c3702c677de6f3f5"
+        },
+        {
+          "file": "ios/07a-add-web.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "046df2e76752fb5670dcf9ae037f3ba4050a6ced596e01272ebc30ad50ac45f8"
+        },
+        {
+          "file": "ios/07b-library-after-document.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "0fdbb96952844dccc0ae95caf7c3c0c40eb19c002ad3f25a17e23ddd41755acb"
+        },
+        {
+          "file": "ios/08-note-setup.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "a70c4816a552e31f2038eb9ee2d3daf740949cc8e582a31bdb7c2063b622bb91"
+        },
+        {
+          "file": "ios/08a-study-note.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "85ecf02790cee9e34471a3463577f78ce6fbcc3c9aad2cdfb2d77b85939ca864"
+        },
+        {
+          "file": "ios/08b-note-export.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "b6dda3962cff0426ef2189c594c937cbbf828eaafee53695e66907ee8f8539aa"
+        },
+        {
+          "file": "ios/09-vocabulary.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "4d3f39222ecc6f2e7fe8c3fc955bc893e4eb6b4ec71d716651ed3a2dc25cb134"
+        },
+        {
+          "file": "ios/09a-vocabulary-detail.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "57d3977cd764eaffa58b5f26c755f230f42ea92c802c2d5f15ec9bbf689f447b"
+        },
+        {
+          "file": "ios/10-review.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "7b447a76cc5dcb4f056755acc1668625a50c9360e093a3702cd5874f4ff7a44a"
+        },
+        {
+          "file": "ios/10a-review-answer.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "60efd067b3e72ce289da41c144902e72b65d5a5bc987ae4ad28125f74049c491"
+        },
+        {
+          "file": "ios/11-statistics.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "7807e39ed6b3cc925b51c1003a865109961118298d17cc2f42db44874aa122f4"
+        },
+        {
+          "file": "ios/11a-web-browser.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "04bb4fbfdc4112ddf18a2e61c167ef4b2240172b29788cd070e1f3bdcb0d78c6"
+        },
+        {
+          "file": "ios/11b-web-conversion.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "2df376195927fa77a3f37f0878cd0ee64993d6df478752ec64ec4d9e4ad90f70"
+        },
+        {
+          "file": "ios/12a-reflow-reader.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "963e9526e7fa0287a99ee302fe550627ee307c9d205017e7519730dea0302228"
+        },
+        {
+          "file": "ios/12b-reflow-navigation.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "53cb66c4ae77e01272128c6a0b74a77bb29ec69414e1f418fb3a17257cf48f86"
+        },
+        {
+          "file": "ios/12c-reflow-located.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "dfcea1ba1d887afcdb188c2946ca9d3d8997c1a750c1e2056f112339a76efe5c"
+        },
+        {
+          "file": "ios/12-reader-dark.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "1451214c7221ef8620df9ec6f803b6a8975cb80803ecd3cffa54a0c7c2b1438b"
+        },
+        {
+          "file": "ios/13-map-dark.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "4c98d6ecd3a405f08b8260f9d2ff391feb284c415ba91443b6d0719a9556098c"
+        },
+        {
+          "file": "ios/14-reader-landscape.png",
+          "width": 2532,
+          "height": 1170,
+          "sha256": "77e6d4a4bd8b8c79cac7b0a633fc7500f47e00cc3da2404b5937a4eee2edada0"
+        },
+        {
+          "file": "ios/14a-assistant-landscape.png",
+          "width": 2532,
+          "height": 1170,
+          "sha256": "d8b5c5fbb8896b7f9caf2d3eb24bf9e487131cd1cc50cc7e245952b394d0cf9a"
+        },
+        {
+          "file": "ios/14aa-assistant-landscape-keyboard.png",
+          "width": 2532,
+          "height": 1170,
+          "sha256": "c88239796e477363339b0057c8a889bfb065c45b6d8b24229e640f49671c501f"
+        },
+        {
+          "file": "ios/14b-assistant-keyboard.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "3114e5bae233a3069eb42cc0b877f6348d3fde410c59fa9a4b1e3b98b1d28642"
+        },
+        {
+          "file": "ios/14c-assistant-keyboard-dismissed.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "5273ccca340e36c227d6c8d2b34306164281e4f8857717040afb7527d540f291"
+        },
+        {
+          "file": "ios/14d-assistant-draft-restored.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "5273ccca340e36c227d6c8d2b34306164281e4f8857717040afb7527d540f291"
+        }
+      ]
+    },
+    "android": {
+      "passed": true,
+      "screenshots": [
+        {
+          "file": "android/01-library.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "8c668cdaa9da718cd07cb29d0a3192bba594b543b1e5fb5844ad0ef42a502d28"
+        },
+        {
+          "file": "android/01a-library-sidebar.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "9575432dcba664ed4bf1b3e75a2d3fb3f20e6a43590f12918de32f171a0bbe99"
+        },
+        {
+          "file": "android/02-settings-index.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "c7b3c5c510845649f1a2516beeb4d9af50c7c7a619a22001c7835978d6c68961"
+        },
+        {
+          "file": "android/02-settings-general.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "f13c59d9767c766a185b98b7e4cec9d98da69d88e557783a38ac1923c491d138"
+        },
+        {
+          "file": "android/02-settings-reading.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "a77159624347bd8e30ab78622f440717cefa7b890ae896fd7340180ca3069ef7"
+        },
+        {
+          "file": "android/02-settings-maps.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "b0856377241f621ba1ae161f766066e95738760971697c4d0ca6f8c003662cff"
+        },
+        {
+          "file": "android/02-settings-models.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "b32d10eb1735d7d912f0a153ac675b0356bbe808e6772067d9ed2a52ad75d896"
+        },
+        {
+          "file": "android/02a-model-service.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "4d139430a79c0464f27f8d7a799b4bb5a977c62a1ffab30111e7d9526630433a"
+        },
+        {
+          "file": "android/02-settings-aiTasks.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "bc7d7704801849ba9954afdbed5676a68ec44509ed27b419a9e4e923481bb165"
+        },
+        {
+          "file": "android/02-settings-webSearch.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "dfcda5959559d514f4f498cd76191b33ce2354d5ae0891ce554751b1842b7dc3"
+        },
+        {
+          "file": "android/02-settings-voice.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "892215a70c2c04f26cae852ab8a1af08f3e929227d11f5ebcb52b5e5008dc473"
+        },
+        {
+          "file": "android/02b-settings-draft-retained.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "3d4ae9bfd57db9e5dfc5c9b8761d9e6cb620acefa3fe0eb4685dde650cec8967"
+        },
+        {
+          "file": "android/02c-settings-unsaved-confirmation.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "6d5008554a64a1982513e212af3ebd36249bf45af30c24ec84de98632aa64b6f"
+        },
+        {
+          "file": "android/03-reader.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "e0a7768e6f21d26c624d6060ead013399756d22efb4d5b99aa392f10708adf25"
+        },
+        {
+          "file": "android/03c-reader-tools.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "002988c2584e8d5de96ea50ddaaf6a569e22227255ac7f1b5fa44160351f2943"
+        },
+        {
+          "file": "android/03d-reader-colors.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "73185a8f8662c5af8829d2991be36bffd7f0a7faccd3c811b957c5caf5aa7c61"
+        },
+        {
+          "file": "android/03a-reader-menu.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "8597414265b179871b0db7f51f6454fa427f4b2513b872f8babc9be4a26d0138"
+        },
+        {
+          "file": "android/03b-reader-selection.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "9813cb6514fa7c5fc1bee9e9f0811732821ef0fc48898fe2d6787382be38f8ef"
+        },
+        {
+          "file": "android/04-reader-outline.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "a9e4324047da14d2fadc5e5fabe0b10c2211d4983d045a1a68a68eebabd8ebf3"
+        },
+        {
+          "file": "android/04a-reader-bookmarks.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "521e72053b48e795501d382ad8a7910ed6289bda83e28a2009876dedc2502ff4"
+        },
+        {
+          "file": "android/05-assistant.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "27a593c66bb409343147ac98e0e26517596ca166857e9fb1fc78c08161358a9d"
+        },
+        {
+          "file": "android/05a-assistant-composer.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "27a593c66bb409343147ac98e0e26517596ca166857e9fb1fc78c08161358a9d"
+        },
+        {
+          "file": "android/05b-assistant-draft.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "1308ee1b500078e4fe1c14cb866667eb8d38cb3267fdb602495dead41eb0308f"
+        },
+        {
+          "file": "android/06-map.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "687a13b39fdc09140638bf02f6dab77112fcdc7931727549e70863d0d37dedd3"
+        },
+        {
+          "file": "android/06a-map-selection.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "7d93e024ba8b8e4fe6e8dd391c3c3e125bcf68a164a5b1425bcda406eda00f9b"
+        },
+        {
+          "file": "android/06b-card-details.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "e31658998b3581a69843e4ac0739c725e0688b2f5e8af8b06438ae90348546cb"
+        },
+        {
+          "file": "android/06d-map-outline.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "0f49c949ab4daeb15579d1a1d01aa226e56c29f161f18380107dfe328c6b06eb"
+        },
+        {
+          "file": "android/06e-map-export.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "54e13c2f34d5901fb9440e22cbcab23a10c39f08601ced03dd88bcb98552a62f"
+        },
+        {
+          "file": "android/07-workspace-sidebar.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "984e2b5dc782f63a7ba51bc906ebaf7b9b63563d64c1a762e2af6ef8d08991fc"
+        },
+        {
+          "file": "android/07a-add-web.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "e6c6ca3786f9a6ddcd5469eca103f769b8a1e844b75d0b47a8c601909f1e0b95"
+        },
+        {
+          "file": "android/07b-library-after-document.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "2fed9ba5b873fe113544cd3b5be3f7472e46eeb0be318c750da13eeb357dc494"
+        },
+        {
+          "file": "android/08-note-setup.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "d9b5a24128d0db8fde05fed7254ef78f1455f7e23f80cb46d38591b6e4bf5768"
+        },
+        {
+          "file": "android/08a-study-note.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "48e53110fa1d7b8a95dced9a31e11409bc01aad5ef77bde9b380d99b3fdb976a"
+        },
+        {
+          "file": "android/08b-note-export.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "6ada3d3ee6b50f2d8af6d511bf3cf3037b8ec0d13037657731cddacf1f8bbfc6"
+        },
+        {
+          "file": "android/09-vocabulary.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "c94f5f429998cbf6488a5cf8ba4d9feaf3e474056320aaefba0c817426c1354f"
+        },
+        {
+          "file": "android/09a-vocabulary-detail.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "c153da6baf2a86f571b3a2562218a26233a340b4a7f613af5c4317be77a68c09"
+        },
+        {
+          "file": "android/10-review.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "afafe75b3f0f926cb30fb15edbfb6f9b4d6350ca171c107f0de684f1aafa8ed0"
+        },
+        {
+          "file": "android/10a-review-answer.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "29b633d60cdd5577c7cf40776df2d756b4f825ae6789416d8d7c8c8f959aef03"
+        },
+        {
+          "file": "android/11-statistics.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "1787e9aaf60e4799638193f19bd7ee638617edf1b8e40bd65cd789c117822043"
+        },
+        {
+          "file": "android/11a-web-browser.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "36aef28b5a53bc8ffdba327daa427ce2617da4b6bbb83ddadb8a1127b0673e4b"
+        },
+        {
+          "file": "android/11b-web-conversion.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "04f234a37eafe69a3619ed1806300226ef3aa6969247a0ff4ecd8c75b6814a2c"
+        },
+        {
+          "file": "android/12a-reflow-reader.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "0e98a62726a18a227a7ef5c9f6638f200b6081090f03346bd8e1e913da645607"
+        },
+        {
+          "file": "android/12b-reflow-navigation.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "7b6ce42d46e373f975dabdb90ebc35d7ad71af2f79c154dd88c2c2fdf2f1b737"
+        },
+        {
+          "file": "android/12c-reflow-located.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "f431de0332ac9b89a295876919b39bdf6a982e7b4883968efdf072d2fe5ade75"
+        },
+        {
+          "file": "android/12-reader-dark.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "90f86a83e5306bae2c6c3b22c9b62d5293da8b865d9ab9403362b3aa43196288"
+        },
+        {
+          "file": "android/13-map-dark.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "055c483b6780a31532417ce9defd42f93e585ffb8c92c0d872e4c9cb5eb47ae1"
+        },
+        {
+          "file": "android/14-reader-landscape.png",
+          "width": 2400,
+          "height": 1080,
+          "sha256": "ab1b020fcb9229f26173e20cc2d488e012e8a9048ffeee0417efe2b7a99c40fc"
+        },
+        {
+          "file": "android/14a-assistant-landscape.png",
+          "width": 2400,
+          "height": 1080,
+          "sha256": "6939784a6551a7db50ceeb1cd895869789690efa74579e0cc5542e3cfcb58abd"
+        },
+        {
+          "file": "android/14aa-assistant-landscape-keyboard.png",
+          "width": 2400,
+          "height": 1080,
+          "sha256": "33a6e4fd7a1171865d68f43e269d223cd7a22cc68320d4ace17417c8c942c699"
+        },
+        {
+          "file": "android/14b-assistant-keyboard.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "c2c06cd4b4cbda8ba5af2155693370745716968547472e1ad69ee94ff2b961d6"
+        },
+        {
+          "file": "android/14c-assistant-keyboard-dismissed.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "6954e9aa3977068bba6f0231c918233d605a255419ee395ccb4efebadf72076a"
+        },
+        {
+          "file": "android/14d-assistant-draft-restored.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "98fe9e47f69fde12ab36899a541ac7fa5a4975bb6c6e4a3816a30f68abcd3fea"
+        }
+      ]
+    },
+    "ipad": {
+      "passed": true,
+      "screenshots": [
+        {
+          "file": "ipad/01-library.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "527a5a7b6f153d13261656578492c3b02f162711ba1cf2b44e779b3c26cdc1e8"
+        },
+        {
+          "file": "ipad/01a-library-sidebar.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "51562197e828c00d05a9e285342dd3167d1d75dc6e2295445f6a70d46f06abf6"
+        },
+        {
+          "file": "ipad/02-settings-general.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "9d281811f889a9c0972b1db9ff32eef17971ecd3805a2f632d783a3d8cdc480d"
+        },
+        {
+          "file": "ipad/02-settings-reading.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "cdc7032a8bcf6a30ca25e0fdb704c62aefa84bc1be783472fee2f50df7098393"
+        },
+        {
+          "file": "ipad/03-reader.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "c67b45791d55e3c25d173d00dad2da99ef8e7396b50ac90c993ab62f3efa62ce"
+        },
+        {
+          "file": "ipad/05-assistant.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "c355adfdabdc291cf3ba1bb5ccb8fc42dfbfb69b576e347505d6744f4b5d5cb3"
+        },
+        {
+          "file": "ipad/06-map.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "44eb8210b53e283d61cce6263e25a239b3b1ca90e63ee04171556d9c18a90729"
+        }
+      ]
+    },
+    "ios-state": {
+      "passed": true,
+      "screenshots": [
+        {
+          "file": "ios-state/02b-settings-draft-retained.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "9f49421dee0cb7aac7bb0927776c91ca97f4938c84c4b3d7995fb879c45e2bf5"
+        },
+        {
+          "file": "ios-state/02c-settings-unsaved-confirmation.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "beeec587e61fd100d68e15690b11067f28a84689e94c18248030ce021528201e"
+        },
+        {
+          "file": "ios-state/20-assistant-draft.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "c1e118ed73f263ae1821d3f716e57cebb87178f4a65f68e52a5924ebbfd79e31"
+        },
+        {
+          "file": "ios-state/21-assistant-draft-restored.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "d609237946728833baafdd58f2f80a5d205490f354b5b576c360a4869100eef9"
+        },
+        {
+          "file": "ios-state/22-assistant-landscape-keyboard.png",
+          "width": 2532,
+          "height": 1170,
+          "sha256": "3c4f093a28138a85e9a4b6937398d1f87132996db7fe0f876c8d5dca8a796e5e"
+        },
+        {
+          "file": "ios-state/23-assistant-portrait-restored.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "a6737c950b4aff56b14c4ee94c35cdff72754eafbb9ed192aa7883c233654433"
+        },
+        {
+          "file": "ios-state/24-resources.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "4ed41ca09a4f5bee5bf1f284379c6767a6f00ca16b13db8b3a66865a30b29ada"
+        },
+        {
+          "file": "ios-state/25-reflow-navigation.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "665159ab38c33ad6c708dc40e07ef6d7d7c215d089fd5e7d080bc25cca42bc59"
+        },
+        {
+          "file": "ios-state/26-reflow-located.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "c6624c66013efb1ee94d7df21716d343e9c7b7eae993973e9b1dde0cb2cdd8d6"
+        }
+      ]
+    },
+    "ios-pdf": {
+      "passed": true,
+      "screenshots": [
+        {
+          "file": "ios-pdf/01-pdf-before-drag.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "01356520408bbe4eb2bde9369cdd782ddee5402d6db48bd0063eb8c94f8f4fce"
+        },
+        {
+          "file": "ios-pdf/02-pdf-after-drag.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "9a0b939250e829979eefc4b1d6cd66a8fc3ebed3b43f86599d184208e91c37b3"
+        },
+        {
+          "file": "ios-pdf/03-pdf-fling-interrupted.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "a118158704b0d05a1bfd21ef106a1f9d9c0142fa7d1f8f30c7f1167032334a79"
+        },
+        {
+          "file": "ios-pdf/04-pdf-pinch-stable.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "dacd19f61aab0dd52b3776b2fe68525eb44631897279321038a04ff8655fc16d"
+        },
+        {
+          "file": "ios-pdf/05-landscape-web-form.png",
+          "width": 2532,
+          "height": 1170,
+          "sha256": "cb4eec0bab5787eaf72cc52a88b5088c894df709433fdcf863063ad0708e6dc4"
+        },
+        {
+          "file": "ios-pdf/06-landscape-form-actions.png",
+          "width": 2532,
+          "height": 1170,
+          "sha256": "95b76ad7695f4ed68def91f92ba43bfb50e55564242c59022b4b9802af8860fb"
+        }
+      ]
+    },
+    "android-pdf": {
+      "passed": true,
+      "screenshots": [
+        {
+          "file": "android-pdf/01-pdf-before-drag.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "36da12a81dd665f4dbca2d0337af64d4caad887b5c24681362d5fc83869b1d4a"
+        },
+        {
+          "file": "android-pdf/02-pdf-after-drag.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "0c3f925eaa229518a4cbdcbfeb669b3d4cdb90ff1751e579358e3ac6bb828551"
+        },
+        {
+          "file": "android-pdf/03-pdf-fling-interrupted.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "7d5dff21fca8d3a59c2384c904e1f8570794ca71007c401a4fe6fc08a3b03881"
+        },
+        {
+          "file": "android-pdf/04-pdf-pinch-stable.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "4443f73d1607732154b234cd7ae5b6c2826f100d22e615c78bf1ea5660aca553"
+        },
+        {
+          "file": "android-pdf/05-landscape-web-form.png",
+          "width": 2400,
+          "height": 1080,
+          "sha256": "555c8b929dc06ff6c59187fcc092f1660dd7fd5f1678128dfd0850ff2fc3ba28"
+        },
+        {
+          "file": "android-pdf/06-landscape-form-actions.png",
+          "width": 2400,
+          "height": 1080,
+          "sha256": "f9ecdfc860a625d115d410416c336d87aef29c5e60f936fff37e769aa622848b"
+        }
+      ]
+    },
+    "installed": {
+      "passed": true,
+      "screenshots": [
+        {
+          "file": "installed/android-phone.png",
+          "width": 1080,
+          "height": 2400,
+          "sha256": "6d9b9342754a8cfe2a22d8369bef8c42f540537ad42811197f3b4720e3bd4b12"
+        },
+        {
+          "file": "installed/ios-phone.png",
+          "width": 1170,
+          "height": 2532,
+          "sha256": "f4bd306a080d78191b08e7a838e496d8f8f27599acc2240d2d85d88dea82a8fa"
+        },
+        {
+          "file": "installed/ipad.png",
+          "width": 1488,
+          "height": 2266,
+          "sha256": "7ea7e7ea6d23899ae5c380eebe1341d6703c8033b61a605ba22a82b93b66655a"
+        }
+      ]
+    }
+  }
+}

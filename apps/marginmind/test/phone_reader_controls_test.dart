@@ -381,12 +381,12 @@ void main() {
       );
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await drain(tester);
-      expect(find.byType(PhoneReaderTopControls), findsNothing);
-      expect(find.byType(PhoneReaderControls), findsNothing);
+      expect(find.byType(PhoneReaderTopControls), phone ? findsOneWidget : findsNothing);
+      expect(find.byType(PhoneReaderControls), phone ? findsOneWidget : findsNothing);
       expect(tester.element(find.byType(ReaderPane)).mmColors.flat, isTrue);
       expect(find.ancestor(of: find.byType(ReaderPane), matching: find.byType(MMFlatSurface)), findsOneWidget);
-      expect(find.byKey(const ValueKey('reader-more')).hitTestable(), findsOneWidget);
-      expect(find.byKey(const ValueKey('reader-page-navigation')), findsOneWidget);
+      expect(find.byKey(ValueKey(phone ? 'phone-workspace-more' : 'reader-more')).hitTestable(), findsOneWidget);
+      expect(find.byKey(ValueKey(phone ? 'phone-reader-page' : 'reader-page-navigation')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await drain(tester);

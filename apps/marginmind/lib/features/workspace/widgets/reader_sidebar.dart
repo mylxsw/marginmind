@@ -46,11 +46,11 @@ class ReaderSidebar extends ConsumerWidget {
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
 
     return Container(
-      width: math.max(0, width - 8),
-      margin: const EdgeInsets.all(4),
+      width: MMInput.of(context).phone ? width : math.max(0, width - 8),
+      margin: MMInput.of(context).phone ? EdgeInsets.zero : const EdgeInsets.all(4),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: c.sidebarOpaque,
+        color: MMInput.of(context).phone ? c.windowBackground : c.sidebarOpaque,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: c.border, width: MMSizes.hairline),
       ),
@@ -73,7 +73,8 @@ class ReaderSidebar extends ConsumerWidget {
                   for (final (value, icon, label, shortcut) in tabs)
                     MMToolbarButton(
                       iconWidget: Icon(icon, size: context.mmTouchPlatform ? 16 : 14),
-                      compact: true,
+                      compact: !MMInput.of(context).phone,
+                      label: MMInput.of(context).phone ? label : null,
                       tooltip: AppShortcuts.tip(label, shortcut),
                       selected: value == shown,
                       onPressed: controller.canShowReaderPanel(value)
@@ -85,7 +86,11 @@ class ReaderSidebar extends ConsumerWidget {
               Divider(height: 1, thickness: 1, color: c.separator),
               Expanded(
                 child: switch (shown) {
-                  ReaderPanelMode.thumbnails => _Thumbnails(pdf: pdf, pageCount: document.pageCount),
+                  ReaderPanelMode.thumbnails => _Thumbnails(
+                    pdf: pdf,
+                    pageCount: document.pageCount,
+                    onNavigate: MMInput.of(context).phone ? controller.closeReaderPanel : null,
+                  ),
                   ReaderPanelMode.outline => ReaderOutline(
                     key: ValueKey(document.id),
                     studySetId: studySetId,
@@ -120,10 +125,11 @@ class ReaderSidebar extends ConsumerWidget {
 // ---- thumbnails ---------------------------------------------------------------
 
 class _Thumbnails extends StatefulWidget {
-  const _Thumbnails({required this.pdf, required this.pageCount});
+  const _Thumbnails({required this.pdf, required this.pageCount, this.onNavigate});
 
   final MMPdfViewController pdf;
   final int pageCount;
+  final VoidCallback? onNavigate;
 
   @override
   State<_Thumbnails> createState() => _ThumbnailsState();
@@ -179,7 +185,10 @@ class _ThumbnailsState extends State<_Thumbnails> {
         final selected = page == current;
         return MMInteractive(
           key: ValueKey('thumbnail-$page'),
-          onTap: () => widget.pdf.jumpToPage(page),
+          onTap: () {
+            widget.pdf.jumpToPage(page);
+            widget.onNavigate?.call();
+          },
           selected: selected,
           semanticLabel: context.l10n.pageNumber(page),
           builder: (context, s) => Column(
@@ -260,6 +269,7 @@ class _Annotations extends ConsumerWidget {
   final List<InkStroke> ink;
 
   Future<void> _open(BuildContext context, WidgetRef ref, _AnnotationEntry entry) async {
+    if (MMInput.of(context).phone) ref.read(workspaceProvider(studySetId).notifier).closeReaderPanel();
     final session = ref.read(readerMarginProvider(studySetId).notifier);
     if (!await session.finish() || !context.mounted) return;
     // Saving changes the margin layout. Let it consume that revision before

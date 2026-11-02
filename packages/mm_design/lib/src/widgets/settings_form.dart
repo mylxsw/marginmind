@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'search_field.dart';
+
 import '../foundation/interactive.dart';
 import '../foundation/adaptive.dart';
 import '../icons/mm_icons.dart';
@@ -88,7 +90,9 @@ class MMSettingsRow extends StatelessWidget {
     final row = LayoutBuilder(
       builder: (context, constraints) {
         final largeText = MediaQuery.textScalerOf(context).scale(13) > 15;
-        final stacked = context.mmTouchPlatform && constraints.maxWidth < (largeText ? 480 : 300);
+        final stacked =
+            (MMInput.of(context).phone && trailing is MMTextField) ||
+            (context.mmTouchPlatform && constraints.maxWidth < (largeText ? 480 : 300));
         if (stacked && (leading != null || label != null)) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: MMSpacing.s),

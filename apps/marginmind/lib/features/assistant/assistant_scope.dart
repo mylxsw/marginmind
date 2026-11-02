@@ -196,6 +196,17 @@ final assistantUiProvider = NotifierProvider.family<AssistantUiController, Assis
 );
 
 class AssistantUiController extends Notifier<AssistantUi> {
+  // Phone panels unmount when dismissed; retain only unsent text in this session.
+  final _composerDrafts = <String, String>{};
+  String composerDraft(String conversationId) => _composerDrafts[conversationId] ?? '';
+  void keepComposerDraft(String conversationId, String text) {
+    if (text.isEmpty) {
+      _composerDrafts.remove(conversationId);
+    } else {
+      _composerDrafts[conversationId] = text;
+    }
+  }
+
   AssistantUiController(this.studySetId);
 
   final String studySetId;
