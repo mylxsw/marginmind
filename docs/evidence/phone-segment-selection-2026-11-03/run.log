@@ -1,0 +1,14 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/phone_segment_selection_test.dart
+Running Gradle task 'assembleDebug'...                             20.7s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...        2,549ms
+00:00 +0: Phone creation source selection remains visible in both appearances
+PHONE_SHOT:00-dark-blank-keyboard:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:01-dark-blank:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:01-dark-document:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:01-dark-web:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-light-blank:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-light-document:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-light-web:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+00:51 +1: (tearDownAll)
+00:52 +1: All tests passed!

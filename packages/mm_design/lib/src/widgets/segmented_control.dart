@@ -136,6 +136,7 @@ class MMSegmentedControl<T> extends StatelessWidget {
 
   Widget _tablet(BuildContext context) {
     final c = context.mmColors;
+    final phone = MMInput.of(context).phone;
     final grouped = MMControlGroupScope.contains(context);
     final compact = MMCompactToolbarScope.of(context) && context.mmTablet;
     return SizedBox(
@@ -177,10 +178,10 @@ class MMSegmentedControl<T> extends StatelessWidget {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: seg.value == value
-                                ? (MMFlatSurface.of(context) ? c.selectedSegment : c.card)
+                                ? (phone || MMFlatSurface.of(context) ? c.selectedSegment : c.card)
                                 : (state.hovered ? c.hover : Colors.transparent),
                             borderRadius: BorderRadius.circular(grouped ? 16 : 14),
-                            border: seg.value == value && MMFlatSurface.of(context)
+                            border: seg.value == value && (phone || MMFlatSurface.of(context))
                                 ? Border.all(color: c.border, width: MMSizes.hairline)
                                 : null,
                             boxShadow: seg.value == value && !MMFlatSurface.of(context)
