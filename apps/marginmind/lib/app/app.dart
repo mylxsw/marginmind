@@ -23,6 +23,7 @@ import 'app_commands.dart';
 import 'navigation.dart';
 import 'phone_tabs.dart';
 import 'window_title.dart';
+import 'mobile_status_bar.dart';
 
 /// Whether the app runs on a phone or tablet, where layout and controls
 /// are touch-first. Read from the host OS, not the target-platform override,
@@ -54,49 +55,53 @@ class MarginMindApp extends ConsumerWidget {
           workspaceProvider(route.studySetId)
               .select((s) => s.activeDocumentId != null && s.layout != MMSplitMode.secondary),
         );
-    return MaterialApp(
-      onGenerateTitle: (context) => context.l10n.appName,
-      debugShowCheckedModeBanner: false,
-      theme: MMTheme.light(systemAccent: system.accentColor),
-      darkTheme: MMTheme.dark(systemAccent: system.accentColor),
-      themeMode: settings.themeMode,
-      locale: settings.locale,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      builder: (context, child) {
-        final touchPlatform = ref.watch(touchPlatformProvider);
-        final phone = ref.watch(phoneProvider);
-        final size = MediaQuery.sizeOf(context);
-        final safe = MediaQuery.paddingOf(context);
-        final tabs =
-            phone &&
-            MMSizeClass.fromSize(Size(size.width - safe.horizontal, size.height - safe.vertical)) ==
-                MMSizeClass.compact;
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: systemBarsStyle(Theme.of(context).brightness),
-          child: MMInput(
-            touchPlatform: touchPlatform,
-            phone: phone,
-            doubleClickInterval: system.doubleClickInterval,
-            child: MMAppearance(
-              reduceTransparency: system.reduceTransparency,
-              reduceMotion: system.reduceMotion,
-              child: MMHudHost(
-                bottom:
-                    (tabs ? MMTabBar.heightOf(context) : 0) +
-                    (pillShown ? pagePillClearance + MMSpacing.s : MMHudHost.defaultBottom),
-                child: child ?? const SizedBox.shrink(),
+    return MobileStatusBar(
+      enabled: ref.watch(touchPlatformProvider),
+      visible: settings.showSystemStatusBar,
+      child: MaterialApp(
+        onGenerateTitle: (context) => context.l10n.appName,
+        debugShowCheckedModeBanner: false,
+        theme: MMTheme.light(systemAccent: system.accentColor),
+        darkTheme: MMTheme.dark(systemAccent: system.accentColor),
+        themeMode: settings.themeMode,
+        locale: settings.locale,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        builder: (context, child) {
+          final touchPlatform = ref.watch(touchPlatformProvider);
+          final phone = ref.watch(phoneProvider);
+          final size = MediaQuery.sizeOf(context);
+          final safe = MediaQuery.paddingOf(context);
+          final tabs =
+              phone &&
+              MMSizeClass.fromSize(Size(size.width - safe.horizontal, size.height - safe.vertical)) ==
+                  MMSizeClass.compact;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: systemBarsStyle(Theme.of(context).brightness),
+            child: MMInput(
+              touchPlatform: touchPlatform,
+              phone: phone,
+              doubleClickInterval: system.doubleClickInterval,
+              child: MMAppearance(
+                reduceTransparency: system.reduceTransparency,
+                reduceMotion: system.reduceMotion,
+                child: MMHudHost(
+                  bottom:
+                      (tabs ? MMTabBar.heightOf(context) : 0) +
+                      (pillShown ? pagePillClearance + MMSpacing.s : MMHudHost.defaultBottom),
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             ),
-          ),
-        );
-      },
-      home: const WindowTitleBinding(child: AppShell()),
+          );
+        },
+        home: const WindowTitleBinding(child: AppShell()),
+      ),
     );
   }
 }

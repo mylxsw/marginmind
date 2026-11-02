@@ -10,6 +10,9 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get settingsShowSystemStatusBar => '显示系统状态栏';
+
+  @override
   String get appName => 'Foliarc';
 
   @override

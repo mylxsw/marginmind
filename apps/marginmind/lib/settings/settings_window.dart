@@ -457,6 +457,16 @@ class _GeneralPage extends ConsumerWidget {
                 ],
               ),
             ),
+            if (context.mmTouchPlatform)
+              MMSettingsRow(
+                leading: Text(l.settingsShowSystemStatusBar, style: context.mmText.body),
+                trailing: MMSwitch(
+                  key: const ValueKey('settings-show-system-status-bar'),
+                  value: settings.showSystemStatusBar,
+                  semanticLabel: l.settingsShowSystemStatusBar,
+                  onChanged: controller.setShowSystemStatusBar,
+                ),
+              ),
             MMSettingsRow(
               label: l.language,
               trailing: MMPopUpButton<LanguagePreference>(

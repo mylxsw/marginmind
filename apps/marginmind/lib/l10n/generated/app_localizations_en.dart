@@ -10,6 +10,9 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get settingsShowSystemStatusBar => 'Show system status bar';
+
+  @override
   String get appName => 'Foliarc';
 
   @override

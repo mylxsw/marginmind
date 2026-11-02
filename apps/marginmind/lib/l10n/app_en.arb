@@ -1,4 +1,5 @@
 {
+  "settingsShowSystemStatusBar": "Show system status bar",
   "@@locale": "en",
   "appName": "Foliarc",
   "libraryTitleAll": "All Study Sets",

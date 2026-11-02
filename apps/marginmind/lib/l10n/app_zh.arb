@@ -1,4 +1,5 @@
 {
+  "settingsShowSystemStatusBar": "显示系统状态栏",
   "@@locale": "zh",
   "appName": "Foliarc",
   "libraryTitleAll": "全部学习集",

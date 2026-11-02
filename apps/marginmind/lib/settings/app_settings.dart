@@ -61,6 +61,7 @@ class AppSettings {
   const AppSettings({
     this.mapFollowDocument = true,
     this.betaFeaturesEnabled = false,
+    this.showSystemStatusBar = true,
     this.bookReading = const ReadingSettings(),
     this.articleReading = const ReadingSettings(font: ReaderFont.serif, paged: false),
     this.appearance = AppearancePreference.system,
@@ -77,6 +78,7 @@ class AppSettings {
 
   final bool mapFollowDocument;
   final bool betaFeaturesEnabled;
+  final bool showSystemStatusBar;
   final ReadingSettings bookReading, articleReading;
   ReadingSettings reading(DocumentFormat format) => ReadingSettings.isArticle(format) ? articleReading : bookReading;
   final AppearancePreference appearance;
@@ -106,6 +108,7 @@ class AppSettings {
   AppSettings copyWith({
     bool? mapFollowDocument,
     bool? betaFeaturesEnabled,
+    bool? showSystemStatusBar,
     ReadingSettings? bookReading,
     ReadingSettings? articleReading,
     AppearancePreference? appearance,
@@ -121,6 +124,7 @@ class AppSettings {
   }) => AppSettings(
     mapFollowDocument: mapFollowDocument ?? this.mapFollowDocument,
     betaFeaturesEnabled: betaFeaturesEnabled ?? this.betaFeaturesEnabled,
+    showSystemStatusBar: showSystemStatusBar ?? this.showSystemStatusBar,
     bookReading: bookReading ?? this.bookReading,
     articleReading: articleReading ?? this.articleReading,
     appearance: appearance ?? this.appearance,
@@ -138,12 +142,18 @@ class AppSettings {
 
 /// Application preferences, persisted in SharedPreferences.
 class SettingsController extends Notifier<AppSettings> {
+  static const showSystemStatusBarKey = 'settings.showSystemStatusBar';
   static const betaFeaturesEnabledKey = 'settings.betaFeaturesEnabled';
   static const _readerStyleKey = 'settings.readerStyle';
   static const _appearanceKey = 'settings.appearance';
   static const _languageKey = 'settings.language';
   static const _annotationToolKey = 'settings.annotationTool';
   static const assistantIconKey = 'settings.assistantIcon';
+
+  Future<void> setShowSystemStatusBar(bool value) async {
+    state = state.copyWith(showSystemStatusBar: value);
+    await ref.read(sharedPreferencesProvider).setBool(showSystemStatusBarKey, value);
+  }
 
   @override
   AppSettings build() {
@@ -160,6 +170,7 @@ class SettingsController extends Notifier<AppSettings> {
     return AppSettings(
       mapFollowDocument: prefs.getBool('settings.mapFollowDocument') ?? true,
       betaFeaturesEnabled: prefs.getBool(betaFeaturesEnabledKey) ?? false,
+      showSystemStatusBar: prefs.getBool(showSystemStatusBarKey) ?? true,
       bookReading: reading('settings.reading.book'),
       articleReading: reading('settings.reading.article', article: true).font == ReaderFont.original
           ? reading('settings.reading.article', article: true).copyWith(font: ReaderFont.serif)

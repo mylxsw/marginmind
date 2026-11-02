@@ -92,6 +92,12 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('zh')];
 
+  /// No description provided for @settingsShowSystemStatusBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Show system status bar'**
+  String get settingsShowSystemStatusBar;
+
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
