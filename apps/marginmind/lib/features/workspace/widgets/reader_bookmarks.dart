@@ -84,7 +84,7 @@ class ReaderBookmarks extends ConsumerWidget {
                   ),
                 )
               : ReorderableListView.builder(
-                  padding: const EdgeInsets.all(MMSizes.sidebarInset),
+                  padding: const EdgeInsets.all(4),
                   buildDefaultDragHandles: false,
                   itemCount: bookmarks.length,
                   onReorderItem: reorder,

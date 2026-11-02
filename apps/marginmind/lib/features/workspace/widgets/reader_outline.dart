@@ -237,7 +237,7 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                   )
                 : ListView.builder(
                     controller: _scroll,
-                    padding: const EdgeInsets.all(MMSizes.sidebarInset),
+                    padding: const EdgeInsets.all(4),
                     itemCount: rows.length,
                     itemBuilder: (context, index) {
                       final (entry, depth, siblings) = rows[index];

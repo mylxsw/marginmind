@@ -15,6 +15,7 @@ import '../reader_margin.dart';
 import '../workspace_controller.dart';
 import 'reader_bookmarks.dart';
 import 'reader_outline.dart';
+import 'reader_sidebar_tab_bar.dart';
 
 /// Width of the page sidebar inside the source pane.
 const readerSidebarWidth = MMSizes.readerSidebarWidth;
@@ -45,12 +46,12 @@ class ReaderSidebar extends ConsumerWidget {
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
 
     return Container(
-      width: math.max(0, width - MMSpacing.m),
-      margin: const EdgeInsets.all(MMSpacing.m / 2),
+      width: math.max(0, width - 8),
+      margin: const EdgeInsets.all(4),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: c.sidebarOpaque,
-        borderRadius: BorderRadius.circular(MMRadii.sidebar),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: c.border, width: MMSizes.hairline),
       ),
       child: ListenableBuilder(
@@ -67,31 +68,19 @@ class ReaderSidebar extends ConsumerWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
-                child: LayoutBuilder(
-                  builder: (context, bounds) => SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minWidth: bounds.maxWidth),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (final (value, icon, label, shortcut) in tabs)
-                            MMToolbarButton(
-                              icon: icon,
-                              tooltip: AppShortcuts.tip(label, shortcut),
-                              selected: value == shown,
-                              onPressed: controller.canShowReaderPanel(value)
-                                  ? () => controller.setReaderPanelMode(value)
-                                  : null,
-                            ),
-                        ],
-                      ),
+              ReaderSidebarTabBar(
+                children: [
+                  for (final (value, icon, label, shortcut) in tabs)
+                    MMToolbarButton(
+                      iconWidget: Icon(icon, size: context.mmTouchPlatform ? 16 : 14),
+                      compact: true,
+                      tooltip: AppShortcuts.tip(label, shortcut),
+                      selected: value == shown,
+                      onPressed: controller.canShowReaderPanel(value)
+                          ? () => controller.setReaderPanelMode(value)
+                          : null,
                     ),
-                  ),
-                ),
+                ],
               ),
               Divider(height: 1, thickness: 1, color: c.separator),
               Expanded(
@@ -410,7 +399,7 @@ class _Annotations extends ConsumerWidget {
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.all(MMSizes.sidebarInset),
+            padding: const EdgeInsets.all(4),
             itemCount: entries.length + (reviewCount > 0 ? 2 : 0),
             itemBuilder: (context, index) {
               if (reviewCount > 0) {

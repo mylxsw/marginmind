@@ -34,6 +34,7 @@ import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_margin_notes.dart';
 import 'reader_page_field.dart';
+import 'reader_sidebar_tab_bar.dart';
 import 'reader_entry_editor.dart';
 import 'reflow_scroll_reader.dart';
 import 'reflow_thumbnail.dart';
@@ -1420,7 +1421,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                 : null,
             borderRadius: BorderRadius.circular(MMRadii.row),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.s),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1548,47 +1549,33 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     final panel = Container(
       width: MMSizeClass.of(context) == MMSizeClass.compact
           ? double.infinity
-          : math.max(0, math.min(width, MediaQuery.sizeOf(context).width * .45) - MMSpacing.m),
-      margin: const EdgeInsets.all(MMSpacing.m / 2),
+          : math.max(0, math.min(width, MediaQuery.sizeOf(context).width * .45) - 8),
+      margin: const EdgeInsets.all(4),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.mmColors.sidebarOpaque,
-        borderRadius: BorderRadius.circular(MMRadii.sidebar),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.mmColors.border, width: MMSizes.hairline),
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
-            child: LayoutBuilder(
-              builder: (context, bounds) => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: bounds.maxWidth),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (final tab in [
-                        if (widget.document.capabilities().zoom)
-                          (ReaderPanelMode.thumbnails, MMIcons.thumbnails, l.readerThumbnails),
-                        (ReaderPanelMode.outline, MMIcons.outline, l.readerOutline),
-                        (ReaderPanelMode.bookmarks, MMIcons.bookmark, l.readerBookmarks),
-                        (ReaderPanelMode.annotations, MMIcons.annotations, l.readerAnnotations),
-                      ])
-                        MMToolbarButton(
-                          icon: tab.$2,
-                          tooltip: tab.$3,
-                          selected: mode == tab.$1,
-                          onPressed: workspace.canShowReaderPanel(tab.$1)
-                              ? () => workspace.setReaderPanelMode(tab.$1)
-                              : null,
-                        ),
-                    ],
-                  ),
+          ReaderSidebarTabBar(
+            children: [
+              for (final tab in [
+                if (widget.document.capabilities().zoom)
+                  (ReaderPanelMode.thumbnails, MMIcons.thumbnails, l.readerThumbnails),
+                (ReaderPanelMode.outline, MMIcons.outline, l.readerOutline),
+                (ReaderPanelMode.bookmarks, MMIcons.bookmark, l.readerBookmarks),
+                (ReaderPanelMode.annotations, MMIcons.annotations, l.readerAnnotations),
+              ])
+                MMToolbarButton(
+                  iconWidget: Icon(tab.$2, size: context.mmTouchPlatform ? 16 : 14),
+                  compact: true,
+                  tooltip: tab.$3,
+                  selected: mode == tab.$1,
+                  onPressed: workspace.canShowReaderPanel(tab.$1) ? () => workspace.setReaderPanelMode(tab.$1) : null,
                 ),
-              ),
-            ),
+            ],
           ),
           Divider(height: 1, thickness: 1, color: context.mmColors.separator),
           if (mode == ReaderPanelMode.bookmarks)
@@ -1610,9 +1597,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                       inkChapters.isEmpty
                 ? empty(l.noAnnotations)
                 : ListView(
-                    padding: mode == ReaderPanelMode.thumbnails
-                        ? EdgeInsets.zero
-                        : const EdgeInsets.all(MMSizes.sidebarInset),
+                    padding: mode == ReaderPanelMode.thumbnails ? EdgeInsets.zero : const EdgeInsets.all(4),
                     children: switch (mode) {
                       ReaderPanelMode.thumbnails => [
                         for (var i = 0; i < book.chapters.length; i++)
