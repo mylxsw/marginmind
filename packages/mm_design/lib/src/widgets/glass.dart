@@ -47,9 +47,15 @@ class MMGlass extends StatelessWidget {
   Widget build(BuildContext context) {
     if (MMInput.of(context).phone &&
         !MMFlatSurface.of(context) &&
-        MMNativeGlass.available &&
+        MMNativeGlass.availableFor(context) &&
         !MMAppearance.reduceTransparencyOf(context)) {
-      return MMNativeGlass(borderRadius: borderRadius, padding: padding, child: child);
+      if (MMLiquidGlass.onGlass(context)) return Padding(padding: padding, child: child);
+      final material = MMNativeGlass(
+        borderRadius: borderRadius,
+        padding: padding,
+        child: _GlassScope(child: child),
+      );
+      return toolbar ? MMControlGroupScope(child: material) : material;
     }
     if (MMFlatSurface.of(context) || MMInput.of(context).phone) {
       final c = context.mmColors;
@@ -192,9 +198,14 @@ class MMLiquidGlass extends StatelessWidget {
     final c = context.mmColors;
     if (MMInput.of(context).phone &&
         !MMFlatSurface.of(context) &&
-        MMNativeGlass.available &&
+        MMNativeGlass.availableFor(context) &&
         !MMAppearance.reduceTransparencyOf(context)) {
-      return MMNativeGlass(borderRadius: borderRadius, padding: padding, child: child);
+      if (onGlass(context)) return Padding(padding: padding, child: child);
+      return MMNativeGlass(
+        borderRadius: borderRadius,
+        padding: padding,
+        child: _GlassScope(child: child),
+      );
     }
     if (MMFlatSurface.of(context) || MMInput.of(context).phone) {
       return DecoratedBox(

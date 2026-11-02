@@ -54,7 +54,7 @@ class MMSidebar extends StatelessWidget {
         top: !flat,
         bottom: !flat,
         left: !flat,
-        right: false,
+        right: MMInput.of(context).phone,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

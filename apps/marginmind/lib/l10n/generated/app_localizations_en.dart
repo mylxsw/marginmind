@@ -6231,4 +6231,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newStudySetChooseDocuments => 'Choose Documents…';
+
+  @override
+  String get phoneDiscardChangesTitle => 'Discard unsaved changes?';
+
+  @override
+  String get phoneDiscardChanges => 'Discard Changes';
+
+  @override
+  String get phoneKeepEditing => 'Keep Editing';
+
+  @override
+  String get phoneOutlineEmpty => 'No outline yet';
+
+  @override
+  String get phoneManageNavigation => 'Manage';
 }

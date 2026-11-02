@@ -87,7 +87,7 @@ Future<_Creation?> _nativeCreation(BuildContext context, PdfPicker picker) async
         ? l.newStudySetDocumentHint
         : l.newStudySetWebHint,
     fields: [
-      MMNativeField(id: 'title', label: l.sheetName, placeholder: l.newStudySetDefaultName),
+      MMNativeField(id: 'title', label: l.newStudySetName, placeholder: l.newStudySetDefaultName),
       if (source == 'web')
         const MMNativeField(id: 'url', label: 'URL', keyboard: 'url', placeholder: 'https://example.com'),
     ],

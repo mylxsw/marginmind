@@ -102,7 +102,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final provider = workspaceProvider(widget.studySetId);
     final touchPlatform = MMInput.of(context).touchPlatform;
     _phoneCompact = usePhoneReaderControls(context);
-    Widget surface(Widget child) => MMFlatSurface(child: child);
     // On touch the sidebar commands (and the drawer's own hide button) move
     // the drawer; opening a document puts it away.
     ref.listen(provider.select((s) => s.sidebarVisible), (_, _) {
@@ -159,6 +158,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     final state = ref.read(provider);
+    Widget surface(Widget child) => MMNativeGlassScope(
+      enabled: state.panel == null && !state.readerPanelVisible && !_drawer,
+      child: MMFlatSurface(enabled: !(MMInput.of(context).phone && MMNativePresentation.available), child: child),
+    );
     final minReader = state.readerPanelVisible
         ? ref.watch(settingsProvider.select((s) => s.readerSidebarWidth)) +
               MMSizes.readerContentMinWidth +

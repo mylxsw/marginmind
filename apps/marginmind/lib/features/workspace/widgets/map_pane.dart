@@ -184,20 +184,103 @@ class _MapPaneState extends ConsumerState<MapPane> {
   bool _styleCustomOpen = false;
   (MapStructure, MapPalette)? _stylePreview;
   final _stylePortal = OverlayPortalController();
+  BuildContext? _styleSheetContext;
   static const _styleRegion = 'map-style';
 
   void _toggleStyle() {
     if (_styleOpen) {
       _closeStyle();
+    } else if (MMInput.of(context).phone) {
+      unawaited(_showPhoneStyle());
     } else {
       _stylePortal.show();
       setState(() => _styleOpen = true);
     }
   }
 
+  Future<void> _showPhoneStyle() async {
+    setState(() => _styleOpen = true);
+    final scope = ProviderScope.containerOf(context, listen: false);
+    try {
+      await showMMBottomSheet<void>(
+        context: context,
+        builder: (sheetContext) {
+          _styleSheetContext = sheetContext;
+          return UncontrolledProviderScope(
+            container: scope,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final state = ref.watch(workspaceProvider(widget.studySetId));
+                final map = state.content?.map(state.activeMapId);
+                final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+                return SingleChildScrollView(
+                  primary: true,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(context.l10n.mapStyle, style: context.mmText.headline)),
+                            MMIconButton(
+                              icon: MMIcons.close,
+                              tooltip: context.l10n.closePanel,
+                              onPressed: () => Navigator.of(sheetContext).maybePop(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      MapStylePopover(
+                        density: map?.density ?? MapDensity.compact,
+                        onDensity: controller.setMapDensity,
+                        backgroundColor: map?.backgroundColor,
+                        onBackgroundColor: controller.setMapBackgroundColor,
+                        structure: map?.structure ?? MapStructure.mind,
+                        palette: map?.palette ?? MapPalette.system,
+                        onPreview: (style) {
+                          if (mounted) setState(() => _stylePreview = style);
+                        },
+                        onStructure: (structure) {
+                          setState(() => _stylePreview = null);
+                          controller.setMapStructure(structure);
+                        },
+                        onPalette: (palette) {
+                          setState(() => _stylePreview = null);
+                          controller.setMapPalette(palette);
+                        },
+                        onClose: () => Navigator.of(sheetContext).maybePop(),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      );
+    } finally {
+      _styleSheetContext = null;
+      if (mounted) {
+        setState(() {
+          _styleOpen = false;
+          _stylePreview = null;
+          _styleCustomOpen = false;
+        });
+        _focus.requestFocus();
+      }
+    }
+  }
+
   void _closeStyle() {
     if (!_styleOpen) return;
-    _stylePortal.hide();
+    if (_styleSheetContext case final sheetContext?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (sheetContext.mounted) Navigator.of(sheetContext).maybePop();
+      });
+    } else {
+      _stylePortal.hide();
+    }
     setState(() {
       _styleOpen = false;
       _styleCustomOpen = false;

@@ -98,6 +98,15 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
     if (_custom || _busy) return;
     _custom = true;
     try {
+      if (MMInput.of(context).phone) {
+        final picked = await showPhoneCustomColor(context, widget.color);
+        if (mounted && picked != null) {
+          await _change(color: picked);
+          if (mounted) setState(() => _colors = ref.read(highlightPaletteProvider).recent(limit: 4));
+        }
+        return;
+      }
+
       final anchor = boundsOf(_anchor.currentContext!);
       final picked = await showGeneralDialog<MMAnnotationColor>(
         context: context,

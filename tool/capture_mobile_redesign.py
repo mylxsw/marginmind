@@ -17,11 +17,12 @@ def main():
     parser.add_argument('device')
     parser.add_argument('name', help='Evidence subfolder, e.g. iphone or ipad')
     parser.add_argument('--test', default='mobile_redesign_acceptance_test.dart')
+    parser.add_argument('--output', type=Path, help='Separate evidence folder for a new presentation pass')
     parser.add_argument('--reference', action='store_true', help='Core iPad reference screens only')
     parser.add_argument('--from-screen', default='', help='Resume capture from a screen prefix')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    out = root / 'docs/evidence/mobile-redesign-2026-11-02' / args.name
+    out = args.output.resolve() if args.output else root / 'docs/evidence/mobile-redesign-2026-11-02' / args.name
     out.mkdir(parents=True, exist_ok=True)
     source = hashlib.sha256()
     for directory in [root / 'apps/marginmind/lib', root / 'packages']:
@@ -29,7 +30,15 @@ def main():
             if 'lib' in file.parts:
                 source.update(str(file.relative_to(root)).encode())
                 source.update(file.read_bytes())
-    (out / 'build-source.json').write_text(json.dumps({'device': args.device, 'test': args.test, 'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(), 'dart_source_sha256': source.hexdigest()}, indent=2))
+    native_source = hashlib.sha256()
+    for file in sorted((root / 'apps/marginmind/ios/Runner').rglob('*.swift')):
+        native_source.update(str(file.relative_to(root)).encode())
+        native_source.update(file.read_bytes())
+    build_source = {'device': args.device, 'test': args.test,
+                    'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
+                    'dart_source_sha256': source.hexdigest(), 'native_swift_sha256': native_source.hexdigest()}
+    (out / 'build-source.json').write_text(json.dumps(build_source, indent=2))
+
     command = ['flutter', 'test', 'integration_test/' + args.test, '-d', args.device,
                '--no-pub', '--dart-define=CAPTURE_PHONE_UI=true', '--reporter', 'expanded']
     if args.reference:
@@ -44,6 +53,24 @@ def main():
                 log.write(line)
                 log.flush()
                 print(line, end='', flush=True)
+                native = re.search(r'PHONE_NATIVE:([A-Za-z]+):(.+)', line)
+                if native:
+                    action, marker = native.group(1), Path(native.group(2).strip())
+                    result = out / ('native-' + action + '.xcresult')
+                    with (out / ('native-' + action + '.log')).open('w') as native_log:
+                        subprocess.run(['ruby', str(root / 'tool/ios_ui_tests/run.rb'), args.device, str(result),
+                                        'IntegrationNativePresentationTests/test' + action],
+                                       stdout=native_log, stderr=subprocess.STDOUT, check=True, timeout=210)
+                    attachment_dir = out / ('native-' + action)
+                    subprocess.run(['xcrun', 'xcresulttool', 'export', 'attachments', '--path', str(result),
+                                    '--output-path', str(attachment_dir)], check=True, capture_output=True, timeout=30)
+                    summary = subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary',
+                                                       '--path', str(result), '--format', 'json'], text=True)
+                    (out / ('native-' + action + '-summary.json')).write_text(summary)
+                    if json.loads(summary)['result'] != 'Passed':
+                        raise RuntimeError('Native UI test failed: ' + action)
+                    marker.write_text('native-done:' + action)
+                    continue
                 match = re.search(r'PHONE_SHOT:([\w-]+):(.+)', line)
                 if not match:
                     continue

@@ -72,6 +72,10 @@ void main() {
       );
       showSettings(tester.element(find.byType(MMWindowScaffold)));
       await tester.pumpAndSettle();
+      if (size.width < 600) {
+        await tester.tap(find.byKey(const ValueKey('settings-tab-general')));
+        await tester.pumpAndSettle();
+      }
       final toggle = find.byKey(const ValueKey('settings-show-system-status-bar'));
       expect(toggle, mobile ? findsOneWidget : findsNothing);
       if (mobile) {

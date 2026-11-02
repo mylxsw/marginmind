@@ -64,7 +64,7 @@ abstract final class MMNativePresentation {
     }
   }
 
-  static Future<String?> list({
+  static Future<Map<String, String>?> list({
     required String title,
     required String close,
     required String manage,
@@ -77,7 +77,7 @@ abstract final class MMNativePresentation {
     final id = '${++_sequence}';
     if (preview != null) _previews[id] = preview;
     try {
-      return await _channel.invokeMethod<String>('list', {
+      return await _channel.invokeMapMethod<String, String>('list', {
         'id': id,
         'title': title,
         'close': close,
@@ -91,6 +91,9 @@ abstract final class MMNativePresentation {
       _previews.remove(id);
     }
   }
+
+  static Future<int?> pickColor({required int value, required bool dark}) =>
+      _channel.invokeMethod<int>('color', {'value': value, 'dark': dark});
 
   static Future<String?> confirm({
     required String title,
@@ -143,7 +146,12 @@ class MMNativeListSection {
   final String id, title;
   final String? empty;
   final List<MMNativeListRow> rows;
-  Map<String, Object> toMap() => {'id': id, 'title': title, 'rows': rows.map((row) => row.toMap()).toList()};
+  Map<String, Object> toMap() => {
+    'id': id,
+    'title': title,
+    'rows': rows.map((row) => row.toMap()).toList(),
+    'empty': ?empty,
+  };
 }
 
 class MMNativeListRow {

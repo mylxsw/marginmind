@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+
+import 'package:mm_book/mm_book.dart';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
@@ -1401,21 +1404,28 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
 
   Future<bool> _nativeNavigation(ReflowSession s) async {
     final book = s.book!, l = context.l10n;
+    final previewStyle = ref.read(settingsProvider).readerStyle;
     final actions = <String, Future<void> Function()>{};
     final chapterIds = book.chapters.map((chapter) => chapter.id).toList();
     final state = ref.read(workspaceProvider(widget.studySetId));
     final outline = <MMNativeListRow>[];
-    for (final (index, entry) in book.outline.indexed) {
-      final id = 'outline-$index';
-      outline.add(
-        MMNativeListRow(
-          id,
-          entry.title,
-          selected: entry.chapterId == s.position?.chapterId && entry.title == book.title(s.position!),
-        ),
-      );
-      actions[id] = () => _jump(book.position(entry.chapterId, entry.offset));
+    void addOutline(List<BookTocEntry> entries, int depth) {
+      for (final entry in entries) {
+        final id = 'outline-${outline.length}';
+        outline.add(
+          MMNativeListRow(
+            id,
+            entry.title,
+            depth: depth,
+            selected: entry.chapterId == s.position?.chapterId && entry.title == book.title(s.position!),
+          ),
+        );
+        actions[id] = () => _jump(book.position(entry.chapterId, entry.offset));
+        addOutline(entry.children, depth + 1);
+      }
     }
+
+    addOutline(book.toc, 0);
     final bookmarks = <MMNativeListRow>[];
     for (final entry in workspace.content.bookmarksOn(widget.document.id, chapters: chapterIds)) {
       if (entry.position case final TextReadingPosition position) {
@@ -1475,10 +1485,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         }
       };
     }
-    final result = await MMNativePresentation.list(
+    final selection = await MMNativePresentation.list(
       title: widget.document.title,
       close: l.closePanel,
-      manage: l.moreTools,
+      manage: l.phoneManageNavigation,
       empty: l.noAnnotations,
       dark: Theme.of(context).brightness == Brightness.dark,
       selectedSection: state.readerPanelMode.name,
@@ -1489,15 +1499,63 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
               MMNativeListRow(
                 'chapter-${chapter.id}',
                 l.pageNumber(index + 1),
+                preview: true,
                 selected: chapter.id == s.position?.chapterId,
               ),
           ]),
-        MMNativeListSection('outline', l.readerOutline, outline, empty: l.noOutlineEntries),
+        MMNativeListSection('outline', l.readerOutline, outline, empty: l.phoneOutlineEmpty),
         MMNativeListSection('bookmarks', l.readerBookmarks, bookmarks, empty: l.noBookmarks),
         MMNativeListSection('annotations', l.readerAnnotations, annotations),
       ],
+      preview: (id) async {
+        if (!id.startsWith('chapter-')) return null;
+        final preview = ReflowSession(
+          () async => book,
+          onPosition: (_) {},
+          maxImagePixels: (MMReaderLayout.thumbnailWidth * MMReaderLayout.thumbnailHeight * 4).ceil(),
+        );
+        ui.Picture? picture;
+        ui.Image? image;
+        try {
+          await preview.initialize();
+          await preview.jump(book.position(id.substring(8), 0), remember: false);
+          await preview.configure(
+            LayoutSpec(
+              width: MMReaderLayout.thumbnailWidth,
+              pageHeight: MMReaderLayout.thumbnailHeight,
+              padding: EdgeInsets.zero,
+              readerStyle: previewStyle,
+            ),
+          );
+          final layout = preview.layout;
+          if (layout == null || layout.isDisposed) return null;
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder)..scale(2);
+          canvas.drawRect(
+            const Rect.fromLTWH(0, 0, MMReaderLayout.thumbnailWidth, MMReaderLayout.thumbnailHeight),
+            Paint()..color = previewStyle.paperColor,
+          );
+          layout.paint(canvas, page: 0);
+          picture = recorder.endRecording();
+          image = await picture.toImage(
+            (MMReaderLayout.thumbnailWidth * 2).round(),
+            (MMReaderLayout.thumbnailHeight * 2).round(),
+          );
+          final data = await image.toByteData(format: ui.ImageByteFormat.png);
+          return data?.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+        } finally {
+          image?.dispose();
+          picture?.dispose();
+          preview.dispose();
+        }
+      },
     );
     if (!mounted) return false;
+    if (selection?['section'] case final section?) {
+      final mode = ReaderPanelMode.values.where((mode) => mode.name == section).firstOrNull;
+      if (mode != null) workspace.setReaderPanelMode(mode);
+    }
+    final result = selection?['id'];
     if (result == '__manage__') return true;
     if (result != null && result.startsWith('chapter-')) {
       await _jump(book.position(result.substring(8), 0));

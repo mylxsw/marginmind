@@ -204,23 +204,25 @@ Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetB
   final navigator = Navigator.of(context, rootNavigator: true);
   if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS) {
     final captured = InheritedTheme.capture(from: context, to: navigator.context);
-    return navigator.push<T>(
-      CupertinoSheetRoute<T>(
-        showDragHandle: true,
-        scrollableBuilder: (context, scroll) => captured.wrap(
-          Material(
-            color: c.windowBackground,
-            child: SafeArea(
-              top: true,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-                child: MediaQuery.removeViewInsets(
-                  context: context,
-                  removeBottom: true,
-                  child: PrimaryScrollController(
-                    controller: scroll,
-                    child: _SheetScope(child: Builder(builder: builder)),
-                  ),
+    late final _MMCupertinoSheetRoute<T> route;
+    route = _MMCupertinoSheetRoute<T>(
+      showDragHandle: true,
+      reduceMotion: MMAppearance.reduceMotionOf(context),
+      scrollableBuilder: (context, scroll) => captured.wrap(
+        Material(
+          key: const ValueKey('mm-bottom-sheet'),
+          color: c.windowBackground,
+          child: SafeArea(
+            top: true,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+              child: MediaQuery.removeViewInsets(
+                context: context,
+                removeBottom: true,
+                child: _GuardedSheetScroll(
+                  blocked: route.blocked,
+                  sheetController: scroll,
+                  child: _SheetScope(child: Builder(builder: builder)),
                 ),
               ),
             ),
@@ -228,6 +230,7 @@ Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetB
         ),
       ),
     );
+    return navigator.push<T>(route);
   }
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
@@ -255,5 +258,80 @@ Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetB
         child: child,
       );
     },
+  );
+}
+
+/// CupertinoSheetRoute's direct drag-pop bypasses maybePop. Read the live
+/// disposition before beginning a drag so PopScope-protected forms stay open.
+class _MMCupertinoSheetRoute<T> extends CupertinoSheetRoute<T> {
+  _MMCupertinoSheetRoute({required super.scrollableBuilder, super.showDragHandle, required this.reduceMotion});
+  final bool reduceMotion;
+  @override
+  Duration get transitionDuration => reduceMotion ? Duration.zero : super.transitionDuration;
+  @override
+  Duration get reverseTransitionDuration => reduceMotion ? Duration.zero : super.reverseTransitionDuration;
+  final blocked = ValueNotifier(false);
+  bool _disposed = false;
+  bool _scheduled = false;
+  @override
+  bool get enableDrag => super.enableDrag && popDisposition != RoutePopDisposition.doNotPop;
+  @override
+  void registerPopEntry(PopEntry<Object?> popEntry) {
+    super.registerPopEntry(popEntry);
+    popEntry.canPopNotifier.addListener(_guardChanged);
+    _guardChanged();
+  }
+
+  @override
+  void unregisterPopEntry(PopEntry<Object?> popEntry) {
+    popEntry.canPopNotifier.removeListener(_guardChanged);
+    super.unregisterPopEntry(popEntry);
+    _guardChanged();
+  }
+
+  void _guardChanged() {
+    if (_disposed || _scheduled) return;
+    _scheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduled = false;
+      if (_disposed) return;
+      blocked.value = popDisposition == RoutePopDisposition.doNotPop;
+      changedInternalState();
+    });
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    blocked.dispose();
+    super.dispose();
+  }
+}
+
+/// The SDK's sheet scroll position also pops directly, independently of the
+/// route's enableDrag. Use a regular scroll position while a form blocks pop.
+class _GuardedSheetScroll extends StatefulWidget {
+  const _GuardedSheetScroll({required this.blocked, required this.sheetController, required this.child});
+  final ValueListenable<bool> blocked;
+  final ScrollController sheetController;
+  final Widget child;
+  @override
+  State<_GuardedSheetScroll> createState() => _GuardedSheetScrollState();
+}
+
+class _GuardedSheetScrollState extends State<_GuardedSheetScroll> {
+  final _regular = ScrollController();
+  @override
+  void dispose() {
+    _regular.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+    valueListenable: widget.blocked,
+    child: widget.child,
+    builder: (_, blocked, child) =>
+        PrimaryScrollController(controller: blocked ? _regular : widget.sheetController, child: child!),
   );
 }

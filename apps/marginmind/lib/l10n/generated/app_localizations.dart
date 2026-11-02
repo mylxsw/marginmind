@@ -10987,6 +10987,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose Documents…'**
   String get newStudySetChooseDocuments;
+
+  /// No description provided for @phoneDiscardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved changes?'**
+  String get phoneDiscardChangesTitle;
+
+  /// No description provided for @phoneDiscardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard Changes'**
+  String get phoneDiscardChanges;
+
+  /// No description provided for @phoneKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Editing'**
+  String get phoneKeepEditing;
+
+  /// No description provided for @phoneOutlineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No outline yet'**
+  String get phoneOutlineEmpty;
+
+  /// No description provided for @phoneManageNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get phoneManageNavigation;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

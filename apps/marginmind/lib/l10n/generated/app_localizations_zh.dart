@@ -5987,4 +5987,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get newStudySetChooseDocuments => '选择文档…';
+
+  @override
+  String get phoneDiscardChangesTitle => '放弃未保存的更改？';
+
+  @override
+  String get phoneDiscardChanges => '放弃更改';
+
+  @override
+  String get phoneKeepEditing => '继续编辑';
+
+  @override
+  String get phoneOutlineEmpty => '暂无目录';
+
+  @override
+  String get phoneManageNavigation => '管理';
 }

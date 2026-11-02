@@ -63,3 +63,4 @@ export 'src/tokens/phone_glass.dart';
 export 'src/tokens/phone_navigation.dart';
 export 'src/widgets/phone_navigation.dart';
 export 'src/foundation/native_presentation.dart';
+export 'src/widgets/native_glass.dart' show MMNativeGlassScope;

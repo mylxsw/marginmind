@@ -5,6 +5,7 @@ import UIKit
 /// No additional Flutter engine, repository, or assistant request owner.
 final class NativePresentation {
   private let channel: FlutterMethodChannel
+  private var activeColor: NativeColorDelegate?
   private var activeList: NativeListController?
   private var activeForm: NativeFormController?
 
@@ -28,6 +29,19 @@ final class NativePresentation {
       result(FlutterError(code: "unavailable", message: "No active iPhone window", details: nil)); return
     }
     switch call.method {
+    case "color":
+      guard activeColor == nil else { result(FlutterError(code: "busy", message: nil, details: nil)); return }
+      let picker = UIColorPickerViewController()
+      picker.view.accessibilityIdentifier = "native-color-picker"
+      picker.supportsAlpha = false
+      let raw = args["value"] as? Int ?? 0xFFFFFFFF
+      picker.selectedColor = UIColor(red: CGFloat((raw >> 16) & 255) / 255,
+        green: CGFloat((raw >> 8) & 255) / 255, blue: CGFloat(raw & 255) / 255, alpha: 1)
+      if let dark = args["dark"] as? Bool { picker.overrideUserInterfaceStyle = dark ? .dark : .light }
+      let delegate = NativeColorDelegate { [weak self] value in self?.activeColor = nil; result(value) }
+      activeColor = delegate
+      picker.delegate = delegate
+      presenter.present(picker, animated: true) { picker.presentationController?.delegate = delegate }
     case "list":
       guard activeList == nil && activeForm == nil else {
         result(FlutterError(code: "busy", message: "A panel is already open", details: nil)); return
@@ -250,9 +264,14 @@ private final class NativeGlass: NSObject, FlutterPlatformView {
     material.frame = frame
     material.isUserInteractionEnabled = false
     material.overrideUserInterfaceStyle = args["dark"] as? Bool == true ? .dark : .light
-    material.layer.cornerRadius = CGFloat(args["radius"] as? Double ?? 22)
-    material.layer.cornerCurve = .continuous
-    material.clipsToBounds = true
+    let radius = CGFloat(args["radius"] as? Double ?? 22)
+    if #available(iOS 26.0, *) {
+      material.cornerConfiguration = .capsule(maximumRadius: radius)
+    } else {
+      material.layer.cornerRadius = radius
+      material.layer.cornerCurve = .continuous
+      material.clipsToBounds = true
+    }
     material.accessibilityElementsHidden = true
   }
   func view() -> UIView { material }
@@ -264,13 +283,13 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
   private let channel: FlutterMethodChannel
   private let sections: [[String: Any]]
   private var section = 0
-  private var completion: ((String?) -> Void)?
-  private var images: [String: UIImage] = [:]
+  private var completion: (([String: String]?) -> Void)?
+  private let images = NSCache<NSString, UIImage>()
   private var requested = Set<String>()
   private let sectionButton = UIButton(type: .system)
   private var rows: [[String: Any]] { sections.indices.contains(section) ? sections[section]["rows"] as? [[String: Any]] ?? [] : [] }
 
-  init(args: [String: Any], channel: FlutterMethodChannel, completion: @escaping (String?) -> Void) {
+  init(args: [String: Any], channel: FlutterMethodChannel, completion: @escaping ([String: String]?) -> Void) {
     self.args = args
     self.channel = channel
     self.sections = args["sections"] as? [[String: Any]] ?? []
@@ -285,6 +304,9 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
     view.backgroundColor = .clear
     tableView.backgroundColor = .clear
     tableView.keyboardDismissMode = .interactive
+    tableView.estimatedRowHeight = 60
+    tableView.rowHeight = UITableView.automaticDimension
+    images.countLimit = 48
     navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(close))
     navigationItem.rightBarButtonItem = UIBarButtonItem(title: args["manage"] as? String, style: .plain, target: self, action: #selector(manage))
     sectionButton.showsMenuAsPrimaryAction = true
@@ -295,7 +317,12 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
   }
   private func updateSection() {
     guard !sections.isEmpty else { return }
-    sectionButton.setTitle((sections[section]["title"] as? String ?? "") + " ▾", for: .normal)
+    var configuration = UIButton.Configuration.plain()
+    configuration.title = sections[section]["title"] as? String ?? ""
+    configuration.image = UIImage(systemName: "chevron.down")
+    configuration.imagePlacement = .trailing
+    configuration.imagePadding = 5
+    sectionButton.configuration = configuration
     sectionButton.menu = UIMenu(children: sections.enumerated().map { index, item in
       UIAction(title: item["title"] as? String ?? "", state: index == section ? .on : .off) { [weak self] _ in
         self?.section = index
@@ -333,13 +360,22 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
     cell.isUserInteractionEnabled = item["enabled"] as? Bool != false
     if !cell.isUserInteractionEnabled { cell.textLabel?.textColor = .secondaryLabel }
     if item["preview"] as? Bool == true {
-      cell.imageView?.image = images[id] ?? UIImage(systemName: "doc")
+      cell.imageView?.image = images.object(forKey: id as NSString) ?? UIImage(systemName: "doc")
       cell.imageView?.contentMode = .scaleAspectFit
-      if requested.insert(id).inserted {
+      if images.object(forKey: id as NSString) == nil && requested.insert(id).inserted {
         channel.invokeMethod("preview", arguments: ["id": args["id"] ?? "", "row": id]) { [weak self] reply in
           guard let self = self, self.completion != nil, let data = reply as? FlutterStandardTypedData,
             let image = UIImage(data: data.data) else { return }
-          self.images[id] = image
+          self.requested.remove(id)
+          let size = CGSize(width: 72, height: 100)
+          let scaled = UIGraphicsImageRenderer(size: size).image { _ in
+            let scale = min(size.width / image.size.width, size.height / image.size.height)
+            let rect = CGRect(x: (size.width - image.size.width * scale) / 2,
+              y: (size.height - image.size.height * scale) / 2,
+              width: image.size.width * scale, height: image.size.height * scale)
+            image.draw(in: rect)
+          }
+          self.images.setObject(scaled, forKey: id as NSString)
           // A response can arrive after switching categories. Find by stable id.
           if let row = self.rows.firstIndex(where: { $0["id"] as? String == id }) {
             self.tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .none)
@@ -349,6 +385,9 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
     }
     return cell
   }
+  override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+    rows[indexPath.row]["preview"] as? Bool == true ? 128 : UITableView.automaticDimension
+  }
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     finish(rows[indexPath.row]["id"] as? String)
   }
@@ -357,11 +396,25 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
   private func finish(_ selected: String?) {
     guard let complete = completion else { return }
     completion = nil
-    dismiss(animated: true) { complete(selected) }
+    dismiss(animated: true) { complete(["section": self.sections[self.section]["id"] as? String ?? "", "id": selected ?? "__close__"]) }
   }
   func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
     let complete = completion
     completion = nil
-    complete?(nil)
+    complete?(["section": sections[section]["id"] as? String ?? "", "id": "__close__"])
   }
+}
+
+private final class NativeColorDelegate: NSObject, UIColorPickerViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
+  private var completion: ((Int?) -> Void)?
+  private var selected: Int?
+  init(completion: @escaping (Int?) -> Void) { self.completion = completion }
+  func colorPickerViewControllerDidSelectColor(_ viewController: UIColorPickerViewController) {
+    var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+    guard viewController.selectedColor.getRed(&r, green: &g, blue: &b, alpha: &a) else { return }
+    selected = 0xFF000000 | (Int((r * 255).rounded()) << 16) | (Int((g * 255).rounded()) << 8) | Int((b * 255).rounded())
+  }
+  func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) { finish() }
+  func presentationControllerDidDismiss(_ presentationController: UIPresentationController) { finish() }
+  private func finish() { let complete = completion; completion = nil; complete?(selected) }
 }

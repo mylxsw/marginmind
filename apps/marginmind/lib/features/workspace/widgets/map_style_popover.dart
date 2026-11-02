@@ -141,8 +141,13 @@ class _MapStylePopoverState extends State<MapStylePopover> {
     widget.onPreview(null);
     widget.onCustomOpenChanged?.call(true);
     try {
-      final anchor = boundsOf(_customAnchor.currentContext!);
       final colors = mapCanvasColors(context.mmColors, widget.backgroundColor);
+      if (MMInput.of(context).phone) {
+        final picked = await showPhoneCustomColor(context, MMAnnotationColor.fromColor(colors.canvas));
+        if (mounted && picked != null) widget.onBackgroundColor?.call(picked.color.toARGB32());
+        return;
+      }
+      final anchor = boundsOf(_customAnchor.currentContext!);
       final picked = await showGeneralDialog<MMAnnotationColor>(
         context: context,
         barrierColor: Colors.transparent,
@@ -185,105 +190,108 @@ class _MapStylePopoverState extends State<MapStylePopover> {
     final l = context.l10n;
     final c = context.mmColors;
     final canvasColors = mapCanvasColors(c, widget.backgroundColor);
-    return MouseRegion(
-      onExit: (_) => widget.onPreview(null),
-      child: MMGlass(
-        key: const ValueKey('map-style-popover'),
-        borderRadius: BorderRadius.circular(MMRadii.dropdown),
-        padding: const EdgeInsets.all(MMSpacing.m),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            MMSegmentedControl<MapDensity>(
-              key: const ValueKey('map-density'),
-              value: widget.density,
-              expand: true,
-              onChanged: widget.onDensity,
-              segments: [
-                MMSegment(value: MapDensity.compact, label: l.densityCompact),
-                MMSegment(value: MapDensity.full, label: l.densityFull),
-              ],
-            ),
-            const SizedBox(height: MMSpacing.m),
-            _Grid(
-              columns: 4,
-              children: [
-                for (final s in MapStructure.values)
-                  _Thumb(
-                    key: ValueKey('map-structure-${s.name}'),
-                    label: l.mapStructureName(s),
-                    height: MMSizes.mapStructureThumbHeight,
-                    selected: s == widget.structure,
-                    onHover: () => widget.onPreview((s, widget.palette)),
-                    onTap: () => widget.onStructure(s),
-                    child: CustomPaint(painter: StructureThumbPainter(s, c.secondaryLabel)),
-                  ),
-              ],
-            ),
-            const SizedBox(height: MMSpacing.l),
-            _Grid(
-              columns: 3,
-              children: [
-                for (final p in MapPalette.values)
-                  _Thumb(
-                    key: ValueKey('map-palette-${p.name}'),
-                    label: l.mapPaletteName(p),
-                    height: MMSizes.mapPaletteThumbHeight,
-                    selected: p == widget.palette,
-                    onHover: () => widget.onPreview((widget.structure, p)),
-                    onTap: () => widget.onPalette(p),
-                    child: CustomPaint(
-                      painter: PaletteThumbPainter(mapPaletteOf(p).of(canvasColors.brightness), canvasColors),
-                    ),
-                  ),
-              ],
-            ),
-            if (widget.onBackgroundColor != null) ...[
-              const SizedBox(height: MMSpacing.l),
-              Text(l.mapBackground, style: context.mmText.headline),
-              const SizedBox(height: MMSpacing.s),
-              _Grid(
-                columns: 5,
-                children: [
-                  for (final (value, label) in <(int?, String)>[
-                    (null, l.mapBackgroundTheme),
-                    (0xFF000000, l.mapBackgroundBlack),
-                    (0xFF242424, l.mapBackgroundCharcoal),
-                    (0xFF808080, l.mapBackgroundGray),
-                    (0xFFF0F0F0, l.mapBackgroundLightGray),
-                    (0xFFFFFFFF, l.mapBackgroundWhite),
-                    (0xFFFAF6ED, l.mapBackgroundIvory),
-                    (0xFFEEF4EE, l.mapBackgroundSage),
-                    (0xFFEDF3FA, l.mapBackgroundBlue),
-                  ])
-                    if (value == null)
-                      MMToolbarButton(
-                        key: const ValueKey('map-background-theme'),
-                        icon: Icons.brightness_auto,
-                        tooltip: label,
-                        selected: widget.backgroundColor == null,
-                        onPressed: () => widget.onBackgroundColor!(null),
-                      )
-                    else
-                      MMFloatingToolbarSwatch(
-                        key: ValueKey('map-background-$value'),
-                        color: Color(value),
-                        tooltip: label,
-                        selected: widget.backgroundColor == value,
-                        onPressed: () {
-                          widget.onPreview(null);
-                          widget.onBackgroundColor!(value);
-                        },
-                      ),
-                  KeyedSubtree(
-                    key: _customAnchor,
-                    child: AnnotationMoreColorsButton(key: const ValueKey('map-background-custom'), onPressed: _more),
-                  ),
+    return MMFlatSurface(
+      enabled: MMInput.of(context).phone || MMFlatSurface.of(context),
+      child: MouseRegion(
+        onExit: (_) => widget.onPreview(null),
+        child: MMGlass(
+          key: const ValueKey('map-style-popover'),
+          borderRadius: BorderRadius.circular(MMRadii.dropdown),
+          padding: const EdgeInsets.all(MMSpacing.m),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              MMSegmentedControl<MapDensity>(
+                key: const ValueKey('map-density'),
+                value: widget.density,
+                expand: true,
+                onChanged: widget.onDensity,
+                segments: [
+                  MMSegment(value: MapDensity.compact, label: l.densityCompact),
+                  MMSegment(value: MapDensity.full, label: l.densityFull),
                 ],
               ),
+              const SizedBox(height: MMSpacing.m),
+              _Grid(
+                columns: 4,
+                children: [
+                  for (final s in MapStructure.values)
+                    _Thumb(
+                      key: ValueKey('map-structure-${s.name}'),
+                      label: l.mapStructureName(s),
+                      height: MMSizes.mapStructureThumbHeight,
+                      selected: s == widget.structure,
+                      onHover: () => widget.onPreview((s, widget.palette)),
+                      onTap: () => widget.onStructure(s),
+                      child: CustomPaint(painter: StructureThumbPainter(s, c.secondaryLabel)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: MMSpacing.l),
+              _Grid(
+                columns: 3,
+                children: [
+                  for (final p in MapPalette.values)
+                    _Thumb(
+                      key: ValueKey('map-palette-${p.name}'),
+                      label: l.mapPaletteName(p),
+                      height: MMSizes.mapPaletteThumbHeight,
+                      selected: p == widget.palette,
+                      onHover: () => widget.onPreview((widget.structure, p)),
+                      onTap: () => widget.onPalette(p),
+                      child: CustomPaint(
+                        painter: PaletteThumbPainter(mapPaletteOf(p).of(canvasColors.brightness), canvasColors),
+                      ),
+                    ),
+                ],
+              ),
+              if (widget.onBackgroundColor != null) ...[
+                const SizedBox(height: MMSpacing.l),
+                Text(l.mapBackground, style: context.mmText.headline),
+                const SizedBox(height: MMSpacing.s),
+                _Grid(
+                  columns: 5,
+                  children: [
+                    for (final (value, label) in <(int?, String)>[
+                      (null, l.mapBackgroundTheme),
+                      (0xFF000000, l.mapBackgroundBlack),
+                      (0xFF242424, l.mapBackgroundCharcoal),
+                      (0xFF808080, l.mapBackgroundGray),
+                      (0xFFF0F0F0, l.mapBackgroundLightGray),
+                      (0xFFFFFFFF, l.mapBackgroundWhite),
+                      (0xFFFAF6ED, l.mapBackgroundIvory),
+                      (0xFFEEF4EE, l.mapBackgroundSage),
+                      (0xFFEDF3FA, l.mapBackgroundBlue),
+                    ])
+                      if (value == null)
+                        MMToolbarButton(
+                          key: const ValueKey('map-background-theme'),
+                          icon: Icons.brightness_auto,
+                          tooltip: label,
+                          selected: widget.backgroundColor == null,
+                          onPressed: () => widget.onBackgroundColor!(null),
+                        )
+                      else
+                        MMFloatingToolbarSwatch(
+                          key: ValueKey('map-background-$value'),
+                          color: Color(value),
+                          tooltip: label,
+                          selected: widget.backgroundColor == value,
+                          onPressed: () {
+                            widget.onPreview(null);
+                            widget.onBackgroundColor!(value);
+                          },
+                        ),
+                    KeyedSubtree(
+                      key: _customAnchor,
+                      child: AnnotationMoreColorsButton(key: const ValueKey('map-background-custom'), onPressed: _more),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

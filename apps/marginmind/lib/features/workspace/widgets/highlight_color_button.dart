@@ -67,6 +67,11 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
     widget.onOpenChanged?.call(true);
     try {
       unawaited(_openTool());
+      if (widget.moreOnly && MMInput.of(context).phone) {
+        final picked = await showPhoneCustomColor(context, widget.color);
+        if (mounted && picked != null) await onChanged(picked);
+        return;
+      }
       final picked = await showGeneralDialog<MMAnnotationColor>(
         context: context,
         barrierColor: Colors.transparent,
@@ -129,6 +134,14 @@ class _HighlightColors extends ConsumerStatefulWidget {
 
 class _HighlightColorsState extends ConsumerState<_HighlightColors> {
   late bool _more = widget.moreOnly;
+  Future<void> _custom() async {
+    if (!MMInput.of(context).phone) {
+      setState(() => _more = true);
+      return;
+    }
+    final picked = await showPhoneCustomColor(context, widget.current);
+    if (mounted && picked != null) Navigator.of(context).pop(picked);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +174,7 @@ class _HighlightColorsState extends ConsumerState<_HighlightColors> {
                           selected: !widget.mixed && color == widget.current,
                           onPressed: () => Navigator.of(context).pop(color),
                         ),
-                      AnnotationMoreColorsButton(onPressed: () => setState(() => _more = true)),
+                      AnnotationMoreColorsButton(onPressed: _custom),
                     ],
                   ),
                 ),

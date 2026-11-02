@@ -218,6 +218,21 @@ void main() {
     });
   }
 
+  testWidgets('phone library navigation fills the screen and selecting the current filter closes it', (tester) async {
+    await pumpApp(
+      tester,
+      size: const Size(393, 852),
+      overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+    );
+    await tester.tap(find.byTooltip('Show Sidebar'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(MMSidebar).hitTestable()).width, 393);
+    await tester.tap(find.text('All Study Sets').hitTestable().first);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('library-navigation-close')).hitTestable(), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('drawer search, settings and return to library', (tester) async {
     final container = await pumpApp(
       tester,
@@ -254,22 +269,22 @@ void main() {
     (false, false, const Size(1280, 820)),
     (true, true, const Size(852, 393)),
   ]) {
-    testWidgets('legacy navigation preserved phone=${device.$1} touch=${device.$2} size=${device.$3}', (tester) async {
+    testWidgets('navigation follows device phone=${device.$1} touch=${device.$2} size=${device.$3}', (tester) async {
       final container = await pumpApp(
         tester,
         size: device.$3,
         overrides: [touchPlatformProvider.overrideWithValue(device.$2), phoneProvider.overrideWithValue(device.$1)],
       );
-      expect(find.byType(MMLiquidGlass), findsNothing);
-      expect(find.textContaining('docs'), findsWidgets);
+      expect(find.byType(MMLiquidGlass), device.$1 ? findsNWidgets(2) : findsNothing);
+      expect(find.textContaining('docs'), device.$1 ? findsNothing : findsWidgets);
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
       expect(find.byType(MMPhoneDrawer), device.$1 ? findsOneWidget : findsNothing);
       expect(find.byType(MMSidebar), device.$1 ? findsNothing : findsOneWidget);
       container.read(navigationProvider.notifier).startReview('demo-1');
       await tester.pumpAndSettle();
-      expect(find.byType(MMPhoneReviewProgress), findsNothing);
-      expect(find.textContaining('left'), findsOneWidget);
+      expect(find.byType(MMPhoneReviewProgress), device.$1 ? findsOneWidget : findsNothing);
+      expect(find.textContaining('left'), device.$1 ? findsNothing : findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

@@ -92,7 +92,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final now = ref.watch(clockProvider)();
     final visible = view.query.apply(sets);
     final dueTotal = sets.fold<int>(0, (n, s) => n + s.dueCount);
-    final isPhoneCompact = MMInput.of(context).phone && sizeClass == MMSizeClass.compact;
+    final isPhoneCompact = MMInput.of(context).phone;
 
     // An empty library or result says so in the body; no "No study sets".
     // On phone compact, remove subtitle per copywriting principles.
@@ -114,171 +114,185 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         _setDrawer(false);
         return true;
       },
-      child: MMWindowScaffold(
-        extendBody: true,
-        sidebarVisible: touchPlatform ? _drawer : view.sidebarVisible,
-        sidebarOverlay: touchPlatform,
-        onSidebarDismiss: () => _setDrawer(false),
-        onDragStart: WindowChrome.onDragStart,
-        onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
-        showsWindowButtons: WindowChrome.showsWindowButtons,
-        sidebar: _LibrarySidebar(sets: sets, folders: folders, filter: view.query.filter),
-        toolbar: isPhoneCompact
-            ? MMToolbar.content(
-                semanticLabel: l.librarySection,
-                height: MMSizes.toolbarHeight,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
-                  child: Row(
-                    children: [
-                      SizedBox.square(
-                        dimension: MMSizes.phoneTopControl,
-                        child: MMFlatSurface(
-                          enabled: false,
-                          child: MMLiquidGlass(
-                            phoneStyle: MMPhoneGlass.regular,
-                            borderRadius: BorderRadius.circular(MMSizes.phoneTopControl / 2),
-                            child: MMIconButton(
-                              icon: MMIcons.sidebar,
-                              tooltip: l.showSidebar,
-                              onPressed: () => _setDrawer(true),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      SizedBox.square(
-                        dimension: MMSizes.phoneTopControl,
-                        child: MMFlatSurface(
-                          enabled: false,
-                          child: MMLiquidGlass(
-                            phoneStyle: MMPhoneGlass.regular,
-                            borderRadius: BorderRadius.circular(MMSizes.phoneTopControl / 2),
-                            child: MMIconButton(
-                              icon: MMIcons.add,
-                              tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
-                              onPressed: () => showNewStudySet(context, ref),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : MMToolbar(
-                title: _filterTitle(view.query.filter, folders),
-                subtitle: subtitle,
-                leading: view.sidebarVisible && !touchPlatform
-                    ? null
-                    : MMIconButton(
-                        icon: MMIcons.sidebar,
-                        tooltip: l.showSidebar,
-                        size: context.mmToolbarIcon,
-                        onPressed: touchPlatform ? () => _setDrawer(true) : controller.toggleSidebar,
-                      ),
-                actions: [
-                  if (sizeClass != MMSizeClass.compact) ...[
-                    MMToolbarGroup(
+      child: MMNativeGlassScope(
+        enabled: !_drawer,
+        child: MMWindowScaffold(
+          extendBody: true,
+          sidebarWidth: MMInput.of(context).phone
+              ? MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).left
+              : MMSizes.sidebarWidth,
+          sidebarVisible: touchPlatform ? _drawer : view.sidebarVisible,
+          sidebarOverlay: touchPlatform,
+          onSidebarDismiss: () => _setDrawer(false),
+          onDragStart: WindowChrome.onDragStart,
+          onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
+          showsWindowButtons: WindowChrome.showsWindowButtons,
+          sidebar: MMFlatSurface(
+            enabled: MMInput.of(context).phone || MMFlatSurface.of(context),
+            child: _LibrarySidebar(
+              sets: sets,
+              folders: folders,
+              filter: view.query.filter,
+              onDismiss: MMInput.of(context).phone ? () => _setDrawer(false) : null,
+            ),
+          ),
+          toolbar: isPhoneCompact
+              ? MMToolbar.content(
+                  semanticLabel: l.librarySection,
+                  height: MMSizes.toolbarHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
+                    child: Row(
                       children: [
-                        MMToolbarButton(
-                          icon: MMIcons.grid,
-                          tooltip: AppShortcuts.tip(l.viewAsIcons, AppShortcuts.view1),
-                          selected: view.viewMode == LibraryViewMode.grid,
-                          onPressed: () => controller.setViewMode(LibraryViewMode.grid),
+                        SizedBox.square(
+                          dimension: MMSizes.phoneTopControl,
+                          child: MMFlatSurface(
+                            enabled: false,
+                            child: MMLiquidGlass(
+                              phoneStyle: MMPhoneGlass.regular,
+                              borderRadius: BorderRadius.circular(MMSizes.phoneTopControl / 2),
+                              child: MMIconButton(
+                                icon: MMIcons.sidebar,
+                                tooltip: l.showSidebar,
+                                onPressed: () => _setDrawer(true),
+                              ),
+                            ),
+                          ),
                         ),
-                        MMToolbarButton(
-                          icon: MMIcons.list,
-                          tooltip: AppShortcuts.tip(l.viewAsList, AppShortcuts.view2),
-                          selected: view.viewMode == LibraryViewMode.list,
-                          onPressed: () => controller.setViewMode(LibraryViewMode.list),
+                        const Spacer(),
+                        SizedBox.square(
+                          dimension: MMSizes.phoneTopControl,
+                          child: MMFlatSurface(
+                            enabled: false,
+                            child: MMLiquidGlass(
+                              phoneStyle: MMPhoneGlass.regular,
+                              borderRadius: BorderRadius.circular(MMSizes.phoneTopControl / 2),
+                              child: MMIconButton(
+                                icon: MMIcons.add,
+                                tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
+                                onPressed: () => showNewStudySet(context, ref),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
+                  ),
+                )
+              : MMToolbar(
+                  title: _filterTitle(view.query.filter, folders),
+                  subtitle: subtitle,
+                  leading: view.sidebarVisible && !touchPlatform
+                      ? null
+                      : MMIconButton(
+                          icon: MMIcons.sidebar,
+                          tooltip: l.showSidebar,
+                          size: context.mmToolbarIcon,
+                          onPressed: touchPlatform ? () => _setDrawer(true) : controller.toggleSidebar,
+                        ),
+                  actions: [
+                    if (sizeClass != MMSizeClass.compact) ...[
+                      MMToolbarGroup(
+                        children: [
+                          MMToolbarButton(
+                            icon: MMIcons.grid,
+                            tooltip: AppShortcuts.tip(l.viewAsIcons, AppShortcuts.view1),
+                            selected: view.viewMode == LibraryViewMode.grid,
+                            onPressed: () => controller.setViewMode(LibraryViewMode.grid),
+                          ),
+                          MMToolbarButton(
+                            icon: MMIcons.list,
+                            tooltip: AppShortcuts.tip(l.viewAsList, AppShortcuts.view2),
+                            selected: view.viewMode == LibraryViewMode.list,
+                            onPressed: () => controller.setViewMode(LibraryViewMode.list),
+                          ),
+                        ],
+                      ),
+                      MMToolbarGroup(
+                        children: [
+                          MMToolbarButton(
+                            icon: MMIcons.sort,
+                            label: sizeClass == MMSizeClass.regular ? l.sortBy(sortLabel) : null,
+                            tooltip: sizeClass == MMSizeClass.regular ? l.sortTooltip : l.sortBy(sortLabel),
+                            onPressed: controller.cycleSort,
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (sizeClass != MMSizeClass.compact)
+                      MMToolbarSearchField(
+                        placeholder: l.search,
+                        controller: _search,
+                        focusNode: _searchFocus,
+                        onChanged: controller.setSearch,
+                        width: 200,
+                      ),
                     MMToolbarGroup(
                       children: [
                         MMToolbarButton(
-                          icon: MMIcons.sort,
-                          label: sizeClass == MMSizeClass.regular ? l.sortBy(sortLabel) : null,
-                          tooltip: sizeClass == MMSizeClass.regular ? l.sortTooltip : l.sortBy(sortLabel),
-                          onPressed: controller.cycleSort,
+                          icon: MMIcons.add,
+                          tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
+                          onPressed: () => showNewStudySet(context, ref),
                         ),
                       ],
                     ),
                   ],
-                  if (sizeClass != MMSizeClass.compact)
-                    MMToolbarSearchField(
-                      placeholder: l.search,
-                      controller: _search,
-                      focusNode: _searchFocus,
-                      onChanged: controller.setSearch,
-                      width: 200,
+                ),
+          // A compact window has no room for search in the toolbar: it sits
+          // below, on the same glass.
+          toolbarBottom: isPhoneCompact
+              ? PreferredSize(
+                  preferredSize: const Size.fromHeight(88),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isPhoneCompact && view.query.filter is AllFilter
+                              ? l.librarySection
+                              : _filterTitle(view.query.filter, folders),
+                          style: context.mmText.phoneLargeTitle,
+                        ),
+                        const SizedBox(height: 8),
+                        MMToolbarSearchField(
+                          placeholder: l.search,
+                          controller: _search,
+                          focusNode: _searchFocus,
+                          onChanged: controller.setSearch,
+                          width: double.infinity,
+                        ),
+                      ],
                     ),
-                  MMToolbarGroup(
-                    children: [
-                      MMToolbarButton(
-                        icon: MMIcons.add,
-                        tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
-                        onPressed: () => showNewStudySet(context, ref),
-                      ),
-                    ],
                   ),
-                ],
-              ),
-        // A compact window has no room for search in the toolbar: it sits
-        // below, on the same glass.
-        toolbarBottom: isPhoneCompact
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(88),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        isPhoneCompact && view.query.filter is AllFilter
-                            ? l.librarySection
-                            : _filterTitle(view.query.filter, folders),
-                        style: context.mmText.phoneLargeTitle,
-                      ),
-                      const SizedBox(height: 8),
-                      MMToolbarSearchField(
+                )
+              : sizeClass == MMSizeClass.compact
+              ? PreferredSize(
+                  preferredSize: const Size.fromHeight(compactSearchHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: MMToolbarSearchField(
                         placeholder: l.search,
                         controller: _search,
                         focusNode: _searchFocus,
                         onChanged: controller.setSearch,
                         width: double.infinity,
                       ),
-                    ],
-                  ),
-                ),
-              )
-            : sizeClass == MMSizeClass.compact
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(compactSearchHeight),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: MMToolbarSearchField(
-                      placeholder: l.search,
-                      controller: _search,
-                      focusNode: _searchFocus,
-                      onChanged: controller.setSearch,
-                      width: double.infinity,
                     ),
                   ),
-                ),
-              )
-            : null,
-        body: PdfDropTarget(
-          label: l.dropToCreateSet,
-          onDrop: (files) async {
-            final notice = await controller.createFromFiles(files);
-            if (context.mounted) showNotice(context, notice, rootTitle: '');
-          },
-          child: body,
+                )
+              : null,
+          body: PdfDropTarget(
+            label: l.dropToCreateSet,
+            onDrop: (files) async {
+              final notice = await controller.createFromFiles(files);
+              if (context.mounted) showNotice(context, notice, rootTitle: '');
+            },
+            child: body,
+          ),
         ),
       ),
     );
@@ -286,7 +300,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 }
 
 class _LibrarySidebar extends ConsumerWidget {
-  const _LibrarySidebar({required this.sets, required this.folders, required this.filter});
+  const _LibrarySidebar({required this.sets, required this.folders, required this.filter, this.onDismiss});
+  final VoidCallback? onDismiss;
 
   final List<StudySet> sets;
   final List<Folder> folders;
@@ -306,15 +321,20 @@ class _LibrarySidebar extends ConsumerWidget {
       label: label,
       trailing: trailing,
       selected: filter == f,
-      onTap: () => controller.setFilter(f),
+      onTap: () {
+        controller.setFilter(f);
+        onDismiss?.call();
+      },
     );
     // Like Finder and Mail: only a non-zero count says something. "Recent"
     // has no count of its own.
     Widget? count(int n) => n > 0 ? MMCount(n) : null;
 
     return MMSidebar(
+      width: MMInput.of(context).phone ? MediaQuery.sizeOf(context).width : MMSizes.sidebarWidth,
       topTrailing: MMIconButton(
-        icon: MMIcons.sidebarClose,
+        key: MMInput.of(context).phone ? const ValueKey('library-navigation-close') : null,
+        icon: MMInput.of(context).phone ? MMIcons.close : MMIcons.sidebarClose,
         tooltip: AppShortcuts.tip(l.hideSidebar, AppShortcuts.toggleSidebar),
         onPressed: controller.toggleSidebar,
       ),
@@ -324,7 +344,10 @@ class _LibrarySidebar extends ConsumerWidget {
           MMIconButton(
             icon: MMIcons.settings,
             tooltip: AppShortcuts.tip(l.settingsTitle, AppShortcuts.settings),
-            onPressed: () => showSettings(context),
+            onPressed: () {
+              onDismiss?.call();
+              showSettings(context);
+            },
           ),
         ],
       ),

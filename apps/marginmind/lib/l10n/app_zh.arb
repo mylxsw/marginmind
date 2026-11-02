@@ -2472,5 +2472,10 @@
   "newStudySetBlankHint": "从空白开始，之后随时添加文档、思维导图和笔记。",
   "newStudySetDocumentHint": "选择一个或多个文档，创建后自动导入。",
   "newStudySetWebHint": "创建后打开网页，可使用「保存为文档」将内容保存到学习集。",
-  "newStudySetChooseDocuments": "选择文档…"
+  "newStudySetChooseDocuments": "选择文档…",
+  "phoneDiscardChangesTitle": "放弃未保存的更改？",
+  "phoneDiscardChanges": "放弃更改",
+  "phoneKeepEditing": "继续编辑",
+  "phoneOutlineEmpty": "暂无目录",
+  "phoneManageNavigation": "管理"
 }

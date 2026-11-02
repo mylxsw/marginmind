@@ -79,25 +79,25 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
 
     return Material(
       type: MaterialType.transparency,
-      child: MMLiquidGlass(
-        phoneStyle: MMPhoneGlass.thick,
-        borderRadius: BorderRadius.circular(MMRadii.phoneSheet),
+      child: Container(
+        decoration: BoxDecoration(color: c.windowBackground, borderRadius: BorderRadius.circular(MMRadii.phoneSheet)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Grab handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 7, bottom: 4),
-                width: 38,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: c.secondaryLabel.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(3),
+            // The shared route supplies the interactive handle.
+            if (!MMBottomSheet.contains(context))
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 7, bottom: 4),
+                  width: 38,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: c.secondaryLabel.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
-            ),
             // Animated size and horizontal slide between More page and Appearance page
             AnimatedSize(
               duration: const Duration(milliseconds: 320),
@@ -644,35 +644,20 @@ Future<void> showPhoneMoreSheet(
 }) async {
   onOpened?.call();
   try {
-    await showGeneralDialog<void>(
+    final container = ProviderScope.containerOf(context, listen: false);
+    await showMMBottomSheet<void>(
       context: context,
-      barrierDismissible: true,
-      barrierColor: MMThemeContext(context).mmColors.lightScrim,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      transitionDuration: const Duration(milliseconds: 320),
-      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-        return SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
-          child: child,
-        );
-      },
-      pageBuilder: (dialogContext, _, _) => Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            MMSizes.phoneSheetPadding,
-            0,
-            MMSizes.phoneSheetPadding,
-            math.max(MMSizes.phoneSheetPadding, MediaQuery.paddingOf(dialogContext).bottom),
-          ),
+      builder: (sheetContext) => UncontrolledProviderScope(
+        container: container,
+        child: SingleChildScrollView(
+          primary: true,
           child: PhoneMoreSheet(
             studySetId: studySetId,
             paneChrome: paneChrome,
             workspaceContext: workspaceContext ?? context,
             onOrganizeNotes: onOrganizeNotes,
             initialPage: initialPage,
-            onClose: () => Navigator.of(dialogContext).pop(),
+            onClose: () => Navigator.of(sheetContext).maybePop(),
           ),
         ),
       ),

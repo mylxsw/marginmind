@@ -4,6 +4,29 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
 
+/// The phone's custom-color task uses a system picker on iPhone and a
+/// bottom sheet on Android; desktop/iPad retain their anchored popovers.
+Future<MMAnnotationColor?> showPhoneCustomColor(BuildContext context, MMAnnotationColor current) async {
+  if (MMNativePresentation.available) {
+    final raw = await MMNativePresentation.pickColor(
+      value: current.color.toARGB32(),
+      dark: Theme.of(context).brightness == Brightness.dark,
+    );
+    return raw == null ? null : MMAnnotationColor.fromColor(Color(raw));
+  }
+  return showMMBottomSheet<MMAnnotationColor>(
+    context: context,
+    builder: (context) => SingleChildScrollView(
+      primary: true,
+      child: HighlightCustomColorPicker(
+        current: current,
+        onSelected: (color) => Navigator.of(context).pop(color),
+        onCancel: () => Navigator.of(context).maybePop(),
+      ),
+    ),
+  );
+}
+
 /// Changes remain a draft until Apply (or a preset) is chosen.
 class HighlightCustomColorPicker extends StatefulWidget {
   const HighlightCustomColorPicker({

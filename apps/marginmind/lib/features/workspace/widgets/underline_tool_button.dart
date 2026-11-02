@@ -127,6 +127,12 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
     if (_custom || _busy) return;
     _custom = true;
     try {
+      if (MMInput.of(context).phone) {
+        final picked = await showPhoneCustomColor(context, color);
+        if (mounted && picked != null) await _change(color: picked);
+        return;
+      }
+
       final picked = await showGeneralDialog<MMAnnotationColor>(
         context: context,
         barrierColor: Colors.transparent,

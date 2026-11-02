@@ -60,6 +60,20 @@ void main() {
       });
     }
 
+    Future<void> nativeInteraction(String action) async {
+      await tester.runAsync(() async {
+        await marker.writeAsString('native:$action');
+        // ignore: avoid_print
+        print('PHONE_NATIVE:$action:${marker.path}');
+        final deadline = DateTime.now().add(const Duration(minutes: 4));
+        while (await marker.readAsString() != 'native-done:$action') {
+          if (DateTime.now().isAfter(deadline)) throw TimeoutException('Native XCTest did not finish $action');
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+      });
+      await idle(tester);
+    }
+
     Future<void> top() async {
       unawaited(pdf.firstPage());
       await idle(tester, 2);
@@ -108,6 +122,26 @@ void main() {
     await shot('04-pdf-pinch-stable');
     // ignore: avoid_print
     print('PDF_GESTURES:platform=${Platform.operatingSystem},drag=$moved,interrupted=$stopped,zoom=$zoom->$pinched');
+    if (MMNativePresentation.available) {
+      await top();
+      final beforeNativePan = pdf.scrollPosition!.offset;
+      // The live-test binding drops OS touches unless explicitly enabled.
+      // Restore it so the test cannot change pointer handling for other tests.
+      final liveBinding = tester.binding as IntegrationTestWidgetsFlutterBinding;
+      final previousPropagation = liveBinding.shouldPropagateDevicePointerEvents;
+      liveBinding.shouldPropagateDevicePointerEvents = true;
+      try {
+        await nativeInteraction('PdfCanvas');
+      } finally {
+        liveBinding.shouldPropagateDevicePointerEvents = previousPropagation;
+      }
+      expect(
+        pdf.scrollPosition!.offset,
+        greaterThan(beforeNativePan + 60),
+        reason: 'UIKit-delivered touches must scroll the live PDF',
+      );
+      await shot('04a-native-pdf-pan');
+    }
     await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 600)));
     await idle(tester);
@@ -115,27 +149,41 @@ void main() {
     final widgetRef = tester.element(find.byType(ReaderPane)) as WidgetRef;
     unawaited(showAddWebPage(context, widgetRef, route.studySetId));
     await idle(tester);
-    final address = find.descendant(of: find.byType(MMSheet), matching: find.byType(TextField));
-    tester.widget<TextField>(address).focusNode!.unfocus();
-    await idle(tester);
-    await tester.tap(address);
-    await tester.enterText(address, 'https://example.com');
-    await SystemChannels.textInput.invokeMethod<void>('TextInput.show');
-    for (var attempt = 0; attempt < 50 && tester.view.viewInsets.bottom == 0; attempt++) {
-      await tester.runAsync(() async {
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-        if (attempt % 10 == 0) await SystemChannels.textInput.invokeMethod<void>('TextInput.show');
-      });
-      await tester.pump();
+    if (MMNativePresentation.available) {
+      final beforeNativeForm = pdf.readingPosition!;
+      await shot('05-landscape-web-form');
+      await nativeInteraction('LandscapeWebForm');
+      final afterNativeForm = pdf.readingPosition!;
+      expect(afterNativeForm.page, beforeNativeForm.page);
+      expect(
+        afterNativeForm.y,
+        closeTo(beforeNativeForm.y, 2),
+        reason: 'Native form keyboard must not move the underlying reader',
+      );
+      await shot('06-landscape-form-closed');
+    } else {
+      final address = find.descendant(of: find.byType(MMSheet), matching: find.byType(TextField));
+      tester.widget<TextField>(address).focusNode!.unfocus();
+      await idle(tester);
+      await tester.tap(address);
+      await tester.enterText(address, 'https://example.com');
+      await SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+      for (var attempt = 0; attempt < 50 && tester.view.viewInsets.bottom == 0; attempt++) {
+        await tester.runAsync(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          if (attempt % 10 == 0) await SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+        });
+        await tester.pump();
+      }
+      await shot('05-landscape-web-form');
+      expect(tester.view.viewInsets.bottom, greaterThan(0), reason: 'The actual soft keyboard must be visible');
+      expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsOneWidget);
+      await tester.ensureVisible(find.text('取消'));
+      await idle(tester);
+      await shot('06-landscape-form-actions');
+      await tester.tap(find.text('取消').hitTestable());
+      await idle(tester);
     }
-    await shot('05-landscape-web-form');
-    expect(tester.view.viewInsets.bottom, greaterThan(0), reason: 'The actual soft keyboard must be visible');
-    expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsOneWidget);
-    await tester.ensureVisible(find.text('取消'));
-    await idle(tester);
-    await shot('06-landscape-form-actions');
-    await tester.tap(find.text('取消').hitTestable());
-    await idle(tester);
     FocusManager.instance.primaryFocus?.unfocus();
     await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

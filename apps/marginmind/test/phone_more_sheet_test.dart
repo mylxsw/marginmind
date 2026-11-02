@@ -197,7 +197,7 @@ void main() {
     // Verify Group 1 items
     expect(find.text('目录与书签'), findsOneWidget);
     expect(find.text('切换文档'), findsOneWidget);
-    expect(find.text('裁掉白边'), findsOneWidget);
+    expect(find.byKey(const ValueKey('phone-row-crop')), findsOneWidget);
 
     // Reading settings appears because reader-settings is enabled
     expect(find.text('阅读设置'), findsOneWidget);
@@ -225,7 +225,7 @@ void main() {
     expect(navigationCalled, isTrue);
 
     // Tap "裁掉白边": executes reader-crop command
-    await tester.tap(find.text('裁掉白边'));
+    await tester.tap(find.byKey(const ValueKey('phone-row-crop')));
     await tester.pumpAndSettle();
     expect(cropCalled, isTrue);
 

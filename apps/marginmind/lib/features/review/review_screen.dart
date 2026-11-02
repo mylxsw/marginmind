@@ -92,7 +92,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+    final phone = MMInput.of(context).phone;
     final provider = reviewSessionProvider(widget.studySetId);
     final session = ref.watch(provider);
     final controller = ref.read(provider.notifier);
@@ -327,7 +327,7 @@ class ReviewCardView extends StatelessWidget {
     final front = face.front;
     final back = face.back;
     final source = back.source;
-    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+    final phone = MMInput.of(context).phone;
     final sourceButton = MMButton(
       label: context.l10n.revealSource,
       icon: MMIcons.revealSource,
@@ -489,7 +489,7 @@ class _RatingBar extends StatelessWidget {
       Rating.easy => l.rateEasy,
     };
     // Under touch the buttons share the width and grow to thumb size.
-    final touch = context.mmTouch || (MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact);
+    final touch = context.mmTouch || (MMInput.of(context).phone);
     final buttons = [
       for (final (i, r) in Rating.values.indexed) ...[
         if (i > 0) SizedBox(width: touch ? MMSpacing.s : 10),
@@ -536,7 +536,7 @@ class _RatingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
+    final phone = MMInput.of(context).phone;
     return MMInteractive(
       onTap: onPressed,
       tooltip: shortcut,

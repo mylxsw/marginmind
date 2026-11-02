@@ -44,11 +44,12 @@ class MMSegmentedControl<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS) {
+    if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS && segments.length > 1) {
       return ConstrainedBox(
         constraints: const BoxConstraints(minHeight: MMSizes.touchTarget),
         child: CupertinoSlidingSegmentedControl<int>(
           groupValue: segments.indexWhere((segment) => segment.value == value),
+          disabledChildren: onChanged == null ? {for (var i = 0; i < segments.length; i++) i} : const {},
           onValueChanged: onChanged == null
               ? (_) {}
               : (index) {

@@ -139,10 +139,10 @@ class ReaderSidebar extends ConsumerWidget {
       );
       actions[entry.id] = () => annotationView._open(context, ref, entry);
     }
-    final result = await MMNativePresentation.list(
+    final selection = await MMNativePresentation.list(
       title: document.title,
       close: l.closePanel,
-      manage: l.moreTools,
+      manage: l.phoneManageNavigation,
       empty: l.noAnnotations,
       dark: Theme.of(context).brightness == Brightness.dark,
       selectedSection: state.readerPanelMode.name,
@@ -151,13 +151,18 @@ class ReaderSidebar extends ConsumerWidget {
           for (var page = 1; page <= document.pageCount; page++)
             MMNativeListRow('page-$page', l.pageNumber(page), preview: true, selected: page == pdf.currentPage),
         ]),
-        MMNativeListSection('outline', l.readerOutline, outline, empty: l.noOutlineEntries),
+        MMNativeListSection('outline', l.readerOutline, outline, empty: l.phoneOutlineEmpty),
         MMNativeListSection('bookmarks', l.readerBookmarks, bookmarks, empty: l.noBookmarks),
         MMNativeListSection('annotations', l.readerAnnotations, annotationRows),
       ],
       preview: (id) async => id.startsWith('page-') ? pdf.renderPreview(int.parse(id.substring(5))) : null,
     );
     if (!context.mounted) return false;
+    if (selection?['section'] case final section?) {
+      final mode = ReaderPanelMode.values.where((mode) => mode.name == section).firstOrNull;
+      if (mode != null) controller.setReaderPanelMode(mode);
+    }
+    final result = selection?['id'];
     if (result == '__manage__') return true;
     if (result != null && result.startsWith('page-')) {
       await pdf.jumpToPage(int.parse(result.substring(5)));

@@ -116,7 +116,10 @@ void main() {
       final full = tester.getRect(sheet);
       expect(full.bottom, phone.size.height);
       final room = phone.size.height - phone.safe.top - MMSpacing.s;
-      expect(full.height, moreOrLessEquals(room, epsilon: 1));
+      expect(full.height, moreOrLessEquals(room * MMSizes.bottomSheetMedium, epsilon: 1));
+      await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, -80), 1400);
+      await tester.pumpAndSettle();
+      expect(tester.getSize(sheet).height, moreOrLessEquals(room, epsilon: 1));
       expect(tester.takeException(), isNull, reason: 'details sheet');
 
       // The soft keyboard puts the sheet on it at full height.

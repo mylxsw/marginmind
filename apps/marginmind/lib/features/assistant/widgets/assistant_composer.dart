@@ -430,7 +430,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                   !(context.mmTouchPlatform && MediaQuery.viewInsetsOf(context).bottom > 0))
                 Padding(
                   padding: const EdgeInsets.only(bottom: MMSpacing.xs),
-                  child: Row(
+                  child: _QuickActions(
                     children: [
                       for (final s in [AssistantSkill.explain, AssistantSkill.summarize])
                         _QuickAction(
@@ -917,3 +917,11 @@ class _SendButton extends StatelessWidget {
 }
 
 Widget _tabletFlexible(BuildContext context, Widget child) => context.mmTouchPlatform ? Flexible(child: child) : child;
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) =>
+      MMInput.of(context).phone ? Wrap(spacing: 4, runSpacing: 4, children: children) : Row(children: children);
+}

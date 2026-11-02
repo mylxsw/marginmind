@@ -15,15 +15,15 @@ Future<Map<String, String>?> showPhoneForm(
 }) {
   final l = context.l10n;
   return MMNativePresentation.form(
-    title: title,
+    title: title.replaceFirst(RegExp(r'(…|\.\.\.)$'), ''),
     dark: Theme.of(context).brightness == Brightness.dark,
     cancel: l.cancel,
     submit: submit,
     fields: fields,
     message: message,
-    discard: l.aiTasksDontSave,
-    keepEditing: l.cancel,
-    discardTitle: l.settingsCloseTitle,
+    discard: l.phoneDiscardChanges,
+    keepEditing: l.phoneKeepEditing,
+    discardTitle: l.phoneDiscardChangesTitle,
     validate: validate,
   );
 }

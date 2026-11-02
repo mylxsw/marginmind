@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'search_field.dart';
+import 'segmented_control.dart';
 
 import '../foundation/interactive.dart';
 import '../foundation/adaptive.dart';
@@ -90,9 +91,10 @@ class MMSettingsRow extends StatelessWidget {
     final row = LayoutBuilder(
       builder: (context, constraints) {
         final largeText = MediaQuery.textScalerOf(context).scale(13) > 15;
-        final stacked =
-            (MMInput.of(context).phone && trailing is MMTextField) ||
-            (context.mmTouchPlatform && constraints.maxWidth < (largeText ? 480 : 300));
+        final phone = MMInput.of(context).phone;
+        final stacked = phone
+            ? trailing is MMTextField || trailing is MMSegmentedControl || (largeText && constraints.maxWidth < 480)
+            : context.mmTouchPlatform && constraints.maxWidth < (largeText ? 480 : 300);
         if (stacked && (leading != null || label != null)) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: MMSpacing.s),
@@ -104,6 +106,27 @@ class MMSettingsRow extends StatelessWidget {
                 const SizedBox(height: MMSpacing.xs),
                 Align(alignment: Alignment.centerRight, child: trailing),
               ],
+            ),
+          );
+        }
+        if (phone) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(minHeight: height < 52 ? 52 : height),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Row(
+                children: [
+                  if (leading != null || label != null) ...[
+                    Expanded(flex: 3, child: leading ?? Text(label!, style: context.mmText.body)),
+                    const SizedBox(width: MMSpacing.m),
+                  ],
+                  Flexible(
+                    flex: 2,
+                    fit: FlexFit.tight,
+                    child: Align(alignment: Alignment.centerRight, child: trailing),
+                  ),
+                ],
+              ),
             ),
           );
         }

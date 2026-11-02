@@ -106,6 +106,17 @@ class MMSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.android) {
+      return Semantics(
+        label: semanticLabel,
+        child: Switch(
+          value: value,
+          onChanged: onChanged,
+          activeTrackColor: color ?? c.accent,
+          activeThumbColor: c.onAccent,
+        ),
+      );
+    }
     if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS) {
       return Semantics(
         label: semanticLabel,

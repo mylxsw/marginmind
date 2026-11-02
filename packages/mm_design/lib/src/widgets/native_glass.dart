@@ -11,7 +11,10 @@ class MMNativeGlass extends StatelessWidget {
   final BorderRadius borderRadius;
   final EdgeInsetsGeometry padding;
 
-  static bool get available => MMNativePresentation.available;
+  static bool availableFor(BuildContext context) =>
+      MMNativePresentation.available &&
+      MMNativeGlassScope.enabledOf(context) &&
+      ModalRoute.isCurrentOf(context) != false;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -35,4 +38,15 @@ class MMNativeGlass extends StatelessWidget {
       Padding(padding: padding, child: child),
     ],
   );
+}
+
+/// In-tree panels hide their underlying native controls from hybrid
+/// composition. Modal Flutter routes use their route's current state instead.
+class MMNativeGlassScope extends InheritedWidget {
+  const MMNativeGlassScope({super.key, required this.enabled, required super.child});
+  final bool enabled;
+  static bool enabledOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<MMNativeGlassScope>()?.enabled ?? true;
+  @override
+  bool updateShouldNotify(MMNativeGlassScope oldWidget) => enabled != oldWidget.enabled;
 }

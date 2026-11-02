@@ -10,6 +10,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/features/workspace/workspace_pane_chrome_controller.dart';
 import 'package:marginmind/features/workspace/phone_reader_controls_controller.dart';
 import 'package:marginmind/features/study_notes/note_setup_sheet.dart';
 import 'package:marginmind/settings/app_settings.dart';
@@ -75,6 +76,23 @@ void main() {
       });
     }
 
+    Future<void> nativeInteraction(String action) async {
+      if (!const bool.fromEnvironment('CAPTURE_PHONE_UI')) {
+        throw StateError('Run this native UI acceptance through tool/capture_mobile_redesign.py');
+      }
+      await tester.runAsync(() async {
+        await marker.writeAsString('native:$action');
+        // ignore: avoid_print
+        print('PHONE_NATIVE:$action:${marker.path}');
+        final deadline = DateTime.now().add(const Duration(minutes: 4));
+        while (await marker.readAsString() != 'native-done:$action') {
+          if (DateTime.now().isAfter(deadline)) throw TimeoutException('Native XCTest did not finish $action');
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+      });
+      await idle(tester);
+    }
+
     BuildContext context() => tester.element(find.byType(AppShell, skipOffstage: false));
     Future<void> dismiss() async {
       Navigator.of(context()).pop();
@@ -85,7 +103,11 @@ void main() {
     expect(find.byKey(const ValueKey('phone-tabs')), findsNothing);
     await tester.tap(find.byWidgetPredicate((w) => w is MMIconButton && w.icon == MMIcons.sidebar).hitTestable().first);
     await shot('01a-library-sidebar');
-    await tester.tapAt(const Offset(380, 400));
+    if (MMInput.of(context()).phone) {
+      await tester.tap(find.byKey(const ValueKey('library-navigation-close')));
+    } else {
+      await tester.tapAt(const Offset(380, 400));
+    }
     await idle(tester);
 
     const reference = bool.fromEnvironment('MOBILE_UI_REFERENCE');
@@ -140,8 +162,12 @@ void main() {
       await idle(tester);
       await tester.tap(find.byKey(const ValueKey('settings-close')));
       await shot('02c-settings-unsaved-confirmation');
-      expect(find.byKey(const ValueKey('ai-tasks-discard')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('ai-tasks-discard')));
+      if (MMNativePresentation.available) {
+        await nativeInteraction('SettingsDiscard');
+      } else {
+        expect(find.byKey(const ValueKey('ai-tasks-discard')), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('ai-tasks-discard')));
+      }
       await idle(tester);
       expect(find.byType(SettingsWindow), findsNothing);
       expect(
@@ -185,6 +211,11 @@ void main() {
       controller.closePanel();
       controller.setLayout(MMSplitMode.secondary);
       await shot('06-map');
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);
+      await idle(tester);
+      await shot('06a-ipad-map-landscape');
+      controller.toggleAssistantPanel();
+      await shot('06b-ipad-assistant-landscape');
       expect(errors, isEmpty);
       return;
     }
@@ -208,11 +239,33 @@ void main() {
     await controller.addBookmark(controller.content.documents.first.id, 1, '记忆与主动提取');
     controller.showReaderPanel(ReaderPanelMode.outline);
     await shot('04-reader-outline');
-    controller.setReaderPanelMode(ReaderPanelMode.bookmarks);
-    await shot('04a-reader-bookmarks');
-    await tester.tap(find.text('记忆与主动提取').hitTestable());
+    if (MMNativePresentation.available) {
+      await nativeInteraction('ReaderNavigation');
+    } else {
+      controller.setReaderPanelMode(ReaderPanelMode.bookmarks);
+      await shot('04a-reader-bookmarks');
+      await tester.tap(find.text('记忆与主动提取').hitTestable());
+    }
     await idle(tester);
     expect(container.read(workspaceProvider(route.studySetId)).readerPanelVisible, isFalse);
+    if (MMNativePresentation.available) {
+      final doc = controller.content.documents.first;
+      for (final bookmark
+          in controller.content.bookmarksOn(doc.id).where((b) => b.title == 'Native Bookmark QA').toList()) {
+        await controller.removeBookmark(bookmark.id);
+      }
+      controller.showReaderPanel(ReaderPanelMode.bookmarks);
+      await idle(tester);
+      await nativeInteraction('ReaderManage');
+      await shot('04b-reader-management');
+      await tester.tap(find.byIcon(MMIcons.add).hitTestable().last);
+      await idle(tester);
+      await nativeInteraction('BookmarkEditor');
+      expect(controller.content.bookmarksOn(doc.id).any((b) => b.title == 'Native Bookmark QA' && b.page == 2), isTrue);
+      await shot('04c-native-bookmark-saved');
+      controller.closeReaderPanel();
+      await idle(tester);
+    }
     controller.toggleAssistantPanel();
     await shot('05-assistant');
     controller.closePanel();
@@ -251,6 +304,26 @@ void main() {
     controller.setMapView(MapViewMode.outline);
     await shot('06d-map-outline');
     controller.setMapView(MapViewMode.map);
+    await idle(tester);
+    final paneChrome = WorkspacePaneChromeScope.maybeOf(tester.element(find.byType(MapPane)))!;
+    paneChrome.map!.execute('style');
+    await shot('06da-map-style');
+    if (MMNativePresentation.available) {
+      final beforeColor = controller.content
+          .map(container.read(workspaceProvider(route.studySetId)).activeMapId)
+          ?.backgroundColor;
+      await tester.ensureVisible(find.byKey(const ValueKey('map-background-custom')));
+      await tester.tap(find.byKey(const ValueKey('map-background-custom')));
+      await idle(tester);
+      await nativeInteraction('ColorPicker');
+      expect(
+        controller.content.map(container.read(workspaceProvider(route.studySetId)).activeMapId)?.backgroundColor,
+        isNot(beforeColor),
+      );
+      await controller.setMapBackgroundColor(beforeColor);
+      await idle(tester);
+    }
+    await dismiss();
     unawaited(
       showMMSheet<void>(
         context: context(),
@@ -273,7 +346,11 @@ void main() {
     final widgetRef = tester.element(find.byType(MapPane)) as WidgetRef;
     unawaited(showAddWebPage(context(), widgetRef, route.studySetId));
     await shot('07a-add-web');
-    await dismiss();
+    if (MMNativePresentation.available) {
+      await nativeInteraction('WebForm');
+    } else {
+      await dismiss();
+    }
     navigation.showLibrary();
     await shot('07b-library-after-document');
     navigation.openStudySet(route.studySetId);
@@ -393,7 +470,11 @@ void main() {
       await shot('12a-reflow-reader');
       controller.showReaderPanel(ReaderPanelMode.outline);
       await shot('12b-reflow-navigation');
-      await tester.tap(find.text('间隔复习').hitTestable());
+      if (MMNativePresentation.available) {
+        await nativeInteraction('ReflowNavigation');
+      } else {
+        await tester.tap(find.text('间隔复习').hitTestable());
+      }
       await idle(tester);
       expect(container.read(workspaceProvider(route.studySetId)).readerPanelVisible, isFalse);
       await shot('12c-reflow-located');
