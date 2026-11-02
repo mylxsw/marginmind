@@ -56,6 +56,7 @@ class WorkspaceDesktopShell extends ConsumerWidget {
     final l = context.l10n;
     return MMWindowScaffold.contentBuilder(
       toolbarExtent: toolbarHeight,
+      topSafeAreaColor: c.workspaceChrome,
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,

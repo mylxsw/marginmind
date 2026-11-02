@@ -66,12 +66,14 @@ class MMWindowScaffold extends StatelessWidget {
     this.sheet,
     this.toolbarBottom,
     this.extendBody = false,
-  }) : contentBuilder = null,
+  }) : topSafeAreaColor = null,
+       contentBuilder = null,
        toolbarExtent = MMSizes.toolbarHeight;
 
   const MMWindowScaffold.contentBuilder({
     super.key,
     required this.contentBuilder,
+    this.topSafeAreaColor,
     this.sidebar,
     this.sidebarVisible = true,
     this.sidebarWidth = MMSizes.sidebarWidth,
@@ -86,6 +88,9 @@ class MMWindowScaffold extends StatelessWidget {
        body = const SizedBox.shrink(),
        toolbarBottom = null,
        extendBody = false;
+
+  /// Background behind the status bar, matching custom window chrome.
+  final Color? topSafeAreaColor;
 
   final LayoutWidgetBuilder? contentBuilder;
   final double toolbarExtent;
@@ -181,24 +186,42 @@ class MMWindowScaffold extends StatelessWidget {
       removeBottom: keyboard > 0 || bar,
       child: ColoredBox(
         color: c.windowBackground,
-        child: MMWindowChrome(
-          toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
-          onDragStart: onDragStart,
-          onTitleDoubleTap: onTitleDoubleTap,
-          child: sidebarOverlay
-              // The drawer's scrim covers the whole window, insets included.
-              ? Stack(
-                  children: [
-                    Positioned.fill(
-                      child: SafeArea(
-                        child: ExcludeFocus(excluding: open, child: content),
-                      ),
-                    ),
-                    if (sidebar != null)
-                      MMDrawer(open: open, width: fullWidth + safe.left, onDismiss: onSidebarDismiss, child: sidebar!),
-                  ],
-                )
-              : SafeArea(child: row),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (topSafeAreaColor != null && safe.top > 0)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: safe.top,
+                child: ColoredBox(color: topSafeAreaColor!),
+              ),
+            MMWindowChrome(
+              toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
+              onDragStart: onDragStart,
+              onTitleDoubleTap: onTitleDoubleTap,
+              child: sidebarOverlay
+                  // The drawer's scrim covers the whole window, insets included.
+                  ? Stack(
+                      children: [
+                        Positioned.fill(
+                          child: SafeArea(
+                            child: ExcludeFocus(excluding: open, child: content),
+                          ),
+                        ),
+                        if (sidebar != null)
+                          MMDrawer(
+                            open: open,
+                            width: fullWidth + safe.left,
+                            onDismiss: onSidebarDismiss,
+                            child: sidebar!,
+                          ),
+                      ],
+                    )
+                  : SafeArea(child: row),
+            ),
+          ],
         ),
       ),
     ),
