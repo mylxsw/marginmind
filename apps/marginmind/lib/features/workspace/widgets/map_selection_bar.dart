@@ -141,7 +141,7 @@ class MapNodeBar extends StatelessWidget {
     final l = context.l10n;
     if (context.mmTablet) {
       return TextFieldTapRegion(
-        child: MMToolbarGroup(
+        child: MMFloatingToolbar(
           children: [
             _MapAction(id: 'child', label: l.addChildTopic, nodeIcon: MMNodeAction.child, onPressed: onChild),
             if (!root)
