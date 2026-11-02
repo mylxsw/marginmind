@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "8C35968C-34B8-4A09-9FCF-5D66DB8F8499.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "reader-management-opened_0_30BBFBFE-3137-4E1E-996B-2D4DA8777977.png",
+        "timestamp" : 1793630904.691
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testReaderManage()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testReaderManage"
+  }
+]

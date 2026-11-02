@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "1B028877-44BF-4F3D-BC5C-A9CC1815B088.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "native-bookmark-editor_0_08BB4F67-7615-41F4-A5AA-47647749C23E.png",
+        "timestamp" : 1793630924.724
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testBookmarkEditor()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testBookmarkEditor"
+  }
+]

@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "1993AF99-0AAA-46F7-806C-5CD3B0D45059.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "pdf-native-bookmarks_0_0FEFFD7C-5C04-4897-A1A2-E4F5462D8365.png",
+        "timestamp" : 1793630118.934
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "803D5A6F-EAC5-4D6E-B239-CDC938CCCD1A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "pdf-native-outline-expanded_0_643CE085-EE18-4632-BB0C-E9FAF0DA9C28.png",
+        "timestamp" : 1793630114.589
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "3588E9FC-5CEA-470F-BCF1-A461C7783723.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "pdf-native-outline-medium_0_04FAA495-8DFC-45DC-9618-BB53F99039DE.png",
+        "timestamp" : 1793630113.377
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testReaderNavigation()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testReaderNavigation"
+  }
+]

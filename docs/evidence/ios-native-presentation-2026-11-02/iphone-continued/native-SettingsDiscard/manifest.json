@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "2BD7DA94-F83F-4F5C-BBBC-C079C98440C3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "settings-native-confirmation_0_C788047B-8969-4A23-B832-48336BD4D731.png",
+        "timestamp" : 1793630069.695
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testSettingsDiscard()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testSettingsDiscard"
+  }
+]

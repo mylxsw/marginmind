@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "70817083-FF5A-4D53-95B1-6D9BDCD9E8E2.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "landscape-native-discard_0_8C617A3F-79A7-4F7F-99A2-94AA135C73A2.png",
+        "timestamp" : 1793631584.386
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "64279E9A-F0F5-4C47-8FA1-0B9F652266C2.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "landscape-native-keyboard_0_D9A164DB-2574-434B-889C-D5050EE03788.png",
+        "timestamp" : 1793631582.06
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "9DD76B58-33DB-4243-AFC1-2A427598D598.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "landscape-native-form_0_09B63F72-36C7-4522-8DEF-67D614691951.png",
+        "timestamp" : 1793631579.591
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testLandscapeWebForm()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testLandscapeWebForm"
+  }
+]

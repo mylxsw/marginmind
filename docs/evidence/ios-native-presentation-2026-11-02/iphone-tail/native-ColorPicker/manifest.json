@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "01F785CF-B401-4658-8D07-85ECF4CA2B98.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "system-color-selected_0_AEBBD7E8-62EF-4179-B718-E60B038B231B.png",
+        "timestamp" : 1793630978.871
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "9ACFD04E-1AEE-4A4D-B568-5B53A5014F5F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "system-color-picker_0_EA47E542-9571-4725-84C9-65B0CFDCA5D8.png",
+        "timestamp" : 1793630975.295
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testColorPicker()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testColorPicker"
+  }
+]

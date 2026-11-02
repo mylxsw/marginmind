@@ -1,0 +1,7 @@
+{
+  "device": "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+  "test": "mobile_redesign_acceptance_test.dart",
+  "commit": "5ec0eee23f23b4673e05fb80ead7ce92312c1586",
+  "dart_source_sha256": "bf4f0589ee1e667b8b32ba6a1257117f675c90e410fdd63a6157f6e1374ec624",
+  "native_swift_sha256": "856925164868760da2634ef9fcb393201815972e089053ad42efbad1a1736050"
+}

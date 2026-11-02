@@ -1,0 +1,12 @@
+{
+  "package": "io.github.mylxsw.marginmind",
+  "version": "0.8.0",
+  "build": 13,
+  "normal_apk_build_passed": true,
+  "install_passed": true,
+  "launch_passed": true,
+  "running_process_verified": true,
+  "foreground_screenshot_verified": true,
+  "apk_sha256": "4059345bc0e05daa0a2dcf94e674505542b618ce609a4cb989fa2e315e06e6de",
+  "source_commit": "88b7d4ebe27ea7f8c2b4a5af894a4b05af278be1"
+}

@@ -1,0 +1,17 @@
+{
+  "source_commit": "88b7d4ebe27ea7f8c2b4a5af894a4b05af278be1",
+  "version": "0.8.0",
+  "build": "13",
+  "dart_source_sha256": "62f78a9cce3db4bbcf062a87ec2670e47985b5ac6edf5ffc7bc9334fe9a0fc4b",
+  "native_swift_sha256": "856925164868760da2634ef9fcb393201815972e089053ad42efbad1a1736050",
+  "runner_sha256": "20faac2f9422a3bab6254fbef495750a88d896386dee89472637146c624af88f",
+  "codesign_verified": true,
+  "physical_device": "iPhone 14 Pro",
+  "physical_device_ios": "27.2",
+  "installed_version_verified": "0.8.0 (13)",
+  "install_succeeded": true,
+  "launch_succeeded": true,
+  "running_process_verified": true,
+  "foreground_screenshot_verified": true,
+  "private_device_screenshot_committed": false
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1D2671DC-BC40-4C0D-97C2-CCA836DB70BB",
+        "deviceName" : "iPhone 16e",
+        "exportedFileName" : "703575BC-B74B-4431-8F4D-8BE124D71CF6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "pdf-system-touch-scroll_0_EE088FF8-DFEE-479F-A098-AFD33FA73B35.png",
+        "timestamp" : 1793631555.473
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testPdfCanvas()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testPdfCanvas"
+  }
+]

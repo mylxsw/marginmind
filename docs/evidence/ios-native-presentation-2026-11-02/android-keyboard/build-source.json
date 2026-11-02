@@ -1,0 +1,7 @@
+{
+  "device": "emulator-5554",
+  "test": "mobile_assistant_keyboard_acceptance_test.dart",
+  "commit": "be6ccedbcbb9d5f270219811b8fa4868cd72e7c6",
+  "dart_source_sha256": "6085e52e3596be391c360dbb4e0fd7d36a7a8360db71c528153f09ecd2acf64f",
+  "native_swift_sha256": "856925164868760da2634ef9fcb393201815972e089053ad42efbad1a1736050"
+}
