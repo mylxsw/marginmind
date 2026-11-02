@@ -1,0 +1,45 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: reference AI uses its own context and returns to its retained content
+00:01 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: reference AI uses its own context and returns to its retained content
+00:01 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: reference AI uses its own context and returns to its retained content
+00:02 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:02 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: macOS assistant sidebar spans the window and restores its toolbar entry on close (variant: TargetPlatform.macOS)
+00:02 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:03 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: storage becoming inaccessible during a question is not reported as an invalid API key
+00:03 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: storage becoming inaccessible during a question is not reported as an invalid API key
+00:03 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: an excerpt stays on the source and offers View once (variant: TargetPlatform.iOS)
+00:03 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: locked credentials show no preflight warning and report an actionable error on send
+00:04 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: locked credentials show no preflight warning and report an actionable error on send
+00:04 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: settings use a full screen list and return from details (variant: TargetPlatform.iOS)
+00:04 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: opening and reopening a study set never reads the Keychain
+00:04 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: review grades with thumb-sized buttons and a tap turns the card (variant: TargetPlatform.iOS)
+00:04 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: scene 1: ask about a selection, explain it, jump back with p.24, copy and save as note
+00:05 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: scene 1: ask about a selection, explain it, jump back with p.24, copy and save as note
+00:05 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: scene 1: ask about a selection, explain it, jump back with p.24, copy and save as note
+00:06 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: system back closes menus, sheets and editing before going up (variant: TargetPlatform.android)
+00:06 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: node menu entries send at once or attach; card details asks about the card
+00:06 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: node menu entries send at once or attach; card details asks about the card
+00:06 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: node menu entries send at once or attach; card details asks about the card
+00:06 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.android)
+00:06 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: composer: IME, shift-return, slash menu, @ menu and automatic chips
+00:07 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: stop with Esc keeps the partial answer; the trace stays open while running
+00:08 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: scene 3: proposals preview on the map, leave items out, apply and show; dismiss and reopen
+00:10 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: failure states name the reason and the next step
+00:11 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: scene 7: an interrupted answer is offered again, never resent by itself
+00:12 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: [false] history: list, open, rename and delete; new conversation; Esc closes the panel
+00:13 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: [true] history: list, open, rename and delete; new conversation; Esc closes the panel
+00:15 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: history conversations preserve sidebar visibility and manual choices at 1000.0 pt
+00:16 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: history conversations preserve sidebar visibility and manual choices at 1400.0 pt
+00:18 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: narrow window and dark appearance keep the panel usable
+00:18 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: sources: numbered row, drawer over the panel, browser, Esc closes the drawer first
+00:19 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: each failure kind has its reason and its one next step
+00:19 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: the window composition runs and reports a bad endpoint
+00:20 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_ui_test.dart: a migrated research conversation is read only: no input, copy only
+00:21 +43: All tests passed!

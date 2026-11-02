@@ -1,0 +1,19 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_pdf_gesture_acceptance_test.dart
+Running Xcode build...
+Xcode build done.                                           25.5s
+00:00 +0: PDF pan, interruption and pinch work in the actual phone runtime
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Application Support/Library/sets/275064d1f1c32b5b1d177f08aa342bfe.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (9 ms)
+PHONE_SHOT:01-pdf-before-drag:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:02-pdf-after-drag:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:03-pdf-fling-interrupted:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:04-pdf-pinch-stable:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PDF_GESTURES:platform=ios,drag=80.00000000000003,interrupted=276.33877618347947,zoom=0.6554621848739496->0.8096885813148789
+PHONE_NATIVE:PdfCanvas:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:04a-native-pdf-pan:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Application Support/Library/sets/275064d1f1c32b5b1d177f08aa342bfe.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (26 ms)
+PHONE_SHOT:05-landscape-web-form:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:LandscapeWebForm:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06-landscape-form-closed:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Caches/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F4A35D4C-2CB9-48C3-BC9F-0CFBF53275F0/Library/Application Support/Library/sets/275064d1f1c32b5b1d177f08aa342bfe.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (22 ms)
+01:41 +1: (tearDownAll)
+01:42 +1: All tests passed!

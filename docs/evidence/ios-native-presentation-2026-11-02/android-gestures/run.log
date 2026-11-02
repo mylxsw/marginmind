@@ -1,0 +1,17 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_pdf_gesture_acceptance_test.dart
+Running Gradle task 'assembleDebug'...                             22.2s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          473ms
+00:00 +0: PDF pan, interruption and pinch work in the actual phone runtime
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/cdfd6cbbb1d02a506ba111ac26475b25.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (30 ms)
+PHONE_SHOT:01-pdf-before-drag:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-pdf-after-drag:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:03-pdf-fling-interrupted:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:04-pdf-pinch-stable:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PDF_GESTURES:platform=android,drag=80.00000000000001,interrupted=297.93877618347915,zoom=0.6914765906362546->0.8541769649036087
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/cdfd6cbbb1d02a506ba111ac26475b25.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (47 ms)
+PHONE_SHOT:05-landscape-web-form:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:06-landscape-form-actions:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/cdfd6cbbb1d02a506ba111ac26475b25.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (8 ms)
+01:10 +1: (tearDownAll)
+01:11 +1: All tests passed!

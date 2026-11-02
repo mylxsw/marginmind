@@ -1,0 +1,225 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_drafts_test.dart: phone model draft survives category navigation, and discard never writes it
+00:03 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_drafts_test.dart: phone model draft survives category navigation, and discard never writes it
+00:03 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_drafts_test.dart: phone model draft survives category navigation, and discard never writes it
+00:03 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_drafts_test.dart: phone model draft survives category navigation, and discard never writes it
+00:03 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_drafts_test.dart: phone model draft survives category navigation, and discard never writes it
+00:04 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:06 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:06 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:06 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:06 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:06 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:07 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:07 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:08 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:08 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:08 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (7 ms)
+00:08 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (7 ms)
+00:09 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:09 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:09 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:09 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:09 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (1 ms)
+00:10 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:10 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:10 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:10 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:10 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:11 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:11 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:11 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:11 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:11 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows desktop across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:11 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:12 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows desktop across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:12 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:12 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:12 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:12 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:13 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+00:13 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:13 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <21>
+  Actual: <13.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart:82:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart line 82
+The test description was:
+  tablet split grip and compact tools light
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:13 +39 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:13 +39 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light [E]
+  Test failed. See exception logs above.
+  The test description was: tablet split grip and compact tools light
+
+00:13 +40 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:13 +40 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:14 +41 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:14 +42 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:14 +43 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:14 +44 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:14 +44 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:14 +44 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools dark
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <21>
+  Actual: <13.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart:82:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart line 82
+The test description was:
+  tablet split grip and compact tools dark
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:14 +44 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:14 +44 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools dark [E]
+  Test failed. See exception logs above.
+  The test description was: tablet split grip and compact tools dark
+
+00:15 +44 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:15 +45 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:15 +46 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:15 +47 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:15 +48 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:15 +49 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:16 +50 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:16 +51 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:16 +52 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:16 +53 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:17 +54 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:17 +55 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:17 +56 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:17 +57 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:17 +58 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:17 +58 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Fit Width": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart:57:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart line 57
+The test description was:
+  reader controls are compact; progress appears on hover and divider restores panes
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:17 +58 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:17 +58 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes [E]
+  Test failed. See exception logs above.
+  The test description was: reader controls are compact; progress appears on hover and divider restores panes
+
+00:18 +59 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:18 +60 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:18 +61 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:18 +62 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:19 +63 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:19 +64 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:19 +65 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: system back closes menus, sheets and editing before going up (variant: TargetPlatform.android)
+00:19 +65 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:19 +66 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(1024.0, 768.0): companion does not cover or block the source
+00:19 +66 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:19 +67 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(1024.0, 768.0): companion does not cover or block the source
+00:20 +68 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:20 +69 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:20 +70 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:20 +71 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:20 +72 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:20 +73 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:20 +74 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:21 +75 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:21 +76 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:21 +77 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:21 +78 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:21 +79 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:21 +80 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:22 +81 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:22 +82 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:22 +83 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:23 +84 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:23 +85 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet 834.0: reader commands use available pane width
+00:23 +86 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=false touch=true size=Size(500.0, 900.0)
+00:23 +87 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=false touch=true size=Size(500.0, 900.0)
+00:24 +88 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=false touch=true size=Size(1194.0, 834.0)
+00:24 +89 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=false touch=false size=Size(1280.0, 820.0)
+00:25 +90 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=true touch=true size=Size(900.0, 600.0)
+00:26 +91 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:28 +92 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: empty/single-page bounds, keyboard, accessibility and tool cancellation
+00:29 +93 -3: Some tests failed.
+
+Failing tests:
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools dark
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes

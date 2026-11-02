@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/tmp/foliarc-native-normal-app-final.xcresult
+
+2026-11-02 23:04:07.937 xcodebuild[61905:18847082] [MT] IDETestOperationsObserverDebug: 29.710 elapsed -- Testing started completed.
+2026-11-02 23:04:07.937 xcodebuild[61905:18847082] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-02 23:04:07.937 xcodebuild[61905:18847082] [MT] IDETestOperationsObserverDebug: 29.710 sec, +29.710 sec -- end
+Testing started

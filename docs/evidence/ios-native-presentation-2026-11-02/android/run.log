@@ -1,0 +1,66 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_redesign_acceptance_test.dart
+Running Gradle task 'assembleDebug'...                             19.2s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          621ms
+00:00 +0: phone screens remain usable with the shared tablet design
+PHONE_SHOT:01-library:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:01a-library-sidebar:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-index:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-general:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-reading:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-maps:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-models:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02a-model-service:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-aiTasks:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-webSearch:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02-settings-voice:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02b-settings-draft-retained:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:02c-settings-unsaved-confirmation:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/f630889293d73d45032c82f6b618ee01.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (36 ms)
+PHONE_SHOT:03-reader:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:03c-reader-tools:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:03d-reader-colors:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:03a-reader-menu:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:03b-reader-selection:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:04-reader-outline:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:04a-reader-bookmarks:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:05-assistant:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:05a-assistant-composer:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:05b-assistant-draft:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:06-map:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:06a-map-selection:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:06b-card-details:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:06d-map-outline:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:06da-map-style:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:06e-map-export:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:07-workspace-sidebar:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:07a-add-web:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:07b-library-after-document:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/f630889293d73d45032c82f6b618ee01.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (11 ms)
+PHONE_SHOT:08-note-setup:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/f630889293d73d45032c82f6b618ee01.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (27 ms)
+PHONE_SHOT:08a-study-note:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:08b-note-export:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/f630889293d73d45032c82f6b618ee01.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (11 ms)
+PHONE_SHOT:09-vocabulary:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:09a-vocabulary-detail:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:10-review:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:10a-review-answer:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:11-statistics:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/f630889293d73d45032c82f6b618ee01.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (20 ms)
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/f630889293d73d45032c82f6b618ee01.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (399 ms)
+PHONE_SHOT:11a-web-browser:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:11b-web-conversion:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:12a-reflow-reader:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:12b-reflow-navigation:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:12c-reflow-located:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:12-reader-dark:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:13-map-dark:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:14-reader-landscape:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:14a-assistant-landscape:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:14aa-assistant-landscape-keyboard:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:14b-assistant-keyboard:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:14c-assistant-keyboard-dismissed:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:14d-assistant-draft-restored:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+04:42 +1: (tearDownAll)
+04:43 +1: All tests passed!

@@ -1,0 +1,11 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_assistant_keyboard_acceptance_test.dart
+Running Xcode build...
+Xcode build done.                                           28.3s
+00:00 +0: Landscape keyboard leaves assistant input and send accessible
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/20E973EA-DA26-4A81-9F49-756AFDBB2B78/Library/Application Support/Library/sets/a1a8cc435b3c32ec889a072b4f37c8a2.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (9 ms)
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/20E973EA-DA26-4A81-9F49-756AFDBB2B78/Library/Application Support/Library/sets/a1a8cc435b3c32ec889a072b4f37c8a2.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (14 ms)
+ASSISTANT_KEYBOARD:screen=Size(844.0, 390.0),keyboard=209.0,send=Rect.fromLTRB(736.0, 120.0, 780.0, 164.0)
+PHONE_SHOT:01-landscape-keyboard:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/20E973EA-DA26-4A81-9F49-756AFDBB2B78/Library/Caches/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/20E973EA-DA26-4A81-9F49-756AFDBB2B78/Library/Application Support/Library/sets/a1a8cc435b3c32ec889a072b4f37c8a2.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (2 ms)
+00:29 +1: (tearDownAll)
+00:29 +1: All tests passed!

@@ -1,0 +1,107 @@
+00:00 +0: loading /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart
+00:00 +0: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/tablet_library_controls_test.dart: Mac grid opens with the platform gesture
+00:00 +1: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:00 +2: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:00 +3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:00 +4: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: outline is one line with full tooltip and resizing persists
+00:01 +5: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <21>
+  Actual: <13.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart:82:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart line 82
+The test description was:
+  tablet split grip and compact tools light
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +5 -1: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes
+00:02 +5 -1: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light [E]
+  Test failed. See exception logs above.
+  The test description was: tablet split grip and compact tools light
+
+00:02 +5 -1: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools dark
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <21>
+  Actual: <13.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart:82:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart line 82
+The test description was:
+  tablet split grip and compact tools dark
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +5 -2: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes
+00:02 +5 -2: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools dark [E]
+  Test failed. See exception logs above.
+  The test description was: tablet split grip and compact tools dark
+
+00:03 +5 -2: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Fit Width": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart:57:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart line 57
+The test description was:
+  reader controls are compact; progress appears on hover and divider restores panes
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:03 +5 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(834.0, 1194.0): configured composer sends above the software keyboard
+00:03 +5 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes [E]
+  Test failed. See exception logs above.
+  The test description was: reader controls are compact; progress appears on hover and divider restores panes
+
+00:03 +6 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(834.0, 1194.0): configured composer sends above the software keyboard
+00:03 +7 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(1194.0, 834.0): configured composer sends above the software keyboard
+00:04 +8 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(500.0, 900.0): configured composer sends above the software keyboard
+00:05 +9 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(834.0, 1194.0): companion does not cover or block the source
+00:05 +10 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(1194.0, 834.0): companion does not cover or block the source
+00:05 +11 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(1024.0, 768.0): companion does not cover or block the source
+00:05 +12 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(600.0, 900.0): companion does not cover or block the source
+00:06 +13 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(500.0, 900.0): companion does not cover or block the source
+00:06 +14 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet style menu preserves 53%, 100%, 200% camera on open and close
+00:06 +15 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet settings controls remain reachable above landscape keyboard
+00:07 +16 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(834.0, 1194.0): larger interface text fits reader, assistant and settings
+00:07 +17 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet Size(600.0, 900.0): larger interface text fits reader, assistant and settings
+00:08 +18 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet 500.0: reader commands use available pane width
+00:08 +19 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet 834.0: reader commands use available pane width
+00:08 +20 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet pane layout is stable across the old 1180 threshold
+00:08 +21 -3: /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: (tearDownAll)
+00:08 +21 -3: Some tests failed.
+
+Failing tests:
+  /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools dark
+  /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/ipad_adaptation_test.dart: tablet split grip and compact tools light
+  /private/tmp/foliarc-native-baseline-da46/apps/marginmind/test/workspace_layout_test.dart: reader controls are compact; progress appears on hover and divider restores panes

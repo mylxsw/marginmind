@@ -1,0 +1,61 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: (setUpAll)
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:00 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings group separates rows and shows a footer
+00:00 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:00 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:00 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:00 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:00 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:00 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:00 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: iPhone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: pop-up button checks the current value and reports a choice
+00:00 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: pop-up button checks the current value and reports a choice
+00:00 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: pop-up button checks the current value and reports a choice
+00:00 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: pop-up button checks the current value and reports a choice
+00:00 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: iPad compact and desktop keep legacy surfaces
+00:00 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: spring lens moves, safe bottom is a maximum and reduced motion is immediate
+00:00 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: spring lens moves, safe bottom is a maximum and reduced motion is immediate
+00:00 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: spring lens moves, safe bottom is a maximum and reduced motion is immediate
+00:00 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: spring lens moves, safe bottom is a maximum and reduced motion is immediate
+00:00 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a compact sheet or dialog rises from the bottom; dragging down or Esc pops it
+00:00 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a compact sheet or dialog rises from the bottom; dragging down or Esc pops it
+00:00 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a compact sheet or dialog rises from the bottom; dragging down or Esc pops it
+00:00 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a compact sheet or dialog rises from the bottom; dragging down or Esc pops it
+00:00 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a compact sheet or dialog rises from the bottom; dragging down or Esc pops it
+00:00 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:00 +44: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +45: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +46: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +47: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +48: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +49: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +50: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: sheets a touch action sheet uses the shared opaque material
+00:01 +51: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a regular tablet window keeps the centered sheet
+00:01 +52: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a tablet expanding sheet keeps medium/full dragging and dismissal
+00:01 +53: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: action sheet a compact window lists the items above Cancel (touch)
+00:01 +54: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: action sheet a compact window lists the items above Cancel (mouse)
+00:01 +55: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBackHandler newest handler first, only while its page is current; then the app leaves
+00:01 +56: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBackHandler an open touch menu closes first
+00:01 +57: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMWindowScaffold floats the bottom bar over the content until the keyboard rises; the sheet covers both
+00:01 +58: All tests passed!

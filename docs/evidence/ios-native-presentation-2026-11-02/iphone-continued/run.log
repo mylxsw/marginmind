@@ -1,0 +1,21 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_redesign_acceptance_test.dart
+Running Xcode build...
+Xcode build done.                                           25.8s
+00:00 +0: phone screens remain usable with the shared tablet design
+PHONE_NATIVE:SettingsDiscard:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Application Support/Library/sets/2ae1c02d9a26c60dfdd66cf7b7979da7.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (11 ms)
+PHONE_SHOT:04-reader-outline:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ReaderNavigation:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ReaderManage:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:04b-reader-management:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:BookmarkEditor:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:04c-native-bookmark-saved:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:05-assistant:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:05a-assistant-composer:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:05b-assistant-draft:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06-map:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06a-map-selection:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06b-card-details:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06d-map-outline:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06da-map-style:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ColorPicker:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/F8E5C248-AFDC-4161-8048-C4B914B666E8/Library/Caches/mobile-redesign-shot

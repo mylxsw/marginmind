@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/Users/mylxsw/Workspace/codes/vibe/marginmind/docs/evidence/ios-native-presentation-2026-11-02/ipad-final/native-Landscape.xcresult
+
+2026-11-02 23:02:01.348 xcodebuild[59492:18833378] [MT] IDETestOperationsObserverDebug: 2.708 elapsed -- Testing started completed.
+2026-11-02 23:02:01.349 xcodebuild[59492:18833378] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-02 23:02:01.349 xcodebuild[59492:18833378] [MT] IDETestOperationsObserverDebug: 2.708 sec, +2.708 sec -- end
+Testing started

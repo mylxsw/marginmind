@@ -1,0 +1,20 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_redesign_acceptance_test.dart
+Running Xcode build...
+Xcode build done.                                           25.6s
+00:00 +0: phone screens remain usable with the shared tablet design
+PHONE_NATIVE:Portrait:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:01-library:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:01a-library-sidebar:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:02-settings-general:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:02-settings-reading:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Application Support/Library/sets/76bc1c40d3a47b05fb6703eeb83f3970.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (11 ms)
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Application Support/Library/sets/76bc1c40d3a47b05fb6703eeb83f3970.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (3 ms)
+PHONE_SHOT:03-reader:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:05-assistant:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06-map:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:Landscape:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Application Support/Library/sets/76bc1c40d3a47b05fb6703eeb83f3970.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (3 ms)
+PHONE_SHOT:06a-ipad-map-landscape:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:06b-ipad-assistant-landscape:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/8B8DBEB4-9F64-4B02-B202-53B1A674FE5F/Library/Caches/mobile-redesign-shot
+01:31 +1: (tearDownAll)
+01:32 +1: All tests passed!

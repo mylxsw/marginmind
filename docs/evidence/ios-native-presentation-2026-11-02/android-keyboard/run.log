@@ -1,0 +1,12 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_assistant_keyboard_acceptance_test.dart
+Running Gradle task 'assembleDebug'...                             20.2s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          895ms
+00:00 +0: Landscape keyboard leaves assistant input and send accessible
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/e142f88c0bb091f385dbb68f7f0de3f9.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (15 ms)
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/e142f88c0bb091f385dbb68f7f0de3f9.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (26 ms)
+ASSISTANT_KEYBOARD:screen=Size(914.3, 411.4),keyboard=261.3333333333333,send=Rect.fromLTRB(816.3, 102.1, 860.3, 146.1)
+PHONE_SHOT:01-landscape-keyboard:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/e142f88c0bb091f385dbb68f7f0de3f9.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (49 ms)
+00:31 +1: (tearDownAll)
+00:31 +1: All tests passed!

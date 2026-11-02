@@ -1,0 +1,40 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_assistant_keyboard_acceptance_test.dart
+Running Gradle task 'assembleDebug'...                             19.3s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          515ms
+00:00 +0: Landscape keyboard leaves assistant input and send accessible
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/2e60a36cebaba77607121a1d4885bdb3.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (31 ms)
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/2e60a36cebaba77607121a1d4885bdb3.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (18 ms)
+ASSISTANT_KEYBOARD:screen=Size(914.3, 411.4),keyboard=261.3333333333333,send=Rect.fromLTRB(853.3, 143.0, 897.3, 187.0)
+PHONE_SHOT:01-landscape-keyboard:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: a value less than or equal to <151.09523809523813>
+  Actual: <187.0>
+   Which: is not a value less than or equal to <151.09523809523813>
+Send must stay above the keyboard
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_assistant_keyboard_acceptance_test.dart:62:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_assistant_keyboard_acceptance_test.dart line 62
+The test description was:
+  Landscape keyboard leaves assistant input and send accessible
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:28 +0 -1: Landscape keyboard leaves assistant input and send accessible [E]
+  Test failed. See exception logs above.
+  The test description was: Landscape keyboard leaves assistant input and send accessible
+
+00:28 +0 -1: (tearDownAll)
+00:28 +0 -1: Some tests failed.
+
+Failing tests:
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_assistant_keyboard_acceptance_test.dart: Landscape keyboard leaves assistant input and send accessible

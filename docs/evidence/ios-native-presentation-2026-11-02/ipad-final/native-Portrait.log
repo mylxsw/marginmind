@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/Users/mylxsw/Workspace/codes/vibe/marginmind/docs/evidence/ios-native-presentation-2026-11-02/ipad-final/native-Portrait.xcresult
+
+2026-11-02 23:01:02.566 xcodebuild[58443:18828312] [MT] IDETestOperationsObserverDebug: 3.933 elapsed -- Testing started completed.
+2026-11-02 23:01:02.566 xcodebuild[58443:18828312] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-02 23:01:02.566 xcodebuild[58443:18828312] [MT] IDETestOperationsObserverDebug: 3.933 sec, +3.933 sec -- end
+Testing started
