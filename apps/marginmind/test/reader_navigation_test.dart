@@ -4,9 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/app/app.dart';
+import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/reader_margin.dart';
 import 'package:marginmind/features/workspace/widgets/reader_find_bar.dart';
 import 'package:marginmind/features/workspace/widgets/reader_sidebar.dart';
+import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/widgets/workspace_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -49,6 +53,39 @@ Future<void> pressWithControl(
 Finder inReaderSidebar(String text) => find.descendant(of: find.byType(ReaderSidebar), matching: find.text(text));
 
 void main() {
+  testWidgets('iPad sidebar mode buttons stay below the toolbar and accept taps', (tester) async {
+    final container = await pumpApp(
+      tester,
+      size: const Size(744, 1133),
+      overrides: [touchPlatformProvider.overrideWithValue(true)],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    owner.openDocument('c1');
+    owner.showReaderPanel(ReaderPanelMode.thumbnails);
+    await tester.pumpAndSettle();
+
+    for (final size in [const Size(744, 1133), const Size(1133, 744)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      final toolbar = find.descendant(of: find.byType(ReaderPane), matching: find.byType(WorkspaceToolbar));
+      expect(toolbar, findsOneWidget);
+      expect(tester.getTopLeft(find.byType(ReaderSidebar)).dy, greaterThanOrEqualTo(tester.getBottomLeft(toolbar).dy));
+      for (final (mode, icon) in [
+        (ReaderPanelMode.outline, MMIcons.outline),
+        (ReaderPanelMode.bookmarks, MMIcons.bookmark),
+        (ReaderPanelMode.annotations, MMIcons.annotations),
+        (ReaderPanelMode.thumbnails, MMIcons.thumbnails),
+      ]) {
+        await tester.tap(find.descendant(of: find.byType(ReaderSidebar), matching: find.byIcon(icon)));
+        await tester.pumpAndSettle();
+        expect(container.read(workspaceProvider('demo-1')).readerPanelMode, mode);
+      }
+      expect(tester.takeException(), isNull);
+    }
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
   group('workspace state', () {
     Future<(ProviderContainer, WorkspaceController)> create() async {
       final container = ProviderContainer(overrides: await testOverrides());

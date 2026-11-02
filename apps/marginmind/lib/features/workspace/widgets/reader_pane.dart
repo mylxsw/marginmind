@@ -1290,7 +1290,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         constraints.maxWidth <
                         MMSizes.readerSidebarMinWidth + MMSizes.readerContentMinWidth + MMSizes.dividerHitWidth;
                     Widget sidebar() => Padding(
-                      padding: EdgeInsets.only(bottom: chrome.bottom),
+                      // The tablet toolbar overlays the viewport. Keep the
+                      // sidebar's mode buttons below it, just like PDF controls.
+                      padding: EdgeInsets.only(
+                        top: context.mmTablet && WorkspaceToolbarScope.maybeOf(context) != null
+                            ? MMChromeInsets.of(context).top
+                            : 0,
+                        bottom: chrome.bottom,
+                      ),
                       child: _ResizableReaderSidebar(
                         studySetId: widget.studySetId,
                         document: doc,
