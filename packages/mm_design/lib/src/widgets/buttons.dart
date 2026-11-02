@@ -72,7 +72,10 @@ class MMButton extends StatelessWidget {
     final c = context.mmColors;
     final t = context.mmText;
     final dialog = MMDialogScope.contains(context);
-    final radius = dialog
+    final phone = MMInput.of(context).phone;
+    final radius = phone
+        ? 22.0
+        : dialog
         ? MMRadii.field
         : (context.mmTouchPlatform ? MMSizes.tabletControlVisual / 2 : (MMButtonTheme.radiusOf(context) ?? 15.0));
     return MMInteractive(
@@ -94,7 +97,11 @@ class MMButton extends StatelessWidget {
             duration: MMMotion.quick,
             opacity: s.enabled ? 1 : 0.4,
             child: Container(
-              height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : (dialog ? 32 : 30),
+              height: phone
+                  ? MMSizes.touchTarget
+                  : context.mmTouchPlatform
+                  ? MMSizes.tabletControlVisual
+                  : (dialog ? 32 : 30),
               constraints: dialog ? const BoxConstraints(minWidth: 72) : null,
               padding: EdgeInsets.symmetric(horizontal: variant == MMButtonVariant.plain ? 12 : 16),
               foregroundDecoration: c.flat && s.focused

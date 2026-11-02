@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A57600000000000000000001 /* NativePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57600000000000000000002; };
 		A57500000000000000000001 /* BrowserChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57500000000000000000002 /* BrowserChannel.swift */; };
         A53900000000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A53900000000000000000002; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -44,6 +45,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A57600000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePresentation.swift; sourceTree = "<group>"; };
 		A57500000000000000000002 /* BrowserChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserChannel.swift; sourceTree = "<group>"; };
         A53900000000000000000003 = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
         A53900000000000000000004 = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh; path = zh.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -129,6 +131,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				A57500000000000000000002 /* BrowserChannel.swift */,
+				A57600000000000000000002,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
@@ -292,6 +295,7 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				A57500000000000000000001 /* BrowserChannel.swift in Sources */,
+				A57600000000000000000001,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 			);

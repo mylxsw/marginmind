@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,11 +15,13 @@ void main() {
     bool changeOnPrint = false,
     bool pendingStages = false,
     bool failPreparation = false,
+    String? publicImageUrl,
   }) async {
     final session = BrowserSession(Uri.parse('https://example.com/'));
     var printed = false;
     var prepared = false;
     var polls = 0;
+    var replied = false;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       MethodChannel('marginmind/browser/${session.id}'),
       (call) async {
@@ -32,11 +35,23 @@ void main() {
         if (script == 'JSON.stringify({url:location.href})') {
           return jsonEncode({'url': printed && changeOnPrint ? 'https://example.com/new' : session.url.toString()});
         }
+        if (script.contains('job.imageResponse =')) {
+          expect(script, contains(base64Encode([137, 80, 78, 71])));
+          replied = true;
+          return '{}';
+        }
         if (script.contains('job.preparePrint()')) prepared = true;
         if (script.startsWith('JSON.stringify({ready:')) {
           return failPreparation ? '{"failed":true}' : '{"ready":true}';
         }
         if (script.startsWith('JSON.stringify(globalThis[')) {
+          if (publicImageUrl != null && !replied) {
+            return jsonEncode({
+              'pending': true,
+              'stage': 'images',
+              'imageRequest': {'id': 1, 'url': publicImageUrl},
+            });
+          }
           if (pendingStages && polls++ < 2) return jsonEncode({'pending': true, 'stage': 'images'});
           return jsonEncode(
             fail
@@ -71,6 +86,22 @@ void main() {
     );
     return session;
   }
+
+  test('CORS image requests are downloaded and returned to the capture job', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server.listen((request) async {
+      request.response.add([137, 80, 78, 71]);
+      await request.response.close();
+    });
+    addTearDown(() => server.close(force: true));
+    final s = await setup(publicImageUrl: 'http://127.0.0.1:${server.port}/image');
+    addTearDown(s.dispose);
+    final capture = await HttpOverrides.runWithHttpOverrides(
+      () => s.captureDocument(navigationId: s.navigationId),
+      _LocalNetworkOverrides(),
+    );
+    expect(capture.resources['resources/image-1.png'], [137, 80, 78, 71]);
+  });
 
   test('live extraction includes resources, original PDF and capture identity', () async {
     final s = await setup();
@@ -126,3 +157,6 @@ void main() {
     loading.dispose();
   });
 }
+
+// Bypass Flutter widget tests' HTTP-400 stub for the local fixture server.
+class _LocalNetworkOverrides extends HttpOverrides {}

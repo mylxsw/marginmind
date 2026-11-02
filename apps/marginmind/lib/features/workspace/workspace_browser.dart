@@ -4,6 +4,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../shared/l10n.dart';
+import '../../shared/phone_form.dart';
 import 'workspace_controller.dart';
 import 'web_conversion.dart';
 
@@ -153,7 +154,27 @@ String browserUrlError(BuildContext context, BrowserUrlError code) => switch (co
 
 Future<void> showAddWebPage(BuildContext context, WidgetRef ref, String studySetId) async {
   if (!MMPlatformCapabilities.current.webBrowser) return;
-  final url = await showMMSheet<Uri>(context: context, width: 540, builder: (_) => const _AddressDialog());
+  Uri? url;
+  if (usesNativePhonePresentation(context)) {
+    final l = context.l10n;
+    final values = await showPhoneForm(
+      context,
+      title: l.addWebTitle,
+      submit: l.open,
+      fields: [MMNativeField(id: 'url', label: l.addWebTitle, keyboard: 'url', placeholder: 'https://example.com')],
+      validate: (values) {
+        try {
+          BrowserPolicy.normalize(values['url']!);
+          return null;
+        } on BrowserUrlException catch (error) {
+          return browserUrlError(context, error.code);
+        }
+      },
+    );
+    if (values != null) url = BrowserPolicy.normalize(values['url']!);
+  } else {
+    url = await showMMSheet<Uri>(context: context, width: 540, builder: (_) => const _AddressDialog());
+  }
   if (url != null && context.mounted) ref.read(workspaceBrowserProvider(studySetId).notifier).open(url);
 }
 

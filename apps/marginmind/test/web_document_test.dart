@@ -202,22 +202,24 @@ void main() {
       snapshot: '<img src="resources/image-1.png">',
       resources: {'resources/image-1.png': png},
     );
-    final prepared = await const WebDocumentConverter().prepare(
-      captured,
-      id: 'image',
-      title: 'Image',
-      mode: WebCaptureMode.readable,
-    );
-    final files = prepared.package.files;
-    final manifest = jsonDecode(utf8.decode(files[prepared.package.document.contentManifest]!)) as Map;
-    final resource = (manifest['resources'] as List).single as Map;
-    expect(files[resource['path']], png);
-    expect(resource['sourcePath'], 'resources/image-1.png');
-    expect(prepared.package.document.revision, prepared.book.revision);
-    expect(
-      files[prepared.package.document.origin!.snapshotFile!.replaceFirst('snapshot.html', 'resources/image-1.png')],
-      png,
-    );
+    for (final mode in [WebCaptureMode.readable, WebCaptureMode.markdown]) {
+      final prepared = await const WebDocumentConverter().prepare(captured, id: 'image', title: 'Image', mode: mode);
+      final files = prepared.package.files;
+      final manifest = jsonDecode(utf8.decode(files[prepared.package.document.contentManifest]!)) as Map;
+      final resource = (manifest['resources'] as List).single as Map;
+      expect(files[resource['path']], png);
+      expect(resource['sourcePath'], mode == WebCaptureMode.readable ? 'resources/image-1.png' : startsWith('images/'));
+      expect(prepared.package.document.revision, prepared.book.revision);
+      expect(
+        files[prepared.package.document.origin!.snapshotFile!.replaceFirst('snapshot.html', 'resources/image-1.png')],
+        png,
+      );
+      if (mode == WebCaptureMode.markdown) {
+        final source = utf8.decode(files[prepared.package.document.sourceFileName]!);
+        expect(source, contains('![](<resources/image-1.png>)'));
+        expect(prepared.book.resources.values.single, png);
+      }
+    }
     expect(captured.resources['resources/image-1.png']!.asUnmodifiableView(), png);
   });
   test(

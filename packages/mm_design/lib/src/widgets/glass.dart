@@ -9,12 +9,13 @@ import '../tokens/metrics.dart';
 import '../tokens/phone_glass.dart';
 import 'control_frame.dart';
 import 'flat_surface.dart';
+import 'native_glass.dart';
 
 /// Surface for controls that float above content: toolbar
 /// groups, floating map controls, HUDs. Never use it for content (pages,
 /// cards) and never stack glass on glass.
 ///
-/// Phones and tablets share the compact, opaque iPad control surface.
+/// iPhone uses the host UIKit material; tablets keep their existing surface.
 /// Pointer platforms keep their existing blur and accessibility fallback.
 class MMGlass extends StatelessWidget {
   const MMGlass({
@@ -44,6 +45,12 @@ class MMGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (MMInput.of(context).phone &&
+        !MMFlatSurface.of(context) &&
+        MMNativeGlass.available &&
+        !MMAppearance.reduceTransparencyOf(context)) {
+      return MMNativeGlass(borderRadius: borderRadius, padding: padding, child: child);
+    }
     if (MMFlatSurface.of(context) || MMInput.of(context).phone) {
       final c = context.mmColors;
       final decoration = BoxDecoration(
@@ -183,6 +190,12 @@ class MMLiquidGlass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    if (MMInput.of(context).phone &&
+        !MMFlatSurface.of(context) &&
+        MMNativeGlass.available &&
+        !MMAppearance.reduceTransparencyOf(context)) {
+      return MMNativeGlass(borderRadius: borderRadius, padding: padding, child: child);
+    }
     if (MMFlatSurface.of(context) || MMInput.of(context).phone) {
       return DecoratedBox(
         decoration: BoxDecoration(

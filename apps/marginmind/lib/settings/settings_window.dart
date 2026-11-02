@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,7 @@ import '../features/assistant/settings/web_search_settings.dart';
 import '../features/vocabulary/hint_controls.dart';
 import '../features/voice/voice_settings_page.dart';
 import '../shared/l10n.dart';
+import '../shared/phone_form.dart';
 import 'app_settings.dart';
 import 'app_icon_picker.dart';
 import 'assistant_icon_picker.dart';
@@ -29,10 +32,15 @@ enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice }
 Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) {
   if (MMInput.of(context).phone) {
     return Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
-      ),
+      defaultTargetPlatform == TargetPlatform.iOS
+          ? CupertinoPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+            )
+          : MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+            ),
     );
   }
   return showMMDialog<void>(
@@ -155,26 +163,41 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
     _closing = true;
     final l = context.l10n;
     try {
-      final save = await showMMSheet<bool>(
-        context: context,
-        builder: (context) => MMSheet(
-          title: MMInput.of(context).phone ? l.settingsCloseTitle : l.aiTasksCloseTitle,
-          actions: [
-            MMButton(
-              key: const ValueKey('ai-tasks-discard'),
-              label: l.aiTasksDontSave,
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            MMButton(
-              key: const ValueKey('ai-tasks-close-save'),
-              label: l.save,
-              variant: MMButtonVariant.primary,
-              autofocus: true,
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-        ),
-      );
+      final native = usesNativePhonePresentation(context);
+      final choice = native
+          ? await MMNativePresentation.confirm(
+              dark: Theme.of(context).brightness == Brightness.dark,
+              title: l.settingsCloseTitle,
+              cancel: l.cancel,
+              actions: [
+                MMNativeAction('discard', l.aiTasksDontSave, destructive: true),
+                MMNativeAction('save', l.save),
+              ],
+            )
+          : null;
+      if (!mounted) return;
+      final save = native
+          ? (choice == null ? null : choice == 'save')
+          : await showMMSheet<bool>(
+              context: context,
+              builder: (context) => MMSheet(
+                title: MMInput.of(context).phone ? l.settingsCloseTitle : l.aiTasksCloseTitle,
+                actions: [
+                  MMButton(
+                    key: const ValueKey('ai-tasks-discard'),
+                    label: l.aiTasksDontSave,
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                  MMButton(
+                    key: const ValueKey('ai-tasks-close-save'),
+                    label: l.save,
+                    variant: MMButtonVariant.primary,
+                    autofocus: true,
+                    onPressed: () => Navigator.of(context).pop(true),
+                  ),
+                ],
+              ),
+            );
       if (save == null || !mounted) return;
       if (save) {
         if (_aiDraft.dirty && !await saveAiTaskDraft(ref, _aiDraft)) {
@@ -330,15 +353,20 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
                       key: const ValueKey('phone-settings-sections'),
                       padding: const EdgeInsets.all(MMSpacing.m),
                       children: [
-                        for (final (tab, icon, label) in tabs)
-                          ListTile(
-                            key: ValueKey('settings-tab-${tab.name}'),
-                            leading: Icon(icon, color: c.secondaryLabel),
-                            title: Text(label),
-                            trailing: const Icon(Icons.chevron_right),
-                            minVerticalPadding: 16,
-                            onTap: () => _go(tab),
-                          ),
+                        CupertinoListSection.insetGrouped(
+                          margin: EdgeInsets.zero,
+                          backgroundColor: Colors.transparent,
+                          children: [
+                            for (final (tab, icon, label) in tabs)
+                              CupertinoListTile.notched(
+                                key: ValueKey('settings-tab-${tab.name}'),
+                                leading: Icon(icon, color: c.secondaryLabel),
+                                title: Text(label),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => _go(tab),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
                     for (final (tab, _, _) in tabs)

@@ -36,6 +36,137 @@ class ReaderSidebar extends ConsumerWidget {
   final MMPdfViewController pdf;
   final double width;
 
+  /// The phone browses a native system list; the management page keeps all
+  /// editing, sorting and annotation tools without rebuilding the reader.
+  static Future<bool> showNativeNavigation(
+    BuildContext context,
+    WidgetRef ref, {
+    required String studySetId,
+    required Document document,
+    required MMPdfViewController pdf,
+  }) async {
+    final l = context.l10n;
+    final controller = ref.read(workspaceProvider(studySetId).notifier);
+    final state = ref.read(workspaceProvider(studySetId));
+    final content = controller.content;
+    final actions = <String, Future<void> Function()>{};
+    final outline = <MMNativeListRow>[];
+    void custom(List<PdfOutlineEntry> entries, int depth) {
+      for (final e in entries) {
+        final id = 'outline-${e.id}';
+        outline.add(
+          MMNativeListRow(
+            id,
+            e.title,
+            depth: depth,
+            subtitle: e.page > 0 ? l.pageNumber(e.page) : null,
+            enabled: e.page > 0,
+          ),
+        );
+        actions[id] = () async {
+          await pdf.jumpToPage(e.page);
+        };
+        custom(e.children, depth + 1);
+      }
+    }
+
+    void original(List<MMPdfOutlineItem> entries, String prefix, int depth) {
+      for (final (index, e) in entries.indexed) {
+        final id = '$prefix$index';
+        outline.add(
+          MMNativeListRow(
+            id,
+            e.title,
+            depth: depth,
+            subtitle: e.page > 0 ? l.pageNumber(e.page) : null,
+            enabled: e.page > 0,
+          ),
+        );
+        actions[id] = () async {
+          await pdf.jumpToPage(e.page);
+        };
+        original(e.children, '$id/', depth + 1);
+      }
+    }
+
+    final edited = content.outlineOn(document.id);
+    if (edited != null) {
+      custom(edited.items, 0);
+    } else {
+      original(pdf.outline, 'outline-', 0);
+    }
+    final bookmarks = [
+      for (final b in content.bookmarksOn(document.id))
+        MMNativeListRow(
+          'bookmark-${b.id}',
+          b.title.isEmpty ? l.pageNumber(b.page) : b.title,
+          subtitle: l.pageNumber(b.page),
+          selected: b.page == pdf.currentPage,
+        ),
+    ];
+    for (final b in content.bookmarksOn(document.id)) {
+      actions['bookmark-${b.id}'] = () async {
+        await pdf.jumpToPage(b.page);
+      };
+    }
+    final annotationView = _Annotations(
+      document: document,
+      studySetId: studySetId,
+      pdf: pdf,
+      annotations: content.annotationsOn(document.id),
+      notes: content.marginNotes.where((n) => n.documentId == document.id).toList(),
+      ink: content.inkStrokes.where((s) => s.documentId == document.id && s.textAnchor == null).toList(),
+    );
+    final annotationRows = <MMNativeListRow>[];
+    for (final entry in annotationView.entriesFor(state.annotationColors)) {
+      final text = entry.highlight?.quote ?? entry.note?.text ?? '';
+      annotationRows.add(
+        MMNativeListRow(
+          entry.id,
+          entry.ink.isNotEmpty
+              ? l.inkAnnotations
+              : text.isNotEmpty
+              ? text
+              : entry.note != null
+              ? l.marginNoteAction
+              : l.toolArea,
+          subtitle: entry.needsReview
+              ? l.annotationNotFound
+              : entry.page > 0
+              ? l.pageNumber(entry.page)
+              : document.title,
+        ),
+      );
+      actions[entry.id] = () => annotationView._open(context, ref, entry);
+    }
+    final result = await MMNativePresentation.list(
+      title: document.title,
+      close: l.closePanel,
+      manage: l.moreTools,
+      empty: l.noAnnotations,
+      dark: Theme.of(context).brightness == Brightness.dark,
+      selectedSection: state.readerPanelMode.name,
+      sections: [
+        MMNativeListSection('thumbnails', l.readerThumbnails, [
+          for (var page = 1; page <= document.pageCount; page++)
+            MMNativeListRow('page-$page', l.pageNumber(page), preview: true, selected: page == pdf.currentPage),
+        ]),
+        MMNativeListSection('outline', l.readerOutline, outline, empty: l.noOutlineEntries),
+        MMNativeListSection('bookmarks', l.readerBookmarks, bookmarks, empty: l.noBookmarks),
+        MMNativeListSection('annotations', l.readerAnnotations, annotationRows),
+      ],
+      preview: (id) async => id.startsWith('page-') ? pdf.renderPreview(int.parse(id.substring(5))) : null,
+    );
+    if (!context.mounted) return false;
+    if (result == '__manage__') return true;
+    if (result != null && result.startsWith('page-')) {
+      await pdf.jumpToPage(int.parse(result.substring(5)));
+    } else if (result != null) {
+      await actions[result]?.call();
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -341,6 +472,25 @@ class _Annotations extends ConsumerWidget {
     return chapter;
   }
 
+  List<_AnnotationEntry> entriesFor(Set<int> colors) {
+    final visibleAnnotations = annotations.where((a) => a.colorIndex > 5 || colors.contains(a.colorIndex)).toList();
+    final inkPages = <int, List<InkStroke>>{};
+    for (final stroke in ink) {
+      (inkPages[stroke.page] ??= []).add(stroke);
+    }
+    return [
+      for (final annotation in visibleAnnotations) _AnnotationEntry.highlight(annotation),
+      for (final note in notes.where((n) => n.anchor?.textAnchors.isEmpty ?? true)) _AnnotationEntry.note(note),
+      for (final strokes in inkPages.values) _AnnotationEntry.ink(strokes),
+    ]..sort((a, b) {
+      if (a.needsReview != b.needsReview) return a.needsReview ? -1 : 1;
+      final byPage = a.page.compareTo(b.page);
+      if (byPage != 0) return byPage;
+      final byCreated = a.createdAt.compareTo(b.createdAt);
+      return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -348,22 +498,7 @@ class _Annotations extends ConsumerWidget {
     final t = context.mmText;
     final colors = ref.watch(workspaceProvider(studySetId).select((s) => s.annotationColors));
     final visibleAnnotations = annotations.where((a) => a.colorIndex > 5 || colors.contains(a.colorIndex)).toList();
-    final inkPages = <int, List<InkStroke>>{};
-    for (final stroke in ink) {
-      (inkPages[stroke.page] ??= []).add(stroke);
-    }
-    final entries =
-        [
-          for (final annotation in visibleAnnotations) _AnnotationEntry.highlight(annotation),
-          for (final note in notes.where((n) => n.anchor?.textAnchors.isEmpty ?? true)) _AnnotationEntry.note(note),
-          for (final strokes in inkPages.values) _AnnotationEntry.ink(strokes),
-        ]..sort((a, b) {
-          if (a.needsReview != b.needsReview) return a.needsReview ? -1 : 1;
-          final byPage = a.page.compareTo(b.page);
-          if (byPage != 0) return byPage;
-          final byCreated = a.createdAt.compareTo(b.createdAt);
-          return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
-        });
+    final entries = entriesFor(colors);
     if (annotations.isEmpty && entries.isEmpty) return _Empty(label: l.noAnnotations);
     final reviewCount = entries.where((e) => e.needsReview).length;
     final owner = ref.read(workspaceProvider(studySetId).notifier);

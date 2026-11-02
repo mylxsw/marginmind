@@ -5,10 +5,13 @@ import Security
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var browserFactory: BrowserFactory?
+  private var nativePresentation: NativePresentation?
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "MarginMindMobile")!
     let messenger = registrar.messenger()
+    nativePresentation = NativePresentation(messenger: messenger)
+    registrar.register(NativeGlassFactory(), withId: "marginmind/native_glass")
     FlutterMethodChannel(name: "marginmind/app_icon", binaryMessenger: messenger)
       .setMethodCallHandler { call, result in
         let app = UIApplication.shared

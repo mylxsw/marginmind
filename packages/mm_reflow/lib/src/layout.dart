@@ -49,16 +49,50 @@ class LayoutPiece {
     return (end ? lo : lo - 1).clamp(0, offsets.length - 1);
   }
 
-  Iterable<ui.TextBox> _boxes(int start, int end) sync* {
+  Iterable<ui.TextBox> _boxes(int start, int end, {ui.BoxHeightStyle heightStyle = ui.BoxHeightStyle.tight}) sync* {
     final first = _visual(start), last = _visual(end, end: true);
     var segment = first;
     for (var i = first; i < last; i++) {
       if (_source(i) == _source(i + 1)) {
-        if (segment < i) yield* painter!.getBoxesForSelection(TextSelection(baseOffset: segment, extentOffset: i));
+        if (segment < i) {
+          yield* painter!.getBoxesForSelection(
+            TextSelection(baseOffset: segment, extentOffset: i),
+            boxHeightStyle: heightStyle,
+          );
+        }
         segment = i + 1;
       }
     }
-    if (segment < last) yield* painter!.getBoxesForSelection(TextSelection(baseOffset: segment, extentOffset: last));
+    if (segment < last) {
+      yield* painter!.getBoxesForSelection(
+        TextSelection(baseOffset: segment, extentOffset: last),
+        boxHeightStyle: heightStyle,
+      );
+    }
+  }
+
+  /// Font fallback can split one line into boxes with different tight bottoms.
+  /// Use the line's full height and join touching runs before painting a line
+  /// style, so dashes and waves also keep their phase across font boundaries.
+  Iterable<Rect> _underlineRects(int start, int end) sync* {
+    final rects = _boxes(start, end, heightStyle: ui.BoxHeightStyle.max).map((b) => b.toRect()).toList()
+      ..sort((a, b) {
+        final row = a.top.compareTo(b.top);
+        return row != 0 ? row : a.left.compareTo(b.left);
+      });
+    Rect? pending;
+    for (final rect in rects) {
+      if (pending != null &&
+          (pending.top - rect.top).abs() < .01 &&
+          (pending.bottom - rect.bottom).abs() < .01 &&
+          rect.left <= pending.right + .01) {
+        pending = pending.expandToInclude(rect);
+      } else {
+        if (pending != null) yield pending;
+        pending = rect;
+      }
+    }
+    if (pending != null) yield pending;
   }
 }
 
@@ -189,12 +223,14 @@ class ChapterLayout {
 
   /// Preserves separate bidi rectangles; never merges a line across a bidi gap.
   /// [candidates] limits known paragraph ranges to pieces from this layout.
+  /// [forUnderline] aligns and joins adjacent font runs within each text line.
   List<LayoutBox> boxes(
     TextAnchor anchor, {
     int? page,
     Iterable<LayoutPiece>? candidates,
     Offset localScroll = Offset.zero,
     Map<String, double> horizontalOffsets = const {},
+    bool forUnderline = false,
   }) {
     _check();
     if (!chapter.resolves(anchor)) return const [];
@@ -206,7 +242,8 @@ class ChapterLayout {
       if (start >= end) continue;
       final rects = piece.painter == null
           ? [piece.rect]
-          : piece._boxes(start, end).map((box) => _scaleRect(box.toRect(), piece.scale).shift(piece.rect.topLeft));
+          : (forUnderline ? piece._underlineRects(start, end) : piece._boxes(start, end).map((box) => box.toRect()))
+                .map((rect) => _scaleRect(rect, piece.scale).shift(piece.rect.topLeft));
       for (var rect in rects) {
         if (horizontalOffsets.containsKey(piece.block.id)) {
           rect = rect.shift(Offset(-horizontalOffsets[piece.block.id]!, 0));

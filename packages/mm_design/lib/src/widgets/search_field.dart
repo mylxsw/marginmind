@@ -288,7 +288,7 @@ class _MMTextFieldState extends State<MMTextField> {
               color: widget._settings && !focused ? Colors.transparent : c.quaternaryFill,
               borderRadius: BorderRadius.circular(MMRadii.field),
               border: Border.all(color: focused ? c.accent : (dialog ? c.hairline : Colors.transparent)),
-              boxShadow: c.flat
+              boxShadow: c.flat || MMInput.of(context).phone
                   ? null
                   : focused
                   ? [BoxShadow(color: c.accentTint, spreadRadius: 3)]

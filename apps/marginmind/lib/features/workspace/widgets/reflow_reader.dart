@@ -879,6 +879,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                   child: Offstage(
                                     offstage: !state.readerPanelVisible,
                                     child: PhoneReaderNavigationFrame(
+                                      open: state.readerPanelVisible,
+                                      nativePresentation: () => _nativeNavigation(s),
                                       title: widget.document.title,
                                       onClose: workspace.closeReaderPanel,
                                       child: _sidebar(s, state),
@@ -1397,6 +1399,114 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     );
   }
 
+  Future<bool> _nativeNavigation(ReflowSession s) async {
+    final book = s.book!, l = context.l10n;
+    final actions = <String, Future<void> Function()>{};
+    final chapterIds = book.chapters.map((chapter) => chapter.id).toList();
+    final state = ref.read(workspaceProvider(widget.studySetId));
+    final outline = <MMNativeListRow>[];
+    for (final (index, entry) in book.outline.indexed) {
+      final id = 'outline-$index';
+      outline.add(
+        MMNativeListRow(
+          id,
+          entry.title,
+          selected: entry.chapterId == s.position?.chapterId && entry.title == book.title(s.position!),
+        ),
+      );
+      actions[id] = () => _jump(book.position(entry.chapterId, entry.offset));
+    }
+    final bookmarks = <MMNativeListRow>[];
+    for (final entry in workspace.content.bookmarksOn(widget.document.id, chapters: chapterIds)) {
+      if (entry.position case final TextReadingPosition position) {
+        final id = 'bookmark-${entry.id}';
+        bookmarks.add(
+          MMNativeListRow(
+            id,
+            entry.title.isEmpty ? book.title(position, fallback: widget.document.title) : entry.title,
+            subtitle: '${(book.progress(position) * 100).round()}%',
+          ),
+        );
+        actions[id] = () => _jump(position);
+      }
+    }
+    final annotations = <MMNativeListRow>[];
+    for (final entry in workspace.content.annotationsOn(widget.document.id).where((a) => a.isText)) {
+      final anchor = book.resolve(entry.textAnchors.first);
+      final id = 'annotation-${entry.id}';
+      final review = entry.needsReview || anchor == null;
+      annotations.add(
+        MMNativeListRow(
+          id,
+          entry.capture == null ? entry.quote : l.imageExcerpt,
+          subtitle: review ? l.annotationNotFound : book.title(book.position(anchor.chapterId, anchor.start)),
+        ),
+      );
+      actions[id] = () async {
+        if (anchor != null) {
+          await _jump(book.position(anchor.chapterId, anchor.start));
+          workspace.tapHighlight(entry.id);
+        } else if (mounted) {
+          MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);
+        }
+      };
+    }
+    final ink = <String, List<InkStroke>>{};
+    for (final stroke in workspace.content.inkStrokes) {
+      if (stroke.documentId == widget.document.id && stroke.textAnchor != null) {
+        (ink[stroke.textAnchor!.anchor.chapterId] ??= []).add(stroke);
+      }
+    }
+    for (final group in ink.entries) {
+      final id = 'ink-${group.key}';
+      final chapter = book.chapter(group.key);
+      annotations.add(
+        MMNativeListRow(
+          id,
+          l.inkAnnotations,
+          subtitle: chapter == null ? l.annotationNotFound : l.inkStrokeCount(group.value.length),
+        ),
+      );
+      actions[id] = () async {
+        if (chapter != null) {
+          await _jump(book.position(chapter.id, 0));
+        } else if (mounted) {
+          MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);
+        }
+      };
+    }
+    final result = await MMNativePresentation.list(
+      title: widget.document.title,
+      close: l.closePanel,
+      manage: l.moreTools,
+      empty: l.noAnnotations,
+      dark: Theme.of(context).brightness == Brightness.dark,
+      selectedSection: state.readerPanelMode.name,
+      sections: [
+        if (widget.document.capabilities().zoom)
+          MMNativeListSection('thumbnails', l.readerThumbnails, [
+            for (final (index, chapter) in book.chapters.indexed)
+              MMNativeListRow(
+                'chapter-${chapter.id}',
+                l.pageNumber(index + 1),
+                selected: chapter.id == s.position?.chapterId,
+              ),
+          ]),
+        MMNativeListSection('outline', l.readerOutline, outline, empty: l.noOutlineEntries),
+        MMNativeListSection('bookmarks', l.readerBookmarks, bookmarks, empty: l.noBookmarks),
+        MMNativeListSection('annotations', l.readerAnnotations, annotations),
+      ],
+    );
+    if (!mounted) return false;
+    if (result == '__manage__') return true;
+    if (result != null && result.startsWith('chapter-')) {
+      await _jump(book.position(result.substring(8), 0));
+    } else if (result != null) {
+      await actions[result]?.call();
+    }
+    return false;
+  }
+
   Widget _sidebar(ReflowSession s, WorkspaceState state) {
     final book = s.book!, l = context.l10n;
     bool needsReview(Annotation a) => a.needsReview || a.textAnchors.any((anchor) => book.resolve(anchor) == null);
@@ -1904,8 +2014,8 @@ class ReflowReaderPainter extends CustomPainter {
     layout.paint(canvas, page: page);
     for (final a in annotations) {
       for (final anchor in resolved[a.id] ?? <TextAnchor>[]) {
-        for (final box in layout.boxes(anchor, page: page)) {
-          if (a.kind == AnnotationKind.underline) {
+        if (a.kind == AnnotationKind.underline) {
+          for (final box in layout.boxes(anchor, page: page, forUnderline: true)) {
             canvas.save();
             canvas.translate(box.rect.left, box.rect.top);
             MMPdfAnnotationLinePainter(
@@ -1914,6 +2024,8 @@ class ReflowReaderPainter extends CustomPainter {
             ).paint(canvas, box.rect.size);
             canvas.restore();
           }
+        }
+        for (final box in layout.boxes(anchor, page: page)) {
           if (a.id == editing) {
             canvas.drawRRect(
               RRect.fromRectAndRadius(box.rect.inflate(2), const Radius.circular(3)),

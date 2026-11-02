@@ -74,12 +74,26 @@ abstract final class MMTheme {
 
 /// Text styles resolved against the current colors.
 class MMTextStyles {
-  const MMTextStyles(this.colors, {this.tablet = false});
+  const MMTextStyles(this.colors, {this.tablet = false, this.phone = false});
 
   final MMColors colors;
   final bool tablet;
+  final bool phone;
 
   TextStyle _ui(TextStyle style) {
+    if (phone) {
+      final size = switch (style.fontSize) {
+        26 => 34.0,
+        34 => 34.0,
+        20 => 22.0,
+        15 => 17.0,
+        13 => 17.0,
+        12 => 16.0,
+        11 => 13.0,
+        _ => style.fontSize!,
+      };
+      return style.copyWith(fontSize: size, height: (size + 5) / size, letterSpacing: 0);
+    }
     if (!tablet) return style;
     final size = style.fontSize! + 2;
     return style.copyWith(fontSize: size, height: (size + 5) / size, letterSpacing: 0);
@@ -103,7 +117,7 @@ class MMTextStyles {
 extension MMThemeContext on BuildContext {
   MMColors get mmColors => Theme.of(this).extension<MMColors>() ?? MMColors.light;
 
-  MMTextStyles get mmText => MMTextStyles(mmColors, tablet: mmTouchPlatform);
+  MMTextStyles get mmText => MMTextStyles(mmColors, tablet: mmTouchPlatform, phone: MMInput.of(this).phone);
 
   /// Document and map content keep their designed size independently of chrome.
   MMTextStyles get mmContentText => MMTextStyles(mmColors);

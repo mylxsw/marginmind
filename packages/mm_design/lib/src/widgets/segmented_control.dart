@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
 import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
@@ -42,6 +44,33 @@ class MMSegmentedControl<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
+    if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: MMSizes.touchTarget),
+        child: CupertinoSlidingSegmentedControl<int>(
+          groupValue: segments.indexWhere((segment) => segment.value == value),
+          onValueChanged: onChanged == null
+              ? (_) {}
+              : (index) {
+                  if (index != null) onChanged!(segments[index].value);
+                },
+          children: {
+            for (final (index, segment) in segments.indexed)
+              index: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child:
+                    segment.child ??
+                    Text(
+                      segment.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.callout.copyWith(color: onChanged == null ? c.secondaryLabel : c.label),
+                    ),
+              ),
+          },
+        ),
+      );
+    }
     if (context.mmTouchPlatform) return _tablet(context);
     final height = context.mmTouch ? MMSizes.segmentedTouch : MMSizes.segmented;
     return Container(

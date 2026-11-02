@@ -242,7 +242,7 @@ void main() {
     expect(s.phase, BrowserPhase.ready);
     s.dispose();
   });
-  testWidgets('slow and ready each prompt once, then navigation resets both', (tester) async {
+  testWidgets('automatic prompt is shown once per tab across phases and navigations', (tester) async {
     var now = Duration.zero;
     var dom = 0;
     final s = BrowserSession(Uri.parse('https://example.com/'), elapsed: () => now);
@@ -262,14 +262,14 @@ void main() {
       dom++;
       await tester.pump(const Duration(milliseconds: 200));
       expect(s.phase, BrowserPhase.slow);
-      expect(s.prompt, isTrue);
+      expect(s.prompt, navigation == 1);
       s.dismissPrompt();
       await tester.pump(const Duration(milliseconds: 200));
       expect(s.prompt, isFalse);
       now += const Duration(milliseconds: 800);
       await tester.pump(const Duration(milliseconds: 200));
       expect(s.phase, BrowserPhase.ready);
-      expect(s.prompt, isTrue);
+      expect(s.prompt, isFalse);
       s.dismissPrompt();
       dom++;
       await tester.pump(const Duration(milliseconds: 200));
@@ -282,6 +282,51 @@ void main() {
     }
     s.dispose();
   });
+
+  for (final dismissal in ['ignored', 'interaction', 'cancelled']) {
+    testWidgets('tab prompt stays consumed after $dismissal, SPA and reload', (tester) async {
+      var now = Duration.zero;
+      var dom = 0, interactions = 0;
+      var url = 'https://example.com/article';
+      final s = BrowserSession(Uri.parse(url), elapsed: () => now);
+      addTearDown(s.dispose);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        MethodChannel('marginmind/browser/${s.id}'),
+        (call) async => call.method == 'evaluate'
+            ? jsonEncode({'url': url, 'dom': dom, 'network': dom, 'interactions': interactions, 'complete': true})
+            : null,
+      );
+      await s.attach();
+      await event(s, 'loaded');
+      await tester.pump(const Duration(milliseconds: 200));
+      now += const Duration(seconds: 1);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.prompt, isTrue);
+      if (dismissal == 'cancelled') s.dismissPrompt();
+      if (dismissal == 'interaction') interactions++;
+      dom++;
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.prompt, dismissal == 'ignored');
+      now += const Duration(seconds: 16);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.prompt, dismissal == 'ignored');
+      url = 'https://example.com/spa';
+      await tester.pump(const Duration(milliseconds: 200));
+      now += const Duration(seconds: 1);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.canCapture, isTrue);
+      expect(s.prompt, isFalse);
+      await s.reload();
+      await event(s, 'start', id: 2);
+      await event(s, 'loaded', id: 2);
+      await tester.pump(const Duration(milliseconds: 200));
+      now += const Duration(seconds: 1);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.canCapture, isTrue);
+      expect(s.prompt, isFalse);
+      s.dispose();
+    });
+  }
 
   testWidgets('downloads retain the displayed document; an empty tab fails', (tester) async {
     var now = Duration.zero;

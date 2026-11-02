@@ -2,8 +2,8 @@ part of 'browser.dart';
 
 enum BrowserDocumentMode { readable, original, markdown }
 
-/// An immutable capture of the live tab. Images were read by that tab's
-/// session; neither cookies nor an HTTP downloader are exposed to the app.
+/// An immutable capture of the live tab. Session images are read in the tab;
+/// public images blocked by CORS use a bounded download without cookies.
 class BrowserDocumentCapture {
   BrowserDocumentCapture({
     required this.url,
@@ -68,13 +68,32 @@ extension BrowserDocumentConversion on BrowserSession {
       Map<String, dynamic> data;
       while (true) {
         data = await evaluate(
-          'JSON.stringify(globalThis[${jsonEncode(token)}]?.result || {pending:true,stage:globalThis[${jsonEncode(token)}]?.stage})',
+          'JSON.stringify(globalThis[${jsonEncode(token)}]?.result || {pending:true,stage:globalThis[${jsonEncode(token)}]?.stage,imageRequest:globalThis[${jsonEncode(token)}]?.imageRequest})',
         );
         if (data['stage'] is String && data['stage'] != stage) {
           stage = data['stage'] as String;
           onStage?.call(stage);
         }
         if (data['pending'] != true) break;
+        final request = data['imageRequest'];
+        if (request is Map && request['id'] is int && request['url'] is String) {
+          final remaining = deadline.difference(DateTime.now());
+          if (remaining <= Duration.zero) throw TimeoutException('capture_timeout');
+          final bytes = await loadPublicBrowserImage(
+            Uri.parse(request['url'] as String),
+            timeout: remaining < const Duration(seconds: 8) ? remaining : const Duration(seconds: 8),
+          );
+          check();
+          await evaluate('''
+(() => {
+  const job = globalThis[${jsonEncode(token)}];
+  if (job?.imageRequest?.id === ${request['id']}) {
+    job.imageResponse = ${jsonEncode({'id': request['id'], 'base64': bytes == null ? null : base64Encode(bytes)})};
+  }
+  return '{}';
+})()
+''');
+        }
         if (DateTime.now().isAfter(deadline)) throw TimeoutException('capture_timeout');
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }

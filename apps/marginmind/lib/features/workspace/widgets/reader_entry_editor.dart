@@ -3,6 +3,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../../shared/phone_form.dart';
 
 class ReaderEntryHeader extends StatelessWidget {
   const ReaderEntryHeader({
@@ -73,17 +74,40 @@ Future<({String title, int page})?> showReaderEntryEditor(
   required int pageCount,
   bool allowNoDestination = false,
   Set<int> occupiedPages = const {},
-}) => showMMSheet<({String title, int page})>(
-  context: context,
-  builder: (_) => _EntryEditor(
-    title: title,
-    initialTitle: initialTitle,
-    page: page,
-    pageCount: pageCount,
-    allowNoDestination: allowNoDestination,
-    occupiedPages: occupiedPages,
-  ),
-);
+}) async {
+  if (usesNativePhonePresentation(context)) {
+    final l = context.l10n;
+    final values = await showPhoneForm(
+      context,
+      title: title,
+      submit: l.save,
+      message: allowNoDestination ? l.outlineNoDestination : null,
+      fields: [
+        MMNativeField(id: 'title', label: l.sheetName, value: initialTitle),
+        MMNativeField(id: 'page', label: l.pageNumberField, value: '$page', keyboard: 'number'),
+      ],
+      validate: (values) {
+        final page = int.tryParse(values['page']!);
+        if (page == null || page < (allowNoDestination ? 0 : 1) || page > pageCount) {
+          return l.readerInvalidPage(pageCount);
+        }
+        return occupiedPages.contains(page) ? l.bookmarkPageOccupied : null;
+      },
+    );
+    return values == null ? null : (title: values['title']!.trim(), page: int.parse(values['page']!));
+  }
+  return showMMSheet<({String title, int page})>(
+    context: context,
+    builder: (_) => _EntryEditor(
+      title: title,
+      initialTitle: initialTitle,
+      page: page,
+      pageCount: pageCount,
+      allowNoDestination: allowNoDestination,
+      occupiedPages: occupiedPages,
+    ),
+  );
+}
 
 class _EntryEditor extends StatefulWidget {
   const _EntryEditor({

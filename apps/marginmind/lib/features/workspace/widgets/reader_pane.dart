@@ -1318,6 +1318,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                               child: Offstage(
                                 offstage: !visible,
                                 child: PhoneReaderNavigationFrame(
+                                  open: visible,
+                                  nativePresentation: () => ReaderSidebar.showNativeNavigation(
+                                    context,
+                                    ref,
+                                    studySetId: widget.studySetId,
+                                    document: doc,
+                                    pdf: _pdf,
+                                  ),
                                   title: doc.title,
                                   onClose: controller.closeReaderPanel,
                                   child: ReaderSidebar(

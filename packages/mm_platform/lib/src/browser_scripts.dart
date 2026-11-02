@@ -75,7 +75,14 @@ String browserDocumentScript(String readability, String token, {required bool or
       const clone = document.cloneNode(true), source = document.querySelectorAll('img');
       clone.querySelectorAll('img').forEach((node,i) => {
         const live = source[i];
-        node.setAttribute('src', live.currentSrc || live.src || '');
+        // Resolve lazy sources before sanitization removes data-* attributes.
+        // WeChat keeps the actual image in data-src, even while src is a placeholder.
+        const lazy = ['data-src','data-original','data-lazy-src'].map(a=>live.getAttribute(a)).find(v=>v?.trim());
+        const src = lazy || live.currentSrc || live.getAttribute('src');
+        try {
+          if (src) node.setAttribute('src', new URL(src, document.baseURI).href);
+          else node.removeAttribute('src');
+        } catch (_) {node.removeAttribute('src');}
         node.removeAttribute('srcset');
       });
       const liveElements=document.body.querySelectorAll('*'), clonedElements=clone.body.querySelectorAll('*');
@@ -120,7 +127,7 @@ String browserDocumentScript(String readability, String token, {required bool or
         for (const img of root.querySelectorAll('img')) {
           if(abort.signal.aborted || location.href!==initialUrl) {abort.abort();throw Error('cancelled');}
           let uri;
-          try {uri = new URL(img.getAttribute('src'),document.baseURI);} catch (_) {img.removeAttribute('src');continue;}
+          try {const src=img.getAttribute('src');if(!src) throw Error('missing_src');uri = new URL(src,document.baseURI);} catch (_) {img.removeAttribute('src');continue;}
           if (uri.username || uri.password || !/^(https?:|blob:|data:)$/.test(uri.protocol)) {img.removeAttribute('src');continue;}
           if (uri.href.split('#')[0]===location.href.split('#')[0]) {img.removeAttribute('src');diagnostics.push('image_unavailable');continue;}
           if (!byUrl.has(uri.href)) {
@@ -134,20 +141,44 @@ String browserDocumentScript(String readability, String token, {required bool or
                 const timer=setTimeout(cancelImage,Math.min(10000,imageDeadline-performance.now()));
                 let response, bytes;
                 try {
-                  response=await fetch(uri.href,{credentials:'include',signal:imageAbort.signal,referrerPolicy:'no-referrer'});
-                  if (!response.ok || Number(response.headers.get('content-length'))>5*1024*1024) {
-                    await response.body?.cancel();throw Error('image_failed');
-                  }
-                  const reader=response.body.getReader(), chunks=[]; let length=0;
                   try {
-                    while (true) {
-                      const {done,value}=await reader.read(); if (done) break;
-                      length+=value.length;
-                      if (length>5*1024*1024 || total+length>32*1024*1024) throw Error('image_limit');
-                      chunks.push(value);
+                    response=await fetch(uri.href,{credentials:'include',signal:imageAbort.signal,referrerPolicy:'no-referrer'});
+                  } catch (error) {
+                    if (imageAbort.signal.aborted) throw error;
+                    // Public CDNs often allow '*', which disallows credentials.
+                    try {
+                      response=await fetch(uri.href,{credentials:'omit',signal:imageAbort.signal,referrerPolicy:'no-referrer'});
+                    } catch (publicError) {
+                      if (imageAbort.signal.aborted || !/^https?:$/.test(uri.protocol)) throw publicError;
+                      // An <img> can display images whose bytes CORS hides from
+                      // scripts. Ask the app for a bounded, public image download.
+                      // No cookies or application bridge are exposed to the page.
+                      job.imageRequest={id:count,url:uri.href};
+                      try {
+                        while (!job.imageResponse && !imageAbort.signal.aborted) await delay(25);
+                        const reply=job.imageResponse;
+                        if (!reply || reply.id!==count || !reply.base64) throw Error('image_failed');
+                        const binary=atob(reply.base64);
+                        bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+                      } finally {delete job.imageRequest;delete job.imageResponse;}
                     }
-                  } finally {await reader.cancel();reader.releaseLock();}
-                  bytes=new Uint8Array(length);let at=0;for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length;}
+                  }
+                  if (response) {
+                    if (!response.ok || Number(response.headers.get('content-length'))>5*1024*1024) {
+                      await response.body?.cancel();throw Error('image_failed');
+                    }
+                    const reader=response.body.getReader(), chunks=[]; let length=0;
+                    try {
+                      while (true) {
+                        const {done,value}=await reader.read(); if (done) break;
+                        length+=value.length;
+                        if (length>5*1024*1024 || total+length>32*1024*1024) throw Error('image_limit');
+                        chunks.push(value);
+                      }
+                    } finally {await reader.cancel();reader.releaseLock();}
+                    bytes=new Uint8Array(length);let at=0;for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length;}
+                  }
+                  if (!bytes || bytes.length>5*1024*1024 || total+bytes.length>32*1024*1024) throw Error('image_limit');
                 } finally {
                   clearTimeout(timer);
                   abort.signal.removeEventListener('abort',cancelImage);

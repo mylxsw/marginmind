@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
 import '../foundation/interactive.dart';
 import '../foundation/adaptive.dart';
@@ -48,8 +50,8 @@ class MMCheckbox extends StatelessWidget {
               children: [
                 AnimatedContainer(
                   duration: MMMotion.quick,
-                  width: 15,
-                  height: 15,
+                  width: MMInput.of(context).phone ? 22 : 15,
+                  height: MMInput.of(context).phone ? 22 : 15,
                   decoration: BoxDecoration(
                     color: value || mixed ? tint : c.card,
                     borderRadius: BorderRadius.circular(4),
@@ -104,6 +106,12 @@ class MMSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS) {
+      return Semantics(
+        label: semanticLabel,
+        child: CupertinoSwitch(value: value, onChanged: onChanged, activeTrackColor: color ?? c.accent),
+      );
+    }
     return Semantics(
       toggled: value,
       child: MMInteractive(

@@ -16,6 +16,7 @@ import 'settings/app_icon.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await MMNativePresentation.initialize();
   await DesktopWindow.initialize(title: 'Foliarc', minimumSize: MMSizes.windowMinSize);
   // Android draws the app under clear status and navigation bars (see systemBarsStyle).
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {

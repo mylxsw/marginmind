@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import 'browser_policy.dart';
 import 'browser_scripts.dart';
+import 'browser_image_loader_stub.dart' if (dart.library.io) 'browser_image_loader_io.dart';
 import 'capabilities.dart';
 
 export 'browser_policy.dart';
@@ -59,9 +60,9 @@ class BrowserSession extends ChangeNotifier {
   String? lastErrorCode;
   BrowserLoadError loadError = BrowserLoadError.other;
   bool canGoBack = false, canGoForward = false, prompt = false;
-  final _prompted = <BrowserPhase>{};
-  ({Uri url, String title, BrowserReadiness readiness, String? signature, Set<BrowserPhase> prompted, bool prompt})?
-  _retainedDocument;
+  // Automatic conversion suggestions belong to the tab's lifetime.
+  bool _prompted = false;
+  ({Uri url, String title, BrowserReadiness readiness, String? signature})? _retainedDocument;
   String? _signature;
   int _interactions = 0;
   BrowserPhase get phase => _readiness.phase;
@@ -146,21 +147,13 @@ class BrowserSession extends ChangeNotifier {
     // displayed document until the new one loads. A late download callback
     // may follow an engine's cancellation error for that same navigation.
     if (_hasDocument && !_isLoading && phase != BrowserPhase.failed) {
-      _retainedDocument = (
-        url: url,
-        title: title,
-        readiness: _readiness,
-        signature: _signature,
-        prompted: Set.of(_prompted),
-        prompt: prompt,
-      );
+      _retainedDocument = (url: url, title: title, readiness: _readiness, signature: _signature);
     }
     navigationId++;
     _isLoading = true;
     _hasDocument = false;
     _readiness = BrowserReadiness(_now);
     _signature = null;
-    _prompted.clear();
     prompt = false;
     title = '';
     loadError = BrowserLoadError.other;
@@ -176,7 +169,10 @@ class BrowserSession extends ChangeNotifier {
   }
 
   void _updatePrompt() {
-    if (canCapture && _prompted.add(phase)) prompt = true;
+    if (canCapture && !_prompted) {
+      _prompted = true;
+      prompt = true;
+    }
   }
 
   Future<void> _event(MethodCall call) async {
@@ -206,10 +202,7 @@ class BrowserSession extends ChangeNotifier {
         title = retained.title;
         _readiness = retained.readiness;
         _signature = retained.signature;
-        _prompted
-          ..clear()
-          ..addAll(retained.prompted);
-        prompt = retained.prompt;
+        prompt = false;
         _hasDocument = true;
         _isLoading = false;
         loadError = BrowserLoadError.other;
@@ -251,7 +244,6 @@ class BrowserSession extends ChangeNotifier {
           // SPA navigation invalidates captures and restarts the heuristic.
           navigationId++;
           _readiness = BrowserReadiness(_now);
-          _prompted.clear();
           prompt = false;
           url = next;
         }

@@ -248,7 +248,7 @@ void main() {
       await tester.pump();
       elapsed += const Duration(seconds: 1);
       await tester.pump(const Duration(milliseconds: 200));
-      expect(find.byKey(const ValueKey('browser-ready-prompt')), findsOneWidget);
+      expect(find.byKey(const ValueKey('browser-ready-prompt')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('browser-convert')));
       await tester.pump();
       expect(converted, 1);

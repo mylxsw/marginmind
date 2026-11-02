@@ -4,6 +4,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../shared/l10n.dart';
+import '../../shared/phone_form.dart';
 import '../../shared/pdf_drop.dart';
 import '../../shared/pdf_picker.dart';
 import '../workspace/widgets/notices.dart';
@@ -19,11 +20,13 @@ Future<void> showNewStudySet(BuildContext context, WidgetRef ref) async {
   final container = ProviderScope.containerOf(context);
   final controller = ref.read(libraryViewProvider.notifier);
   final picker = ref.read(pdfPickerProvider);
-  final request = await showMMSheet<_Creation>(
-    context: context,
-    width: 500,
-    builder: (_) => _NewStudySetSheet(picker: picker),
-  );
+  final request = usesNativePhonePresentation(context)
+      ? await _nativeCreation(context, picker)
+      : await showMMSheet<_Creation>(
+          context: context,
+          width: 500,
+          builder: (_) => _NewStudySetSheet(picker: picker),
+        );
   if (request == null || !context.mounted) return;
   final failureMessage = context.l10n.somethingWentWrong;
   try {
@@ -49,6 +52,60 @@ Future<void> showNewStudySet(BuildContext context, WidgetRef ref) async {
     debugPrint('Could not create study set: $error\n$stack');
     if (context.mounted) MMHud.show(context, failureMessage);
   }
+}
+
+Future<_Creation?> _nativeCreation(BuildContext context, PdfPicker picker) async {
+  final l = context.l10n;
+  final source = await MMNativePresentation.confirm(
+    dark: Theme.of(context).brightness == Brightness.dark,
+    title: l.newStudySet,
+    cancel: l.cancel,
+    actions: [
+      MMNativeAction('blank', l.newStudySetBlank),
+      MMNativeAction('document', l.newStudySetDocument),
+      if (MMPlatformCapabilities.current.webBrowser) MMNativeAction('web', l.newStudySetWeb),
+    ],
+  );
+  if (source == null || !context.mounted) return null;
+  var files = <DroppedFile>[];
+  if (source == 'document') {
+    try {
+      files = await picker(l.documentFiles);
+    } catch (_) {
+      if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+      return null;
+    }
+    if (files.isEmpty || !context.mounted) return null;
+  }
+  final values = await showPhoneForm(
+    context,
+    title: l.newStudySet,
+    submit: l.create,
+    message: source == 'blank'
+        ? l.newStudySetBlankHint
+        : source == 'document'
+        ? l.newStudySetDocumentHint
+        : l.newStudySetWebHint,
+    fields: [
+      MMNativeField(id: 'title', label: l.sheetName, placeholder: l.newStudySetDefaultName),
+      if (source == 'web')
+        const MMNativeField(id: 'url', label: 'URL', keyboard: 'url', placeholder: 'https://example.com'),
+    ],
+    validate: (values) {
+      if (source != 'web') return null;
+      try {
+        BrowserPolicy.normalize(values['url']!);
+        return null;
+      } on BrowserUrlException catch (error) {
+        return browserUrlError(context, error.code);
+      }
+    },
+  );
+  if (values == null) return null;
+  final url = source == 'web' ? BrowserPolicy.normalize(values['url']!) : null;
+  final fallback =
+      url?.host ?? (files.isEmpty ? l.newStudySetDefaultName : files.first.name.replaceFirst(RegExp(r'\.[^.]+$'), ''));
+  return (title: values['title']!.trim().isEmpty ? fallback : values['title']!.trim(), files: files, url: url);
 }
 
 class _NewStudySetSheet extends StatefulWidget {

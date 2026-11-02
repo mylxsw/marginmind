@@ -1,0 +1,36 @@
+{
+  "device": "BDC6AFD6-4FAC-4C1F-86A9-D85784F6E367",
+  "bundle_id": "io.github.mylxsw.foliarc.native-sheet-reference",
+  "source": "docs/prototypes/ios-native-sheet-reference/NativeSheetReference.swift",
+  "sdk": "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk",
+  "detent_changes": "programmatic",
+  "scope": "standalone UIKit reference; no Flutter integration or Foliarc business data",
+  "manual_gesture_test": false,
+  "integrated_with_foliarc": false,
+  "physical_deployment": false,
+  "swift_source_sha256": "b525335fcb0c29067d7e4dbc7bf39b857481a8698e30d79e947e7c315899837d",
+  "screenshots": [
+    {
+      "name": "01-medium.png",
+      "sha256": "97099b1d9f514f5f2237a7676665dd049146bb3a537470fa444ec969ea01f168"
+    },
+    {
+      "name": "02-large.png",
+      "sha256": "251a4f0c2838ff024acd1e6106cdf9c3e7c6ed4da8cb1858cf84c65bd0e05c64"
+    },
+    {
+      "name": "03-keyboard.png",
+      "sha256": "0cad18a6d87d66dd91db2fafe310232b8e1945cc9bb0d0dd8e8412fd80731024"
+    },
+    {
+      "name": "04-medium-dark.png",
+      "sha256": "d78430ee306723acf846b81cae374e39b3dc68d2ce9aa4b055de649dcf37e33e"
+    },
+    {
+      "name": "05-unsaved-confirmation.png",
+      "sha256": "2f3b711c934ef16cbbb03b1f9045a30c7c982148a8a4eae3234aafef6d6d6a7e"
+    }
+  ],
+  "device_name": "iPhone 18 Pro",
+  "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0"
+}

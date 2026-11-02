@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../foundation/appearance.dart';
@@ -79,17 +81,23 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
     final safe = MediaQuery.paddingOf(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final phone = MMInput.of(context).phone;
-    final duration = _dragging || phone ? Duration.zero : MMAppearance.duration(context, MMMotion.layout);
+    final duration = _dragging ? Duration.zero : MMAppearance.duration(context, MMMotion.layout);
     return LayoutBuilder(
       builder: (context, constraints) {
         final max = (constraints.maxHeight - safe.top - MMSpacing.s - keyboard).clamp(0.0, double.infinity);
-        final medium = max * MMSizes.bottomSheetMedium;
+        // Compact-height phones have room for one detent only. In portrait,
+        // keep the document visible until the user expands the panel.
+        final medium = phone && constraints.maxHeight < constraints.maxWidth ? max : max * MMSizes.bottomSheetMedium;
         final handle = GestureDetector(
           key: const ValueKey('mm-bottom-sheet-handle'),
           behavior: HitTestBehavior.opaque,
           onVerticalDragStart: (_) => setState(() => _dragging = true),
           onVerticalDragUpdate: (d) => _update(d, medium, max),
           onVerticalDragEnd: (d) => _end(d, medium, max),
+          onVerticalDragCancel: () => setState(() {
+            _dragging = false;
+            _offset = 0;
+          }),
           child: SizedBox(
             height: MMSizes.bottomSheetHandle,
             child: Center(
@@ -122,11 +130,11 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
               ? AnimatedContainer(
                   duration: duration,
                   curve: MMMotion.layoutCurve,
-                  height: keyboard > 0 || phone ? max : (_height ?? medium),
+                  height: keyboard > 0 ? max : (_height ?? medium).clamp(0.0, max),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (!phone) handle,
+                      handle,
                       Expanded(child: body),
                       bottom,
                     ],
@@ -193,6 +201,34 @@ class _SheetScope extends InheritedWidget {
 /// sheets and dialogs. Dragging it down pops it like Esc does.
 Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetBuilder builder}) {
   final c = context.mmColors;
+  final navigator = Navigator.of(context, rootNavigator: true);
+  if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS) {
+    final captured = InheritedTheme.capture(from: context, to: navigator.context);
+    return navigator.push<T>(
+      CupertinoSheetRoute<T>(
+        showDragHandle: true,
+        scrollableBuilder: (context, scroll) => captured.wrap(
+          Material(
+            color: c.windowBackground,
+            child: SafeArea(
+              top: true,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+                child: MediaQuery.removeViewInsets(
+                  context: context,
+                  removeBottom: true,
+                  child: PrimaryScrollController(
+                    controller: scroll,
+                    child: _SheetScope(child: Builder(builder: builder)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
     context: context,

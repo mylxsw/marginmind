@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../../shared/phone_form.dart';
 import '../../../shared/pdf_picker.dart';
 import '../../../shared/image_picker.dart';
 import '../workspace_controller.dart';
@@ -173,6 +174,16 @@ Future<bool> showConfirmSheet(
   required String confirmLabel,
 }) async {
   final l = context.l10n;
+  if (usesNativePhonePresentation(context)) {
+    return await MMNativePresentation.confirm(
+          dark: Theme.of(context).brightness == Brightness.dark,
+          title: title,
+          message: message,
+          cancel: l.cancel,
+          actions: [MMNativeAction('confirm', confirmLabel, destructive: true)],
+        ) ==
+        'confirm';
+  }
   final ok = await showMMSheet<bool>(
     context: context,
     builder: (context) => MMSheet(
@@ -199,10 +210,21 @@ Future<String?> showRenameSheet(
   required String initial,
   String? fieldLabel,
   String? actionLabel,
-}) => showMMSheet<String>(
-  context: context,
-  builder: (_) => _RenameSheet(title: title, initial: initial, fieldLabel: fieldLabel, actionLabel: actionLabel),
-);
+}) async {
+  if (usesNativePhonePresentation(context)) {
+    final values = await showPhoneForm(
+      context,
+      title: title,
+      submit: actionLabel ?? context.l10n.save,
+      fields: [MMNativeField(id: 'title', label: fieldLabel ?? context.l10n.sheetName, value: initial)],
+    );
+    return values?['title']?.trim();
+  }
+  return showMMSheet<String>(
+    context: context,
+    builder: (_) => _RenameSheet(title: title, initial: initial, fieldLabel: fieldLabel, actionLabel: actionLabel),
+  );
+}
 
 class _RenameSheet extends StatefulWidget {
   const _RenameSheet({required this.title, required this.initial, this.fieldLabel, this.actionLabel});
