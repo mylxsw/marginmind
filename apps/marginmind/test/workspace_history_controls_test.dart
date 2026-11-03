@@ -16,7 +16,10 @@ void main() {
     expect(enabled(undo), isFalse);
     expect(enabled(redo), isFalse);
     final tabs = tester.getRect(find.byKey(const ValueKey('workspace-main-tabs')));
-    expect(tester.getCenter(undo).dy, closeTo(tabs.center.dy, 1));
+    expect(
+      tester.getCenter(undo).dy,
+      closeTo(tester.getCenter(find.byKey(const ValueKey('workspace-tab-documentMap'))).dy, 1),
+    );
     final layouts = tester.getRect(find.byKey(const ValueKey('workspace-layout-controls')));
     expect(tester.getRect(undo).left, greaterThanOrEqualTo(tabs.right));
     expect(tester.getRect(redo).right, lessThan(layouts.left));
@@ -61,17 +64,17 @@ void main() {
       await tester.pumpAndSettle();
       final compact = size.width < 600;
       if (compact) {
-        await tester.tap(find.byKey(const ValueKey('workspace-history')));
+        await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
         await tester.pumpAndSettle();
       }
-      await tester.tap(find.byKey(const ValueKey('workspace-undo')));
+      await tester.tap(find.byKey(ValueKey(compact ? 'phone-more-undo' : 'workspace-undo')));
       await tester.pumpAndSettle();
       expect(owner.content.card(card.id), isNull);
       if (compact) {
-        await tester.tap(find.byKey(const ValueKey('workspace-history')));
+        await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
         await tester.pumpAndSettle();
       }
-      await tester.tap(find.byKey(const ValueKey('workspace-redo')));
+      await tester.tap(find.byKey(ValueKey(compact ? 'phone-more-redo' : 'workspace-redo')));
       await tester.pumpAndSettle();
       expect(owner.content.card(card.id), isNotNull);
       expect(tester.takeException(), isNull);

@@ -250,6 +250,15 @@ void main() {
     t.view.viewInsets = const FakeViewPadding(bottom: 340);
     await t.pumpAndSettle();
     expect(t.getRect(find.byKey(const ValueKey('settings-window'))).bottom, lessThanOrEqualTo(834 - 340));
+    final voice = find.descendant(
+      of: find.byKey(const ValueKey('settings-sidebar')),
+      matching: find.text('Voice Input'),
+    );
+    await t.ensureVisible(voice);
+    await t.pumpAndSettle();
+    expect(voice.hitTestable(), findsOneWidget);
+    expect(t.getRect(voice).bottom, lessThanOrEqualTo(834 - 340));
+    expect(t.takeException(), isNull);
     await t.tap(close);
     await t.pumpAndSettle();
     expect(find.byType(SettingsWindow), findsNothing);

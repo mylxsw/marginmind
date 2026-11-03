@@ -46,6 +46,19 @@ final translationParagraphsProvider = FutureProvider.autoDispose.family<List<Tra
   retry: (count, error) => error is DocumentResourcesUnavailable ? null : ProviderContainer.defaultRetry(count, error),
 );
 
+/// Imperative commands need a subscription until extraction completes. A plain
+/// read does not keep an auto-disposed provider (or its resource stream) active
+/// across frames. Closing here also releases the subscription after failures.
+Future<List<TranslationParagraph>> readTranslationParagraphs(Ref ref, (String, String) key) async {
+  final provider = translationParagraphsProvider(key);
+  final subscription = ref.listen(provider, (_, _) {});
+  try {
+    return await ref.read(provider.future);
+  } finally {
+    subscription.close();
+  }
+}
+
 class ReaderTranslationState {
   const ReaderTranslationState({
     this.paragraphs = const [],
@@ -177,7 +190,7 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
     try {
       // Local paragraph geometry is indexed once. Only the selected page's
       // missing paragraphs are ever passed to a model.
-      final paragraphs = await ref.read(translationParagraphsProvider((studySetId, id)).future);
+      final paragraphs = await readTranslationParagraphs(ref, (studySetId, id));
       if (!current()) return;
       final session = await ref
           .read(translationSchedulersProvider(studySetId))

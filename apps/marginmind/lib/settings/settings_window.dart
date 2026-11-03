@@ -551,18 +551,20 @@ class _Sidebar extends StatelessWidget {
         border: Border.all(color: c.hairline, width: .5),
       ),
       padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(MMSpacing.s, 0, MMSpacing.s, 10),
-            child: Semantics(
-              header: true,
-              child: Text(title, style: context.mmText.headline.copyWith(color: c.label)),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(MMSpacing.s, 0, MMSpacing.s, 10),
+              child: Semantics(
+                header: true,
+                child: Text(title, style: context.mmText.headline.copyWith(color: c.label)),
+              ),
             ),
-          ),
-          for (final child in children) Padding(padding: const EdgeInsets.only(bottom: 2), child: child),
-        ],
+            for (final child in children) Padding(padding: const EdgeInsets.only(bottom: 2), child: child),
+          ],
+        ),
       ),
     );
     if (!reduce) panel = BackdropFilter(filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30), child: panel);

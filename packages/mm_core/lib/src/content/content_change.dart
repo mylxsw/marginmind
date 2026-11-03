@@ -360,8 +360,12 @@ Object? _at(Map<String, Object?> document, List<String> path) {
 
 void _set(Map<String, Object?> document, List<String> path, Object? value) {
   var cursor = document;
-  for (final key in path.take(path.length - 1)) {
+  for (final (depth, key) in path.take(path.length - 1).indexed) {
     if (cursor[key] is! Map) throw ContentChangeConflict(path);
+    // contentDocument owns its collection and entity maps. Deeper toJson
+    // values may still belong to immutable model objects (e.g. generated
+    // fingerprints). Copy only the traversed nested maps before staging edits.
+    if (depth >= 2) cursor[key] = Map<String, Object?>.from(cursor[key] as Map);
     cursor = (cursor[key] as Map).cast<String, Object?>();
   }
   if (value == contentMissing) {

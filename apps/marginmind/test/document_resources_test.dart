@@ -8,6 +8,8 @@ import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/document_reader.dart';
 import 'package:marginmind/features/workspace/document_resources.dart';
 import 'package:marginmind/features/workspace/reader_translation.dart';
+import 'package:marginmind/features/workspace/full_translation.dart';
+import 'package:marginmind/features/workspace/document_translation_runtime.dart';
 import 'package:marginmind/features/workspace/reader_compare.dart';
 import 'package:marginmind/features/workspace/widgets/full_translation_sheet.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -19,6 +21,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 
 import 'helpers.dart';
+import 'full_translation_test.dart' show TestTranslator;
 
 class ResourceRepository extends InMemoryStudySetContentRepository implements DocumentResourceRepository {
   ResourceRepository()
@@ -58,7 +61,72 @@ class PdfResourceRepository extends InMemoryStudySetContentRepository implements
   }
 }
 
+class DelayedPdfResources extends InMemoryStudySetContentRepository implements DocumentResourceRepository {
+  DelayedPdfResources() : super({'demo-1': demoContent()});
+  final values = StreamController<DocumentResourceAvailability>.broadcast();
+  var listeners = 0;
+  @override
+  Stream<DocumentResourceAvailability> watchDocumentResources(String set, String doc) async* {
+    listeners++;
+    try {
+      yield* values.stream;
+    } finally {
+      listeners--;
+    }
+  }
+}
+
 void main() {
+  for (final closeWhileLoading in [false, true]) {
+    test('translation command holds resource loading until completion or disposal ($closeWhileLoading)', () async {
+      installTestPdfBackend();
+      final repo = DelayedPdfResources();
+      final container = ProviderContainer(
+        overrides: [
+          ...await testOverrides(content: repo, renderPdf: true),
+          documentTranslatorFactoryProvider.overrideWithValue((_, _) async => TestTranslator()),
+        ],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await repo.values.close();
+      });
+      container.listen(workspaceProvider('demo-1'), (_, _) {});
+      await container.read(contentProvider('demo-1').future);
+      final provider = fullTranslationProvider(('demo-1', 'c1', 'zh'));
+      final subscription = container.listen(provider, (_, _) {});
+      final pending = container
+          .read(provider.notifier)
+          .startJob(
+            from: 1,
+            to: 1,
+            mode: TranslationMode.all,
+            batchSize: 5,
+            modelName: 'fixture',
+            estimatedTokens: 1000,
+          );
+      final check = expectLater(pending, closeWhileLoading ? throwsStateError : completes);
+      for (var i = 0; i < 4; i++) {
+        await container.pump();
+      }
+      expect(repo.listeners, 1);
+      expect(container.read(provider).hasJob, isFalse);
+      if (closeWhileLoading) {
+        subscription.close();
+      } else {
+        repo.values.add(DocumentResourceAvailability.ready);
+        await check;
+        expect(container.read(provider).hasJob, isTrue);
+        subscription.close();
+      }
+      for (var i = 0; i < 4; i++) {
+        await container.pump();
+      }
+      await check;
+      expect(repo.listeners, 0);
+    });
+  }
+
   testWidgets('reader waits for verified files and updates after an explicit download', (tester) async {
     final repo = ResourceRepository();
     final container = await pumpApp(

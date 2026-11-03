@@ -18,6 +18,7 @@ import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../translation_task_summary.dart';
+import '../content_sync.dart';
 import 'full_translation_sheet.dart';
 import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
@@ -409,7 +410,12 @@ class WorkspaceSidebar extends ConsumerWidget {
         notes: [for (final row in notes) phoneRow(row)],
         showNotes: betaEnabled && (matches(l.phoneNavigationNotes) || notes.isNotEmpty),
         learning: [
-          ContentSyncSidebarItem(studySetId: studySetId),
+          if (matches(l.syncTitle) &&
+              ref.watch(
+                contentSyncProvider(studySetId)
+                    .select((value) => value.hasError || value.asData?.value.enabled == true),
+              ))
+            ContentSyncSidebarItem(studySetId: studySetId),
           if (matches(l.sectionCards))
             MMPhoneNavigationRow(
               item: MMSidebarItem(

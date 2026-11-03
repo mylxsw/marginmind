@@ -219,6 +219,10 @@ void main() {
       );
       showSettings(tester.element(find.byType(MMWindowScaffold)));
       await tester.pumpAndSettle();
+      if (phone) {
+        await tester.tap(find.byKey(const ValueKey('settings-tab-general')));
+        await tester.pumpAndSettle();
+      }
       expect(find.byKey(const ValueKey('settings-icon-paperArc')), findsOneWidget);
       final context = tester.element(find.byKey(const ValueKey('settings-icon-paperArc')));
       await tester.runAsync(

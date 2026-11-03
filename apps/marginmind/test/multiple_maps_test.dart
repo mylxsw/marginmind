@@ -117,7 +117,7 @@ void main() {
       await controller.cancelEditing();
       await controller.selectMap(id);
       await controller.undo();
-      expect(controller.content.maps, [MindMap.main]);
+      expect(controller.content.maps.map((map) => map.toJson()).toList(), [MindMap.main.toJson()]);
       expect(state().activeMapId, MindMap.defaultId);
       await controller.redo();
       expect(controller.content.map(id), isNotNull);
@@ -201,14 +201,14 @@ void main() {
     await mouse.addPointer(location: Offset.zero);
     await mouse.moveTo(tester.getCenter(find.text('Mind Maps')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('New Mind Map…'));
+    await tester.tap(find.byKey(const ValueKey('add-map-menu')));
     await tester.pumpAndSettle();
     // The + menu offers a blank map or one generated from a document.
     expect(find.text('Generate from Document…'), findsOneWidget);
     await tester.tap(find.text('New Mind Map…').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, 'Second');
-    await tester.tap(find.text('Save').last);
+    await tester.tap(find.text('Create').last);
     await tester.pumpAndSettle();
     final id = container.read(workspaceProvider('demo-1')).activeMapId;
     expect(controller.content.map(id)!.title, 'Second');

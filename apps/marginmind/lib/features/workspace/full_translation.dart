@@ -358,7 +358,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
   Future<void> _reload() async {
     final gen = ++_loadGeneration;
     try {
-      final paragraphs = await ref.read(translationParagraphsProvider((studySetId, documentId)).future);
+      final paragraphs = await readTranslationParagraphs(ref, (studySetId, documentId));
       if (!ref.mounted || gen != _loadGeneration) return;
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
       final schedulers = ref.read(translationSchedulersProvider(studySetId));
@@ -440,8 +440,15 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     ModelReference? modelOverride,
     required int estimatedTokens,
   }) async {
-    await _loading;
-    if (!ref.mounted) throw StateError('Workspace closed');
+    // Loading the workspace or receiving a new document version can replace
+    // extraction while Start is waiting. Only the latest load can authorize a
+    // scheduler; an obsolete load deliberately returns without publishing one.
+    while (true) {
+      final loading = _loading;
+      await loading;
+      if (!ref.mounted) throw StateError('Workspace closed');
+      if (identical(loading, _loading)) break;
+    }
     final scheduler = _scheduler;
     if (scheduler == null || state.loadError != null) throw StateError('Translation unavailable: ${state.loadError}');
     final isOnline = ref.read(translationOnlineProvider(studySetId));

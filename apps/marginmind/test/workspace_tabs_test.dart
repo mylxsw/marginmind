@@ -467,7 +467,9 @@ void main() {
     await openTabs(tester);
     final tabs = tester.getRect(find.byKey(const ValueKey('workspace-main-tabs')));
     final ai = tester.getRect(find.byKey(const ValueKey('toolbar-assistant')));
-    expect(ai.center.dy, closeTo(tabs.center.dy, 1));
+    final tab = tester.getRect(find.byKey(const ValueKey('workspace-tab-documentMap')));
+    expect(ai.center.dy, closeTo(tab.center.dy, 1));
+    expect(ai.left, greaterThanOrEqualTo(tabs.right));
     expect(find.byKey(const ValueKey('workspace-tab-documentMap')), findsOneWidget);
     expect(find.byKey(const ValueKey('reader-documents')), findsNothing);
     expect(tester.takeException(), isNull);

@@ -10,6 +10,7 @@ import 'helpers.dart';
 import 'study_notes_ui_test.dart' show noteFixture;
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late ProviderContainer container;
   late WorkspaceController owner;
   WorkspaceState state() => container.read(workspaceProvider('demo-1'));

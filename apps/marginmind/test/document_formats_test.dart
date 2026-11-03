@@ -428,7 +428,7 @@ void main() {
         documentIcon(
           Document(id: 'book', title: 'Book', fileName: 'book', format: format, pageCount: 0, importedAt: testNow),
         ),
-        MMIcons.ebook,
+        format == DocumentFormat.mobi ? MMIcons.mobi : MMIcons.ebook,
       );
     }
     final task = container.read(documentImportsProvider('demo-1').notifier).add('Pending.epub');

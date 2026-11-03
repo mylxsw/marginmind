@@ -9,6 +9,37 @@ void main() {
     editor = StudySetEditor(newId: () => 'id${++count}', now: () => DateTime.utc(2026));
   });
 
+  test('nested immutable generation metadata supports conditional undo without changing input snapshots', () {
+    final (withDoc, doc) = editor.addDocument(StudySetContent.empty, title: 'Book', fileName: 'a.pdf', pageCount: 1);
+    final (content, card) = editor.addTopic(withDoc, title: 'Topic');
+    final generation = MapGeneration(
+      sources: [MapSource(documentId: doc.id, fingerprint: 'source', readThrough: 1)],
+      organization: MapOrganization.chapter,
+      depth: 3,
+      generatedAt: DateTime.utc(2026),
+      generated: {card.id: 'old'},
+    );
+    StudySetContent withVersions(Map<String, String> values) =>
+        content.copyWith(maps: [content.maps.single.copyWith(generation: generation.withGenerated(values))]);
+    final before = withVersions({card.id: 'old'});
+    final after = withVersions({card.id: 'new', 'added': 'local'});
+    final current = withVersions({card.id: 'new', 'added': 'local', 'remote': 'retained'});
+    final change = ContentChange.between(before, after);
+    final undone = change.reversed.apply(current);
+    expect(undone.maps.single.generation!.generated, {card.id: 'old', 'remote': 'retained'});
+    expect(change.apply(undone).toJson(), current.toJson());
+    expect(current.maps.single.generation!.generated, {card.id: 'new', 'added': 'local', 'remote': 'retained'});
+    expect(after.maps.single.generation!.generated, {card.id: 'new', 'added': 'local'});
+    expect(before.maps.single.generation!.generated, {card.id: 'old'});
+    expect(change.followedBy(change.reversed).isEmpty, isTrue);
+
+    // The inverse removes its added key before noticing this later conflict.
+    // Failed staging must leave both the remote and original maps untouched.
+    final conflicted = withVersions({card.id: 'remote value', 'added': 'local'});
+    expect(() => change.reversed.apply(conflicted), throwsA(isA<ContentChangeConflict>()));
+    expect(conflicted.maps.single.generation!.generated, {card.id: 'remote value', 'added': 'local'});
+  });
+
   test('undo and redo only change owned fields; unrelated remote additions survive', () {
     final (base, card) = editor.addNote(StudySetContent.empty, text: 'original');
     final edited = editor.rename(base, card.id, 'local');

@@ -5,6 +5,7 @@ Runs its own HTTP server and fresh browser context; both close before exit.
 No sample data or test hooks are injected into the application.
 """
 import argparse
+from contextlib import suppress
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -54,7 +55,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--chrome', default=os.environ.get('CHROME_EXECUTABLE') or shutil.which('google-chrome')
                         or '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+    parser.add_argument('--output', type=Path, default=OUT)
     args = parser.parse_args()
+    args.output.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer(('127.0.0.1', 0), partial(QuietHandler, directory=str(ROOT / 'apps/marginmind/build/web')))
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -62,6 +65,7 @@ def main():
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(executable_path=args.chrome, headless=True)
+            page = None
             try:
                 page = browser.new_page(viewport={'width': 1440, 'height': 1000}, locale='en-US')
                 page.set_default_timeout(60000)
@@ -72,15 +76,18 @@ def main():
                 semantics(page)
                 create = page.get_by_role('button', name='New Study Set', exact=True).first
                 expect(create).to_be_visible()
-                page.screenshot(path=str(OUT / '01-library.png'))
+                page.screenshot(path=str(args.output / '01-library.png'))
+                create.click()
+                page.get_by_role('button', name='Document', exact=True).click()
                 with page.expect_file_chooser() as chooser:
-                    create.click()
+                    page.get_by_role('button', name='Choose Documents…', exact=True).click()
                 chooser.value.set_files(str(ROOT / 'apps/marginmind/assets/sample/sample.pdf'))
+                page.get_by_role('button', name='Create', exact=True).click()
                 expect(page.get_by_role('group', name='Page 1', exact=True)).to_be_visible()
                 root = page.get_by_role('button', name='sample', exact=True).last
                 expect(root).to_be_visible()
                 root.click(button='right', force=True)
-                page.get_by_role('button', name='Add Child Topic', exact=True).last.click(force=True)
+                page.get_by_role('button', name=re.compile(r'^Add Child Topic(?:\s|$)')).last.click(force=True)
                 field = page.locator('textarea:not([disabled])').last
                 field.fill(TITLE)
                 field.press('Enter')
@@ -96,7 +103,7 @@ def main():
                 }''')
                 before = library(page)
                 assert len(before) == 1 and len(before[0]['content']['documents']) == 1
-                page.screenshot(path=str(OUT / '02-import-and-edit.png'))
+                page.screenshot(path=str(args.output / '02-import-and-edit.png'))
                 page.reload()
                 semantics(page)
                 page.get_by_role('button', name=re.compile('^sample Last read:')).dispatch_event('click')
@@ -106,7 +113,7 @@ def main():
                 assert after[0]['content']['cards'] == before[0]['content']['cards']
                 assert after[0]['content']['documents'][0]['fileName'] == before[0]['content']['documents'][0]['fileName']
                 assert 'Ask Assistant' not in page.locator('body').aria_snapshot()
-                page.screenshot(path=str(OUT / '03-after-refresh.png'))
+                page.screenshot(path=str(args.output / '03-after-refresh.png'))
                 # Exercise the actual file_selector / XFile browser download.
                 page.get_by_role('button', name=TITLE, exact=True).click(button='right', force=True)
                 page.get_by_role('button', name='Export This Branch…', exact=True).click(force=True)
@@ -119,7 +126,7 @@ def main():
                 assert result.suggested_filename.endswith('.md')
                 assert TITLE in Path(result.path()).read_text()
                 assert not errors, errors
-                (OUT / 'browser-result.json').write_text(json.dumps({
+                (args.output / 'browser-result.json').write_text(json.dumps({
                     'passed': True, 'browser': browser.version,
                     'checks': ['launch', 'create/import PDF', 'render PDF', 'add/rename node',
                                'refresh/reopen', 'persisted PDF and node', 'Markdown download',
@@ -127,6 +134,12 @@ def main():
                     'errors': errors,
                 }, indent=2) + '\n')
                 print('PASS: create → PDF import → edit → refresh → reopen → download')
+            except Exception:
+                with suppress(Exception):
+                    if page is not None and not page.is_closed():
+                        page.screenshot(path=str(args.output / 'failure.png'))
+                        (args.output / 'failure-aria.txt').write_text(page.locator('body').aria_snapshot())
+                raise
             finally:
                 browser.close()
     finally:

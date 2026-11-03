@@ -232,7 +232,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     final l = pair.leftDocumentId, r = (pair.right as PdfCompareTarget).documentId;
     if (![l, r].any((id) => _workspace.content.document(id)?.contentManifest != null)) return pair;
     final lists = await Future.wait([
-      for (final id in [l, r]) ref.read(translationParagraphsProvider((studySetId, id)).future),
+      for (final id in [l, r]) readTranslationParagraphs(ref, (studySetId, id)),
     ]);
     if (!ref.mounted) return pair;
     _paragraphs[l] = lists[0];

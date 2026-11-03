@@ -211,39 +211,49 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                 ),
               ),
               const SizedBox(width: 8),
-              Tooltip(
-                message: l.undo,
-                child: Semantics(
-                  button: true,
-                  label: l.undo,
-                  enabled: canUndo,
-                  child: SizedBox.square(
-                    dimension: 30,
-                    child: Material(
-                      color: c.fill,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        key: const ValueKey('phone-more-undo'),
-                        onTap: canUndo
-                            ? () {
-                                _close();
-                                ref.read(workspaceProvider(widget.studySetId).notifier).undo();
-                              }
-                            : null,
-                        child: Center(
-                          child: Icon(
-                            MMIcons.undo,
-                            size: 16,
-                            color: canUndo ? c.label : c.secondaryLabel.withValues(alpha: 0.4),
+              for (final (action, label, icon, enabled) in [
+                ('undo', l.undo, MMIcons.undo, canUndo),
+                ('redo', l.redo, MMIcons.redo, workspaceState.canRedo),
+              ]) ...[
+                Tooltip(
+                  message: label,
+                  child: Semantics(
+                    button: true,
+                    label: label,
+                    enabled: enabled,
+                    child: SizedBox.square(
+                      dimension: 30,
+                      child: Material(
+                        color: c.fill,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          key: ValueKey('phone-more-$action'),
+                          onTap: enabled
+                              ? () {
+                                  _close();
+                                  final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+                                  if (action == 'undo') {
+                                    controller.undo();
+                                  } else {
+                                    controller.redo();
+                                  }
+                                }
+                              : null,
+                          child: Center(
+                            child: Icon(
+                              icon,
+                              size: 16,
+                              color: enabled ? c.label : c.secondaryLabel.withValues(alpha: 0.4),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
+              ],
               if (!MMBottomSheet.contains(context))
                 Tooltip(
                   message: l.phoneMoreClose,
