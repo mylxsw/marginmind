@@ -46,7 +46,7 @@ class Remote implements SyncObjectTransport {
   Future<SyncDelivery> create(String key, List<int> bytes) async {
     calls++;
     await beforeCreate?.call(key);
-    if (objects.containsKey(key) && !sameSyncObject(objects[key]!, bytes)) {
+    if (objects.containsKey(key) && !sameSyncStoredObject(key, objects[key]!, bytes)) {
       throw const SyncTransportException(SyncTransportProblem.collision);
     }
     objects[key] = bytes;

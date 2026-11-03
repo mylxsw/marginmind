@@ -7,6 +7,10 @@ import 'library_browser_io.dart';
 
 import 'package:mm_sync/mm_sync.dart';
 
+// A tab cannot prove that another tab has no uncommitted editing/resource
+// staging. Keep explicit whole-history forwarding native-only for now.
+const supportsHistoryCopy = false;
+
 /// The head guard and the record share one IndexedDB transaction. Comparing
 /// the guard with this tab's hydrated value prevents two tabs from committing
 /// different immutable records on top of the same local revision.

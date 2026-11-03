@@ -163,6 +163,94 @@ void main() {
     String url = 'https://dav.test/folder',
   }) => controller.connectWebDav(directory: url, username: account, password: password);
 
+  test('explicit history copy is read-only until confirmation and remains paused afterwards', () async {
+    await connect();
+    final before = remote.creates;
+    await controller.previewHistoryCopy();
+    expect(controller.failure, isNull);
+    expect(remote.creates, 0);
+    expect(before, 0);
+    expect(controller.paused, true);
+    final preview = controller.historyCopy!;
+    expect(preview.commits, greaterThan(0));
+    await controller.copyHistory(preview);
+    expect(controller.failure, isNull);
+    expect(controller.result!.confirmed, preview.commits);
+    expect(controller.historyCopy, isNull);
+    expect(controller.paused, true);
+    expect((await ledger.transportConnection())!.paused, true);
+  });
+
+  test('copy preview cannot authorize changed content or survive pause', () async {
+    await connect();
+    await controller.previewHistoryCopy();
+    final preview = controller.historyCopy!;
+    final id = (await library.watchAll().first).single.id;
+    await library.rename(id, 'Later content');
+    await controller.copyHistory(preview);
+    expect(controller.failure, SyncSettingsFailure.staleHistory);
+    expect(remote.creates, 0);
+    expect(controller.paused, true);
+    await controller.previewHistoryCopy();
+    final fresh = controller.historyCopy!;
+    await controller.pause();
+    expect(controller.historyCopy, isNull);
+    await controller.copyHistory(fresh);
+    expect(controller.failure, SyncSettingsFailure.paused);
+    expect(remote.creates, 0);
+  });
+
+  test('joined libraries allow an empty new destination only through explicit copy mode', () async {
+    controller.setup = SyncSetup(libraryId: 'library', deviceId: 'device', deviceName: 'Mac', joining: true);
+    await connect();
+    expect(controller.failure, SyncSettingsFailure.missingLibrary);
+    await controller.connectWebDav(
+      directory: 'https://dav.test/new',
+      username: 'alice',
+      password: 'secret',
+      copyDestination: true,
+    );
+    expect(controller.failure, isNull);
+    expect(remote.creates, 0);
+    await controller.syncOnce();
+    expect(controller.failure, SyncSettingsFailure.missingLibrary);
+    await controller.previewHistoryCopy();
+    expect(controller.failure, isNull);
+    await controller.copyHistory(controller.historyCopy!);
+    expect(controller.failure, isNull);
+    expect(objects.containsKey('library.json'), true);
+  });
+
+  test('missing historical chunks leave preview unavailable without writing the target', () async {
+    final id = (await library.watchAll().first).single.id;
+    await library.importDocumentPackage(
+      id,
+      DocumentPackage(
+        document: Document(
+          id: 'paper',
+          title: 'Paper',
+          fileName: 'documents/paper.pdf',
+          pageCount: 1,
+          importedAt: DateTime.utc(2026),
+        ),
+        files: {
+          'documents/paper.pdf': [1, 2, 3],
+        },
+      ),
+    );
+    await library.prepareSyncResources();
+    final blobs = Directory('${root.path}/.foliarc-sync/blobs');
+    for (final file in await blobs.list().toList()) {
+      await file.delete();
+    }
+    await connect();
+    await controller.previewHistoryCopy();
+    expect(controller.historyCopy, isNull);
+    expect(controller.failure, SyncSettingsFailure.historyResources);
+    expect(remote.creates, 0);
+    expect(controller.paused, true);
+  });
+
   test('device setup registers once; explicit rename persists and rejects stale forms', () async {
     controller.setup = SyncSetup(libraryId: 'library', deviceId: 'device', deviceName: 'Initial', joining: false);
     await controller.renameDevice('My Mac', expectedRevision: null);

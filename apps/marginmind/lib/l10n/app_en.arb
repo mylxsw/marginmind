@@ -3997,7 +3997,7 @@
   "syncSettingsAuth": "Authentication failed. Check your account and app password.",
   "syncSettingsAccountChanged": "The account changed. The previous queue is paused. Reconnect explicitly to continue.",
   "syncSettingsLegacy": "Earlier sync history could not be verified as a complete portable graph. Local history is preserved; recover missing history on its original device before retrying.",
-  "syncSettingsHistory": "This target is missing required history. The queue is preserved; use the original service until migration is available.",
+  "syncSettingsHistory": "This service lacks required history. Keep using the original service, or inspect and explicitly copy the history available on this device.",
   "syncSettingsRetry": "Reload status",
   "syncResourcesTitle": "Files on this device",
   "syncResourcesHint": "A received document can be downloaded when needed. Local files that differ from their saved fingerprint are preserved.",
@@ -4283,5 +4283,31 @@
       }
     }
   },
-  "syncCacheIncomplete": "History is still incomplete. Sync missing versions before checking again."
+  "syncCacheIncomplete": "History is still incomplete. Sync missing versions before checking again.",
+  "syncCopyHint": "Copy the accepted sync history held on this device to the selected service, including contributions from other devices and deleted versions. This does not delete the original service. Unaccepted unrelated branches stay here. All referenced historical files must be available locally or at the destination. Inspect first, then explicitly confirm the copy.",
+  "syncCopyPreview": "Inspect history copy",
+  "syncCopyConfirm": "Copy this history to the selected service",
+  "syncCopyDestination": "Use as a history-copy destination (allow an empty service; connecting remains read-only)",
+  "syncCopyStale": "The library changed or editing is in progress. Finish editing and inspect the history copy again.",
+  "syncCopySummary": "{commits} versions, including {others} from other devices; {chunks} resource chunks. {excluded} unaccepted versions are excluded. {unverified} versions lack file verification manifests; their files are not guaranteed by this copy.",
+  "@syncCopySummary": {
+    "placeholders": {
+      "commits": {
+        "type": "int"
+      },
+      "others": {
+        "type": "int"
+      },
+      "chunks": {
+        "type": "int"
+      },
+      "excluded": {
+        "type": "int"
+      },
+      "unverified": {
+        "type": "int"
+      }
+    }
+  },
+  "syncCopyResources": "Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started."
 }

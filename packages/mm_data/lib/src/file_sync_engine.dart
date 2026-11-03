@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:mm_sync/mm_sync.dart';
 
 import 'file_sync_ledger.dart';
 import 'file_sync_receiver.dart';
 import 'file_library_store.dart';
 import 'resource_cache.dart';
+
+part 'file_sync_history_copy.dart';
 
 class SyncRunResult {
   const SyncRunResult({this.received = 0, this.confirmed = 0, this.staged = 0});
@@ -22,7 +26,9 @@ class FileSyncEngine {
   SyncObjectTransport? _transport;
   int _generation = 0;
   Future<SyncRunResult>? _running;
-  bool get running => _running != null;
+  SyncHistoryCopyPlan? _copyPlan;
+  bool _previewing = false;
+  bool get running => _running != null || _previewing;
 
   Future<void> bind(SyncObjectTransport transport) async {
     _generation++;
@@ -49,6 +55,7 @@ class FileSyncEngine {
   }
 
   Future<SyncRunResult> run() {
+    if (_previewing) return Future.error(const SyncTransportException(SyncTransportProblem.unavailable));
     if (_running case final existing?) return existing;
     late final Future<SyncRunResult> future;
     future = _run().whenComplete(() {

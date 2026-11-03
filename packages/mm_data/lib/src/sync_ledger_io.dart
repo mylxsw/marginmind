@@ -1,5 +1,7 @@
 import 'dart:io';
 
+const supportsHistoryCopy = true;
+
 /// The immutable record is the native commit point. Single process ownership
 /// is required; .mmset projections are repaired separately from this record.
 Future<void> writeSyncLedgerRecord(String path, List<int> bytes) async {

@@ -6396,7 +6396,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncSettingsLegacy => '早期同步历史尚无法验证为完整、可跨平台传输的版本图。本机历史已保留，请先在原设备补齐历史后重试。';
 
   @override
-  String get syncSettingsHistory => '目标服务缺少必要历史。队列已保留；迁移功能完成前请使用原服务。';
+  String get syncSettingsHistory => '目标服务缺少必要历史。可继续使用原服务，或先检查并明确复制本机持有的历史。';
 
   @override
   String get syncSettingsRetry => '重新读取状态';
@@ -6785,4 +6785,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncCacheIncomplete => '历史版本尚未收齐，请同步缺失版本后重新检查。';
+
+  @override
+  String get syncCopyHint =>
+      '将本机已接受的同步历史复制到所选服务，包括其他设备的贡献和已删除版本；不会删除原服务。未接受的独立分支仍留在本机。历史引用文件必须在本机或目标服务可用。请先检查，再明确确认复制。';
+
+  @override
+  String get syncCopyPreview => '检查历史复制';
+
+  @override
+  String get syncCopyConfirm => '将这些历史复制到所选服务';
+
+  @override
+  String get syncCopyDestination => '作为历史复制目标（允许空服务；连接检查仍为只读）';
+
+  @override
+  String get syncCopyStale => '资料库已变化或正在编辑。请完成编辑后重新检查历史复制。';
+
+  @override
+  String syncCopySummary(int commits, int others, int chunks, int excluded, int unverified) {
+    return '共 $commits 个版本，其中 $others 个来自其他设备；$chunks 个资源块。另有 $excluded 个未接受版本不在复制范围内。 $unverified 个版本缺少文件校验清单，不能保证从此次复制恢复其文件。';
+  }
+
+  @override
+  String get syncCopyResources => '历史文件缺失或校验失败。请保留原服务，使用持有已验证历史文件的设备重新检查；尚未开始新的复制。';
 }

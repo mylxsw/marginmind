@@ -16,7 +16,7 @@ class SyncSettingsPage extends ConsumerStatefulWidget {
 class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   final _code = TextEditingController(), _name = TextEditingController();
   final _directory = TextEditingController(), _account = TextEditingController(), _password = TextEditingController();
-  bool _joining = false, _adopted = false, _renaming = false;
+  bool _joining = false, _adopted = false, _renaming = false, _copyDestination = false;
   String? _nameRevision;
   @override
   void dispose() {
@@ -177,6 +177,34 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
                   ],
                 ),
               ],
+              if (service.target != null) ...[
+                const SizedBox(height: 16),
+                Text(l.syncCopyHint, style: context.mmText.callout),
+                MMButton(
+                  key: const ValueKey('sync-copy-preview'),
+                  label: l.syncCopyPreview,
+                  onPressed: enabled ? service.previewHistoryCopy : null,
+                ),
+                if (service.historyCopy case final plan?) ...[
+                  Text('${plan.target.service} · ${plan.target.location}'),
+                  if (plan.target.service == 'webdav') Text(plan.target.account),
+                  Text(
+                    l.syncCopySummary(
+                      plan.commits,
+                      plan.otherDeviceCommits,
+                      plan.chunks,
+                      plan.excluded,
+                      plan.unverifiedVersions,
+                    ),
+                  ),
+                  MMButton(
+                    key: const ValueKey('sync-copy-confirm'),
+                    label: l.syncCopyConfirm,
+                    onPressed: enabled ? () => service.copyHistory(plan) : null,
+                  ),
+                  MMButton(label: l.cancel, onPressed: enabled ? service.pause : null),
+                ],
+              ],
               if (service.busy)
                 MMButton(key: const ValueKey('sync-pause'), label: l.syncSettingsPause, onPressed: service.pause),
               if (service.result case final result?) ...[
@@ -229,6 +257,12 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
               ],
               const SizedBox(height: 20),
               Text(l.syncSettingsConnectHint),
+              CheckboxListTile(
+                key: const ValueKey('sync-copy-destination'),
+                value: _copyDestination,
+                title: Text(l.syncCopyDestination),
+                onChanged: enabled ? (value) => setState(() => _copyDestination = value ?? false) : null,
+              ),
               if (service.canStoreSecrets) ...[
                 _input('sync-directory', l.syncSettingsDirectory, _directory, enabled),
                 _input('sync-account', l.syncSettingsAccount, _account, enabled),
@@ -243,6 +277,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
                             directory: _directory.text,
                             username: _account.text,
                             password: _password.text,
+                            copyDestination: _copyDestination,
                           );
                           if (mounted && service.failure == null) _password.clear();
                         }
@@ -253,7 +288,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
               MMButton(
                 key: const ValueKey('sync-icloud'),
                 label: l.syncSettingsICloud,
-                onPressed: enabled ? service.connectICloud : null,
+                onPressed: enabled ? () => service.connectICloud(copyDestination: _copyDestination) : null,
               ),
             ],
           ],
@@ -265,6 +300,8 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   String _failure(AppLocalizations l, SyncSettingsFailure failure) => switch (failure) {
     SyncSettingsFailure.timedOut => l.syncSettingsTimedOut,
     SyncSettingsFailure.staleDevice => l.syncDeviceStale,
+    SyncSettingsFailure.staleHistory => l.syncCopyStale,
+    SyncSettingsFailure.historyResources => l.syncCopyResources,
     SyncSettingsFailure.resources => l.syncResourceChanged,
     SyncSettingsFailure.invalidInput => l.syncSettingsInvalid,
     SyncSettingsFailure.incompleteLibrary => l.syncSettingsRepair,

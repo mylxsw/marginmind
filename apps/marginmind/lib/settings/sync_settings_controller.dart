@@ -14,6 +14,8 @@ final syncSettingsControllerProvider = Provider<SyncSettingsController?>((ref) =
 enum SyncSettingsFailure {
   storage,
   staleDevice,
+  staleHistory,
+  historyResources,
   invalidInput,
   incompleteLibrary,
   resources,
@@ -65,6 +67,7 @@ class SyncSettingsController extends ChangeNotifier {
   bool _disposed = false;
   SyncSettingsFailure? failure;
   SyncRunResult? result;
+  SyncHistoryCopyPlan? historyCopy;
   List<SyncResourceStatus> resources = const [];
   SyncCacheUsage? cacheUsage;
 
@@ -81,6 +84,7 @@ class SyncSettingsController extends ChangeNotifier {
     busy = true;
     failure = null;
     result = null;
+    historyCopy = null;
     final generation = _generation;
     _notify();
     try {
@@ -98,8 +102,8 @@ class SyncSettingsController extends ChangeNotifier {
               SyncTransportProblem.paused => SyncSettingsFailure.paused,
               _ => SyncSettingsFailure.service,
             };
-    } on SyncRevisionChanged {
-      failure = SyncSettingsFailure.staleDevice;
+    } on SyncRevisionChanged catch (error) {
+      failure = error.scope == 'history-copy' ? SyncSettingsFailure.staleHistory : SyncSettingsFailure.staleDevice;
     } on FormatException {
       failure ??= SyncSettingsFailure.invalidInput;
     } on ArgumentError {
@@ -176,54 +180,58 @@ class SyncSettingsController extends ChangeNotifier {
     restartRequired = false;
   });
 
-  Future<void> connectWebDav({required String directory, required String username, required String password}) =>
-      _action((generation) async {
-        await _ready();
-        await _engine!.pause();
-        paused = true;
-        if (!canStoreSecrets) {
-          failure = SyncSettingsFailure.unsupported;
-          return;
-        }
-        if (username.trim().isEmpty || username.contains(':') || username.contains(RegExp(r'[\r\n]'))) {
-          throw const FormatException('Invalid account');
-        }
-        final uri = Uri.parse(directory.trim());
-        // Constructor performs the same URL validation as the production adapter.
-        final validationClient = http.Client();
-        late SyncTarget selected;
-        try {
-          selected = WebDavSyncTransport(
-            client: validationClient,
-            directory: uri,
-            account: username.trim(),
-            libraryId: _ledger!.libraryId,
-            authorization: '',
-          ).target;
-        } finally {
-          validationClient.close();
-        }
-        final key = 'sync-${selected.key}';
-        final authorization = password.isEmpty
-            ? await secrets.read(key)
-            : 'Basic ${base64Encode(utf8.encode('${selected.account}:$password'))}';
-        if (authorization == null || authorization.isEmpty) {
-          throw const SyncTransportException(SyncTransportProblem.authentication);
-        }
-        _check(generation);
-        final adapter = await _adapter(selected, authorization, generation);
-        await _probe(adapter, generation);
-        if (password.isNotEmpty) await secrets.writeVerified(key, authorization);
-        _check(generation);
-        await _engine!.bind(adapter);
-        _check(generation);
-        target = selected;
-        _accountNeedsReconnect = false;
-        await _stopObservingCloud();
-        await _refresh();
-      });
+  Future<void> connectWebDav({
+    required String directory,
+    required String username,
+    required String password,
+    bool copyDestination = false,
+  }) => _action((generation) async {
+    await _ready();
+    await _engine!.pause();
+    paused = true;
+    if (!canStoreSecrets) {
+      failure = SyncSettingsFailure.unsupported;
+      return;
+    }
+    if (username.trim().isEmpty || username.contains(':') || username.contains(RegExp(r'[\r\n]'))) {
+      throw const FormatException('Invalid account');
+    }
+    final uri = Uri.parse(directory.trim());
+    // Constructor performs the same URL validation as the production adapter.
+    final validationClient = http.Client();
+    late SyncTarget selected;
+    try {
+      selected = WebDavSyncTransport(
+        client: validationClient,
+        directory: uri,
+        account: username.trim(),
+        libraryId: _ledger!.libraryId,
+        authorization: '',
+      ).target;
+    } finally {
+      validationClient.close();
+    }
+    final key = 'sync-${selected.key}';
+    final authorization = password.isEmpty
+        ? await secrets.read(key)
+        : 'Basic ${base64Encode(utf8.encode('${selected.account}:$password'))}';
+    if (authorization == null || authorization.isEmpty) {
+      throw const SyncTransportException(SyncTransportProblem.authentication);
+    }
+    _check(generation);
+    final adapter = await _adapter(selected, authorization, generation);
+    await _probe(adapter, generation, allowMissingLibrary: copyDestination);
+    if (password.isNotEmpty) await secrets.writeVerified(key, authorization);
+    _check(generation);
+    await _engine!.bind(adapter);
+    _check(generation);
+    target = selected;
+    _accountNeedsReconnect = false;
+    await _stopObservingCloud();
+    await _refresh();
+  });
 
-  Future<void> connectICloud() => _action((generation) async {
+  Future<void> connectICloud({bool copyDestination = false}) => _action((generation) async {
     await _ready();
     await _engine!.pause();
     paused = true;
@@ -244,7 +252,7 @@ class SyncSettingsController extends ChangeNotifier {
       container: port.containerIdentifier,
       libraryId: _ledger!.libraryId,
     );
-    await _probe(adapter, generation);
+    await _probe(adapter, generation, allowMissingLibrary: copyDestination);
     await _engine!.bind(adapter);
     _check(generation);
     target = adapter.target;
@@ -252,11 +260,11 @@ class SyncSettingsController extends ChangeNotifier {
     await _refresh();
   });
 
-  Future<void> _probe(SyncObjectTransport adapter, int generation) async {
+  Future<void> _probe(SyncObjectTransport adapter, int generation, {bool allowMissingLibrary = false}) async {
     // Read only: connecting does not create a cloud library or upload content.
     final manifest = await adapter.read('library.json');
     _check(generation);
-    if (manifest == null && setup?.joining == true) {
+    if (manifest == null && setup?.joining == true && !allowMissingLibrary) {
       failure = SyncSettingsFailure.missingLibrary;
       throw StateError('Joining requires an existing manifest');
     }
@@ -338,6 +346,48 @@ class SyncSettingsController extends ChangeNotifier {
     final latest = await library.syncResources();
     _check(generation);
     resources = latest;
+  });
+
+  Future<void> previewHistoryCopy() => _action((generation) async {
+    await _ready();
+    final selected = target;
+    if (selected == null) throw const SyncTransportException(SyncTransportProblem.paused);
+    await _engine!.pause();
+    paused = true;
+    final secret = selected.service == 'webdav' ? await secrets.read('sync-${selected.key}') : null;
+    final adapter = await _adapter(selected, secret, generation);
+    _check(generation);
+    await _engine!.bind(adapter);
+    _check(generation);
+    final SyncHistoryCopyPlan preview;
+    try {
+      preview = await _engine!.previewHistoryCopy();
+    } on FormatException {
+      failure = SyncSettingsFailure.historyResources;
+      rethrow;
+    } on SyncTransportException catch (error) {
+      if (error.problem != SyncTransportProblem.unavailable) rethrow;
+      failure = SyncSettingsFailure.historyResources;
+      throw StateError('Historical resources unavailable');
+    }
+    _check(generation);
+    historyCopy = preview;
+  });
+
+  Future<void> copyHistory(SyncHistoryCopyPlan selected) => _action((generation) async {
+    await _ready();
+    try {
+      _check(generation);
+      paused = false;
+      _notify();
+      final completed = await _engine!.copyHistory(selected);
+      _check(generation);
+      result = completed;
+    } finally {
+      await _engine!.pause();
+      paused = true;
+      await _refresh();
+    }
   });
 
   Future<void> inspectCache() => _cache(false);
@@ -456,6 +506,7 @@ class SyncSettingsController extends ChangeNotifier {
 
   Future<void> pause() async {
     _generation++;
+    historyCopy = null;
     final cancellation = _cancelCloud();
     try {
       await _engine?.pause();

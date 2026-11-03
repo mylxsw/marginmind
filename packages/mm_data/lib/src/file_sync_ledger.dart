@@ -62,6 +62,16 @@ class SyncRevisionChanged implements Exception {
   String toString() => 'Local sync revision changed: $scope';
 }
 
+/// Frozen shared inputs for an explicitly reviewed service copy. No private
+/// snapshot values are exposed, and unaccepted unrelated receipts stay local.
+class SyncHistoryCopySource {
+  SyncHistoryCopySource(this.revision, this.commits, this.ownIds, this.excluded);
+  final String? revision;
+  final Map<String, SyncCommit> commits;
+  final Set<String> ownIds;
+  final int excluded;
+}
+
 /// A single-owner local write-ahead ledger, shared by library, vocabulary and
 /// translation stores. Each atomic record contains local recovery snapshots AND
 /// their newly generated cloud commits. There is no second outbox write.
@@ -118,7 +128,7 @@ class FileSyncLedger {
     await _load();
     return _readConnection();
   });
-  Future<void> _writeConnection(SyncTarget? target, bool paused, {String? expectedRevision}) async {
+  Future<String> _writeConnection(SyncTarget? target, bool paused, {String? expectedRevision}) async {
     final value = {
       'version': 2,
       'deviceId': deviceId,
@@ -132,6 +142,7 @@ class FileSyncLedger {
       await replaceSyncConnection(_connection.path, utf8.encode(jsonEncode(value)), expectedRevision);
     }
     _changes.add(null);
+    return value['revision'] as String;
   }
 
   Future<void> bindTransport(SyncTarget target) => _serial(() async {
@@ -163,6 +174,19 @@ class FileSyncLedger {
     }
     await _writeConnection(current.target, false);
   });
+
+  Future<String> resumeHistoryCopy(String target, String connectionRevision, String? sourceRevision) =>
+      _serial(() async {
+        await _load();
+        if (_last != sourceRevision || _resourceStages > 0 || _heads.values.any((s) => s.draft)) {
+          throw const SyncRevisionChanged('history-copy');
+        }
+        final current = await _readConnection();
+        if (current == null || current.target.key != target || current.revision != connectionRevision) {
+          throw const SyncTransportException(SyncTransportProblem.paused);
+        }
+        return _writeConnection(current.target, false, expectedRevision: connectionRevision);
+      });
 
   /// Reopening never invents a new library or device identity.
   static Future<FileSyncLedger?> restore(Directory root) async {
@@ -455,6 +479,44 @@ class FileSyncLedger {
   Future<Map<String, SyncCommit>> history() => _serial(() async {
     await _load();
     return Map.unmodifiable(_commits);
+  });
+
+  Future<void> checkHistoryCopy(String? revision) => _serial(() async {
+    await _load();
+    if (_last != revision || _resourceStages > 0 || _heads.values.any((s) => s.draft)) {
+      throw const SyncRevisionChanged('history-copy');
+    }
+  });
+
+  Future<SyncHistoryCopySource> historyCopySource() => _serial(() async {
+    if (!supportsHistoryCopy) throw const SyncTransportException(SyncTransportProblem.unavailable);
+    await _load();
+    if (_resourceStages > 0 || _heads.values.any((s) => s.draft)) {
+      throw const SyncRevisionChanged('history-copy');
+    }
+    final own = _outgoing.where((id) => isSyncWireScope(_commits[id]!.scope)).toSet();
+    final todo = [
+      ...own,
+      for (final head in _heads.values)
+        if (isSyncWireScope(head.scope)) head.commit.id,
+    ];
+    final selected = <String, SyncCommit>{};
+    while (todo.isNotEmpty) {
+      final id = todo.removeLast();
+      if (selected.containsKey(id)) continue;
+      final c = _commits[id];
+      if (c == null || !isSyncWireScope(c.scope)) {
+        throw const SyncTransportException(SyncTransportProblem.missingHistory);
+      }
+      selected[id] = c;
+      todo.addAll([...c.parents, ...c.requires.values]);
+    }
+    return SyncHistoryCopySource(
+      _last,
+      Map.unmodifiable(selected),
+      Set.unmodifiable(own),
+      _commits.values.where((c) => isSyncWireScope(c.scope) && !selected.containsKey(c.id)).length,
+    );
   });
 
   /// Enters through the same queue as collection, then holds a staging lease

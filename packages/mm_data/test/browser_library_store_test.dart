@@ -32,6 +32,14 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('whole-history forwarding stays unavailable without cross-tab staging ownership', () async {
+    final ledger = FileSyncLedger.browser(libraryId: 'copy', deviceId: 'browser');
+    await expectLater(
+      ledger.historyCopySource(),
+      throwsA(isA<SyncTransportException>().having((e) => e.problem, 'problem', SyncTransportProblem.unavailable)),
+    );
+  });
+
   test('browser cache reporting never reclaims potentially staged chunks from another tab', () async {
     final ledger = FileSyncLedger.browser(libraryId: 'cache', deviceId: 'browser');
     final path = '${browserRoot().path}/.foliarc-sync/blobs/${syncDigest('orphan')}';

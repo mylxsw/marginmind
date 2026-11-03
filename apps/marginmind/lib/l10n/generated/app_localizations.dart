@@ -11663,7 +11663,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncSettingsHistory.
   ///
   /// In en, this message translates to:
-  /// **'This target is missing required history. The queue is preserved; use the original service until migration is available.'**
+  /// **'This service lacks required history. Keep using the original service, or inspect and explicitly copy the history available on this device.'**
   String get syncSettingsHistory;
 
   /// No description provided for @syncSettingsRetry.
@@ -12344,6 +12344,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'History is still incomplete. Sync missing versions before checking again.'**
   String get syncCacheIncomplete;
+
+  /// No description provided for @syncCopyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the accepted sync history held on this device to the selected service, including contributions from other devices and deleted versions. This does not delete the original service. Unaccepted unrelated branches stay here. All referenced historical files must be available locally or at the destination. Inspect first, then explicitly confirm the copy.'**
+  String get syncCopyHint;
+
+  /// No description provided for @syncCopyPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect history copy'**
+  String get syncCopyPreview;
+
+  /// No description provided for @syncCopyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy this history to the selected service'**
+  String get syncCopyConfirm;
+
+  /// No description provided for @syncCopyDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as a history-copy destination (allow an empty service; connecting remains read-only)'**
+  String get syncCopyDestination;
+
+  /// No description provided for @syncCopyStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The library changed or editing is in progress. Finish editing and inspect the history copy again.'**
+  String get syncCopyStale;
+
+  /// No description provided for @syncCopySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{commits} versions, including {others} from other devices; {chunks} resource chunks. {excluded} unaccepted versions are excluded. {unverified} versions lack file verification manifests; their files are not guaranteed by this copy.'**
+  String syncCopySummary(int commits, int others, int chunks, int excluded, int unverified);
+
+  /// No description provided for @syncCopyResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started.'**
+  String get syncCopyResources;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

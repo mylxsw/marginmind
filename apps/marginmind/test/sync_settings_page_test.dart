@@ -21,6 +21,24 @@ class _Secrets implements SecretStore {
   Future<void> delete(String account) async {}
 }
 
+class _CopyPlan implements SyncHistoryCopyPlan {
+  _CopyPlan(this.target);
+  @override
+  final SyncTarget target;
+  @override
+  int get commits => 12;
+  @override
+  int get otherDeviceCommits => 7;
+  @override
+  int get chunks => 3;
+  @override
+  int get excluded => 2;
+  @override
+  int get unverifiedVersions => 1;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _Settings extends SyncSettingsController {
   _Settings({bool available = true})
     : super(
@@ -34,6 +52,7 @@ class _Settings extends SyncSettingsController {
   }
   final actions = <Object>[];
   SyncSettingsFailure? nextFailure;
+  bool usedCopyDestination = false;
   Completer<void>? gate;
   Future<void> action(Object value) async {
     actions.add(value);
@@ -63,16 +82,42 @@ class _Settings extends SyncSettingsController {
   }
 
   @override
-  Future<void> connectWebDav({required String directory, required String username, required String password}) =>
-      action((directory, username, password));
+  Future<void> connectWebDav({
+    required String directory,
+    required String username,
+    required String password,
+    bool copyDestination = false,
+  }) {
+    usedCopyDestination = copyDestination;
+    return action((directory, username, password));
+  }
+
   @override
   Future<void> renameDevice(String name, {required String? expectedRevision}) => action((name, expectedRevision));
   @override
   Future<void> disconnect() => action('disconnect');
   @override
-  Future<void> connectICloud() => action('icloud');
+  Future<void> connectICloud({bool copyDestination = false}) {
+    usedCopyDestination = copyDestination;
+    return action('icloud');
+  }
+
   @override
   Future<void> syncOnce() => action('sync');
+  @override
+  Future<void> previewHistoryCopy() async {
+    await action('copy-preview');
+    if (failure == null) historyCopy = _CopyPlan(target!);
+    notifyListeners();
+  }
+
+  @override
+  Future<void> copyHistory(SyncHistoryCopyPlan plan) async {
+    await action(plan);
+    historyCopy = null;
+    notifyListeners();
+  }
+
   @override
   Future<void> downloadResource(SyncResourceStatus resource) => action(resource);
   @override
@@ -82,7 +127,11 @@ class _Settings extends SyncSettingsController {
   @override
   Future<void> reclaimCache() => action('cache-reclaim');
   @override
-  Future<void> pause() => action('pause');
+  Future<void> pause() async {
+    historyCopy = null;
+    await action('pause');
+  }
+
   @override
   Future<void> initialize() => action('initialize');
   void publish() => notifyListeners();
@@ -114,6 +163,7 @@ void main() {
   Future<void> tap(WidgetTester tester, String key) async {
     final finder = find.byKey(ValueKey(key));
     await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
     await tester.tap(finder);
     await tester.pumpAndSettle();
   }
@@ -133,6 +183,33 @@ void main() {
       libraryId: 'library-code',
     );
   }
+
+  testWidgets('empty destination mode is explicit and passed to connection checks', (tester) async {
+    active();
+    await pump(tester, width: 390);
+    expect(service.usedCopyDestination, false);
+    await tap(tester, 'sync-copy-destination');
+    await tap(tester, 'sync-icloud');
+    expect(service.usedCopyDestination, true);
+  });
+
+  testWidgets('history copy shows reviewed target and counts before explicit confirmation', (tester) async {
+    active();
+    await pump(tester, locale: 'zh', width: 390);
+    expect(find.byKey(const ValueKey('sync-copy-confirm')), findsNothing);
+    await tap(tester, 'sync-copy-preview');
+    expect(service.actions, ['copy-preview']);
+    expect(find.textContaining('12 个版本'), findsOneWidget);
+    expect(find.textContaining('2 个未接受版本'), findsOneWidget);
+    final plan = service.historyCopy!;
+    await tap(tester, 'sync-copy-confirm');
+    expect(service.actions.last, same(plan));
+    expect(find.byKey(const ValueKey('sync-copy-confirm')), findsNothing);
+    await tap(tester, 'sync-copy-preview');
+    await service.pause();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('sync-copy-confirm')), findsNothing);
+  });
 
   testWidgets('rename keeps observed version and input on failure; disconnect is explicit', (tester) async {
     active();
