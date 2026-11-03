@@ -6096,4 +6096,255 @@ class AppLocalizationsZh extends AppLocalizations {
   String incomingShareFiles(int count) {
     return '$count 个文档';
   }
+
+  @override
+  String get aiTaskWebFormat => '网页内容整理';
+
+  @override
+  String get webFormatSectionLabel => '内容处理';
+
+  @override
+  String get webFormatTitle => 'AI 整理';
+
+  @override
+  String get webFormatHint => '修正标题、列表和段落，去掉页面杂质，不改写原文。';
+
+  @override
+  String get webFormatModel => '模型';
+
+  @override
+  String webFormatScope(String chars, String sections) {
+    return '约 $chars 字，分 $sections 段。';
+  }
+
+  @override
+  String webFormatSendsTo(String service) {
+    return '正文会发送到 $service。';
+  }
+
+  @override
+  String get webFormatLocal => '在本机处理，内容不会离开这台设备。';
+
+  @override
+  String get webFormatOpenSettings => '去设置';
+
+  @override
+  String get webFormatStart => '开始整理';
+
+  @override
+  String get webFormatStop => '停止整理';
+
+  @override
+  String get webFormatResume => '继续整理';
+
+  @override
+  String get webFormatStopNote => '可以随时停止，已整理的内容会保留。';
+
+  @override
+  String get webFormatPreparing => '正在准备';
+
+  @override
+  String webFormatProgress(String current, String total) {
+    return '正在整理第 $current/$total 段';
+  }
+
+  @override
+  String get webFormatChecking => '正在检查完整性';
+
+  @override
+  String webFormatOutputMeta(String chars, String time) {
+    return '已输出 $chars 字 · $time';
+  }
+
+  @override
+  String webFormatDoneMeta(String sections, String chars, String time) {
+    return '$sections 段 · $chars 字 · 用时 $time';
+  }
+
+  @override
+  String get webFormatEditedMark => '已编辑';
+
+  @override
+  String webFormatPartial(String done, String total) {
+    return '已整理 $done/$total 段，其余保留原始内容';
+  }
+
+  @override
+  String get webFormatViewLayout => '排版';
+
+  @override
+  String get webFormatTabPreview => '预览';
+
+  @override
+  String get webFormatTabEdit => '编辑';
+
+  @override
+  String get webFormatTabCompare => '对照原文';
+
+  @override
+  String get webFormatTabSettings => '设置';
+
+  @override
+  String get webFormatTabContent => '内容';
+
+  @override
+  String get webFormatBackToLatest => '回到最新内容';
+
+  @override
+  String webFormatWriting(String title) {
+    return '正在整理“$title”…';
+  }
+
+  @override
+  String webFormatSectionFailed(String number) {
+    return '第 $number 段没有整理成功';
+  }
+
+  @override
+  String get webFormatSectionFailedHint => '其他段落不受影响。';
+
+  @override
+  String get webFormatUseSource => '使用原始内容';
+
+  @override
+  String webFormatSourceTag(String number) {
+    return '第 $number 段 · 未整理，保留原始内容';
+  }
+
+  @override
+  String get webFormatStageRead => '读取网页正文';
+
+  @override
+  String get webFormatStageSplit => '按章节分段';
+
+  @override
+  String get webFormatStageFormat => '整理正文';
+
+  @override
+  String get webFormatStageCheck => '检查完整性';
+
+  @override
+  String get webFormatProgressTitle => '整理进度';
+
+  @override
+  String get webFormatCheckTitle => '完整性检查';
+
+  @override
+  String get webFormatSections => '段落';
+
+  @override
+  String webFormatKept(
+    String images,
+    String imagesTotal,
+    String links,
+    String linksTotal,
+    String code,
+    String codeTotal,
+  ) {
+    return '图片 $images/$imagesTotal、链接 $links/$linksTotal、代码块 $code/$codeTotal';
+  }
+
+  @override
+  String webFormatShorter(String title, String percent) {
+    return '$title：比原文少 $percent%';
+  }
+
+  @override
+  String webFormatLonger(String title, String percent) {
+    return '$title：比原文多 $percent%';
+  }
+
+  @override
+  String get webFormatShorterHint => '可能删掉了推广内容，也可能误删了正文。';
+
+  @override
+  String get webFormatLongerHint => '可能加入了原文没有的内容。';
+
+  @override
+  String get webFormatViewCompare => '查看对照';
+
+  @override
+  String get webFormatAcknowledge => '没问题';
+
+  @override
+  String get webFormatRerun => '重新整理';
+
+  @override
+  String get webFormatEditedNoRerun => '已手动编辑，不能再按段重新整理。';
+
+  @override
+  String get webFormatDiscardAction => '放弃整理，用原始内容';
+
+  @override
+  String get webFormatRevert => '还原 AI 结果';
+
+  @override
+  String get webFormatLivePreview => '实时预览';
+
+  @override
+  String get webFormatSourceColumn => '原始提取';
+
+  @override
+  String get webFormatResultColumn => 'AI 整理后';
+
+  @override
+  String get webFormatResultColumnEdited => 'AI 整理后（编辑前）';
+
+  @override
+  String get webFormatNotFormatted => '未整理';
+
+  @override
+  String webFormatRemovedHint(String percent) {
+    return '这一段比原文少 $percent%。删除的内容已划线，请确认。';
+  }
+
+  @override
+  String webFormatAddedHint(String percent) {
+    return '这一段比原文多 $percent%，请确认没有加入新内容。';
+  }
+
+  @override
+  String get webFormatConfirmCloseTitle => '放弃整理结果？';
+
+  @override
+  String get webFormatConfirmClose => '已整理的内容不会保留。';
+
+  @override
+  String get webFormatConfirmCloseEdited => '已整理的内容和你的编辑都不会保留。';
+
+  @override
+  String get webFormatDiscard => '放弃';
+
+  @override
+  String get webFormatBack => '返回';
+
+  @override
+  String get webFormatConfirmRevertTitle => '还原 AI 结果？';
+
+  @override
+  String get webFormatConfirmRevert => '你对 Markdown 的修改将被丢弃。';
+
+  @override
+  String get webFormatRevertAction => '还原';
+
+  @override
+  String get webFormatConfirmDiscardTitle => '放弃整理？';
+
+  @override
+  String get webFormatConfirmDiscard => '将回到未整理的内容。';
+
+  @override
+  String get webFormatConfirmDiscardEdited => '将回到未整理的内容，你的编辑也不会保留。';
+
+  @override
+  String get webFormatInterruptedHint => '可以继续整理，或用已有内容保存；没有整理的部分保留原始内容。';
+
+  @override
+  String get webFormatSourceNote => 'AI 整理';
+
+  @override
+  String get webFormatPdfFailed => '无法生成 PDF，请重试或换一种格式。';
+
+  @override
+  String get webFormatImage => '图片';
 }

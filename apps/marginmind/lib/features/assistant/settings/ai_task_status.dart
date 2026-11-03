@@ -26,6 +26,7 @@ String aiTaskName(AppLocalizations l, TaskType type) => switch (type) {
   TaskType.research => l.aiTaskResearch,
   TaskType.studyNotes => l.aiTaskStudyNotes,
   TaskType.reviewCards => l.aiTaskReviewCards,
+  TaskType.webFormat => l.aiTaskWebFormat,
 };
 
 /// The row/panel phrase for a resolver issue; null when there is nothing to

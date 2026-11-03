@@ -130,19 +130,41 @@ class WebBookParser {
       heading = dom.Element.tag('h1')..text = title.trim().isEmpty ? url.host : title;
       document.body!.nodes.insert(0, heading);
     }
+    final siblings = heading.parentNode!.nodes;
+    siblings.insert(siblings.indexOf(heading) + 1, _attribution(url, capturedAt));
+    return document.outerHtml;
+  }
+
+  dom.Element _attribution(Uri url, DateTime capturedAt, {String? note}) {
     final date = capturedAt.toLocal().toIso8601String().substring(0, 10);
-    final attribution = dom.Element.tag('p')
+    return dom.Element.tag('p')
       ..classes.add('mm-web-source')
       ..attributes['style'] = 'font-size:0.75em;font-family:system-ui;opacity:0.6'
       ..nodes.addAll([
         dom.Element.tag('a')
           ..attributes['href'] = url.toString()
           ..text = url.host,
-        dom.Text(' · $date'),
+        dom.Text(note == null ? ' · $date' : ' · $date · $note'),
       ]);
-    final siblings = heading.parentNode!.nodes;
-    siblings.insert(siblings.indexOf(heading) + 1, attribution);
-    return document.outerHtml;
+  }
+
+  /// Title and provenance above already formatted Markdown. [note] tells the
+  /// reader how the text was processed.
+  String withMarkdownAttribution(String body, String title, Uri url, DateTime capturedAt, {String? note}) {
+    final heading = title.trim().isEmpty ? url.host : title.trim();
+    final escaped = heading.replaceAllMapped(RegExp(r'[\\`*_\[\]<>#]'), (m) => '\\${m[0]}');
+    return '# $escaped\n\n${_attribution(url, capturedAt, note: note).outerHtml}\n\n${body.trim()}\n';
+  }
+
+  /// Body HTML to print from Markdown, under the same boundary as a capture:
+  /// model output and page markup both count as untrusted.
+  String printableHtml(String markdown, Set<String> resourcePaths) {
+    final rendered = md.markdownToHtml(markdown, extensionSet: md.ExtensionSet.gitHubWeb);
+    final document = html.parse(sanitizeHtml(rendered, resourcePaths));
+    for (final image in document.querySelectorAll('img')) {
+      if (!image.attributes.containsKey('src')) image.remove();
+    }
+    return document.body!.innerHtml;
   }
 
   /// Preserve inline HTML for structures Markdown cannot represent losslessly

@@ -283,3 +283,65 @@ String browserDocumentScript(String readability, String token, {required bool or
   return '{}';
 })()
 ''';
+
+/// Prints finished article HTML through the live tab's print pipeline. It lives
+/// in a closed shadow root shown only by print CSS, so the page never changes
+/// on screen; the job's cleanup removes it again.
+String browserPrintDocumentScript(String token, String html, Map<String, String> images) =>
+    '''
+(() => {
+  const key = ${jsonEncode(token)}, images = ${jsonEncode(images)};
+  const host = document.createElement('div');
+  host.id = key + '_print';
+  host.style.display = 'none';
+  const shadow = host.attachShadow({mode:'closed'});
+  const style = document.createElement('style');
+  style.textContent = `
+    :host {color:#202124; font:12.5pt/1.8 "Songti SC","Noto Serif CJK SC","Noto Serif SC",STSong,SimSun,serif;}
+    article {display:block; width:auto; margin:0; padding:0 18pt; overflow-wrap:anywhere;}
+    h1,h2,h3,h4,h5,h6 {font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
+      line-height:1.35; break-after:avoid; margin:1.4em 0 .5em;}
+    h1 {font-size:21pt; margin:0 0 .3em;} h2 {font-size:15.5pt;} h3 {font-size:13pt;} h4,h5,h6 {font-size:12.5pt;}
+    .mm-web-source {font:9.5pt/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#70757a; margin:0 0 2em;}
+    .mm-web-source a {color:inherit; text-decoration:none;}
+    p,ul,ol,blockquote,figure,pre,table {margin:0 0 .9em;}
+    p,li {orphans:3; widows:3;}
+    a {color:inherit; text-decoration:underline;}
+    img {display:block; max-width:100%; height:auto; max-height:640pt; object-fit:contain;}
+    blockquote {margin-left:0; padding-left:12pt; border-left:2pt solid #ddd; color:#444;}
+    pre {white-space:pre-wrap; overflow-wrap:anywhere; padding:9pt; background:#f5f5f5; break-inside:avoid;}
+    pre,code {font-family:ui-monospace,Menlo,Consolas,monospace; font-size:10pt;}
+    table {width:100%; table-layout:fixed; border-collapse:collapse; font-size:10.5pt;}
+    th,td {border:0.5pt solid #ccc; padding:5pt; overflow-wrap:anywhere; text-align:left;}
+    thead {display:table-header-group;} tr {break-inside:avoid;}
+    hr {border:0; border-top:0.5pt solid #ddd; margin:16pt 0;}
+  `;
+  const article = document.createElement('article');
+  article.innerHTML = ${jsonEncode(html)};
+  for (const img of article.querySelectorAll('img')) {
+    const path = img.getAttribute('src'), bytes = images[path];
+    if (!bytes) {img.remove(); continue;}
+    const ext = path.split('.').pop();
+    const mime = ext==='svg' ? 'image/svg+xml' : ext==='jpg' ? 'image/jpeg' : 'image/'+ext;
+    img.src = 'data:'+mime+';base64,'+bytes;
+  }
+  shadow.append(style,article);
+  const printStyle = document.createElement('style');
+  printStyle.textContent = `@media print {
+    @page {size:A4; margin:36pt;}
+    html,body {display:block!important; width:auto!important; min-width:0!important;
+      max-width:none!important; height:auto!important; margin:0!important; padding:0!important;
+      overflow:visible!important; background:white!important; transform:none!important; zoom:1!important;}
+    body > * {display:none!important;}
+    body > #${token}_print {display:block!important; position:static!important;
+      width:auto!important; margin:0!important; padding:0!important;}
+  }`;
+  document.head.append(printStyle);
+  document.body.append(host);
+  const job = {cleanup: () => {host.remove(); printStyle.remove();}};
+  globalThis[key] = job;
+  Promise.all([...article.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})))
+    .then(() => job.printReady = true).catch(() => job.printFailed = true);
+  return '{}';
+})()
+''';

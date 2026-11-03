@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('all twelve stable task identities and quick/heavy knowledge boundaries', () {
-    expect(TaskType.values.map((v) => v.key).toSet().length, 12);
+    expect(TaskType.values.map((v) => v.key).toSet().length, 13);
     expect(TaskType.values.where((v) => v.category == TaskCategory.quick).map((v) => v.key), [
       'selection_translate',
       'word_lookup',
@@ -81,5 +81,27 @@ void main() {
         );
     expect(key(), key());
     expect({key(), key(service: 'b'), key(fingerprint: 'g'), key(adapter: '2'), key(revision: 2)}.length, 5);
+  });
+
+  test('document origin round-trips how it was formatted, and old documents have none', () {
+    final origin = DocumentOrigin(
+      url: 'https://example.com',
+      capturedAt: DateTime.utc(2026, 11, 3),
+      formatting: const DocumentOriginFormatting(
+        model: 'Claude',
+        promptVersion: 'web-format-1',
+        edited: true,
+        unformattedSections: 2,
+      ),
+    );
+    final restored = DocumentOrigin.fromJson(origin.toJson()).formatting!;
+    expect(
+      (restored.model, restored.promptVersion, restored.edited, restored.unformattedSections),
+      ('Claude', 'web-format-1', true, 2),
+    );
+    final plain = DocumentOrigin(url: 'https://example.com', capturedAt: DateTime.utc(2026)).toJson();
+    expect(plain.containsKey('formatting'), isFalse);
+    expect(DocumentOrigin.fromJson(plain).formatting, isNull);
+    expect(const DocumentOriginFormatting(model: 'm', promptVersion: 'p').toJson().keys, ['model', 'promptVersion']);
   });
 }

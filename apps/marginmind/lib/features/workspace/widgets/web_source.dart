@@ -32,7 +32,14 @@ class WebSourceAttribution extends StatelessWidget {
           ),
         ),
         Flexible(
-          child: Text(source.substring(uri.host.length), maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
+          child: Text(
+            origin.formatting == null
+                ? source.substring(uri.host.length)
+                : '${source.substring(uri.host.length)} · ${context.l10n.webFormatSourceNote}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
         ),
       ],
     );
