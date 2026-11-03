@@ -6372,6 +6372,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncSettingsReceived => '已接收的元数据对象';
 
   @override
+  String get syncSettingsTimedOut => 'iCloud 等待超时，同步已暂停，待同步变更仍保留。已交给系统的文件操作可能仍会完成，请检查 iCloud 可用性后重试。';
+
+  @override
   String get syncSettingsError => '操作未完成。本机内容和待同步变更均保留，请检查存储或连接后重试。';
 
   @override

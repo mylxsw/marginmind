@@ -11,22 +11,77 @@ final class ICloudDriveChannel {
   private let channel: FlutterMethodChannel
   private let events: FlutterEventChannel
   private let accountEvents: ICloudAccountEvents
-  init(messenger: FlutterBinaryMessenger, store: ICloudDriveStore? = nil) {
+  // Main-queue registry retains cancelled entries until the serial worker exits.
+  // This bounds queued payloads even if container resolution cannot be interrupted.
+  private var requests: [String: Request] = [:]
+  private final class Request {
+    let operation = ICloudOperation()
+    var reply: FlutterResult?
+    var timer: DispatchWorkItem?
+    init(_ reply: @escaping FlutterResult) { self.reply = reply }
+    func finish(_ value: Any?) {
+      timer?.cancel(); timer = nil
+      let callback = reply; reply = nil
+      callback?(value)
+    }
+  }
+
+  init(messenger: FlutterBinaryMessenger, store: ICloudDriveStore? = nil,
+       timeout: TimeInterval = 30, worker: DispatchQueue = ICloudDriveChannel.worker) {
     accountEvents = ICloudAccountEvents()
     events = FlutterEventChannel(name: "marginmind/icloud_account", binaryMessenger: messenger)
     events.setStreamHandler(accountEvents)
     channel = FlutterMethodChannel(name: "marginmind/icloud_drive", binaryMessenger: messenger)
-    channel.setMethodCallHandler { call, result in
-      // Capture only serializable arguments, never a live file coordinator.
-      Self.worker.async {
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self else { result(FlutterError(code: "unavailable", message: nil, details: nil)); return }
+      // Flutter delivers this handler on the main queue. Cancellation and timers
+      // bypass the file worker, including a blocked container lookup.
+      if call.method == "configuration" {
+        result(store?.container ?? ICloudDriveStore.configuredContainer()); return
+      }
+      guard let args = call.arguments as? [String: Any],
+            let id = args["requestId"] as? String, id.range(of: #"\A[a-f0-9]{32}\z"#, options: .regularExpression) != nil else {
+        result(FlutterError(code: "invalidResponse", message: nil, details: nil)); return
+      }
+      if call.method == "cancel" {
+        if let request = self.requests[id] {
+          request.operation.cancel()
+          request.finish(FlutterError(code: "cancelled", message: nil, details: nil))
+        }
+        result(nil); return
+      }
+      guard self.requests[id] == nil, self.requests.count < 8 else {
+        result(FlutterError(code: "unavailable", message: nil, details: nil)); return
+      }
+      let request = Request(result)
+      self.requests[id] = request
+      let timer = DispatchWorkItem { [weak request] in
+        guard let request else { return }
+        request.operation.cancel(.timedOut)
+        request.finish(FlutterError(code: "timedOut", message: nil, details: nil))
+      }
+      request.timer = timer
+      DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: timer)
+      worker.async { [weak self] in
+        let value: Any?
         do {
-          let value = try Self.handle(call, store: store)
-          DispatchQueue.main.async { result(value) }
+          try request.operation.check()
+          value = try Self.handle(call, store: store, operation: request.operation)
         } catch {
-          let code = Self.errorCode(error)
-          DispatchQueue.main.async { result(FlutterError(code: code, message: nil, details: nil)) }
+          value = FlutterError(code: Self.errorCode(error), message: nil, details: nil)
+        }
+        DispatchQueue.main.async {
+          request.finish(value)
+          self?.requests.removeValue(forKey: id)
         }
       }
+    }
+  }
+
+  deinit {
+    for request in requests.values {
+      request.operation.cancel()
+      request.finish(FlutterError(code: "cancelled", message: nil, details: nil))
     }
   }
 
@@ -44,7 +99,8 @@ final class ICloudDriveChannel {
     return "unavailable"
   }
 
-  static func handle(_ call: FlutterMethodCall, store supplied: ICloudDriveStore? = nil) throws -> Any? {
+  static func handle(_ call: FlutterMethodCall, store supplied: ICloudDriveStore? = nil,
+                     operation: ICloudOperation = ICloudOperation()) throws -> Any? {
     guard let container = supplied?.container ?? ICloudDriveStore.configuredContainer() else {
       if call.method == "configuration" { return nil }
       throw ICloudDriveFailure.unavailable
@@ -54,18 +110,18 @@ final class ICloudDriveChannel {
       throw ICloudDriveFailure.invalidResponse
     }
     let store = supplied ?? ICloudDriveStore.production(container: container)
-    if call.method == "account" { return try store.accountIdentity() }
+    if call.method == "account" { return try store.accountIdentity(operation: operation) }
     guard let path = args["path"] as? String, let account = args["account"] as? String else {
       throw ICloudDriveFailure.invalidResponse
     }
     switch call.method {
-    case "prepare": try store.prepare(path, expected: account); return nil
-    case "list": return try store.list(path, expected: account)
-    case "read": return try store.read(path, expected: account).map { FlutterStandardTypedData(bytes: $0) }
+    case "prepare": try store.prepare(path, expected: account, operation: operation); return nil
+    case "list": return try store.list(path, expected: account, operation: operation)
+    case "read": return try store.read(path, expected: account, operation: operation).map { FlutterStandardTypedData(bytes: $0) }
     case "create", "uploaded":
       guard let bytes = args["bytes"] as? FlutterStandardTypedData else { throw ICloudDriveFailure.invalidResponse }
-      if call.method == "uploaded" { return try store.uploaded(path, bytes: bytes.data, expected: account) }
-      try store.create(path, bytes: bytes.data, expected: account); return nil
+      if call.method == "uploaded" { return try store.uploaded(path, bytes: bytes.data, expected: account, operation: operation) }
+      try store.create(path, bytes: bytes.data, expected: account, operation: operation); return nil
     default: return FlutterMethodNotImplemented
     }
   }

@@ -33,6 +33,7 @@ enum SyncTransportProblem {
   quota,
   unavailable,
   throttled,
+  timedOut,
   invalidResponse,
   collision,
   wrongLibrary,

@@ -6639,6 +6639,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSettingsReceived => 'Metadata objects received';
 
   @override
+  String get syncSettingsTimedOut =>
+      'iCloud took too long. Sync is paused and pending changes are preserved. A file operation already sent to the system may still finish. Check iCloud availability and retry.';
+
+  @override
   String get syncSettingsError =>
       'Could not complete this operation. Your local content and pending changes are preserved. Check storage or connection and retry.';
 

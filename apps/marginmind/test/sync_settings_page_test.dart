@@ -282,6 +282,15 @@ void main() {
     expect(find.byKey(const ValueKey('sync-prepare')), findsNothing);
   });
 
+  testWidgets('deadline explains pending changes and possible system completion in Chinese', (tester) async {
+    active();
+    service.failure = SyncSettingsFailure.timedOut;
+    await pump(tester, locale: 'zh', width: 390);
+    expect(find.textContaining('iCloud 等待超时'), findsOneWidget);
+    expect(find.textContaining('已交给系统的文件操作可能仍会完成'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('typed failures expose actionable messages without raw errors', (tester) async {
     active();
     await pump(tester);
@@ -293,6 +302,7 @@ void main() {
       SyncSettingsFailure.legacyProtocol,
       SyncSettingsFailure.missingHistory,
       SyncSettingsFailure.paused,
+      SyncSettingsFailure.timedOut,
       SyncSettingsFailure.storage,
     ]) {
       service.failure = failure;

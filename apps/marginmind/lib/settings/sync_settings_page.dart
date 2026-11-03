@@ -244,6 +244,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   }
 
   String _failure(AppLocalizations l, SyncSettingsFailure failure) => switch (failure) {
+    SyncSettingsFailure.timedOut => l.syncSettingsTimedOut,
     SyncSettingsFailure.staleDevice => l.syncDeviceStale,
     SyncSettingsFailure.resources => l.syncResourceChanged,
     SyncSettingsFailure.invalidInput => l.syncSettingsInvalid,

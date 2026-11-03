@@ -11612,6 +11612,12 @@ abstract class AppLocalizations {
   /// **'Metadata objects received'**
   String get syncSettingsReceived;
 
+  /// No description provided for @syncSettingsTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'iCloud took too long. Sync is paused and pending changes are preserved. A file operation already sent to the system may still finish. Check iCloud availability and retry.'**
+  String get syncSettingsTimedOut;
+
   /// No description provided for @syncSettingsError.
   ///
   /// In en, this message translates to:

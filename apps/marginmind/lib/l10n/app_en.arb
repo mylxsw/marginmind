@@ -3346,6 +3346,7 @@
   "syncSettingsConfirmed": "Metadata objects confirmed by the service",
   "syncSettingsStaged": "Objects staged locally, awaiting cloud confirmation",
   "syncSettingsReceived": "Metadata objects received",
+  "syncSettingsTimedOut": "iCloud took too long. Sync is paused and pending changes are preserved. A file operation already sent to the system may still finish. Check iCloud availability and retry.",
   "syncSettingsError": "Could not complete this operation. Your local content and pending changes are preserved. Check storage or connection and retry.",
   "syncSettingsInvalid": "Check the library code, device name and HTTPS directory. The username must be the service login account.",
   "syncSettingsMissing": "The existing library was not found at this service. Check its code and directory; no empty replacement was created.",

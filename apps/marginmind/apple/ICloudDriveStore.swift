@@ -2,7 +2,33 @@ import Foundation
 import Darwin
 
 enum ICloudDriveFailure: String, Error {
-  case unavailable, accountChanged, invalidResponse, tooLarge, collision
+  case unavailable, accountChanged, invalidResponse, tooLarge, collision, cancelled, timedOut
+}
+
+/// Cancellation stops waiting coordination and is checked before side effects.
+/// A filesystem call already in progress may finish; it is never acknowledged
+/// as successful after cancellation. Do not hold this lock across filesystem IO.
+final class ICloudOperation {
+  private let lock = NSLock()
+  private var failure: ICloudDriveFailure?
+  private var coordinator: NSFileCoordinator?
+
+  func check() throws {
+    lock.lock(); let reason = failure; lock.unlock()
+    if let reason { throw reason }
+  }
+  func attach(_ value: NSFileCoordinator) throws {
+    lock.lock(); coordinator = value; let reason = failure; lock.unlock()
+    if let reason { value.cancel(); throw reason }
+  }
+  func detach() { lock.lock(); coordinator = nil; lock.unlock() }
+  func cancel(_ reason: ICloudDriveFailure = .cancelled) {
+    lock.lock()
+    if failure == nil { failure = reason }
+    let value = coordinator
+    lock.unlock()
+    value?.cancel()
+  }
 }
 
 /// A local alias for Apple's opaque token. Never hash its archive into a global
@@ -95,7 +121,12 @@ final class ICloudDriveStore {
     )
   }
 
-  func accountIdentity() throws -> String? { try account() }
+  func accountIdentity(operation: ICloudOperation = ICloudOperation()) throws -> String? {
+    try operation.check()
+    let value = try account()
+    try operation.check()
+    return value
+  }
 
   private func check(_ expected: String) throws {
     guard !expected.isEmpty, expected.count <= 256, try account() == expected else {
@@ -129,10 +160,13 @@ final class ICloudDriveStore {
   }
 
   private func access<T>(_ path: String, expected: String, directory: Bool = false,
-                         writing: Bool = false, _ body: (URL) throws -> T) throws -> T {
+                         writing: Bool = false, operation: ICloudOperation, _ body: (URL) throws -> T) throws -> T {
     guard Self.valid(path, directory: directory) else { throw ICloudDriveFailure.invalidResponse }
+    try operation.check()
     try check(expected)
+    try operation.check()
     let base = try root().standardizedFileURL
+    try operation.check()
     try check(expected) // Resolving the container can block across account changes.
     let url = base.appendingPathComponent(path)
     try safe(url, root: base)
@@ -140,39 +174,46 @@ final class ICloudDriveStore {
     var coordination: NSError?
     let accessor: (URL) -> Void = { coordinated in
       result = Result {
+        try operation.check()
         try self.check(expected)
         guard coordinated.standardizedFileURL == url.standardizedFileURL else {
           throw ICloudDriveFailure.invalidResponse
         }
         try self.safe(coordinated, root: base)
+        try operation.check()
         let value = try body(coordinated)
         try self.check(expected)
+        try operation.check()
         return value
       }
     }
     let coordinator = NSFileCoordinator(filePresenter: nil)
+    defer { operation.detach() }
+    try operation.attach(coordinator)
     if writing {
       coordinator.coordinate(writingItemAt: url, options: [], error: &coordination, byAccessor: accessor)
     } else {
       coordinator.coordinate(readingItemAt: url, options: .withoutChanges, error: &coordination, byAccessor: accessor)
     }
+    try operation.check()
     if let error = coordination { throw error }
     guard let result = result else { throw ICloudDriveFailure.unavailable }
     return try result.get()
   }
 
-  func prepare(_ path: String, expected: String) throws {
-    try access(path, expected: expected, directory: true, writing: true) { url in
+  func prepare(_ path: String, expected: String, operation: ICloudOperation = ICloudOperation()) throws {
+    try access(path, expected: expected, directory: true, writing: true, operation: operation) { url in
       try files.createDirectory(at: url, withIntermediateDirectories: true)
     }
   }
 
-  func list(_ path: String, expected: String) throws -> [String] {
-    try access(path, expected: expected, directory: true) { url in
+  func list(_ path: String, expected: String, operation: ICloudOperation = ICloudOperation()) throws -> [String] {
+    try access(path, expected: expected, directory: true, operation: operation) { url in
       let children = try files.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
       guard children.count <= 100000 else { throw ICloudDriveFailure.tooLarge }
       var names = Set<String>()
       for child in children {
+        try operation.check()
         var name = child.lastPathComponent
         // Evicted iCloud documents may be represented by hidden placeholders.
         if name.hasPrefix("."), name.hasSuffix(".icloud") { name = String(name.dropFirst().dropLast(7)) }
@@ -186,9 +227,11 @@ final class ICloudDriveStore {
     url.deletingLastPathComponent().appendingPathComponent("." + url.lastPathComponent + ".icloud")
   }
 
-  private func currentData(_ url: URL) throws -> Data? {
+  private func currentData(_ url: URL, operation: ICloudOperation) throws -> Data? {
+    try operation.check()
     guard files.fileExists(atPath: url.path) else {
       if files.fileExists(atPath: placeholder(url).path) {
+        try operation.check()
         try download(url)
         throw ICloudDriveFailure.unavailable
       }
@@ -201,6 +244,7 @@ final class ICloudDriveStore {
     }
     let status = try state(url)
     guard !status.conflicts else { throw ICloudDriveFailure.collision }
+    try operation.check()
     guard status.current else { try download(url); throw ICloudDriveFailure.unavailable }
     let handle = try FileHandle(forReadingFrom: url)
     defer { try? handle.close() }
@@ -209,23 +253,25 @@ final class ICloudDriveStore {
     return data
   }
 
-  func read(_ path: String, expected: String) throws -> Data? {
-    try access(path, expected: expected) { try currentData($0) }
+  func read(_ path: String, expected: String, operation: ICloudOperation = ICloudOperation()) throws -> Data? {
+    try access(path, expected: expected, operation: operation) { try currentData($0, operation: operation) }
   }
 
-  func create(_ path: String, bytes: Data, expected: String) throws {
+  func create(_ path: String, bytes: Data, expected: String, operation: ICloudOperation = ICloudOperation()) throws {
     guard bytes.count <= Self.byteLimit else { throw ICloudDriveFailure.tooLarge }
-    try access(path, expected: expected, writing: true) { url in
+    try access(path, expected: expected, writing: true, operation: operation) { url in
       // Existing/evicted versions are never overwritten. Dart reads back and
       // compares canonical JSON, including VM/JS numeric representations.
-      if try currentData(url) != nil { return }
+      if try currentData(url, operation: operation) != nil { return }
       let temporary = url.deletingLastPathComponent().appendingPathComponent(".sync-" + UUID().uuidString)
+      try operation.check()
       try bytes.write(to: temporary, options: .withoutOverwriting)
       defer { try? files.removeItem(at: temporary) }
       let handle = try FileHandle(forWritingTo: temporary)
       defer { try? handle.close() }
       try handle.synchronize()
       try check(expected)
+      try operation.check()
       // .atomic + .withoutOverwriting is not a supported NSData combination.
       // Same-directory rename with EXCL publishes complete bytes or nothing.
       let code = temporary.path.withCString { source in
@@ -235,10 +281,10 @@ final class ICloudDriveStore {
     }
   }
 
-  func uploaded(_ path: String, bytes: Data, expected: String) throws -> Bool {
+  func uploaded(_ path: String, bytes: Data, expected: String, operation: ICloudOperation = ICloudOperation()) throws -> Bool {
     guard bytes.count <= Self.byteLimit else { throw ICloudDriveFailure.tooLarge }
-    return try access(path, expected: expected) { url in
-      guard let stored = try currentData(url), stored == bytes else { return false }
+    return try access(path, expected: expected, operation: operation) { url in
+      guard let stored = try currentData(url, operation: operation), stored == bytes else { return false }
       let status = try state(url)
       return status.current && status.uploaded && !status.conflicts
     }

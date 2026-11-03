@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_platform/mm_platform.dart';
@@ -68,6 +70,71 @@ void main() {
     expect(await drive.uploaded(path, [123, 125], 'account'), isFalse);
     confirmed = true;
     expect(await drive.uploaded(path, [123, 125], 'account'), isTrue);
+  });
+
+  test('cancellation snapshots this port and rejects late successful callbacks', () async {
+    final pending = <String, Completer<Object?>>{};
+    final cancellations = <String>[];
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'configuration') return container;
+      final id = call.arguments['requestId'] as String;
+      expect(id, matches(r'^[a-f0-9]{32}$'));
+      if (call.method == 'cancel') {
+        cancellations.add(id);
+        return null;
+      }
+      final result = Completer<Object?>();
+      pending[id] = result;
+      return result.future;
+    });
+    final drive = await port(), other = await port();
+    final old = drive.accountIdentity();
+    final rejected = expectLater(old, throwsA(problem(SyncTransportProblem.paused)));
+    final independent = other.accountIdentity();
+    await Future<void>.delayed(Duration.zero);
+    final ids = pending.keys.toList();
+    await drive.cancelPending();
+    expect(cancellations, [ids.first]);
+    final fresh = drive.accountIdentity();
+    await Future<void>.delayed(Duration.zero);
+    for (final result in pending.values) {
+      result.complete('account');
+    }
+    await rejected;
+    expect(await independent, 'account');
+    expect(await fresh, 'account');
+    await drive.cancelPending();
+    expect(cancellations, [ids.first]);
+  });
+
+  test('failed native cancel retains local invalidation and never leaks native details', () async {
+    for (final nativeError in [PlatformException(code: 'private-path'), MissingPluginException()]) {
+      final result = Completer<Object?>(), entered = Completer<void>();
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'configuration') return container;
+        if (call.method == 'cancel') throw nativeError;
+        entered.complete();
+        return result.future;
+      });
+      final drive = await port();
+      final work = expectLater(drive.accountIdentity(), throwsA(problem(SyncTransportProblem.paused)));
+      await entered.future;
+      await expectLater(drive.cancelPending(), throwsA(problem(SyncTransportProblem.unavailable)));
+      result.complete('account');
+      await work;
+    }
+  });
+
+  test('native cancellation and deadline errors are typed without path details', () async {
+    messenger.setMockMethodCallHandler(channel, (_) async => container);
+    final drive = await port();
+    for (final entry in {'cancelled': SyncTransportProblem.paused, 'timedOut': SyncTransportProblem.timedOut}.entries) {
+      messenger.setMockMethodCallHandler(
+        channel,
+        (_) async => throw PlatformException(code: entry.key, message: 'private'),
+      );
+      await expectLater(drive.accountIdentity(), throwsA(problem(entry.value)));
+    }
   });
 
   test('unsupported or unconfigured app does not open a container', () async {

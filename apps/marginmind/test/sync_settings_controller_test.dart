@@ -85,6 +85,30 @@ class TestCloud implements ICloudDrivePort, ICloudAccountEvents {
   Future<bool> uploaded(String path, List<int> bytes, String expectedAccount) async => false;
 }
 
+class CancellableCloud extends TestCloud implements ICloudCancellablePort {
+  final cancelled = Completer<void>();
+  int cancellations = 0;
+  bool failCancel = false;
+  Object? error;
+  @override
+  Future<List<int>?> read(String path, String expectedAccount) async {
+    if (error != null) throw error!;
+    if (entered != null && !entered!.isCompleted) entered!.complete();
+    if (gate != null) {
+      await Future.any([gate!.future, cancelled.future]);
+      if (cancelled.isCompleted) throw const SyncTransportException(SyncTransportProblem.paused);
+    }
+    return objects[path];
+  }
+
+  @override
+  Future<void> cancelPending() async {
+    cancellations++;
+    if (failCancel) throw StateError('bridge unavailable');
+    if (!cancelled.isCompleted) cancelled.complete();
+  }
+}
+
 class BindingLedger extends FileSyncLedger {
   BindingLedger(super.root) : super(libraryId: 'library', deviceId: 'device');
   Future<void> Function()? afterBind;
@@ -179,6 +203,148 @@ void main() {
     expect(controller.pending, 0);
     await connect(account: 'bob');
     expect(controller.pending, greaterThan(0));
+  });
+
+  Future<void> useCloud(TestCloud cloud) async {
+    controller.dispose();
+    controller = SyncSettingsController(
+      library,
+      vocabulary,
+      secrets: secrets,
+      canActivate: true,
+      canStoreSecrets: true,
+      cloud: () async => cloud,
+    );
+    await controller.initialize();
+  }
+
+  test('pause finishes native waiting work without waiting for physical IO', () async {
+    final cloud = CancellableCloud();
+    await useCloud(cloud);
+    await controller.connectICloud();
+    cloud.gate = Completer<void>();
+    cloud.entered = Completer<void>();
+    final work = controller.syncOnce();
+    await cloud.entered!.future;
+    await controller.pause();
+    await work;
+    expect(cloud.gate!.isCompleted, false);
+    expect(cloud.cancellations, 1);
+    expect(controller.busy, false);
+    expect(controller.failure, SyncSettingsFailure.paused);
+    expect(controller.result, isNull);
+    expect((await ledger.transportConnection())!.paused, true);
+    expect(controller.pending, greaterThan(0));
+    cloud.gate!.complete();
+    expect(cloud.objects, isEmpty);
+    await cloud.changes.close();
+  });
+
+  test('disposing settings cancels pending native probe and never binds its late result', () async {
+    final cloud = CancellableCloud()
+      ..gate = Completer<void>()
+      ..entered = Completer<void>();
+    await useCloud(cloud);
+    final work = controller.connectICloud();
+    await cloud.entered!.future;
+    controller.dispose();
+    await work;
+    expect(cloud.cancellations, 1);
+    expect(cloud.gate!.isCompleted, false);
+    expect(cloud.changes.hasListener, false);
+    expect(await ledger.transportConnection(), isNull);
+    cloud.gate!.complete();
+    controller = SyncSettingsController(
+      library,
+      vocabulary,
+      secrets: secrets,
+      canActivate: true,
+      canStoreSecrets: true,
+    );
+    await cloud.changes.close();
+  });
+
+  test('native timeout remains retryable and does not confirm pending content', () async {
+    final cloud = CancellableCloud();
+    await useCloud(cloud);
+    await controller.connectICloud();
+    cloud.error = const SyncTransportException(SyncTransportProblem.timedOut);
+    await controller.syncOnce();
+    expect(controller.busy, false);
+    expect(controller.failure, SyncSettingsFailure.timedOut);
+    expect(controller.result, isNull);
+    expect((await ledger.transportConnection())!.paused, true);
+    expect(controller.pending, greaterThan(0));
+    cloud.error = null;
+    await controller.syncOnce();
+    expect(controller.failure, isNull);
+    expect(controller.result!.staged, greaterThan(0));
+    await cloud.changes.close();
+  });
+
+  test('account notification cancels native work but retains reconnect requirement', () async {
+    final cloud = CancellableCloud();
+    await useCloud(cloud);
+    await controller.connectICloud();
+    cloud.gate = Completer<void>();
+    cloud.entered = Completer<void>();
+    final work = controller.syncOnce();
+    await cloud.entered!.future;
+    cloud.changes.add(null);
+    await work;
+    expect(cloud.gate!.isCompleted, false);
+    expect(controller.failure, SyncSettingsFailure.accountChanged);
+    expect(controller.result, isNull);
+    expect((await ledger.transportConnection())!.paused, true);
+    await controller.syncOnce();
+    expect(controller.failure, SyncSettingsFailure.accountChanged);
+    cloud.gate!.complete();
+    await cloud.changes.close();
+  });
+
+  test('failed native cancellation still persists pause and invalidates late result', () async {
+    final cloud = CancellableCloud()..failCancel = true;
+    await useCloud(cloud);
+    await controller.connectICloud();
+    cloud.gate = Completer<void>();
+    cloud.entered = Completer<void>();
+    final work = controller.syncOnce();
+    await cloud.entered!.future;
+    await controller.pause();
+    expect(controller.failure, SyncSettingsFailure.service);
+    expect((await ledger.transportConnection())!.paused, true);
+    cloud.gate!.complete();
+    await work;
+    expect(controller.result, isNull);
+    expect(cloud.objects, isEmpty);
+    await cloud.changes.close();
+  });
+
+  test('pause during port discovery does not start an uncancelled account request', () async {
+    final found = Completer<ICloudDrivePort?>(), entered = Completer<void>();
+    final cloud = CancellableCloud();
+    controller.dispose();
+    controller = SyncSettingsController(
+      library,
+      vocabulary,
+      secrets: secrets,
+      canActivate: true,
+      canStoreSecrets: true,
+      cloud: () {
+        entered.complete();
+        return found.future;
+      },
+    );
+    await controller.initialize();
+    final work = controller.connectICloud();
+    await entered.future;
+    await controller.pause();
+    found.complete(cloud);
+    await work;
+    expect(cloud.changes.hasListener, false);
+    expect(controller.failure, SyncSettingsFailure.paused);
+    expect(controller.target, isNull);
+    await cloud.changes.close();
   });
 
   test('account notification invalidates waiting work and requires explicit reconnect', () async {

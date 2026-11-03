@@ -6,6 +6,13 @@ abstract interface class ICloudAccountEvents {
   Stream<void> get accountChanges;
 }
 
+/// Optional native cancellation. Only requests already started by this port
+/// instance are invalidated. Already-issued filesystem IO may still complete;
+/// callers must also invalidate their delivery generation.
+abstract interface class ICloudCancellablePort {
+  Future<void> cancelPending();
+}
+
 /// Native bridge contract: coordinate ubiquitous files, atomically create only
 /// if absent, and validate expectedAccount INSIDE each coordinated operation.
 /// A downloaded local file is not proof that its latest bytes were uploaded.

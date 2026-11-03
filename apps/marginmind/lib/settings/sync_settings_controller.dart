@@ -25,6 +25,7 @@ enum SyncSettingsFailure {
   missingHistory,
   paused,
   service,
+  timedOut,
 }
 
 /// App composition service; widgets never read ledger JSON or handle credentials
@@ -92,6 +93,7 @@ class SyncSettingsController extends ChangeNotifier {
               SyncTransportProblem.accountChanged => SyncSettingsFailure.accountChanged,
               SyncTransportProblem.legacyProtocol => SyncSettingsFailure.legacyProtocol,
               SyncTransportProblem.missingHistory => SyncSettingsFailure.missingHistory,
+              SyncTransportProblem.timedOut => SyncSettingsFailure.timedOut,
               SyncTransportProblem.paused => SyncSettingsFailure.paused,
               _ => SyncSettingsFailure.service,
             };
@@ -126,7 +128,11 @@ class SyncSettingsController extends ChangeNotifier {
       if (!(await registry.list()).any((d) => d.local) && setup != null) {
         await registry.rename(setup!.deviceName, expectedRevision: null);
       }
-      if (target?.service == 'icloud') await _observeCloud(await _cloud());
+      if (target?.service == 'icloud') {
+        final port = await _cloud();
+        _check(generation);
+        await _observeCloud(port);
+      }
       await _refresh();
       resources = await library.syncResources();
     }
@@ -206,7 +212,7 @@ class SyncSettingsController extends ChangeNotifier {
           throw const SyncTransportException(SyncTransportProblem.authentication);
         }
         _check(generation);
-        final adapter = await _adapter(selected, authorization);
+        final adapter = await _adapter(selected, authorization, generation);
         await _probe(adapter, generation);
         if (password.isNotEmpty) await secrets.writeVerified(key, authorization);
         _check(generation);
@@ -222,8 +228,11 @@ class SyncSettingsController extends ChangeNotifier {
     await _ready();
     await _engine!.pause();
     paused = true;
+    _check(generation);
     final port = await _cloud();
+    _check(generation);
     await _observeCloud(port);
+    _check(generation);
     final account = await port?.accountIdentity();
     if (port == null || account == null) {
       failure = SyncSettingsFailure.unsupported;
@@ -255,7 +264,8 @@ class SyncSettingsController extends ChangeNotifier {
     if (manifest != null) validateSyncLibrary(manifest, _ledger!.libraryId);
   }
 
-  Future<SyncObjectTransport> _adapter(SyncTarget selected, String? authorization) async {
+  Future<SyncObjectTransport> _adapter(SyncTarget selected, String? authorization, int generation) async {
+    _check(generation);
     if (selected.service == 'webdav' && (authorization == null || authorization.isEmpty)) {
       throw const SyncTransportException(SyncTransportProblem.authentication);
     }
@@ -278,7 +288,9 @@ class SyncSettingsController extends ChangeNotifier {
       );
     }
     final port = _observedCloud ?? await _cloud();
+    _check(generation);
     await _observeCloud(port);
+    _check(generation);
     if (selected.service != 'icloud' ||
         port == null ||
         port.containerIdentifier != selected.location ||
@@ -299,12 +311,13 @@ class SyncSettingsController extends ChangeNotifier {
     if (selected == null) throw const SyncTransportException(SyncTransportProblem.paused);
     try {
       final secret = selected.service == 'webdav' ? await secrets.read('sync-${selected.key}') : null;
-      final adapter = await _adapter(selected, secret);
+      final adapter = await _adapter(selected, secret, generation);
       _check(generation);
       await _probe(adapter, generation);
       await _engine!.bind(adapter);
       _check(generation);
       await _engine!.resume();
+      _check(generation);
       paused = false;
       _notify();
       final completed = await _engine!.run();
@@ -334,11 +347,12 @@ class SyncSettingsController extends ChangeNotifier {
     if (selected == null) throw const SyncTransportException(SyncTransportProblem.paused);
     try {
       final secret = selected.service == 'webdav' ? await secrets.read('sync-${selected.key}') : null;
-      final adapter = await _adapter(selected, secret);
+      final adapter = await _adapter(selected, secret, generation);
       _check(generation);
       await _engine!.bind(adapter);
       _check(generation);
       await _engine!.resume();
+      _check(generation);
       paused = false;
       _notify();
       await _engine!.download(resource);
@@ -411,13 +425,27 @@ class SyncSettingsController extends ChangeNotifier {
     await pause();
   }
 
+  Future<void> _cancelCloud() async {
+    final port = _observedCloud;
+    if (port is! ICloudCancellablePort) return;
+    try {
+      await (port as ICloudCancellablePort).cancelPending();
+    } catch (_) {
+      // Persisted pause and generation invalidation still apply if the bridge
+      // cannot acknowledge cancellation. Do not claim the native IO stopped.
+      failure ??= SyncSettingsFailure.service;
+    }
+  }
+
   Future<void> pause() async {
     _generation++;
+    final cancellation = _cancelCloud();
     try {
       await _engine?.pause();
     } catch (_) {
       failure = SyncSettingsFailure.storage;
     }
+    await cancellation;
     paused = true;
     _notify();
   }
@@ -435,6 +463,7 @@ class SyncSettingsController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _generation++;
+    unawaited(_cancelCloud());
     unawaited(_changes?.cancel());
     unawaited(_accountChanges?.cancel());
     _client?.close();
