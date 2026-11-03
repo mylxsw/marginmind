@@ -55,26 +55,27 @@ class PhoneReaderAppearanceSheet extends ConsumerWidget {
                   style: context.mmText.title3.copyWith(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
               ),
-              Tooltip(
-                message: l.phoneMoreClose,
-                child: Semantics(
-                  button: true,
-                  label: l.phoneMoreClose,
-                  child: SizedBox.square(
-                    dimension: 30,
-                    child: Material(
-                      color: c.fill,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        key: const ValueKey('phone-appearance-close'),
-                        onTap: onClose,
-                        child: Center(child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel)),
+              if (!MMBottomSheet.contains(context))
+                Tooltip(
+                  message: l.phoneMoreClose,
+                  child: Semantics(
+                    button: true,
+                    label: l.phoneMoreClose,
+                    child: SizedBox.square(
+                      dimension: 30,
+                      child: Material(
+                        color: c.fill,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          key: const ValueKey('phone-appearance-close'),
+                          onTap: onClose,
+                          child: Center(child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel)),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 14),

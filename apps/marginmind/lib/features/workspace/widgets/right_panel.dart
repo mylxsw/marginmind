@@ -132,7 +132,7 @@ class RightPanelHeader extends StatelessWidget {
             ),
           ),
           ...actions,
-          MMIconButton(icon: MMIcons.close, tooltip: context.l10n.closePanel, iconSize: 13, onPressed: onClose),
+          MMModalCloseButton(tooltip: context.l10n.closePanel, iconSize: 13, onPressed: onClose),
         ],
       ),
     );

@@ -351,11 +351,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
                           Icon(MMIcons.generateMap, size: 16, color: c.research),
                           const SizedBox(width: MMSpacing.s),
                           Expanded(child: Text(l.mapGenerate, style: t.title3)),
-                          MMIconButton(
-                            icon: MMIcons.close,
-                            tooltip: l.closePanel,
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
+                          MMModalCloseButton(tooltip: l.closePanel, onPressed: () => Navigator.of(context).pop()),
                         ],
                       ),
                     ),

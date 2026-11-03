@@ -1,0 +1,18 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/modal_material_acceptance_test.dart
+Running Xcode build...
+Xcode build done.                                           33.0s
+00:00 +0: share import, settings and native forms share the modal material
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Application Support/Library/sets/f840a5995f44ff180a916b6735ce84b0.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (8 ms)
+PHONE_SHOT:light-share-import:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-settings:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-settings-general:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ModalRename:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ModalConfirm:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ModalRenameSave:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-share-import:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-settings:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-settings-general:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ModalRenameDark:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ModalConfirmDark:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1276896C-3960-46EB-814D-785921CCE8EC/data/Containers/Data/Application/4EF2424B-CC3F-4B41-A3E8-4833E9E67EED/Library/Caches/mobile-redesign-shot
+03:11 +1: (tearDownAll)
+03:12 +1: All tests passed!

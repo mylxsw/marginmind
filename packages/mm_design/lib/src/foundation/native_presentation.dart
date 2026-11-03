@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../tokens/modal.dart';
+
 /// iPhone presentation only. Business state stays in the original Dart isolate.
 /// iPad, Android, desktop and test hosts retain their existing presentations.
 abstract final class MMNativePresentation {
@@ -51,6 +53,7 @@ abstract final class MMNativePresentation {
     _validators[id] = validate ?? (_) => null;
     try {
       final values = await _channel.invokeMapMethod<String, String>('form', {
+        'modalStyle': MMModalStyle.nativeConfiguration,
         'id': id,
         'title': title,
         'cancel': cancel,
@@ -82,6 +85,7 @@ abstract final class MMNativePresentation {
     if (preview != null) _previews[id] = preview;
     try {
       return await _channel.invokeMapMethod<String, String>('list', {
+        'modalStyle': MMModalStyle.nativeConfiguration,
         'id': id,
         'title': title,
         'close': close,
@@ -105,7 +109,11 @@ abstract final class MMNativePresentation {
     final id = '${++_sequence}';
     _actions[id] = onAction;
     try {
-      return await _channel.invokeMethod<String>('actions', {'id': id, ...content});
+      return await _channel.invokeMethod<String>('actions', {
+        'id': id,
+        ...content,
+        'modalStyle': MMModalStyle.nativeConfiguration,
+      });
     } finally {
       _actions.remove(id);
     }
@@ -121,6 +129,7 @@ abstract final class MMNativePresentation {
     required String cancel,
     required List<MMNativeAction> actions,
   }) => _channel.invokeMethod<String>('confirm', {
+    'modalStyle': MMModalStyle.nativeConfiguration,
     'title': title,
     'message': ?message,
     'dark': ?dark,

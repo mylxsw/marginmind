@@ -251,8 +251,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                         child: Row(
                           children: [
                             Expanded(child: Text(context.l10n.mapStyle, style: context.mmText.headline)),
-                            MMIconButton(
-                              icon: MMIcons.close,
+                            MMModalCloseButton(
                               tooltip: context.l10n.closePanel,
                               onPressed: () => Navigator.of(sheetContext).maybePop(),
                             ),

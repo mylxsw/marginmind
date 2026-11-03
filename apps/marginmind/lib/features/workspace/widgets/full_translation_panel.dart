@@ -26,8 +26,7 @@ Future<void> showFullTranslationPanel(
       context: context,
       builder: (sheetContext) => MMSheet(
         title: context.l10n.fullTranslationCapsule,
-        titleTrailing: MMIconButton(
-          icon: MMIcons.close,
+        titleTrailing: MMModalCloseButton(
           tooltip: context.l10n.closePanel,
           onPressed: () => Navigator.of(sheetContext).maybePop(),
         ),

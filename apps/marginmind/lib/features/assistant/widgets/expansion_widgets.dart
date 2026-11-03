@@ -291,9 +291,9 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
                       ),
                       const SizedBox(width: MMSpacing.s),
                     ],
-                    MMIconButton(
+                    MMModalCloseButton(
                       key: const ValueKey('expansion-close'),
-                      icon: MMIcons.close,
+
                       tooltip: l.closePanel,
                       onPressed: widget.onClose,
                       size: 24,

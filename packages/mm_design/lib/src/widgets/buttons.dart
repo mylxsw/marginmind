@@ -6,6 +6,8 @@ import '../tokens/metrics.dart';
 import '../tokens/colors.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/motion.dart';
+import '../icons/mm_icons.dart';
+import 'bottom_sheet.dart';
 import 'control_frame.dart';
 import 'dialog_scope.dart';
 
@@ -33,6 +35,28 @@ class MMButtonTheme extends InheritedTheme {
 
   @override
   Widget wrap(BuildContext context, Widget child) => MMButtonTheme(radius: radius, child: child);
+}
+
+/// Header close control for pointer windows. Bottom sheets already provide
+/// drag, scrim, Back and an accessibility dismiss action, so they omit it.
+class MMModalCloseButton extends StatelessWidget {
+  const MMModalCloseButton({
+    super.key,
+    required this.tooltip,
+    required this.onPressed,
+    this.size = 28,
+    this.iconSize = 16,
+  });
+
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final double size;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) => MMBottomSheet.contains(context)
+      ? const SizedBox.shrink()
+      : MMIconButton(icon: MMIcons.close, tooltip: tooltip, onPressed: onPressed, size: size, iconSize: iconSize);
 }
 
 /// Capsule push button (height 30, radius 15).

@@ -7,7 +7,7 @@ import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
-import 'flat_surface.dart';
+import 'modal_surface.dart';
 
 /// A sheet rising from the bottom of a compact window. Its handle drags it:
 /// down far enough dismisses it. With [expand] it has a medium and a full
@@ -184,17 +184,7 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
             : const BorderRadius.vertical(top: Radius.circular(MMRadii.sheet));
         final content = Semantics(onDismiss: widget.onDismiss, child: frame);
         final sheet = phone
-            ? MMFlatSurface(
-                child: DecoratedBox(
-                  key: const ValueKey('mm-bottom-sheet'),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: radius,
-                    border: Border.all(color: c.border, width: MMSizes.hairline),
-                  ),
-                  child: ClipRRect(borderRadius: radius, child: content),
-                ),
-              )
+            ? MMModalSurface(key: const ValueKey('mm-bottom-sheet'), borderRadius: radius, child: content)
             : DecoratedBox(
                 key: const ValueKey('mm-bottom-sheet'),
                 decoration: BoxDecoration(

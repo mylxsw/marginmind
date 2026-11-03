@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import 'buttons.dart';
@@ -16,7 +15,7 @@ class MMPhoneSheetHeader extends StatelessWidget {
     this.actions = const [],
     this.closeKey,
     this.closeLabel,
-    this.showClose = true,
+    this.showClose = false,
   });
 
   final String title;
@@ -49,9 +48,8 @@ class MMPhoneSheetHeader extends StatelessWidget {
         ),
         ...actions,
         if (showClose)
-          MMIconButton(
+          MMModalCloseButton(
             key: closeKey,
-            icon: MMIcons.close,
             iconSize: MMSizes.phoneMenuIcon,
             tooltip: closeLabel ?? MaterialLocalizations.of(context).closeButtonTooltip,
             onPressed: onClose,

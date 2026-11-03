@@ -210,6 +210,7 @@ abstract final class MMSizes {
   /// the space below the safe area top, and the drag handle strip.
   static const double bottomSheetMedium = 0.62;
   static const double phoneSheetMedium = 0.5;
+  static const double phoneSheetExpanded = 1;
   static const double phoneQuickSheetMedium = 0.7;
   static const double bottomSheetHandle = 20;
 

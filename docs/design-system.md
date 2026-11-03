@@ -236,7 +236,13 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 
 ### 手机弹窗统一（2026-11-03）
 
-独立表单、确认、设置和内容面板统一经过 `showMMSheet` / `showMMDialog` / `showMMBottomSheet`，使用 `MMBottomSheet` 的悬浮半屏与展开状态。iPhone 简单表单、目录和阅读菜单沿用 UIKit 系统 Sheet；复杂 Flutter 内容与安卓共用不透明的 `surface` 背景和一层细边框，支持返回键和键盘避让。玻璃材质只用于悬浮操作控件，不用于承载长文本、菜单和编辑区。
+底部弹窗标题区统一不显示 ×。`MMModalCloseButton` 在 `MMBottomSheet` 内自动隐藏，`MMPhoneSheetHeader` 默认不绘制关闭按钮；设置、阅读设置、翻译、图片预览、脑图生成/更新等共用此策略。通过下拉、遮罩、返回、Escape 或无障碍关闭退出，继续经过现有草稿保护。删除标签、移除附件、取消任务等内容操作不属于面板关闭。
+
+设置属于完整浏览与编辑流程，手机打开时默认展开到安全区内最大高度（`phoneSheetExpanded`），不要求用户先上拉。普通短表单按内容显示，其他面板按用途选择初始高度；公共材质一致不等于所有窗口都用相同高度。设置分组使用 `card`，主底板使用页面背景，保持深色下底板较暗、分组略亮的层次。最新截图见 [设置高度与配色修正](evidence/settings-correction-2026-11-03/README.md)。
+
+所有应用自有表单和面板共用 `MMModalSurface` 与 `MMModalStyle`：底色统一取 `MMColors.windowBackground`（浅色白、深色 `#1E1E1F`），不使用悬浮控件的亮灰玻璃退化色，完全不透明，只保留一层 `border` 细边框，不叠加模糊、高光或外发光。`MMBottomSheet` 和 `MMSheet` 负责接入，分享导入不维护独立材质。组件同时向内部控件及其弹出菜单传递 flat 样式，按钮聚焦采用清晰描边，分段选择不额外添加玻璃和阴影。iPhone 的原生表单、目录、操作与确认面板通过通道读取同一个 `MMModalStyle` 的颜色、边框和圆角；未保存内容的确认也沿用同一个原生容器。系统文件选择、分享和颜色选择器仍由系统负责。实际导入、设置、原生重命名及确认的深浅色运行验证见 [弹窗材质验证](evidence/modal-material-2026-11-03/README.md)。
+
+独立表单、确认、设置和内容面板统一经过 `showMMSheet` / `showMMDialog` / `showMMBottomSheet`，使用 `MMBottomSheet` 的悬浮半屏与展开状态。iPhone 简单表单、目录和阅读菜单沿用 UIKit 系统 Sheet；复杂 Flutter 内容与安卓共用不透明的 `windowBackground` 背景和一层细边框，支持返回键和键盘避让。玻璃材质只用于悬浮操作控件，不用于承载长文本、菜单和编辑区。
 
 手机容器四周留 `MMSizes.phoneSheetPadding`（12），避开底部手势区；默认高度为可用高度的 `MMSizes.phoneSheetMedium`（0.5），AI 快捷操作使用 `phoneQuickSheetMedium`（0.7）以容纳完整菜单，横屏或键盘弹出时使用可用最大高度。iPhone 圆角 `MMRadii.phoneSheet` 与安卓 `MMRadii.androidSheet` 均为 28。短操作菜单按内容高度显示，子菜单在同一个容器内切换。选区颜色与划线工具条仍贴着原文定位，避开安全区和键盘；系统文件选择、分享、权限及原生颜色选择器遵循平台交互。
 

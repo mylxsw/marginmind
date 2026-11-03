@@ -67,11 +67,11 @@ void main() {
 
     expect(find.byKey(const ValueKey('phone-sheet-more')), findsOneWidget);
 
-    // 1. Header: Document title "学习的底层逻辑", undo button, and close button with accessibility
+    // The shared sheet owns dismissal; the header only adds document actions.
     expect(find.text('学习的底层逻辑'), findsOneWidget);
     expect(find.byKey(const ValueKey('phone-more-undo')), findsOneWidget);
-    expect(find.byKey(const ValueKey('phone-more-close')), findsOneWidget);
-    expect(find.byTooltip('关闭'), findsOneWidget);
+    expect(find.byKey(const ValueKey('phone-more-close')), findsNothing);
+    expect(find.byTooltip('关闭'), findsNothing);
     expect(find.byTooltip('撤销'), findsOneWidget);
 
     // 2. "资料库" entry must NOT exist in the sheet
@@ -125,8 +125,8 @@ void main() {
 
     expect(find.byKey(const ValueKey('phone-sheet-more')), findsOneWidget);
 
-    // Close button dismisses the sheet
-    await tester.tap(find.byKey(const ValueKey('phone-more-close')));
+    // System Back dismisses the root sheet.
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('phone-sheet-more')), findsNothing);

@@ -334,6 +334,14 @@ void main() {
       expect(find.byKey(const ValueKey('settings-sidebar')), findsNothing);
       final sections = find.byKey(const ValueKey('phone-settings-sections'));
       expect(sections, findsOneWidget);
+      expect(find.descendant(of: sections, matching: find.byIcon(MMIcons.close)), findsNothing);
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('settings-window')), matching: find.byIcon(MMIcons.close)),
+        findsNothing,
+      );
+      final frame = tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet')));
+      expect(frame.top, lessThanOrEqualTo(phone.safe.top + MMSpacing.s));
+      expect(frame.height, greaterThan(phone.size.height * .8));
       expect(
         tester.getRect(find.byKey(const ValueKey('settings-window'))).width,
         phone.size.width - MMSizes.phoneSheetPadding * 2,
