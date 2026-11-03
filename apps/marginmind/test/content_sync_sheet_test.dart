@@ -125,6 +125,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('translation choices keep the summary from declaring no conflicts', (tester) async {
+    repo.status = ContentSyncStatus(enabled: true, translationConflicts: 2);
+    await pump(tester);
+    expect(find.textContaining('2 translated paragraphs need a choice'), findsOneWidget);
+    expect(find.textContaining('No conflicts need a choice'), findsNothing);
+    repo.publish(ContentSyncStatus(enabled: true));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('No conflicts need a choice'), findsOneWidget);
+  });
   testWidgets('optional port keeps local mode quiet; enabled sidebar opens an honest status sheet', (tester) async {
     await pump(tester, sidebar: true, optional: false);
     expect(find.byKey(const ValueKey('content-sync-open')), findsNothing);

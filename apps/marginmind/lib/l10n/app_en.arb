@@ -3312,5 +3312,13 @@
         "type": "String"
       }
     }
+  },
+  "syncTranslationConflicts": "{count, plural, one{1 translated paragraph needs a choice} other{{count} translated paragraphs need a choice}}. Open the translation beside its source to compare and choose.",
+  "@syncTranslationConflicts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

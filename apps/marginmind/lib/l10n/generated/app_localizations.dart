@@ -11455,6 +11455,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{kind, select, kind{Entry type} forms{Word forms} ukPhonetic{UK pronunciation} usPhonetic{US pronunciation} senses{Meanings} gloss{Inline meaning} note{Notes} status{Learning state} alive{Keep or remove} other{Word content}}'**
   String vocabularySyncField(String kind);
+
+  /// No description provided for @syncTranslationConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 translated paragraph needs a choice} other{{count} translated paragraphs need a choice}}. Open the translation beside its source to compare and choose.'**
+  String syncTranslationConflicts(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

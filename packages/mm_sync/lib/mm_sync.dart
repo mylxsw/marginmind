@@ -13,3 +13,5 @@ export 'src/review_timeline.dart';
 export 'src/folder_sync.dart';
 
 export 'src/vocabulary_word.dart';
+
+export 'src/translation_register.dart';

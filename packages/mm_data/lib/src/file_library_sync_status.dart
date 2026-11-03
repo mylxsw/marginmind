@@ -8,13 +8,14 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
       key == _packagePath(id) ||
       p.isWithin(_packagePath(id), key) ||
       key == 'translation-seed/$id' ||
-      key.startsWith('translations/$id/');
+      (key.startsWith('translations/$id/') || key.startsWith('translated/$id/'));
 
   Future<ContentSyncStatus> _contentSyncStatus(String id) async {
     await _ensureLoaded();
     final sync = _sync;
     if (sync == null) return ContentSyncStatus();
-    final head = (await sync.snapshots())[FileLibraryStore._scope(id)];
+    final heads = await sync.snapshots();
+    final head = heads[FileLibraryStore._scope(id)];
     final history = await sync.history();
     final conflicts = <ContentSyncConflict>[];
     for (final transaction in head?.commit.pending ?? const <String>[]) {
@@ -42,7 +43,8 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
     for (final entry in (await sync.issues()).entries) {
       final scope = history[entry.key]?.scope;
       if (!{FileLibraryStore._scope(id), 'reviews/$id'}.contains(scope) &&
-          !(scope?.startsWith('reading/$id/') ?? false)) {
+          !(scope?.startsWith('reading/$id/') ?? false) &&
+          !(scope?.startsWith('translated/$id/') ?? false)) {
         continue;
       }
       final issue = entry.value;
@@ -60,19 +62,36 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
         _ => ContentSyncProblem.invalidHistory,
       });
     }
+    var translationConflicts = 0;
+    if (head != null && !head.deleted) {
+      final content = _SetRecord.fromJson(head.value!).content;
+      for (final entry in heads.entries) {
+        if (!entry.key.startsWith('translated/$id/') || entry.value.deleted) continue;
+        final parts = entry.key.split('/');
+        if (parts.length != 4) continue;
+        final doc = content.document(parts[2]);
+        if (doc != null) {
+          translationConflicts += TranslationRegister.fromJson(entry.value.value!)
+              .snapshot(readingDocumentVersion(doc))
+              .conflicts
+              .length;
+        }
+      }
+    }
     final queued = (await sync.pending())
         .where(
           (c) =>
               c.scope == FileLibraryStore._scope(id) ||
               c.scope == 'reviews/$id' ||
               c.scope.startsWith('reading/$id/') ||
-              c.scope.startsWith('translations/$id/'),
+              (c.scope.startsWith('translations/$id/') || c.scope.startsWith('translated/$id/')),
         )
         .length;
     return ContentSyncStatus(
       enabled: true,
       revision: head?.revision,
       queued: queued,
+      translationConflicts: translationConflicts,
       recoveryId: (await sync.recoveries())[FileLibraryStore._scope(id)],
       conflicts: conflicts,
       problems: problems,
@@ -205,7 +224,9 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
             () => translations.seedExisting(record.content.documents.map((d) => d.id).toSet()),
           );
         }
-        for (final scope in snapshots.keys.where((s) => s.startsWith('translations/$id/'))) {
+        for (final scope in snapshots.keys.where(
+          (s) => (s.startsWith('translations/$id/') || s.startsWith('translated/$id/')),
+        )) {
           final parts = scope.split('/');
           await translations.compact(parts[2], parts[3]);
         }

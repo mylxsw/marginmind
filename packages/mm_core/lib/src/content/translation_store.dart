@@ -63,12 +63,23 @@ class TranslationSegment {
 class TranslationSnapshot {
   TranslationSnapshot({
     Map<String, TranslationSegment> segments = const {},
+    Map<String, String> tokens = const {},
+    Map<String, List<TranslationChoice>> conflicts = const {},
+    this.documentVersion,
     this.lineCount = 0,
     this.corruptLines = 0,
     this.discardedTail = false,
     this.overwrittenLines = 0,
-  }) : segments = Map.unmodifiable(segments);
+  }) : segments = Map.unmodifiable(segments),
+       tokens = Map.unmodifiable(tokens),
+       conflicts = Map.unmodifiable({
+         for (final e in conflicts.entries) e.key: List<TranslationChoice>.unmodifiable(e.value),
+       });
   final Map<String, TranslationSegment> segments;
+  final Map<String, String> tokens;
+  final Map<String, List<TranslationChoice>> conflicts;
+  final String? documentVersion;
+  String? tokenFor(String key) => tokens[key] ?? (documentVersion == null ? null : 'absent:$documentVersion');
   final int lineCount, corruptLines, overwrittenLines;
   final bool discardedTail;
 
@@ -94,8 +105,8 @@ abstract interface class TranslationStore {
   });
 
   /// Durably appends one value before completing (native storage uses fsync).
-  /// Explicit edits/retranslations may replace edited values; the scheduler
-  /// must never send a cached key for a bulk operation.
+  /// Local journals replace the old value. Synced stores preserve unobserved
+  /// human candidates; use GuardedTranslationStore for an observed replacement.
   Future<void> append(String documentId, String targetLang, TranslationSegment segment);
 
   /// Atomically rewrites live values; callers schedule this when idle.
@@ -115,4 +126,29 @@ abstract interface class TranslationStore {
 /// Repository-owned translation stores follow the lifetime of a study set.
 abstract interface class TranslationStoreRepository {
   Future<TranslationStore> translationStore(String studySetId);
+}
+
+/// Optional durable observation and live publication capability.
+class TranslationChoice {
+  const TranslationChoice(this.id, this.segment);
+  final String id;
+  final TranslationSegment? segment;
+}
+
+abstract interface class GuardedTranslationStore {
+  Stream<TranslationSnapshot> watchTranslations(String documentId, String language);
+  Future<TranslationSnapshot> appendGuarded(
+    String documentId,
+    String language,
+    TranslationSegment segment, {
+    required String? expectedToken,
+    bool replaceEdited = false,
+  });
+  Future<void> chooseTranslation(
+    String documentId,
+    String language,
+    String key,
+    String choice, {
+    required String expectedToken,
+  });
 }

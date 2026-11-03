@@ -6545,4 +6545,15 @@ class AppLocalizationsEn extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String syncTranslationConflicts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count translated paragraphs need a choice',
+      one: '1 translated paragraph needs a choice',
+    );
+    return '$_temp0. Open the translation beside its source to compare and choose.';
+  }
 }

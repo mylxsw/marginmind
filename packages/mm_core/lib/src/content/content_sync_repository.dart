@@ -77,6 +77,7 @@ class ContentSyncStatus {
     this.revision,
     this.recoveryId,
     this.queued = 0,
+    this.translationConflicts = 0,
     this.editing = false,
     this.repairNeeded = false,
     this.retryFailed = false,
@@ -90,10 +91,18 @@ class ContentSyncStatus {
   /// Local versions waiting for a transport; does not imply a configured account
   /// or confirmation that any data has reached a cloud service.
   final int queued;
+
+  /// Paragraph choices are reviewed beside their source in the translation reader.
+  final int translationConflicts;
   final List<ContentSyncConflict> conflicts;
   final List<ContentSyncProblem> problems;
   bool get needsAttention =>
-      recoveryId != null || repairNeeded || retryFailed || conflicts.isNotEmpty || problems.isNotEmpty;
+      recoveryId != null ||
+      repairNeeded ||
+      retryFailed ||
+      conflicts.isNotEmpty ||
+      translationConflicts > 0 ||
+      problems.isNotEmpty;
 }
 
 enum ContentSyncActionFailure { stale, editing, invalidCandidate }

@@ -6290,4 +6290,9 @@ class AppLocalizationsZh extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String syncTranslationConflicts(int count) {
+    return '有 $count 个译文段落需要选择。请打开原文旁的译文，对照后选择保留的内容。';
+  }
 }

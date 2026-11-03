@@ -1,18 +1,22 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:isolate';
 
 import 'library_io.dart' if (dart.library.js_interop) 'library_browser_io.dart';
 import 'translation_journal_io.dart' if (dart.library.js_interop) 'translation_journal_browser.dart';
 
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_sync/mm_sync.dart';
 import 'package:path/path.dart' as p;
 
 import 'file_sync_ledger.dart';
 
+part 'file_translation_sync.dart';
+
 /// A study-set-scoped journal under `<set>.mmset/translations`.
 /// Operations serialize by absolute document directory across store instances,
 /// so deleting a document also waits for all of its languages' queued writes.
-class FileTranslationStore implements TranslationStore {
+class FileTranslationStore implements TranslationStore, GuardedTranslationStore {
   FileTranslationStore(this.packageRoot, {this.documentExists, this.sync, this.studySetId}) {
     if (sync != null && studySetId == null) throw ArgumentError('Synced translations need a study set');
   }
@@ -59,7 +63,10 @@ class FileTranslationStore implements TranslationStore {
   Future<TranslationSnapshot> load(String documentId, String targetLang) =>
       _serial(documentId, () => _read(documentId, targetLang));
 
-  Future<TranslationSnapshot> _read(String id, String lang) async {
+  Future<TranslationSnapshot> _read(String id, String lang) =>
+      sync == null ? _readFile(id, lang) : _loadSynced(id, lang);
+
+  Future<TranslationSnapshot> _readLegacy(String id, String lang) async {
     if (sync case final ledger?) {
       final snapshot = (await ledger.snapshots())[_scope(id, lang)];
       if (snapshot != null) {
@@ -72,6 +79,46 @@ class FileTranslationStore implements TranslationStore {
     }
     return _readFile(id, lang);
   }
+
+  @override
+  Stream<TranslationSnapshot> watchTranslations(String id, String lang) => Stream.multi((out) {
+    StreamSubscription<void>? sub;
+    var cancelled = false;
+    Future<void> refresh() async {
+      try {
+        final value = await load(id, lang);
+        if (!cancelled) out.add(value);
+      } catch (e, s) {
+        if (!cancelled) out.addError(e, s);
+      }
+    }
+
+    sub = sync?.changes.listen((_) {
+      unawaited(refresh());
+    });
+    out.onCancel = () async {
+      cancelled = true;
+      await sub?.cancel();
+    };
+    unawaited(refresh());
+  });
+  @override
+  Future<TranslationSnapshot> appendGuarded(
+    String id,
+    String lang,
+    TranslationSegment segment, {
+    required String? expectedToken,
+    bool replaceEdited = false,
+  }) => _serial(id, () async {
+    if (sync == null) {
+      await _append(id, lang, segment);
+      return _read(id, lang);
+    }
+    return _appendSynced(id, lang, segment, expectedToken: expectedToken, guarded: true, replaceEdited: replaceEdited);
+  });
+  @override
+  Future<void> chooseTranslation(String id, String lang, String key, String choice, {required String expectedToken}) =>
+      _serial(id, () => _chooseSynced(id, lang, key, choice, expectedToken));
 
   Future<TranslationSnapshot> _readFile(String id, String lang) async {
     final file = _file(id, lang, 'segments.jsonl');
@@ -131,19 +178,8 @@ class FileTranslationStore implements TranslationStore {
 
   Future<void> _append(String id, String lang, TranslationSegment segment) async {
     _requireDocument(id);
-    if (sync case final ledger?) {
-      final scope = _scope(id, lang);
-      final head = (await ledger.snapshots())[scope];
-      final known = Map<String, TranslationSegment>.of((await _read(id, lang)).segments)..[segment.key] = segment;
-      final value = <String, Object?>{
-        'segments': {for (final e in known.entries) e.key: e.value.toJson()},
-      };
-      await ledger.commit(
-        [SyncMutation(scope, local: value, shared: value)],
-        expected: {scope: head?.revision},
-        validate: (heads) => _requireLiveParent(heads, id),
-      );
-      await ledger.project(scope, () => _writeSegments(id, lang, known.values));
+    if (sync != null) {
+      await _appendSynced(id, lang, segment);
       return;
     }
     final file = _file(id, lang, 'segments.jsonl');
@@ -174,19 +210,9 @@ class FileTranslationStore implements TranslationStore {
         if (pair is! Directory) continue;
         final lang = p.basename(pair.path);
         await _serial(id, () async {
-          final scope = _scope(id, lang);
-          final heads = await ledger.snapshots();
-          if (heads.containsKey(scope)) return;
+          if ((await ledger.snapshots()).containsKey(_syncScope(id, lang))) return;
           if (await _legacyTombstone(id, lang).exists()) return;
-          final segments = (await _readFile(id, lang)).segments;
-          final value = <String, Object?>{
-            'segments': {for (final e in segments.entries) e.key: e.value.toJson()},
-          };
-          await ledger.commit(
-            [SyncMutation(scope, local: value, shared: value)],
-            expected: {scope: null},
-            validate: (heads) => _requireLiveParent(heads, id),
-          );
+          await _ensureStream(id, lang);
         });
       }
     }
@@ -196,7 +222,7 @@ class FileTranslationStore implements TranslationStore {
   Future<void> compact(String documentId, String targetLang) => _serial(documentId, () async {
     final snapshot = await _read(documentId, targetLang);
     if (sync case final ledger?) {
-      final scope = _scope(documentId, targetLang);
+      final scope = _syncScope(documentId, targetLang);
       final head = (await ledger.snapshots())[scope];
       if (head != null) {
         await ledger.project(
@@ -260,16 +286,8 @@ class FileTranslationStore implements TranslationStore {
 
   @override
   Future<void> remove(String documentId, String targetLang) => _serial(documentId, () async {
-    if (sync case final ledger?) {
-      _requireDocument(documentId);
-      final scope = _scope(documentId, targetLang);
-      final head = (await ledger.snapshots())[scope];
-      await ledger.commit(
-        [SyncMutation(scope, local: null, shared: null)],
-        expected: {scope: head?.revision},
-        validate: (heads) => _requireLiveParent(heads, documentId),
-      );
-      await ledger.project(scope, () => _removePair(documentId, targetLang));
+    if (sync != null) {
+      await _clearSynced(documentId, targetLang);
       return;
     }
     await _removePair(documentId, targetLang);
@@ -313,7 +331,7 @@ class FileTranslationStore implements TranslationStore {
     final inputs = paragraphs.toList(), legacy = caches.toList();
     return _serial(documentId, () async {
       if (sync != null && (await sync!.snapshots())[_scope(documentId, targetLang)]?.deleted == true) {
-        return TranslationSnapshot();
+        return _read(documentId, targetLang);
       }
       if (await _legacyTombstone(documentId, targetLang).exists()) return _read(documentId, targetLang);
       final known = Map<String, TranslationSegment>.of((await _read(documentId, targetLang)).segments);

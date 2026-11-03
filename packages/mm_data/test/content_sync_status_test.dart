@@ -243,7 +243,7 @@ void main() {
     expect((await translations.load(document, 'zh')).segments['paragraph']!.text, '人工译文');
     expect((await left.history()).length, before);
     await a.delete(id);
-    await left.project('translations/$id/$document/zh', () async => throw StateError('interrupted deletion'));
+    await left.project('translated/$id/$document/zh', () async => throw StateError('interrupted deletion'));
     await a.retryContentSync(id);
     expect((await a.contentSyncStatus(id)).repairNeeded, isFalse);
     expect((await translations.load(document, 'zh')).segments, isEmpty);

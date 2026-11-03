@@ -124,6 +124,7 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
                     ),
                   ),
                 ),
+              if (status.translationConflicts > 0) _notice(l.syncTranslationConflicts(status.translationConflicts)),
               if (status.conflicts.isNotEmpty)
                 Text(l.syncConflictCount(status.conflicts.length), style: context.mmText.headline),
               for (final conflict in status.conflicts) _conflict(status, conflict),

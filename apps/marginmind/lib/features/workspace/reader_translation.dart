@@ -19,7 +19,12 @@ final translationParagraphsProvider = FutureProvider.autoDispose.family<List<Tra
   key,
 ) {
   final workspace = ref.read(workspaceProvider(key.$1).notifier);
-  ref.watch(workspaceProvider(key.$1).select((s) => s.content?.document(key.$2)?.revision));
+  ref.watch(
+    workspaceProvider(key.$1).select((s) {
+      final d = s.content?.document(key.$2);
+      return (d?.revision, d?.fileName, d?.contentManifest, d?.layout, d?.pageCount);
+    }),
+  );
   final doc = workspace.content.document(key.$2);
   if (doc == null) return Future.value(<TranslationParagraph>[]);
   if (doc.contentManifest != null) {

@@ -560,7 +560,7 @@ class FileSyncLedger {
     bool held(SyncCommit c) {
       final parts = c.scope.split('/');
       return parts.length > 1 &&
-          {'sets', 'reading', 'reviews', 'translations'}.contains(parts.first) &&
+          {'sets', 'reading', 'reviews', 'translations', 'translated'}.contains(parts.first) &&
           drafts.contains(parts[1]);
     }
 

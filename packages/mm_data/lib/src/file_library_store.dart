@@ -17,6 +17,7 @@ part 'file_library_sync_status.dart';
 part 'file_library_reviews.dart';
 part 'file_library_folders.dart';
 part 'file_library_reading.dart';
+part 'file_library_translations.dart';
 
 /// Stores the library on disk:
 ///
@@ -356,7 +357,8 @@ class FileLibraryStore
               },
               resolved: accepted,
               tombstoneWhere: (scope) =>
-                  (scope.startsWith('translations/$id/') && !documents.contains(scope.split('/')[2])) ||
+                  ((scope.startsWith('translations/$id/') || scope.startsWith('translated/$id/')) &&
+                      !documents.contains(scope.split('/')[2])) ||
                   (plan.deleted && (scope == 'reading/$id/${sync.deviceId}' || scope == 'reviews/$id')),
             );
             // The durable decision precedes projections, live caches and watch
@@ -401,6 +403,7 @@ class FileLibraryStore
     await _reconcileFolders();
     await _reconcileReviews(canApply: canApply);
     await _reconcileReading();
+    await _reconcileTranslations(canApply: canApply);
     return results;
   }
 
@@ -459,7 +462,9 @@ class FileLibraryStore
         validate: (_) {
           if (_protected(id, payload, current.value)) throw StateError('Finish editing before choosing a conflict');
         },
-        tombstoneWhere: (scope) => scope.startsWith('translations/$id/') && !documents.contains(scope.split('/')[2]),
+        tombstoneWhere: (scope) =>
+            (scope.startsWith('translations/$id/') || scope.startsWith('translated/$id/')) &&
+            !documents.contains(scope.split('/')[2]),
       );
       _sets[id] = record;
       await sync.project(_packagePath(id), () => _writeRecordFile(record));
@@ -741,7 +746,7 @@ class FileLibraryStore
           [SyncMutation(_scope(id), local: null, shared: null)],
           expected: {_scope(id): _syncSnapshots[_scope(id)]?.revision},
           tombstoneWhere: (scope) =>
-              scope.startsWith('translations/$id/') ||
+              (scope.startsWith('translations/$id/') || scope.startsWith('translated/$id/')) ||
               scope == 'reading/$id/${sync.deviceId}' ||
               scope == 'reviews/$id',
         );
@@ -813,7 +818,8 @@ class FileLibraryStore
       _libraryChanges.add(null);
       final remainingDocuments = next.documents.map((d) => d.id).toSet();
       for (final document in record.content.documents) {
-        if (!remainingDocuments.contains(document.id)) {
+        if (!remainingDocuments.contains(document.id) &&
+            !(_sync != null && _contentTransactions.containsKey(studySetId))) {
           await _cleanTranslations(
             p.join(dir.path, document.id),
             () => FileTranslationStore(dir).removeDocument(document.id),
@@ -1193,9 +1199,17 @@ class FileLibraryStore
       },
       recovered: recovered == null ? {} : {_scope(record.id): recovered},
       tombstoneWhere: (scope) =>
-          scope.startsWith('translations/${record.id}/') && !documents.contains(scope.split('/')[2]),
+          (finishDraft || !_contentTransactions.containsKey(record.id)) &&
+          (scope.startsWith('translations/${record.id}/') || scope.startsWith('translated/${record.id}/')) &&
+          !documents.contains(scope.split('/')[2]),
     );
     await sync.project(_packagePath(record.id), () => _writeRecordFile(record));
+    if (finishDraft) {
+      await _cleanTranslations(
+        p.join(_packagePath(record.id), 'translations'),
+        () => FileTranslationStore(Directory(_packagePath(record.id))).cleanOrphans(documents),
+      );
+    }
   }
 
   /// Waits for pending writes (used by tests and on shutdown).

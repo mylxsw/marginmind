@@ -113,8 +113,8 @@ void main() {
     await store.delete(id);
     final snapshots = await ledger.snapshots();
     expect(snapshots['sets/$id']!.deleted, isTrue);
-    expect(snapshots['translations/$id/$doc/zh']!.deleted, isTrue);
-    expect(snapshots['translations/$id/$doc/zh']!.revision, snapshots['sets/$id']!.revision);
+    expect(snapshots['translated/$id/$doc/zh']!.deleted, isTrue);
+    expect(snapshots['translated/$id/$doc/zh']!.revision, snapshots['sets/$id']!.revision);
     expect(await File(store.resolveFile(id, image)).exists(), isTrue);
     await expectLater(translation.append(doc, 'zh', segment('late')), throwsStateError);
     final reopened = FileLibraryStore(root);
@@ -156,7 +156,10 @@ void main() {
     expect((await vocab.load()).single.term, 'hello');
     final texts = FileTranslationStore(Directory('${root.path}/sets/$id.mmset'), sync: fresh, studySetId: id);
     expect((await texts.load(doc, 'zh')).segments['key']!.origin, TranslationOrigin.edited);
-    expect((await fresh.pending()).where((c) => c.scope.startsWith('translations/')).single.payload.keys, ['segments']);
+    expect(
+      (await fresh.pending()).where((c) => c.scope.startsWith('translated/')).single.payload['kind'],
+      'translation-register',
+    );
     await texts.remove(doc, 'zh');
     expect((await texts.load(doc, 'zh')).segments, isEmpty);
     await texts.compact(doc, 'zh');
@@ -178,9 +181,9 @@ void main() {
     await store.dispose();
     store = FileLibraryStore(root, sync: ledger);
     expect((await store.load(id)).documents.single.id, doc);
-    expect((await ledger.snapshots())['translations/$id/$doc/zh']!.value!['segments'], contains('existing'));
+    expect((await (await store.translationStore(id)).load(doc, 'zh')).segments, contains('existing'));
     await store.update(id, (c) => editor.removeDocument(c, doc));
-    expect((await ledger.snapshots())['translations/$id/$doc/zh']!.deleted, isTrue);
+    expect((await ledger.snapshots())['translated/$id/$doc/zh']!.deleted, isTrue);
   });
 
   test('local-only failed metadata writes do not publish changes', () async {
