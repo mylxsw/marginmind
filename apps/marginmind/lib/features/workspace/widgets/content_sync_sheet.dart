@@ -166,6 +166,7 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(l.syncChoiceHint, style: context.mmText.callout),
+          if (conflict.concurrentChoices > 1) Text(l.syncConcurrentChoiceHint, style: context.mmText.callout),
           for (final change in conflict.changes)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),

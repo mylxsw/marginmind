@@ -204,7 +204,7 @@ void main() {
           id: 'folder',
           revision: 'version',
           folder: const Folder(id: 'folder', name: 'Current name'),
-          choices: [const FolderChoice(transaction: 'private-hash', name: 'Candidate name')],
+          choices: [const FolderChoice(transaction: 'private-hash', name: 'Candidate name', concurrentChoices: 2)],
           problems: [ContentSyncProblem.deletion],
         ),
         FolderEntry(id: 'missing', revision: '', problems: [ContentSyncProblem.missingHistory]),
@@ -212,6 +212,7 @@ void main() {
     );
     await pump(tester);
     expect(find.textContaining('Candidate name'), findsOneWidget);
+    expect(find.textContaining('Different devices made choices'), findsOneWidget);
     expect(find.textContaining('private-hash'), findsNothing);
     expect(find.text('Folder awaiting recovery'), findsOneWidget);
     for (final use in [true, false]) {

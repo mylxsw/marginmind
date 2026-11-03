@@ -63,8 +63,9 @@ class SyncRepository extends InMemoryStudySetContentRepository implements Conten
   }
 }
 
-ContentSyncConflict choice({bool valid = true}) => ContentSyncConflict(
+ContentSyncConflict choice({bool valid = true, int concurrentChoices = 0}) => ContentSyncConflict(
   id: 'private-hash',
+  concurrentChoices: concurrentChoices,
   canUseCandidate: valid,
   changes: const [
     ContentSyncDifference(
@@ -124,6 +125,19 @@ void main() {
     await tester.tap(target);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('concurrent human choices explain the scope of a guarded selection', (tester) async {
+    repo.status = ContentSyncStatus(
+      enabled: true,
+      revision: 'observed-group',
+      conflicts: [choice(concurrentChoices: 2)],
+    );
+    await pump(tester, width: 390, locale: 'zh');
+    expect(find.textContaining('不同设备对同一项修改作出了选择'), findsOneWidget);
+    await tap(tester, 'content-sync-use-private-hash');
+    expect(repo.choices.single, ('private-hash', 'observed-group', true));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('translation choices keep the summary from declaring no conflicts', (tester) async {
     repo.status = ContentSyncStatus(enabled: true, translationConflicts: 2);

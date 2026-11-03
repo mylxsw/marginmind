@@ -135,8 +135,6 @@ SyncMergePlan planSyncMerge(
           return result(SyncMergeState.conflict, 'invalidIntegration');
         }
       }
-    } on ConcurrentSyncResolutions {
-      return result(SyncMergeState.conflict, 'concurrentResolutions');
     } on FormatException {
       return result(SyncMergeState.conflict, 'invalidIntegration');
     }
@@ -158,8 +156,6 @@ SyncMergePlan planSyncMerge(
             !contentValueEquals(replay.pending.map((p) => p.transaction).toList()..sort(), right.pending)) {
           return result(SyncMergeState.conflict, 'invalidIntegration');
         }
-      } on ConcurrentSyncResolutions {
-        return result(SyncMergeState.conflict, 'concurrentResolutions');
       } on FormatException {
         return result(SyncMergeState.conflict, 'invalidIntegration');
       }
@@ -195,8 +191,6 @@ SyncMergePlan planSyncMerge(
         pending: replay.pending.map((p) => p.transaction).toList()..sort(),
         conflicts: replay.pending.expand((p) => p.conflicts),
       );
-    } on ConcurrentSyncResolutions {
-      return result(SyncMergeState.conflict, 'concurrentResolutions', bases: bases);
     } on FormatException {
       return result(SyncMergeState.conflict, 'invalidTransactions', bases: bases);
     }

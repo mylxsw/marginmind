@@ -550,6 +550,51 @@ void main() {
     expect((await reopened.snapshots())[base.scope]!.commit.resolves, [pending]);
   });
 
+  test('concurrent human choices survive IndexedDB reopen and settle as one guarded review', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Base', colorIndex: 0));
+    final scope = 'sets/${set.id}';
+    final base = (await ledger.snapshots())[scope]!.commit;
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: scope,
+      deviceId: 'remote',
+      sequence: 1,
+      parents: [base.id],
+      payload: {...base.payload, 'title': 'Remote'},
+    );
+    await store.rename(set.id, 'Local');
+    await store.receiveSync([remote]);
+    final merged = (await ledger.snapshots())[scope]!;
+    final pending = merged.commit.pending.single;
+    await store.resolveSyncConflict(set.id, pending, expectedRevision: merged.revision, useCandidate: false);
+    final keep = (await ledger.snapshots())[scope]!.commit;
+    final use = SyncCommit.create(
+      libraryId: 'library',
+      scope: scope,
+      deviceId: 'remote',
+      sequence: 2,
+      parents: [merged.commit.id],
+      resolves: [pending],
+      payload: chooseSyncCandidate(await ledger.history(), pending, merged.commit.payload),
+    );
+    await store.receiveSync([use]);
+    final status = await store.contentSyncStatus(set.id);
+    expect(status.conflicts, hasLength(2));
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    final restored = await store.contentSyncStatus(set.id);
+    expect(restored.conflicts.every((c) => c.concurrentChoices == 2), isTrue);
+    await store.chooseContentSync(set.id, keep.id, expectedRevision: restored.revision!, useCandidate: true);
+    expect((await store.contentSyncStatus(set.id)).conflicts, isEmpty);
+    expect((await store.watchAll().first).single.title, keep.payload['title']);
+    expect((await (await store.syncLedger)!.snapshots())[scope]!.commit.resolves.toSet(), {keep.id, use.id});
+  });
+
   test('local editing drafts survive IndexedDB failure and reopen as one shared transaction', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');

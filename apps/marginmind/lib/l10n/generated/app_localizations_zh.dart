@@ -6457,4 +6457,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneNavigationReturnToContent => '返回内容';
+
+  @override
+  String get syncConcurrentChoiceHint => '不同设备对同一项修改作出了选择。请一并查看这些候选；在此确认会替代该项修改当前已显示的所有选择，保留无关修改。';
 }

@@ -5,8 +5,9 @@ import 'package:mm_core/mm_core.dart';
 List<ContentSyncDifference> contentSyncReview(
   Map<String, Object?> before,
   Map<String, Object?> candidate,
-  Map<String, Object?> current,
-) {
+  Map<String, Object?> current, {
+  List<List<String>>? paths,
+}) {
   final result = <ContentSyncDifference>[];
   Object? at(Object? root, List<String> path) {
     for (final key in path) {
@@ -91,10 +92,10 @@ List<ContentSyncDifference> contentSyncReview(
     return value is num ? '$value' : '';
   }
 
-  void diff(Object? a, Object? b, List<String> path) {
-    if (contentValueEquals(a, b)) return;
+  void diff(Object? a, Object? b, List<String> path, {bool explicit = false}) {
+    if (!explicit && contentValueEquals(a, b)) return;
     if (path.isNotEmpty && {'updatedAt', 'createdAt'}.contains(path.last)) return;
-    if (a is Map && b is Map || path.length == 2 && path.first == 'content' && (a is Map || b is Map)) {
+    if (!explicit && (a is Map && b is Map || path.length == 2 && path.first == 'content' && (a is Map || b is Map))) {
       final left = a is Map ? a : const {}, right = b is Map ? b : const {};
       for (final key in {...left.keys.cast<String>(), ...right.keys.cast<String>()}) {
         diff(left.containsKey(key) ? left[key] : contentMissing, right.containsKey(key) ? right[key] : contentMissing, [
@@ -155,6 +156,12 @@ List<ContentSyncDifference> contentSyncReview(
     );
   }
 
-  diff(before, candidate, const []);
+  if (paths == null) {
+    diff(before, candidate, const []);
+  } else {
+    for (final path in paths) {
+      diff(at(before, path), at(candidate, path), path, explicit: true);
+    }
+  }
   return result;
 }

@@ -2,8 +2,9 @@ import '../content/content_sync_repository.dart';
 import 'folder.dart';
 
 class FolderChoice {
-  const FolderChoice({required this.transaction, required this.name});
+  const FolderChoice({required this.transaction, required this.name, this.concurrentChoices = 0});
   final String transaction, name;
+  final int concurrentChoices;
 }
 
 class FolderEntry {

@@ -11785,6 +11785,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to Content'**
   String get phoneNavigationReturnToContent;
+
+  /// No description provided for @syncConcurrentChoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept.'**
+  String get syncConcurrentChoiceHint;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

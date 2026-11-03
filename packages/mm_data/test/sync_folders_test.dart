@@ -30,6 +30,35 @@ void main() {
   Future<void> sendA() async => b.receiveSync(await left.pending());
   Future<void> sendB() async => a.receiveSync(await right.pending());
 
+  test('concurrent folder choices remain reviewable and a grouped choice converges', () async {
+    final folder = await a.createFolder('Initial');
+    await sendA();
+    await rename(a, folder.id, 'A');
+    await rename(b, folder.id, 'B');
+    await sendB();
+    await sendA();
+    final state = await entry(a, folder.id);
+    final pending = state.choices.single.transaction;
+    await a.chooseFolderName(folder.id, pending, expectedRevision: state.revision, useCandidate: false);
+    final keep = (await left.snapshots())['folders/${folder.id}']!.commit;
+    await b.chooseFolderName(
+      folder.id,
+      pending,
+      expectedRevision: (await entry(b, folder.id)).revision,
+      useCandidate: true,
+    );
+    await sendB();
+    final combined = await entry(a, folder.id);
+    expect(combined.choices, hasLength(2));
+    expect(combined.choices.every((c) => c.concurrentChoices == 2), isTrue);
+    expect(combined.problems, isEmpty);
+    await a.chooseFolderName(folder.id, keep.id, expectedRevision: combined.revision, useCandidate: true);
+    await sendA();
+    final finalState = await entry(b, folder.id);
+    expect(finalState.choices, isEmpty);
+    expect(finalState.folder!.name, state.folder!.name);
+  });
+
   test('unfiled display preserves the original membership guard for an explicit move', () async {
     final set = await a.create(const NewStudySet(title: 'Set', colorIndex: 0, folderId: 'not-received'));
     final destination = await a.createFolder('Destination');

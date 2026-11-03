@@ -119,7 +119,7 @@ void main() {
     repo.changes.add(ReferencedResource(DocumentResourceAvailability.missing));
     await tester.pumpAndSettle();
     expect(find.byType(Image), findsNothing);
-    await tester.tap(find.byTooltip('Close'));
+    await tester.tap(find.byType(MMModalCloseButton));
     await tester.pumpAndSettle();
     expect(repo.listeners, 1);
     await tester.pumpWidget(const SizedBox());

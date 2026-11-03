@@ -6739,4 +6739,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneNavigationReturnToContent => 'Back to Content';
+
+  @override
+  String get syncConcurrentChoiceHint =>
+      'Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept.';
 }

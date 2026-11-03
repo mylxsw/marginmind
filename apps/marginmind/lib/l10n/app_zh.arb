@@ -2907,5 +2907,6 @@
   "syncRenameStale": "编辑期间内容已变化，输入已保留。请取消并重新打开改名，确认最新版本。",
   "phoneNavigationReturnToReading": "返回阅读",
   "phoneNavigationReturnToNote": "返回笔记",
-  "phoneNavigationReturnToContent": "返回内容"
+  "phoneNavigationReturnToContent": "返回内容",
+  "syncConcurrentChoiceHint": "不同设备对同一项修改作出了选择。请一并查看这些候选；在此确认会替代该项修改当前已显示的所有选择，保留无关修改。"
 }

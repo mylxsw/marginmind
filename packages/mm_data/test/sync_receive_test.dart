@@ -141,6 +141,74 @@ void main() {
     },
   );
 
+  test('concurrent human choices preserve alternatives, independent writes and restart convergence', () async {
+    await sendA();
+    await a.update(id, (c) => editor.rename(c, card, 'A'));
+    await b.update(id, (c) => editor.rename(c, card, 'B'));
+    await sendA();
+    await sendB();
+    final initial = (await left.snapshots())['sets/$id']!;
+    final pending = initial.commit.pending.single;
+    final displayed = (await a.load(id)).card(card)!.title;
+    await a.resolveSyncConflict(id, pending, expectedRevision: initial.revision, useCandidate: false);
+    final keep = (await left.snapshots())['sets/$id']!.commit;
+    await b.resolveSyncConflict(
+      id,
+      pending,
+      expectedRevision: (await right.snapshots())['sets/$id']!.revision,
+      useCandidate: true,
+    );
+    final use = (await right.snapshots())['sets/$id']!.commit;
+    await b.rename(id, 'Independent after choices');
+    await sendB();
+    final status = await a.contentSyncStatus(id);
+    expect(status.problems, isEmpty);
+    expect(status.conflicts.map((c) => c.id).toSet(), {keep.id, use.id});
+    expect(status.conflicts.every((c) => c.concurrentChoices == 2 && c.changes.isNotEmpty), isTrue);
+    expect(status.conflicts.firstWhere((c) => c.id == keep.id).changes.any((c) => c.candidate == displayed), isTrue);
+    expect((await a.watchAll().first).single.title, 'Independent after choices');
+    await sendA();
+    final thirdLedger = FileSyncLedger(Directory('${root.path}/third'), libraryId: 'library', deviceId: 'third');
+    var third = FileLibraryStore(thirdLedger.root, sync: thirdLedger);
+    try {
+      final head = (await left.snapshots())['sets/$id']!;
+      expect((await third.receiveSync([head.commit])).single.reason, 'missingParents');
+      await third.receiveSync((await left.history()).values.toList().reversed);
+      expect((await third.contentSyncStatus(id)).conflicts, hasLength(2));
+      await third.dispose();
+      third = FileLibraryStore(thirdLedger.root);
+      final restored = await third.contentSyncStatus(id);
+      expect(restored.conflicts, hasLength(2));
+      await third.rename(id, 'Third device independent edit');
+      await expectLater(
+        third.chooseContentSync(id, keep.id, expectedRevision: restored.revision!, useCandidate: true),
+        throwsA(isA<ContentSyncActionException>()),
+      );
+      await third.chooseContentSync(
+        id,
+        keep.id,
+        expectedRevision: (await third.contentSyncStatus(id)).revision!,
+        useCandidate: true,
+      );
+      expect((await third.load(id)).card(card)!.title, displayed);
+      final ledger = (await third.syncLedger)!;
+      final chosen = (await ledger.snapshots())['sets/$id']!.commit;
+      expect(chosen.resolves.toSet(), {keep.id, use.id});
+      await a.receiveSync(await ledger.pending());
+      await b.receiveSync(await ledger.pending());
+      expect((await a.contentSyncStatus(id)).conflicts, isEmpty);
+      expect((await b.contentSyncStatus(id)).conflicts, isEmpty);
+      expect((await a.watchAll().first).single.title, 'Third device independent edit');
+      expect(sharedContent(await a.load(id)), sharedContent(await third.load(id)));
+      final count = (await left.history()).length;
+      await sendA();
+      await sendB();
+      expect((await left.history()).length, count);
+    } finally {
+      await third.dispose();
+    }
+  });
+
   test('structural moves are isolated atomically while later metadata continues', () async {
     late String one, two;
     await a.update(id, (c) {

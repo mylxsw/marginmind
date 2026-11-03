@@ -65,10 +65,14 @@ class ContentSyncConflict {
     required this.id,
     required Iterable<ContentSyncDifference> changes,
     required this.canUseCandidate,
+    this.concurrentChoices = 0,
   }) : changes = List.unmodifiable(changes);
   final String id;
   final List<ContentSyncDifference> changes;
   final bool canUseCandidate;
+
+  /// Number of observed human choices reviewed together by this action.
+  final int concurrentChoices;
 }
 
 class ContentSyncStatus {

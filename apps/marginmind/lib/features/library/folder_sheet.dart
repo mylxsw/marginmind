@@ -227,6 +227,8 @@ class _FolderSheetState extends ConsumerState<FolderSheet> {
                         for (final problem in entry.problems)
                           Text(l.syncProblem(problem.name), style: context.mmText.callout),
                         for (final choice in entry.choices) ...[
+                          if (choice.concurrentChoices > 1)
+                            Text(l.syncConcurrentChoiceHint, style: context.mmText.callout),
                           Text('${l.syncCurrent}: ${entry.folder?.name ?? l.folderUnavailable}'),
                           Text('${l.syncCandidate}: ${choice.name}'),
                           Wrap(

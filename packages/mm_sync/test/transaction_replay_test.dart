@@ -93,7 +93,7 @@ void main() {
         local: otherResolution.id,
         validateTransaction: valid,
       ).reason,
-      'concurrentResolutions',
+      'pendingTransactions',
     );
     final concealedChoices = commit('concealed-choices', resolution.payload, parents: [resolution, otherResolution]);
     expect(
@@ -102,7 +102,7 @@ void main() {
         remote: concealedChoices.id,
         validateTransaction: valid,
       ).reason,
-      'concurrentResolutions',
+      'invalidIntegration',
     );
     final concealed = commit('concealed', {...forged.payload, 'title': 'later'}, parents: [forged]);
     expect(

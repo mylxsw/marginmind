@@ -463,17 +463,16 @@ class FileLibraryStore
         throw const FormatException('Transaction is not pending');
       }
       final history = await sync.history();
-      final candidate = history[transaction]!;
+      final ancestry = syncAncestry(history, [current.commit.id], checkKnownForks: false);
+      final group = syncChoiceGroup(ancestry, transaction);
       final payload = useCandidate
-          ? chooseSyncTransaction(history[candidate.parents.single]!.payload, candidate.payload, current.commit.payload)
+          ? chooseSyncCandidate(ancestry, transaction, current.commit.payload)
           : current.commit.payload;
       if (_protected(id, payload, current.value)) throw StateError('Finish editing before choosing a conflict');
       final record = _materializeSync(id, payload, current.value);
       final documents = record.content.documents.map((d) => d.id).toSet();
       _syncSnapshots = await sync.commit(
-        [
-          SyncMutation(_scope(id), local: record.toJson(), shared: payload, resolves: [transaction]),
-        ],
+        [SyncMutation(_scope(id), local: record.toJson(), shared: payload, resolves: group)],
         expected: {_scope(id): expectedRevision},
         validate: (_) {
           if (_protected(id, payload, current.value)) throw StateError('Finish editing before choosing a conflict');

@@ -4017,5 +4017,6 @@
   "syncRenameStale": "This item changed while you were editing. Your input is kept. Cancel and reopen Rename to review the latest version.",
   "phoneNavigationReturnToReading": "Back to Reading",
   "phoneNavigationReturnToNote": "Back to Note",
-  "phoneNavigationReturnToContent": "Back to Content"
+  "phoneNavigationReturnToContent": "Back to Content",
+  "syncConcurrentChoiceHint": "Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept."
 }

@@ -34,6 +34,12 @@ extension _FileLibraryFolders on FileLibraryStore {
         _ => ContentSyncProblem.invalidHistory,
       });
     }
+    final choiceGroups = <String, Set<String>>{};
+    for (final entry in heads.entries.where((e) => e.key.startsWith('folders/') && e.value.commit.pending.isNotEmpty)) {
+      choiceGroups.addAll(
+        syncConcurrentChoices(syncAncestry(history, [entry.value.commit.id], checkKnownForks: false)),
+      );
+    }
     return LibraryOrganization(
       placements: {for (final record in _sets.values) record.id: record.folderId},
       syncEnabled: true,
@@ -50,7 +56,11 @@ extension _FileLibraryFolders on FileLibraryStore {
               folder: heads[scope]?.value == null ? null : folderFromSync(scope.substring(8), heads[scope]!.value!),
               choices: [
                 for (final id in heads[scope]?.commit.pending ?? const <String>[])
-                  FolderChoice(transaction: id, name: folderFromSync(scope.substring(8), history[id]!.payload).name),
+                  FolderChoice(
+                    transaction: id,
+                    name: folderFromSync(scope.substring(8), history[id]!.payload).name,
+                    concurrentChoices: choiceGroups[id]?.length ?? 0,
+                  ),
               ],
               problems: problems[scope] ?? const {},
             ),
@@ -220,11 +230,11 @@ extension _FileLibraryFolders on FileLibraryStore {
       if (current?.revision != expectedRevision || current == null || !current.commit.pending.contains(transaction)) {
         throw const ContentSyncActionException(ContentSyncActionFailure.stale);
       }
-      final history = await sync.history(), candidate = history[transaction]!;
+      final history = syncAncestry(await sync.history(), [current.commit.id], checkKnownForks: false);
       final payload = useCandidate
-          ? chooseSyncTransaction(history[candidate.parents.single]!.payload, candidate.payload, current.commit.payload)
+          ? chooseSyncCandidate(history, transaction, current.commit.payload)
           : current.commit.payload;
-      await _saveFolder(id, folderFromSync(id, payload), heads: heads, resolves: [transaction]);
+      await _saveFolder(id, folderFromSync(id, payload), heads: heads, resolves: syncChoiceGroup(history, transaction));
     });
   }
 

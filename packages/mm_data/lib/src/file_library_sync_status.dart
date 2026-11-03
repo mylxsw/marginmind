@@ -18,12 +18,16 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
     final head = heads[FileLibraryStore._scope(id)];
     final history = await sync.history();
     final conflicts = <ContentSyncConflict>[];
+    final ancestry = head == null || head.commit.pending.isEmpty
+        ? <String, SyncCommit>{}
+        : syncAncestry(history, [head.commit.id], checkKnownForks: false);
+    final groups = syncConcurrentChoices(ancestry);
     for (final transaction in head?.commit.pending ?? const <String>[]) {
       final candidate = history[transaction]!;
       final before = history[candidate.parents.single]!.payload;
       var valid = true;
       try {
-        _materializeSync(id, chooseSyncTransaction(before, candidate.payload, head!.commit.payload), head.value);
+        _materializeSync(id, chooseSyncCandidate(ancestry, transaction, head!.commit.payload), head.value);
       } on FormatException {
         valid = false;
       } on ArgumentError {
@@ -34,8 +38,14 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
       conflicts.add(
         ContentSyncConflict(
           id: transaction,
+          concurrentChoices: groups[transaction]?.length ?? 0,
           canUseCandidate: valid,
-          changes: contentSyncReview(before, candidate.payload, head!.commit.payload),
+          changes: contentSyncReview(
+            before,
+            candidate.payload,
+            head!.commit.payload,
+            paths: syncTransactionPaths(ancestry, transaction),
+          ),
         ),
       );
     }

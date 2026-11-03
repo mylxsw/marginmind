@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
@@ -171,16 +172,31 @@ void main() {
       final old = (await left.snapshots())['reading/$id/a']!.commit;
       await a.update(id, (c) => editor.setLastPage(c, 'doc', 9));
       final next = (await left.snapshots())['reading/$id/a']!.commit;
-      final events = <ReadingContinuations>[];
-      final sub = b.watchReadingContinuations(id).listen(events.add);
-      await b.receiveSync((await left.pending()).where((c) => c.id != old.id));
-      expect((await b.readingContinuations(id)).items, isEmpty);
-      await b.receiveSync([old]);
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect((events.last.items.single.position as PdfPosition).page, 9);
-      expect((await b.load(id)).document('doc')!.lastPage, 1);
-      expect((await right.snapshots())[next.scope]!.commit.id, next.id);
-      await sub.cancel();
+      final published = Completer<ReadingContinuations>();
+      final sub = b
+          .watchReadingContinuations(id)
+          .listen(
+            (event) {
+              if (!published.isCompleted &&
+                  event.items.any((i) => i.position is PdfPosition && (i.position as PdfPosition).page == 9)) {
+                published.complete(event);
+              }
+            },
+            onError: (Object error, StackTrace stack) {
+              if (!published.isCompleted) published.completeError(error, stack);
+            },
+          );
+      try {
+        await b.receiveSync((await left.pending()).where((c) => c.id != old.id));
+        expect((await b.readingContinuations(id)).items, isEmpty);
+        await b.receiveSync([old]);
+        final event = await published.future.timeout(const Duration(seconds: 5));
+        expect((event.items.single.position as PdfPosition).page, 9);
+        expect((await b.load(id)).document('doc')!.lastPage, 1);
+        expect((await right.snapshots())[next.scope]!.commit.id, next.id);
+      } finally {
+        await sub.cancel();
+      }
       await a.update(id, (c) => editor.setLastPage(c, 'doc', 10));
       await send();
     },

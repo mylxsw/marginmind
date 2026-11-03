@@ -11,12 +11,6 @@ class PendingSyncTransaction {
   final List<SyncConflict> conflicts;
 }
 
-/// Concurrent human choices need an explicit reconciliation of those choices.
-/// Never infer a winner merely from the display ordering of edit transactions.
-class ConcurrentSyncResolutions implements Exception {
-  const ConcurrentSyncResolutions();
-}
-
 class SyncReplayResult {
   SyncReplayResult(this.payload, this.pending);
   final Map<String, Object?> payload;
@@ -45,17 +39,7 @@ SyncReplayResult replaySyncTransactions(
   for (final c in ancestry.values) {
     validate(c.payload);
   }
-  final resolutions = ancestry.values.where((c) => c.resolves.isNotEmpty).toList();
-  for (var i = 0; i < resolutions.length; i++) {
-    for (final other in resolutions.skip(i + 1)) {
-      final c = resolutions[i];
-      if (c.resolves.any(other.resolves.contains) &&
-          !graph.ancestors(c.id).contains(other.id) &&
-          !graph.ancestors(other.id).contains(c.id)) {
-        throw const ConcurrentSyncResolutions();
-      }
-    }
-  }
+  final choices = syncConcurrentChoices(ancestry, graph: graph);
   final root = roots.single;
   var value = root.payload;
   final resolved = {for (final c in ancestry.values) ...c.resolves};
@@ -88,7 +72,12 @@ SyncReplayResult replaySyncTransactions(
       if (remaining[child] == 0) ready.add(child);
     }
     if (resolved.contains(c.id)) continue;
-    final merged = mergeSyncObject(ancestry[c.parents.single]!.payload, value, c.payload);
+    if (choices[c.id] != null) {
+      pending.add(PendingSyncTransaction(c.id, 'concurrentChoices', const []));
+      continue;
+    }
+    final before = ancestry[c.parents.single]!.payload;
+    final merged = mergeSyncObject(before, value, c.payload);
     if (merged.conflicts.isNotEmpty) {
       pending.add(PendingSyncTransaction(c.id, 'fields', merged.conflicts));
       continue;
@@ -104,6 +93,118 @@ SyncReplayResult replaySyncTransactions(
   if (visited != events.length) throw const FormatException('Cyclic transaction history');
   return SyncReplayResult(value, List.unmodifiable(pending));
 }
+
+/// Human choices carry the intent of the reviewed transactions, even when
+/// keeping the displayed value produced no delta. Nested choices retain that
+/// intent, including atomic companion changes and removals.
+List<List<String>> syncTransactionPaths(Map<String, SyncCommit> history, String id) {
+  final memo = <String, List<List<String>>>{};
+  List<List<String>> paths(String id) => memo.putIfAbsent(id, () {
+    final c = history[id]!;
+    final result = <List<String>>[];
+    void diff(Object? a, Object? b, List<String> path) {
+      if (contentValueEquals(a, b)) return;
+      if (a is Map && b is Map) {
+        for (final key in {...a.keys.cast<String>(), ...b.keys.cast<String>()}) {
+          diff(a.containsKey(key) ? a[key] : contentMissing, b.containsKey(key) ? b[key] : contentMissing, [
+            ...path,
+            key,
+          ]);
+        }
+      } else {
+        result.add(path);
+      }
+    }
+
+    diff(history[c.parents.single]!.payload, c.payload, const []);
+    for (final target in c.resolves) {
+      result.addAll(paths(target));
+    }
+    // A whole-entity write subsumes its child paths. Do not recreate a deleted
+    // entity by subsequently applying one of its old child paths.
+    final unique = <List<String>>[];
+    result.sort((a, b) => a.length.compareTo(b.length));
+    for (final path in result) {
+      if (!unique.any((p) => p.length <= path.length && contentValueEquals(p, path.take(p.length).toList()))) {
+        unique.add(List.unmodifiable(path));
+      }
+    }
+    return List.unmodifiable(unique);
+  });
+  return paths(id);
+}
+
+Object? syncValueAt(Map<String, Object?> payload, List<String> path) {
+  Object? value = payload;
+  for (final key in path) {
+    if (value is! Map || !value.containsKey(key)) return contentMissing;
+    value = value[key];
+  }
+  return value;
+}
+
+Map<String, Object?> _applyPaths(Map<String, Object?> current, Map<String, Object?> source, List<List<String>> paths) {
+  Object? write(Object? node, List<String> path, Object? value) {
+    if (path.isEmpty) return value;
+    if (node is! Map && value == contentMissing) return node;
+    final result = node is Map ? Map<String, Object?>.from(node) : <String, Object?>{};
+    final key = path.first;
+    final next = write(result.containsKey(key) ? result[key] : contentMissing, path.sublist(1), value);
+    if (next == contentMissing) {
+      result.remove(key);
+    } else {
+      result[key] = next;
+    }
+    return result;
+  }
+
+  var value = current;
+  for (final path in paths) {
+    value = write(value, path, syncValueAt(source, path)) as Map<String, Object?>;
+  }
+  return value;
+}
+
+Map<String, Object?> chooseSyncCandidate(Map<String, SyncCommit> history, String id, Map<String, Object?> current) {
+  final c = history[id]!;
+  return c.resolves.isEmpty
+      ? chooseSyncTransaction(history[c.parents.single]!.payload, c.payload, current)
+      : _applyPaths(current, c.payload, syncTransactionPaths(history, id));
+}
+
+/// Connected sets of concurrent, still-unreviewed choices of the same original
+/// transactions. All members remain pending, including identical/no-op choices.
+/// A later explicit choice reviews the whole observed group; a late unseen
+/// choice remains a new candidate instead of being silently discarded.
+Map<String, Set<String>> syncConcurrentChoices(Map<String, SyncCommit> history, {SyncGraph? graph}) {
+  graph ??= SyncGraph(history.values);
+  final resolved = {for (final c in history.values) ...c.resolves};
+  final choices = history.values.where((c) => c.resolves.isNotEmpty && !resolved.contains(c.id)).toList();
+  final roots = <String, Set<String>>{};
+  Set<String> targets(String id) => roots.putIfAbsent(id, () {
+    final c = history[id]!;
+    return c.resolves.isEmpty ? {id} : {for (final target in c.resolves) ...targets(target)};
+  });
+  final groups = <String, Set<String>>{};
+  for (var i = 0; i < choices.length; i++) {
+    final a = choices[i];
+    for (final b in choices.skip(i + 1)) {
+      if (targets(a.id).intersection(targets(b.id)).isEmpty ||
+          graph.ancestors(a.id).contains(b.id) ||
+          graph.ancestors(b.id).contains(a.id)) {
+        continue;
+      }
+      final group = {...?groups[a.id], ...?groups[b.id], a.id, b.id};
+      for (final id in group) {
+        groups[id] = group;
+      }
+    }
+  }
+  return groups;
+}
+
+List<String> syncChoiceGroup(Map<String, SyncCommit> ancestry, String id) =>
+    (syncConcurrentChoices(ancestry)[id] ?? {id}).toList()..sort();
 
 /// Explicitly choose one pending transaction's changes against today's state.
 /// Only its changed paths are replaced; unrelated later edits stay intact.
