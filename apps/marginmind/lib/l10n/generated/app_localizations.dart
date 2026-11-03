@@ -11251,6 +11251,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{kind, select, editing{Received changes are waiting for an edit to finish.} missingHistory{Earlier versions have not arrived yet. Received work is retained.} unrelatedHistory{These versions have no shared history. Both branches are retained for recovery.} ambiguousHistory{These branches have multiple possible starting points. Both are retained for review.} concurrentChoices{Another device made a different conflict choice. Both choices are retained for review.} deletion{A deletion overlaps an edit. Both versions are retained for recovery.} invalidHistory{A received branch failed validation. It is retained without replacing your content.} other{A received version is not supported. Your content has not been replaced.}}'**
   String syncProblem(String kind);
+
+  /// No description provided for @incomingShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import to Foliarc'**
+  String get incomingShareTitle;
+
+  /// No description provided for @incomingShareCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and Import'**
+  String get incomingShareCreate;
+
+  /// No description provided for @incomingShareImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get incomingShareImport;
+
+  /// No description provided for @incomingShareExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing Study Set'**
+  String get incomingShareExisting;
+
+  /// No description provided for @incomingShareSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search study sets'**
+  String get incomingShareSearch;
+
+  /// No description provided for @incomingShareNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching study sets'**
+  String get incomingShareNoResults;
+
+  /// No description provided for @incomingShareRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get incomingShareRecent;
+
+  /// No description provided for @incomingShareRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get incomingShareRetry;
+
+  /// No description provided for @incomingShareUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a web link or a supported document (PDF, EPUB, MOBI or Markdown).'**
+  String get incomingShareUnsupported;
+
+  /// No description provided for @incomingShareLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The shared content exceeds the import limit. Share up to 20 files at a time.'**
+  String get incomingShareLimit;
+
+  /// No description provided for @incomingShareWebHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The page opens in your study set. Use Convert to save it as a readable document, PDF or Markdown.'**
+  String get incomingShareWebHint;
+
+  /// No description provided for @incomingSharePaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste Link'**
+  String get incomingSharePaste;
+
+  /// No description provided for @incomingShareClipboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No valid web link on the clipboard.'**
+  String get incomingShareClipboardEmpty;
+
+  /// No description provided for @incomingShareFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 document} other{{count} documents}}'**
+  String incomingShareFiles(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

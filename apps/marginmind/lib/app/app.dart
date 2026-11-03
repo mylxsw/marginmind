@@ -11,6 +11,7 @@ import 'package:mm_platform/mm_platform.dart';
 import '../features/gallery/gallery_screen.dart';
 import '../features/vocabulary/vocabulary_screen.dart';
 import '../features/library/library_screen.dart';
+import '../features/library/share_import_sheet.dart';
 import '../features/review/review_screen.dart';
 import '../features/review/stats_screen.dart';
 import '../features/workspace/widgets/reader_pane.dart';
@@ -167,7 +168,7 @@ class AppShell extends ConsumerWidget {
     );
     // Only phones and tablets have a system back action; desktops keep the
     // root route's default pop behavior.
-    return ref.watch(touchPlatformProvider) ? MMBackScope(child: shell) : shell;
+    return IncomingShareHost(child: ref.watch(touchPlatformProvider) ? MMBackScope(child: shell) : shell);
   }
 }
 

@@ -1,0 +1,6 @@
+"saving" = "Saving…";
+"saved" = "Saved. Open Foliarc to choose an existing study set or create a new one.";
+"failed" = "Could not save this share. Please try again.";
+"limit" = "Share up to 20 documents within the import size limits.";
+"unsupported" = "Share a web link, PDF, EPUB, MOBI or Markdown document.";
+"done" = "Done";

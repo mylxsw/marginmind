@@ -327,3 +327,6 @@ protocol, id, libraryId, scope, deviceId, sequence, parents, deleted, payload, p
   `app/coverage/sync-ui-delivery`：面板 135/140（96.43%）、状态 provider 5/5（100%）。
 - 全工作区分析无问题，1068 个 Dart 文件格式检查无变化，diff 检查通过。
   前述全量 CI、基线 UI/助手与浏览器冒烟边界仍然适用。没有云账号配置、数据上传或云服务实机验收。
+- 已整合最新 main `bf8480bc`（手机分享入口），冲突仅涉及文案追加，保留两组文案后重新生成本地化。
+  合并后分享导入、同步面板、独立输入和真实编辑会话共 44 项，平台分享协议 5 项再次通过；
+  全工作区分析无问题，1073 个 Dart 文件格式检查无变化。未重复宣称或执行云服务/原生分享真机验收。

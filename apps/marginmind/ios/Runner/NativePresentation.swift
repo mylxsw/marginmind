@@ -154,6 +154,12 @@ private final class NativeFormController: UITableViewController, UITextFieldDele
         field.autocapitalizationType = .none
         field.autocorrectionType = .no
         field.textContentType = .URL
+        // The system paste control grants access only after the user's tap.
+        let paste = UIPasteControl(configuration: UIPasteControl.Configuration())
+        paste.target = field
+        paste.sizeToFit()
+        field.rightView = paste
+        field.rightViewMode = .always
       }
       field.returnKeyType = .done
       field.delegate = self

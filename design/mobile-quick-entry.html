@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh">
+<meta charset="utf-8">
+<title>Foliarc · 系统分享导入</title>
+<style>
+  :root { color-scheme: light dark; --space: 12px; --radius: 12px; }
+  body { font: 16px/1.6 system-ui; max-width: 680px; margin: 48px auto; padding: 16px; }
+  article { border: 1px solid GrayText; border-radius: var(--radius); padding: 24px; }
+  dl { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space); }
+  dd { margin: 0; }
+</style>
+<article>
+  <h1>导入到 Foliarc</h1>
+  <p>分享预览 → 选择目标 → 导入。沿用应用的 Sheet、分段控件、搜索框和主按钮。</p>
+  <dl>
+    <dt>iPad 面板最大宽度</dt><dd>MMSizes.incomingShareSheetWidth · 500 pt</dd>
+    <dt>手机</dt><dd>悬浮 Sheet 按内容高度展开，目标列表首屏可见</dd>
+    <dt>目标行</dt><dd>至少 MMSizes.touchTarget · 44 pt；单选状态与最近使用标记</dd>
+    <dt>间距与圆角</dt><dd>MMSpacing.s/m/l；MMRadii.row/card</dd>
+    <dt>颜色与文字</dt><dd>mmColors 与 mmText；完整支持浅色/深色</dd>
+    <dt>主操作</dt><dd>手机置于标题右侧；iPad 置于底部操作区</dd>
+    <dt>空结果</dt><dd>显示空态并禁用导入；仍可切换“新建学习集”</dd>
+  </dl>
+  <p>网页在目标学习集中打开，沿用现有转换操作保存为文档。剪贴板只在用户点击后读取。</p>
+</article>
+</html>

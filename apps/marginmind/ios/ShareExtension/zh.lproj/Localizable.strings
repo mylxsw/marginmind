@@ -1,0 +1,6 @@
+"saving" = "正在保存…";
+"saved" = "已保存。请打开 Foliarc，选择加入已有学习集或创建新学习集。";
+"failed" = "保存失败，请重试。";
+"limit" = "每次最多分享 20 个文档，且不能超过导入大小限制。";
+"unsupported" = "请分享网页链接、PDF、EPUB、MOBI 或 Markdown 文档。";
+"done" = "完成";

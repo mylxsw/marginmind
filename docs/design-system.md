@@ -245,3 +245,8 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 轻点节点显示固定底部操作栏；长按只拾起节点用于结构拖动，拖动期间隐藏操作栏；完整菜单由“更多”按钮主动打开。选中态的节点栏替代视图工具栏，不能叠放。父子高亮、同级插入线和底部说明必须与最终落点一致，取消或空白松手不改结构。详细规则见 [手机导图交互](../design/phone-map-interactions.md)。
 
 手机导图的多选使用独立临时模式：点选补充、单指画框、四角调整、边框平移、双指移动／缩放、屏幕边缘自动平移。选择框松手后保留；数量和候选高亮实时一致；取消不覆盖原选择，完成才提交。选择模式暂停节点结构拖动与编辑，旋转屏幕保留临时选择。详见 [手机导图选择](../design/phone-map-selection.md)。
+
+
+### 系统分享导入（GUL-659）
+
+导入目标面板复用 MMSheet、MMSegmentedControl、MMSearchField 和 MMButton。iPad 居中宽度使用 MMSizes.incomingShareSheetWidth（500pt）；手机按内容高度显示，让目标列表首次打开即可见。目标行至少 44pt，选中行使用 accentTint，当前/最近学习集优先。预览使用 quaternaryFill 与 card 圆角；间距、颜色和字体均来自既有令牌。手机主操作在标题右侧，iPad 主操作在底部。搜索无结果时禁用导入，保留新建入口。规范稿见 design/mobile-quick-entry.html，浅色/深色界面证据见 docs/evidence/gul-659/。

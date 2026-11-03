@@ -6170,4 +6170,48 @@ class AppLocalizationsZh extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String get incomingShareTitle => '导入到 Foliarc';
+
+  @override
+  String get incomingShareCreate => '创建并导入';
+
+  @override
+  String get incomingShareImport => '导入';
+
+  @override
+  String get incomingShareExisting => '已有学习集';
+
+  @override
+  String get incomingShareSearch => '搜索学习集';
+
+  @override
+  String get incomingShareNoResults => '没有匹配的学习集';
+
+  @override
+  String get incomingShareRecent => '最近使用';
+
+  @override
+  String get incomingShareRetry => '重试';
+
+  @override
+  String get incomingShareUnsupported => '请分享网页链接或支持的文档（PDF、EPUB、MOBI 或 Markdown）。';
+
+  @override
+  String get incomingShareLimit => '分享内容超出导入限制，每次最多可分享 20 个文件。';
+
+  @override
+  String get incomingShareWebHint => '网页将在学习集中打开，可通过“转换”保存为阅读文档、PDF 或 Markdown。';
+
+  @override
+  String get incomingSharePaste => '粘贴链接';
+
+  @override
+  String get incomingShareClipboardEmpty => '剪贴板中没有有效的网页链接。';
+
+  @override
+  String incomingShareFiles(int count) {
+    return '$count 个文档';
+  }
 }

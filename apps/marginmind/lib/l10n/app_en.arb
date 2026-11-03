@@ -3257,5 +3257,26 @@
         "type": "String"
       }
     }
+  },
+  "incomingShareTitle": "Import to Foliarc",
+  "incomingShareCreate": "Create and Import",
+  "incomingShareImport": "Import",
+  "incomingShareExisting": "Existing Study Set",
+  "incomingShareSearch": "Search study sets",
+  "incomingShareNoResults": "No matching study sets",
+  "incomingShareRecent": "Recent",
+  "incomingShareRetry": "Retry",
+  "incomingShareUnsupported": "Share a web link or a supported document (PDF, EPUB, MOBI or Markdown).",
+  "incomingShareLimit": "The shared content exceeds the import limit. Share up to 20 files at a time.",
+  "incomingShareWebHint": "The page opens in your study set. Use Convert to save it as a readable document, PDF or Markdown.",
+  "incomingSharePaste": "Paste Link",
+  "incomingShareClipboardEmpty": "No valid web link on the clipboard.",
+  "incomingShareFiles": "{count, plural, =1{1 document} other{{count} documents}}",
+  "@incomingShareFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
