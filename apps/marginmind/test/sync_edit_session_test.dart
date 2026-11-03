@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/features/workspace/reader_margin.dart';
 import 'package:marginmind/shared/content_input.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
@@ -98,6 +99,90 @@ void main() {
       (await ledger.history()).values.map((c) => ((c.payload['content'] as Map?)?['cards'] as Map?)?['c3']?['title']),
       containsAll(['Remote candidate', 'Local candidate']),
     );
+  });
+
+  test('margin input protects its document and linked card, preserving both remote and saved text', () async {
+    await controller.saveMarginNote(
+      MarginNote(
+        id: 'margin',
+        documentId: 'c1',
+        page: 1,
+        lineY: 500,
+        text: 'Before',
+        colorIndex: 0,
+        createdAt: testNow,
+        updatedAt: testNow,
+      ),
+    );
+    final card = await controller.attachMarginNote('margin');
+    container.listen(readerMarginProvider(id), (_, _) {});
+    final margin = container.read(readerMarginProvider(id).notifier);
+    final original = (await repo.load(id)).marginNotes.single;
+    final base = await head();
+    await margin.start('c1', existing: original);
+    final remoteContent = StudySetEditor(
+      newId: () => 'x',
+      now: () => testNow,
+    ).rename(await repo.load(id), card!, 'Remote note');
+    await repo.receiveSync([
+      SyncCommit.create(
+        libraryId: 'library',
+        scope: scope,
+        deviceId: 'remote',
+        sequence: 1,
+        parents: [base.id],
+        payload: {...base.payload, 'content': sharedContent(remoteContent)},
+      ),
+    ]);
+    expect((await repo.load(id)).marginNotes.single.text, 'Before');
+    margin.text('Local note');
+    expect(await margin.finish(), true);
+    expect((await head()).pending, hasLength(1));
+    expect(
+      (await ledger.history()).values
+          .where((c) => c.scope == scope)
+          .map((c) => ((c.payload['content'] as Map)['marginNotes'] as Map)['margin']?['text']),
+      containsAll(['Local note', 'Remote note']),
+    );
+  });
+
+  test('unchanged margin input releases remote update; recolor preserves the latest text', () async {
+    await controller.saveMarginNote(
+      MarginNote(
+        id: 'margin',
+        documentId: 'c1',
+        page: 1,
+        lineY: 500,
+        text: 'Before',
+        colorIndex: 0,
+        createdAt: testNow,
+        updatedAt: testNow,
+      ),
+    );
+    container.listen(readerMarginProvider(id), (_, _) {});
+    final margin = container.read(readerMarginProvider(id).notifier);
+    final original = (await repo.load(id)).marginNotes.single, base = await head();
+    await margin.start('c1', existing: original);
+    await repo.receiveSync([
+      SyncCommit.create(
+        libraryId: 'library',
+        scope: scope,
+        deviceId: 'remote',
+        sequence: 1,
+        parents: [base.id],
+        payload: {
+          ...base.payload,
+          'content': sharedContent(
+            (await repo.load(id)).copyWith(marginNotes: [original.copyWith(text: 'Latest remote')]),
+          ),
+        },
+      ),
+    ]);
+    expect(await margin.finish(), true);
+    expect((await repo.load(id)).marginNotes.single.text, 'Latest remote');
+    await margin.recolor(original, 3);
+    expect((await repo.load(id)).marginNotes.single.text, 'Latest remote');
+    expect((await repo.load(id)).marginNotes.single.colorIndex, 3);
   });
 
   test('workspace creation and typing publish one transaction; cancellation publishes none', () async {

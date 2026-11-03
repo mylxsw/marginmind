@@ -171,10 +171,19 @@ class WorkspaceSidebar extends ConsumerWidget {
               position: position,
               entries: [
                 MMMenuItem(l.renameEllipsis, () async {
-                  final title = await showRenameSheet(context, title: l.renameEllipsis, initial: note.title);
-                  if (title != null && title.trim().isNotEmpty) {
-                    await controller.changeStudyNote(note.id, (n) => n.copyWith(title: title.trim()));
-                  }
+                  await showContentRenameSheet(
+                    context,
+                    ref,
+                    studySetId,
+                    title: l.renameEllipsis,
+                    paths: [
+                      ['studyNotes', note.id],
+                    ],
+                    read: (c) => c.studyNotes.where((n) => n.id == note.id).firstOrNull?.title,
+                    save: (value) => value.isEmpty
+                        ? Future<void>.value()
+                        : controller.changeStudyNote(note.id, (n) => n.copyWith(title: value)),
+                  );
                 }, icon: MMIcons.editNote),
                 MMMenuItem(
                   l.exportStudyNote,
@@ -637,8 +646,17 @@ class WorkspaceSidebar extends ConsumerWidget {
           ),
 
         MMMenuItem(l.renameEllipsis, () async {
-          final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);
-          if (title != null) await controller.renameDocument(doc.id, title);
+          await showContentRenameSheet(
+            context,
+            ref,
+            studySetId,
+            title: l.renameDocument,
+            paths: [
+              ['documents', doc.id],
+            ],
+            read: (c) => c.documents.where((d) => d.id == doc.id).firstOrNull?.title,
+            save: (value) => controller.renameDocument(doc.id, value),
+          );
         }, icon: MMIcons.editNote),
         const MMMenuDivider(),
         MMMenuItem(

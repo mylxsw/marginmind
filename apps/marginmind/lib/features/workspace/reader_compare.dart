@@ -8,6 +8,7 @@ import 'package:mm_pdf/mm_pdf.dart';
 import '../../app/providers.dart';
 import '../../settings/app_settings.dart';
 import 'reader_margin.dart';
+import 'document_resources.dart';
 import 'reader_ocr.dart';
 import 'reader_paragraphs.dart';
 import 'reader_translation.dart';
@@ -547,6 +548,12 @@ final compareDocumentInfoProvider = FutureProvider.family<({String? language, bo
   key,
 ) async {
   final workspace = ref.watch(workspaceProvider(key.$1).notifier);
+  ref.watch(
+    workspaceProvider(key.$1).select((s) {
+      final d = s.content?.document(key.$2);
+      return d == null ? null : (documentResourceKey(key.$1, d), d.title, d.pageCount, d.layout);
+    }),
+  );
   final doc = workspace.content.documents.where((d) => d.id == key.$2).firstOrNull;
   if (doc == null) return (language: null, hasText: null);
   final fallback = compareLanguage(doc.title);
@@ -555,6 +562,8 @@ final compareDocumentInfoProvider = FutureProvider.family<({String? language, bo
   final recognized = ref.watch(readerOcrProvider(path).select((s) => s.document));
   if (!ref.read(pdfRenderingEnabledProvider)) return (language: fallback, hasText: null);
   try {
+    final availability = await ref.watch(documentResourcesProvider(documentResourceKey(key.$1, doc)).future);
+    if (!ref.mounted || availability != DocumentResourceAvailability.ready) return (language: fallback, hasText: null);
     var text = await MMPdfEngine.pageText(recognized?.path ?? path, 1);
     var hasText = recognized?.textPages.isNotEmpty ?? (text?.trim().isNotEmpty == true);
     // A cover can be an image even when the remaining document has text.

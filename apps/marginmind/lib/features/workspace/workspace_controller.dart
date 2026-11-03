@@ -2385,6 +2385,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     );
   });
 
+  Future<void> recolorMarginNote(String id, int colorIndex) => _update((c) {
+    final current = c.marginNotes.where((n) => n.id == id).firstOrNull;
+    return current == null ? c : _editor.upsertMarginNote(c, current.copyWith(colorIndex: colorIndex));
+  });
+
   Future<void> deleteMarginNote(String id) => _update((c) => _editor.removeMarginNote(c, id));
 
   Future<String?> attachMarginNote(String id) async {
