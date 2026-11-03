@@ -44,8 +44,15 @@ extension _FileLibraryReading on FileLibraryStore {
     return ReadingContinuations(enabled: true, editing: _isEditing(id), items: items, problems: status.problems);
   }
 
-  Future<bool> _readingAvailable(String id, Document doc) =>
-      File(_resolvePath(id, doc.contentManifest ?? doc.fileName)).exists();
+  Future<bool> _readingAvailable(String id, Document doc) async {
+    final group = 'document/${doc.id}/${readingDocumentVersion(doc)}';
+    if (_require(id).resources?.groups.containsKey(group) ?? false) {
+      return (await syncResources()).any(
+        (r) => r.studySetId == id && r.group == group && r.availability == SyncResourceAvailability.available,
+      );
+    }
+    return File(_resolvePath(id, doc.contentManifest ?? doc.fileName)).exists();
+  }
 
   Future<ReadingPosition> _prepareReadingContinuation(
     String id,

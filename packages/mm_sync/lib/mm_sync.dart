@@ -19,3 +19,5 @@ export 'src/translation_register.dart';
 export 'src/transport.dart';
 export 'src/webdav_transport.dart';
 export 'src/icloud_transport.dart';
+
+export 'src/resources.dart';

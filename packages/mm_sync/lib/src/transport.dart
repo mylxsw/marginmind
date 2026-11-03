@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'commit.dart';
 
 /// Identity contains no password/token. A target is immutable for a run.
@@ -62,7 +64,7 @@ abstract interface class SyncObjectTransport {
 
 const syncObjectLimit = 16 * 1024 * 1024;
 void checkSyncObjectKey(String key) {
-  if (key != 'library.json' && !RegExp(r'^commits/[a-f0-9]{64}\.json$').hasMatch(key)) {
+  if (key != 'library.json' && !RegExp(r'^(commits/[a-f0-9]{64}\.json|blobs/[a-f0-9]{64}\.bin)$').hasMatch(key)) {
     throw const SyncTransportException(SyncTransportProblem.invalidResponse);
   }
 }
@@ -91,3 +93,17 @@ void validateSyncLibrary(List<int> bytes, String id) {
 /// Legacy aggregate scopes remain local migration inputs. Do not export them.
 bool isSyncWireScope(String scope) =>
     {'sets', 'reviews', 'folders', 'reading', 'words', 'translated'}.contains(scope.split('/').first);
+
+void checkSyncObjectData(String key, List<int> bytes) {
+  checkSyncObjectKey(key);
+  checkSyncObjectSize(bytes);
+  if (key.startsWith('blobs/') && sha256.convert(bytes).toString() != key.substring(6, 70)) {
+    throw const SyncTransportException(SyncTransportProblem.invalidResponse);
+  }
+}
+
+bool sameSyncStoredObject(String key, List<int> a, List<int> b) {
+  checkSyncObjectData(key, a);
+  checkSyncObjectData(key, b);
+  return key.startsWith('blobs/') ? a.length == b.length : sameSyncObject(a, b);
+}

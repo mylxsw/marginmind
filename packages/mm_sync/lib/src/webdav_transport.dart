@@ -97,7 +97,7 @@ class WebDavSyncTransport implements SyncObjectTransport {
 
   @override
   Future<void> prepare() async {
-    for (final uri in [directory.resolve('foliarc-v2/'), _root, _root.resolve('commits/')]) {
+    for (final uri in [directory.resolve('foliarc-v2/'), _root, _root.resolve('commits/'), _root.resolve('blobs/')]) {
       final r = await _request('MKCOL', uri);
       if (r.$1 != 201 && r.$1 != 405) throw const SyncTransportException(SyncTransportProblem.invalidResponse);
     }
@@ -109,28 +109,34 @@ class WebDavSyncTransport implements SyncObjectTransport {
     final r = await _request('GET', _root.resolve(key));
     if (r.$1 == 404) return null;
     if (r.$1 != 200) throw const SyncTransportException(SyncTransportProblem.invalidResponse);
+    checkSyncObjectData(key, r.$2);
     return r.$2;
   }
 
   @override
   Future<SyncDelivery> create(String key, List<int> value) async {
     checkSyncObjectKey(key);
-    checkSyncObjectSize(value);
+    checkSyncObjectData(key, value);
     final bytes = List<int>.unmodifiable(value);
     final existing = await read(key);
     if (existing != null) {
-      if (!sameSyncObject(existing, bytes)) throw const SyncTransportException(SyncTransportProblem.collision);
+      if (!sameSyncStoredObject(key, existing, bytes)) {
+        throw const SyncTransportException(SyncTransportProblem.collision);
+      }
       return SyncDelivery.confirmed;
     }
     final r = await _request(
       'PUT',
       _root.resolve(key),
-      headers: {'If-None-Match': '*', 'Content-Type': 'application/json'},
+      headers: {
+        'If-None-Match': '*',
+        'Content-Type': key.startsWith('blobs/') ? 'application/octet-stream' : 'application/json',
+      },
       bytes: bytes,
     );
     if (![200, 201, 204, 412].contains(r.$1)) throw const SyncTransportException(SyncTransportProblem.invalidResponse);
     final stored = await read(key);
-    if (stored == null || !sameSyncObject(stored, bytes)) {
+    if (stored == null || !sameSyncStoredObject(key, stored, bytes)) {
       throw const SyncTransportException(SyncTransportProblem.collision);
     }
     return SyncDelivery.confirmed;

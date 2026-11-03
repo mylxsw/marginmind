@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_data/mm_data.dart';
 
 import '../shared/l10n.dart';
 import 'settings_window.dart';
@@ -136,6 +137,30 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
                 if (result.staged > 0) Text('${l.syncSettingsStaged}: ${result.staged}'),
               ],
               const SizedBox(height: 20),
+              Text(l.syncResourcesTitle, style: context.mmText.headline),
+              Text(l.syncResourcesHint, style: context.mmText.callout),
+              MMButton(
+                key: const ValueKey('sync-resources-refresh'),
+                label: l.syncSettingsRetry,
+                onPressed: enabled ? service.refreshResources : null,
+              ),
+              for (final resource in service.resources) ...[
+                const SizedBox(height: 10),
+                Text(resource.title),
+                Text(switch (resource.availability) {
+                  SyncResourceAvailability.available => l.syncResourceAvailable,
+                  SyncResourceAvailability.missing => l.syncResourceMissing,
+                  SyncResourceAvailability.changed => l.syncResourceChanged,
+                  SyncResourceAvailability.unverified => l.syncResourceUnverified,
+                }),
+                if (resource.availability == SyncResourceAvailability.missing)
+                  MMButton(
+                    key: ValueKey('sync-download-${resource.group}'),
+                    label: l.syncResourceDownload,
+                    onPressed: enabled && service.target != null ? () => service.downloadResource(resource) : null,
+                  ),
+              ],
+              const SizedBox(height: 20),
               Text(l.syncSettingsConnectHint),
               if (service.canStoreSecrets) ...[
                 _input('sync-directory', l.syncSettingsDirectory, _directory, enabled),
@@ -171,6 +196,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   }
 
   String _failure(AppLocalizations l, SyncSettingsFailure failure) => switch (failure) {
+    SyncSettingsFailure.resources => l.syncResourceChanged,
     SyncSettingsFailure.invalidInput => l.syncSettingsInvalid,
     SyncSettingsFailure.incompleteLibrary => l.syncSettingsRepair,
     SyncSettingsFailure.missingLibrary => l.syncSettingsMissing,

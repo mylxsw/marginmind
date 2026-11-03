@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_data/src/library_browser_io.dart';
+import 'package:mm_data/src/resource_cache.dart';
 import 'package:mm_sync/mm_sync.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
@@ -26,6 +27,43 @@ void main() {
     await store.dispose();
     BrowserFiles.close();
     web.window.indexedDB.deleteDatabase(database);
+  });
+
+  test('resource manifest and chunk cache survive IndexedDB restart and restore on demand', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final id = (await store.create(const NewStudySet(title: 'Files', colorIndex: 0))).id;
+    await store.importDocumentPackage(
+      id,
+      DocumentPackage(
+        document: Document(
+          id: 'doc',
+          title: 'PDF',
+          fileName: 'documents/file.pdf',
+          pageCount: 1,
+          importedAt: DateTime.utc(2026),
+        ),
+        files: {
+          'documents/file.pdf': [0, 255, 128],
+        },
+      ),
+    );
+    await store.prepareSyncResources();
+    expect((await store.syncResources()).single.availability, SyncResourceAvailability.available);
+    final snapshot = (await ledger.snapshots())['sets/$id']!;
+    final manifest = SyncResources.fromJson((snapshot.commit.payload['resources'] as Map).cast<String, Object?>());
+    final descriptor = manifest.groups.values.single.values.single;
+    final path = '${store.root.path}/sets/$id.mmset/documents/file.pdf';
+    await File(path).delete();
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.syncResources()).single.availability, SyncResourceAvailability.missing);
+    await ResourceCache(store.root).materialize(path, descriptor, () async {});
+    expect((await store.syncResources()).single.availability, SyncResourceAvailability.available);
+    expect(await store.readDocumentFile(id, 'documents/file.pdf'), [0, 255, 128]);
   });
 
   test('remote device reading survives browser restart without changing local progress', () async {

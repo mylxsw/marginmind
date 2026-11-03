@@ -10,6 +10,8 @@ import 'reader_page_field.dart';
 import '../reflow_session.dart';
 import '../../../shared/document_icon.dart';
 import '../document_reader.dart';
+import '../document_resources.dart';
+import '../../../settings/settings_window.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1429,6 +1431,34 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     VoidCallback onDismiss, {
     int side = 0,
   }) {
+    if (ref.watch(contentRepositoryProvider) is DocumentResourceRepository) {
+      final availability = ref.watch(
+        documentResourcesProvider((
+          widget.studySetId,
+          doc.id,
+          doc.revision,
+          doc.fileName,
+          doc.contentManifest,
+          doc.origin?.snapshotFile,
+        )),
+      );
+      if (availability.isLoading) return const Center(child: CircularProgressIndicator());
+      if (availability.value != DocumentResourceAvailability.ready) {
+        return MMEmptyState(
+          icon: documentIcon(doc),
+          title: doc.title,
+          message: availability.value == DocumentResourceAvailability.missing
+              ? context.l10n.syncResourceMissing
+              : context.l10n.syncResourceChanged,
+          actions: [
+            MMButton(
+              label: context.l10n.syncSettingsTitle,
+              onPressed: () => showSettings(context, tab: SettingsTab.sync),
+            ),
+          ],
+        );
+      }
+    }
     if (doc.contentManifest != null) {
       return ref.watch(documentReaderBuilderProvider)?.call(context, ref, widget.studySetId, doc) ??
           MMEmptyState(icon: documentIcon(doc), title: doc.title, message: '');

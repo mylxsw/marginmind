@@ -5,6 +5,8 @@ import 'package:mm_sync/mm_sync.dart';
 
 import 'file_sync_ledger.dart';
 import 'file_sync_receiver.dart';
+import 'file_library_store.dart';
+import 'resource_cache.dart';
 
 class SyncRunResult {
   const SyncRunResult({this.received = 0, this.confirmed = 0, this.staged = 0});
@@ -50,6 +52,46 @@ class FileSyncEngine {
     return future;
   }
 
+  Future<void> download(SyncResourceStatus selected) {
+    if (running) return Future.error(const SyncTransportException(SyncTransportProblem.unavailable));
+    final work = _download(selected).then((_) => const SyncRunResult());
+    _running = work;
+    return work
+        .whenComplete(() {
+          _running = null;
+        })
+        .then((_) {});
+  }
+
+  Future<void> _download(SyncResourceStatus selected) async {
+    final remote = _transport, generation = _generation;
+    final connection = await ledger.transportConnection();
+    if (remote == null || connection == null || connection.paused || connection.target.key != remote.target.key) {
+      throw const SyncTransportException(SyncTransportProblem.paused);
+    }
+    Future<void> check() async {
+      final active = await ledger.transportConnection();
+      if (generation != _generation ||
+          active == null ||
+          active.paused ||
+          active.revision != connection.revision ||
+          active.target.key != remote.target.key) {
+        throw const SyncTransportException(SyncTransportProblem.paused);
+      }
+    }
+
+    await receiver.validateLedger(ledger);
+    if ((await ledger.history()).values.any((c) => c.protocol != syncProtocolVersion)) {
+      throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
+    }
+    await check();
+    final manifest = await remote.read('library.json');
+    await check();
+    if (manifest == null) throw const SyncTransportException(SyncTransportProblem.unavailable);
+    validateSyncLibrary(manifest, ledger.libraryId);
+    await receiver.library.downloadSyncResource(selected, remote, check);
+  }
+
   Future<SyncRunResult> _run() async {
     final remote = _transport, generation = _generation;
     final connection = await ledger.transportConnection();
@@ -74,6 +116,7 @@ class FileSyncEngine {
     if (history.values.any((c) => c.protocol != syncProtocolVersion)) {
       throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
     }
+    await receiver.library.prepareSyncResources();
     await check();
     await remote.prepare();
     await check();
@@ -150,6 +193,7 @@ class FileSyncEngine {
     var confirmed = 0, staged = manifestDelivery == SyncDelivery.staged ? 1 : 0;
     // Topological publication also follows cross-domain requires dependencies.
     final remaining = Map<String, SyncCommit>.of(candidates);
+    final chunkDeliveries = <String, SyncDelivery>{};
     while (remaining.isNotEmpty) {
       final ready =
           remaining.values
@@ -164,9 +208,32 @@ class FileSyncEngine {
           // A draft began while this cycle awaited IO. Dependants wait too.
           return SyncRunResult(received: incoming.length, confirmed: confirmed, staged: staged);
         }
+        var resourcesConfirmed = true;
+        if ((c.scope.startsWith('sets/') ? c.payload['resources'] : null) case final Map resources) {
+          final manifest = SyncResources.fromJson(resources.cast<String, Object?>());
+          final cache = ResourceCache(receiver.library.root);
+          for (final hash in manifest.groups.values.expand((g) => g.values).expand((f) => f.chunks).toSet()) {
+            await check();
+            if (chunkDeliveries[hash] case final cached?) {
+              resourcesConfirmed = resourcesConfirmed && cached == SyncDelivery.confirmed;
+              continue;
+            }
+            final key = 'blobs/$hash.bin';
+            // A merge can refer to another author's resources. Verify already
+            // uploaded chunks, but never invent or silently omit missing bytes.
+            final bytes = await cache.readChunk(hash) ?? await remote.read(key);
+            await check();
+            if (bytes == null) throw const SyncTransportException(SyncTransportProblem.unavailable);
+            checkSyncObjectData(key, bytes);
+            final delivered = await remote.create(key, bytes);
+            await check();
+            chunkDeliveries[hash] = delivered;
+            resourcesConfirmed = resourcesConfirmed && delivered == SyncDelivery.confirmed;
+          }
+        }
         final delivery = await remote.create('commits/${c.id}.json', utf8.encode(jsonEncode(c.toJson())));
         await check();
-        if (delivery == SyncDelivery.confirmed && manifestDelivery == SyncDelivery.confirmed) {
+        if (resourcesConfirmed && delivery == SyncDelivery.confirmed && manifestDelivery == SyncDelivery.confirmed) {
           await ledger.acknowledge([c.id], target: connection.target.key, connectionRevision: connection.revision);
           confirmed++;
         } else {

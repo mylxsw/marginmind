@@ -70,6 +70,10 @@ class _Settings extends SyncSettingsController {
   @override
   Future<void> syncOnce() => action('sync');
   @override
+  Future<void> downloadResource(SyncResourceStatus resource) => action(resource);
+  @override
+  Future<void> refreshResources() => action('resources');
+  @override
   Future<void> pause() => action('pause');
   @override
   Future<void> initialize() => action('initialize');
@@ -191,8 +195,40 @@ void main() {
     expect(find.textContaining('本机名称: My Mac'), findsOneWidget);
     await tap(tester, 'sync-connect');
     expect(tester.takeException(), isNull);
-    expect(find.textContaining('文档文件和图片暂不传输'), findsOneWidget);
+    expect(find.textContaining('文件按需下载'), findsOneWidget);
     expect(find.text('private-device'), findsNothing);
+  });
+
+  testWidgets('resource availability distinguishes missing and changed files and guards downloads', (tester) async {
+    active();
+    final missing = SyncResourceStatus(
+      'set',
+      'document/missing',
+      'Missing',
+      'rev',
+      SyncResourceAvailability.missing,
+      100,
+    );
+    service.resources = [
+      missing,
+      const SyncResourceStatus('set', 'changed', 'Changed', 'rev', SyncResourceAvailability.changed, 10),
+      const SyncResourceStatus('set', 'ready', 'Ready', 'rev', SyncResourceAvailability.available, 10),
+      const SyncResourceStatus('set', 'unknown', 'Unknown', 'rev', SyncResourceAvailability.unverified, 0),
+    ];
+    await pump(tester, width: 375);
+    expect(find.text('Not fully downloaded'), findsOneWidget);
+    expect(find.text('Verified and available'), findsOneWidget);
+    await tap(tester, 'sync-download-document/missing');
+    expect(service.actions.last, missing);
+    service.busy = true;
+    service.publish();
+    await tester.pumpAndSettle();
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('sync-download-document/missing'))).onPressed, isNull);
+    service.busy = false;
+    service.publish();
+    await tester.pumpAndSettle();
+    await tap(tester, 'sync-resources-refresh');
+    expect(service.actions.last, 'resources');
   });
 
   testWidgets('unavailable providers and platforms do not offer activation', (tester) async {

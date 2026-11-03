@@ -15,6 +15,7 @@ enum SyncSettingsFailure {
   storage,
   invalidInput,
   incompleteLibrary,
+  resources,
   missingLibrary,
   unsupported,
   authentication,
@@ -57,6 +58,7 @@ class SyncSettingsController extends ChangeNotifier {
   bool _disposed = false;
   SyncSettingsFailure? failure;
   SyncRunResult? result;
+  List<SyncResourceStatus> resources = const [];
 
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -85,7 +87,7 @@ class SyncSettingsController extends ChangeNotifier {
         _ => SyncSettingsFailure.service,
       };
     } on FormatException {
-      failure = SyncSettingsFailure.invalidInput;
+      failure ??= SyncSettingsFailure.invalidInput;
     } on ArgumentError {
       failure = SyncSettingsFailure.invalidInput;
     } catch (_) {
@@ -110,6 +112,7 @@ class SyncSettingsController extends ChangeNotifier {
       await _engine!.pause();
       target = (await ledger.transportConnection())?.target;
       await _refresh();
+      resources = await library.syncResources();
     }
     _check(generation);
     initialized = true;
@@ -278,10 +281,46 @@ class SyncSettingsController extends ChangeNotifier {
       final completed = await _engine!.run();
       _check(generation);
       result = completed;
+      resources = await library.syncResources();
+    } on FormatException {
+      failure = SyncSettingsFailure.resources;
+      rethrow;
     } finally {
       await _engine!.pause();
       paused = true;
       await _refresh();
+      resources = await library.syncResources();
+    }
+  });
+
+  Future<void> refreshResources() => _action((generation) async {
+    final latest = await library.syncResources();
+    _check(generation);
+    resources = latest;
+  });
+
+  Future<void> downloadResource(SyncResourceStatus resource) => _action((generation) async {
+    await _ready();
+    final selected = target;
+    if (selected == null) throw const SyncTransportException(SyncTransportProblem.paused);
+    try {
+      final secret = selected.service == 'webdav' ? await secrets.read('sync-${selected.key}') : null;
+      final adapter = await _adapter(selected, secret);
+      _check(generation);
+      await _engine!.bind(adapter);
+      _check(generation);
+      await _engine!.resume();
+      paused = false;
+      _notify();
+      await _engine!.download(resource);
+      _check(generation);
+    } on FormatException {
+      failure = SyncSettingsFailure.resources;
+      rethrow;
+    } finally {
+      await _engine!.pause();
+      paused = true;
+      resources = await library.syncResources();
     }
   });
 

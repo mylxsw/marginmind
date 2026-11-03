@@ -43,6 +43,8 @@ class ICloudSyncTransport implements SyncObjectTransport {
     await _check();
     await port.prepare('$_root/commits', target.account);
     await _check();
+    await port.prepare('$_root/blobs', target.account);
+    await _check();
   }
 
   @override
@@ -51,7 +53,7 @@ class ICloudSyncTransport implements SyncObjectTransport {
     await _check();
     final bytes = await port.read('$_root/$key', target.account);
     await _check();
-    if (bytes != null) checkSyncObjectSize(bytes);
+    if (bytes != null) checkSyncObjectData(key, bytes);
     return bytes;
   }
 
@@ -72,13 +74,13 @@ class ICloudSyncTransport implements SyncObjectTransport {
   @override
   Future<SyncDelivery> create(String key, List<int> value) async {
     checkSyncObjectKey(key);
-    checkSyncObjectSize(value);
+    checkSyncObjectData(key, value);
     await _check();
     final bytes = List<int>.unmodifiable(value), path = '$_root/$key';
     await port.create(path, bytes, target.account);
     await _check();
     final stored = await read(key);
-    if (stored == null || !sameSyncObject(stored, bytes)) {
+    if (stored == null || !sameSyncStoredObject(key, stored, bytes)) {
       throw const SyncTransportException(SyncTransportProblem.collision);
     }
     final uploaded = await port.uploaded(path, stored, target.account);

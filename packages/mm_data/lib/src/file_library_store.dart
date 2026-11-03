@@ -12,12 +12,14 @@ import 'format_migration.dart';
 import 'file_translation_store.dart';
 import 'file_sync_ledger.dart';
 import 'content_sync_review.dart';
+import 'resource_cache.dart';
 
 part 'file_library_sync_status.dart';
 part 'file_library_reviews.dart';
 part 'file_library_folders.dart';
 part 'file_library_reading.dart';
 part 'file_library_translations.dart';
+part 'file_library_resources.dart';
 
 /// Stores the library on disk:
 ///
@@ -41,6 +43,7 @@ class FileLibraryStore
         StudySetRepository,
         StudySetContentRepository,
         DocumentRepository,
+        DocumentResourceRepository,
         ResearchSessionRepository,
         ResearchSnapshotRepository {
   FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator, FileSyncLedger? sync})
@@ -66,6 +69,10 @@ class FileLibraryStore
   static String _scope(String id) => 'sets/$id';
 
   final _syncStatusChanges = StreamController<void>.broadcast();
+  final _resourceVersions = <String, int>{};
+  @override
+  Stream<DocumentResourceAvailability> watchDocumentResources(String studySetId, String documentId) =>
+      _watchDocumentResources(studySetId, documentId);
 
   @override
   Future<ReadingContinuations> readingContinuations(String id) => _readingContinuations(id);
@@ -475,7 +482,7 @@ class FileLibraryStore
   }
 
   _SetRecord _materializeSync(String id, Map<String, Object?> payload, Map<String, Object?>? current) {
-    const fields = {'format', 'id', 'title', 'colorIndex', 'folderId', 'starred', 'createdAt', 'content'};
+    const fields = {'format', 'id', 'title', 'colorIndex', 'folderId', 'starred', 'createdAt', 'content', 'resources'};
     if (payload['format'] != currentStudySetFormat ||
         payload['id'] != id ||
         payload.keys.any((k) => !fields.contains(k))) {
@@ -498,6 +505,11 @@ class FileLibraryStore
         for (final version in source.versions) version.snapshotFile,
     ]) {
       _validateResourcePath(path);
+    }
+    if (payload.containsKey('resources')) {
+      final resources = payload['resources'];
+      if (resources is! Map) throw const FormatException('Invalid resource manifest');
+      SyncResources.fromJson(resources.cast<String, Object?>()).validate(decoded);
     }
     final local = current == null ? StudySetContent.empty : _SetRecord.fromJson(current).content;
     return _SetRecord.fromJson({
@@ -925,6 +937,15 @@ class FileLibraryStore
     await _ensureLoaded();
     _require(studySetId);
     final bytes = await File(_resolvePath(studySetId, fileName)).readAsBytes();
+    final descriptor = _require(studySetId).resources?.groups.values
+        .expand((g) => g.entries)
+        .where((e) => e.key == fileName)
+        .firstOrNull
+        ?.value;
+    if (descriptor != null &&
+        (bytes.length != descriptor.length || sha256.convert(bytes).toString() != descriptor.hash)) {
+      throw const FormatException('Document resource differs from sync manifest');
+    }
     final hash = RegExp(r'/([0-9a-f]{64})\.[a-z0-9]+$').firstMatch(fileName)?.group(1);
     if (hash != null && sha256.convert(bytes).toString() != hash) {
       throw const FormatException('Document resource hash mismatch');
@@ -1238,8 +1259,10 @@ class _SetRecord {
     required this.createdAt,
     required this.lastOpenedAt,
     required this.content,
+    this.resources,
   });
 
+  final SyncResources? resources;
   final String id;
   final String title;
   final int colorIndex;
@@ -1257,6 +1280,7 @@ class _SetRecord {
     bool? starred,
     DateTime? lastOpenedAt,
     StudySetContent? content,
+    SyncResources? resources,
   }) => _SetRecord(
     id: id,
     title: title ?? this.title,
@@ -1266,6 +1290,7 @@ class _SetRecord {
     createdAt: createdAt,
     lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,
     content: content ?? this.content,
+    resources: (resources ?? this.resources)?.retain(content ?? this.content),
   );
 
   StudySet summary(DateTime now) {
@@ -1308,9 +1333,11 @@ class _SetRecord {
     'createdAt': createdAt.toIso8601String(),
     'lastOpenedAt': lastOpenedAt.toIso8601String(),
     'content': content.toJson(),
+    if (resources != null) 'resources': resources!.retain(content).toJson(),
   };
 
   factory _SetRecord.fromJson(Map<String, Object?> j) => _SetRecord(
+    resources: j['resources'] is Map ? SyncResources.fromJson((j['resources'] as Map).cast<String, Object?>()) : null,
     id: j['id'] as String,
     title: j['title'] as String,
     colorIndex: j['colorIndex'] as int,

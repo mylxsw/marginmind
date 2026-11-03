@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mm_sync/mm_sync.dart';
@@ -64,6 +66,11 @@ void main() {
     expect(await remote.create('commits/$objectId.json', utf8.encode('{"v":1}')), SyncDelivery.confirmed);
     expect(calls.where((c) => c.method == 'PUT'), hasLength(1));
     expect(await remote.listCommits(), [objectId]);
+    final binary = [0, 255, 128], key = 'blobs/${sha256.convert([0, 255, 128])}.bin';
+    expect(await remote.create(key, binary), SyncDelivery.confirmed);
+    expect(calls.lastWhere((c) => c.method == 'PUT').headers['content-type'], 'application/octet-stream');
+    expect(await remote.read(key), binary);
+    await expectLater(remote.create(key, [0]), problem(SyncTransportProblem.invalidResponse));
     await expectLater(
       remote.create('commits/$objectId.json', utf8.encode('{"v":2}')),
       problem(SyncTransportProblem.collision),
@@ -174,6 +181,10 @@ void main() {
     expect(await remote.create('library.json', syncLibraryManifest('library')), SyncDelivery.confirmed);
     await remote.create('commits/$objectId.json', utf8.encode('{}'));
     expect(await remote.listCommits(), [objectId]);
+    final binary = [0, 255, 128], key = 'blobs/${sha256.convert([0, 255, 128])}.bin';
+    expect(await remote.create(key, binary), SyncDelivery.confirmed);
+    expect(await remote.read(key), binary);
+    await expectLater(remote.create(key, [0]), problem(SyncTransportProblem.invalidResponse));
     await expectLater(
       remote.create('library.json', syncLibraryManifest('wrong')),
       problem(SyncTransportProblem.collision),
@@ -210,5 +221,5 @@ class Drive implements ICloudDrivePort {
 
   @override
   Future<bool> uploaded(String p, List<int> expected, String a) async =>
-      confirmed && sameSyncObject(objects[p]!, expected);
+      confirmed && sameSyncStoredObject(p.substring(p.indexOf('/', 'foliarc-v2/'.length) + 1), objects[p]!, expected);
 }

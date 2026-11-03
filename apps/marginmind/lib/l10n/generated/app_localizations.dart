@@ -11471,7 +11471,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncSettingsScope.
   ///
   /// In en, this message translates to:
-  /// **'Sync text, study history and organization manually. Document files and images are not transferred yet. Keep the originals on each device.'**
+  /// **'Sync content and its referenced files with your chosen service. Downloads are on demand; this device stays paused between manual operations.'**
   String get syncSettingsScope;
 
   /// No description provided for @syncSettingsLocal.
@@ -11665,6 +11665,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reload status'**
   String get syncSettingsRetry;
+
+  /// No description provided for @syncResourcesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Files on this device'**
+  String get syncResourcesTitle;
+
+  /// No description provided for @syncResourcesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A received document can be downloaded when needed. Local files that differ from their saved fingerprint are preserved.'**
+  String get syncResourcesHint;
+
+  /// No description provided for @syncResourceAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified and available'**
+  String get syncResourceAvailable;
+
+  /// No description provided for @syncResourceMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Not fully downloaded'**
+  String get syncResourceMissing;
+
+  /// No description provided for @syncResourceChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Local file differs or cannot be verified. It will not be overwritten.'**
+  String get syncResourceChanged;
+
+  /// No description provided for @syncResourceUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'No verified file list yet. Sync from the device that owns the original files.'**
+  String get syncResourceUnverified;
+
+  /// No description provided for @syncResourceDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download files'**
+  String get syncResourceDownload;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

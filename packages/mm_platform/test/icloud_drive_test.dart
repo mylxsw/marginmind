@@ -33,6 +33,10 @@ void main() {
     expect(drive.containerIdentifier, container);
     expect(await drive.accountIdentity(), 'opaque-local-account');
     await drive.prepare(directory, 'account');
+    final blobDirectory = directory.replaceAll('/commits', '/blobs');
+    await drive.prepare(blobDirectory, 'account');
+    await drive.create('$blobDirectory/${'c' * 64}.bin', [0, 255, 128], 'account');
+    expect(calls.last.arguments['bytes'], [0, 255, 128]);
     expect(await drive.list(directory, 'account'), ['${'b' * 64}.json']);
     await drive.create(path, [123, 125], 'account');
     expect(calls.last.arguments['bytes'], isA<Uint8List>());

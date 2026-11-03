@@ -3322,7 +3322,7 @@
     }
   },
   "syncSettingsTitle": "Sync",
-  "syncSettingsScope": "Sync text, study history and organization manually. Document files and images are not transferred yet. Keep the originals on each device.",
+  "syncSettingsScope": "Sync content and its referenced files with your chosen service. Downloads are on demand; this device stays paused between manual operations.",
   "syncSettingsLocal": "This library is stored on this device. Preparing sync preserves its existing content.",
   "syncSettingsUnavailable": "Sync setup is unavailable on this platform or this build.",
   "syncSettingsNew": "Create a shared library",
@@ -3354,5 +3354,12 @@
   "syncSettingsAccountChanged": "The account changed. The previous queue is paused. Reconnect explicitly to continue.",
   "syncSettingsLegacy": "This library has earlier sync history that needs migration before it can be transferred. Local history is preserved.",
   "syncSettingsHistory": "This target is missing required history. The queue is preserved; use the original service until migration is available.",
-  "syncSettingsRetry": "Reload status"
+  "syncSettingsRetry": "Reload status",
+  "syncResourcesTitle": "Files on this device",
+  "syncResourcesHint": "A received document can be downloaded when needed. Local files that differ from their saved fingerprint are preserved.",
+  "syncResourceAvailable": "Verified and available",
+  "syncResourceMissing": "Not fully downloaded",
+  "syncResourceChanged": "Local file differs or cannot be verified. It will not be overwritten.",
+  "syncResourceUnverified": "No verified file list yet. Sync from the device that owns the original files.",
+  "syncResourceDownload": "Download files"
 }

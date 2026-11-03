@@ -6563,7 +6563,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncSettingsScope =>
-      'Sync text, study history and organization manually. Document files and images are not transferred yet. Keep the originals on each device.';
+      'Sync content and its referenced files with your chosen service. Downloads are on demand; this device stays paused between manual operations.';
 
   @override
   String get syncSettingsLocal =>
@@ -6671,4 +6671,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncSettingsRetry => 'Reload status';
+
+  @override
+  String get syncResourcesTitle => 'Files on this device';
+
+  @override
+  String get syncResourcesHint =>
+      'A received document can be downloaded when needed. Local files that differ from their saved fingerprint are preserved.';
+
+  @override
+  String get syncResourceAvailable => 'Verified and available';
+
+  @override
+  String get syncResourceMissing => 'Not fully downloaded';
+
+  @override
+  String get syncResourceChanged => 'Local file differs or cannot be verified. It will not be overwritten.';
+
+  @override
+  String get syncResourceUnverified => 'No verified file list yet. Sync from the device that owns the original files.';
+
+  @override
+  String get syncResourceDownload => 'Download files';
 }

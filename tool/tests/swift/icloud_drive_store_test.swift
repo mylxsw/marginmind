@@ -36,6 +36,14 @@ struct ICloudDriveStoreTest {
     try store.prepare(directory, expected: "first")
     try verify(try store.read(path, expected: "first") == nil)
     try verify(try store.uploaded(path, bytes: Data(), expected: "first") == false)
+    let blob = base + "/blobs/" + id + ".bin"
+    try store.prepare(base + "/blobs", expected: "first")
+    let binary = Data([0, 255, 128, 1])
+    try store.create(blob, bytes: binary, expected: "first")
+    try verify(try store.read(blob, expected: "first") == binary)
+    try verify(try store.uploaded(blob, bytes: binary, expected: "first") == false)
+    fails(.invalidResponse) { _ = try store.read(base + "/blobs/../library.json", expected: "first") }
+    fails(.invalidResponse) { _ = try store.read(base + "/blobs/" + id + ".json", expected: "first") }
     let bytes = Data("{}".utf8)
     try store.create(path, bytes: bytes, expected: "first")
     let localState = try ICloudDriveStore.fileState(root.appendingPathComponent(path))

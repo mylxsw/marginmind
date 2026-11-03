@@ -69,3 +69,11 @@ abstract interface class DocumentRepository {
   });
   Future<List<int>> readDocumentFile(String studySetId, String fileName);
 }
+
+enum DocumentResourceAvailability { ready, missing, changed }
+
+/// Optional port: local/mock repositories keep their existing reader behavior.
+/// A ready value verifies bytes when a synchronized manifest is present.
+abstract interface class DocumentResourceRepository {
+  Stream<DocumentResourceAvailability> watchDocumentResources(String studySetId, String documentId);
+}

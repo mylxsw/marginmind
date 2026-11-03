@@ -6300,7 +6300,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncSettingsTitle => '同步';
 
   @override
-  String get syncSettingsScope => '手动同步文字、学习记录和资料库组织。文档文件和图片暂不传输，请在各设备保留原文件。';
+  String get syncSettingsScope => '将内容和明确引用的文件同步到你选择的服务。文件按需下载，手动操作之间保持暂停。';
 
   @override
   String get syncSettingsLocal => '此资料库保存在本机。准备同步会保留已有内容。';
@@ -6397,4 +6397,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncSettingsRetry => '重新读取状态';
+
+  @override
+  String get syncResourcesTitle => '本机文件';
+
+  @override
+  String get syncResourcesHint => '收到文档后可按需下载。本机文件与已保存指纹不符时会保留，不会自动覆盖。';
+
+  @override
+  String get syncResourceAvailable => '已校验，可使用';
+
+  @override
+  String get syncResourceMissing => '尚未完整下载';
+
+  @override
+  String get syncResourceChanged => '本机文件不符或无法校验，不会覆盖。';
+
+  @override
+  String get syncResourceUnverified => '尚无已校验的文件清单，请从持有原文件的设备同步。';
+
+  @override
+  String get syncResourceDownload => '下载文件';
 }

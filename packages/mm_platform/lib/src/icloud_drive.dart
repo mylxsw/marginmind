@@ -62,8 +62,8 @@ class MMICloudDrive implements ICloudDrivePort {
 
   static bool _validPath(String path, {required bool directory}) => RegExp(
     directory
-        ? r'^foliarc-v2/[a-f0-9]{64}/commits$'
-        : r'^foliarc-v2/[a-f0-9]{64}/(library\.json|commits/[a-f0-9]{64}\.json)$',
+        ? r'^foliarc-v2/[a-f0-9]{64}/(commits|blobs)$'
+        : r'^foliarc-v2/[a-f0-9]{64}/(library\.json|commits/[a-f0-9]{64}\.json|blobs/[a-f0-9]{64}\.bin)$',
   ).hasMatch(path);
 
   @override

@@ -139,6 +139,41 @@ void main() {
     expect((await ledger.transportConnection())!.paused, isTrue);
   });
 
+  test('explicit resource download refreshes availability and pauses even on failure', () async {
+    final id = (await library.watchAll().first).single.id;
+    await library.importDocumentPackage(
+      id,
+      DocumentPackage(
+        document: Document(
+          id: 'doc',
+          title: 'Paper',
+          fileName: 'documents/paper.pdf',
+          pageCount: 1,
+          importedAt: DateTime.utc(2026),
+        ),
+        files: {
+          'documents/paper.pdf': [1, 2, 3],
+        },
+      ),
+    );
+    await connect();
+    await controller.syncOnce();
+    expect(controller.failure, isNull);
+    expect(controller.resources.single.availability, SyncResourceAvailability.available);
+    await File(library.resolveFile(id, 'documents/paper.pdf')).delete();
+    await controller.refreshResources();
+    expect(controller.resources.single.availability, SyncResourceAvailability.missing);
+    await controller.downloadResource(controller.resources.single);
+    expect(controller.failure, isNull);
+    expect(controller.resources.single.availability, SyncResourceAvailability.available);
+    expect((await ledger.transportConnection())!.paused, isTrue);
+    await library.update(id, (c) => c.copyWith(documents: []));
+    await controller.downloadResource(controller.resources.single);
+    expect(controller.failure, isNotNull);
+    expect(controller.resources, isEmpty);
+    expect((await ledger.transportConnection())!.paused, isTrue);
+  });
+
   test('restart retains binding but never resumes or reads secrets automatically', () async {
     await connect();
     await ledger.resumeTransport(controller.target!.key);

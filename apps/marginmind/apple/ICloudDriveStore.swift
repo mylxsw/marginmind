@@ -104,7 +104,7 @@ final class ICloudDriveStore {
   }
 
   static func valid(_ path: String, directory: Bool) -> Bool {
-    let suffix = directory ? "commits" : #"(library\.json|commits/[a-f0-9]{64}\.json)"#
+    let suffix = directory ? "(commits|blobs)" : #"(library\.json|commits/[a-f0-9]{64}\.json|blobs/[a-f0-9]{64}\.bin)"#
     return path.range(of: "\\Afoliarc-v2/[a-f0-9]{64}/" + suffix + "\\z", options: .regularExpression) != nil
   }
 
