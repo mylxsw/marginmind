@@ -17,6 +17,7 @@
 第二十七批增加原生端显式“检查历史复制 → 确认复制”流程，可把本机已接受的其他设备贡献及其依赖复制到新服务；普通同步仍只发送本机 outbox。
 第二十八批完成本机真实 HTTPS 故障测试及独立 WsgiDAV 服务的多仓库闭环，修复路径编码兼容和 TLS 错误转换；尚不是实际 iCloud 签名设备或所有 WebDAV 供应商验收。
 第二十九批补齐完整 macOS/iOS 工程构建和 Runner 测试，并对当前 main 重新分类应用全量失败，修复翻译启动/资源订阅、只读嵌套数据撤销、侧栏与设置布局回归，并补齐手机重做入口；完整应用仍有失败，真实 iCloud 多设备验收仍待条件。
+第三十批补齐 macOS Flutter 原生交互验收：实际阅读流程及真实双仓库的输入保护、冲突选择、安全撤销、设置与重启；真实 iCloud 条件清单见 `sync-real-device-acceptance.md`。
 已合入 main `0e4543c8` 的移动端界面及网页整理更新，保留双方本地化与同步入口。
 
 | 模块 | 已实现 |
@@ -1434,3 +1435,43 @@ workspace analyze 无问题；apps/packages 格式最终 1175 文件无变化，
 日志 `sync-app-*`；最终应用结果 `sync-app-complete.jsonl`、`sync-app-last-complete.jsonl`，
 最终构建 `sync-app-web-complete-build.log`、`sync-app-native-complete-result.json`。
 所有本轮进程和远端任务前台收齐；不等待外部 CI。
+
+### 第三十批：原生 Flutter 交互与真实设备验收条件
+
+在已有的任务隔离 Mac 克隆上运行两个实际 Flutter Runner 集成测试，均 **exit 0 / 通过**：
+
+- 既有 `integration_test/reflow_reader_test.dart`：导入文本、阅读、摘录、调整窗口、返回来源。
+- 新增 `integration_test/sync_native_test.dart`：使用两个独立临时目录、真实 `FileLibraryStore`、
+  `FileVocabularyStore` 与同设备共享 ledger，经 `FileSyncReceiver` 交换本机共享提交。
+  在实际工作区输入期间收到另一设备修改，键盘缓冲保持；保存并释放保护后，面板展示双方候选，
+  点击明确选择。旧撤销拒绝擦除该选择，后续独立本地编辑的撤销/重做保留另一设备新增内容。
+  实际设置页面执行设备改名与缓存检查，再重新打开磁盘仓库核对内容、候选状态与设备名称。
+
+共享场景放在 `test/support/sync_native_acceptance.dart`，普通 widget 与原生 runner 使用同一组断言。
+此处交换是同进程显式收件，不是网络或云确认；真实 HTTPS/WsgiDAV 传输证据仍见第二十八批。
+设置页使用真实控制器，但凭据和云端访问端口明确拒绝调用，只验证不需要账号的操作。
+没有使用真实用户资料；临时仓库在 finally 关闭和删除。
+
+等待以实际仓库状态和控件就绪为准：输入框关闭先于租约释放/重新合并，不能立刻断言候选；
+面板挂载先于状态加载，不能用背景页面同名文本判断已加载；内容通知可能先于历史操作收尾，
+重做前必须等待 `canRedo`。测试同时推进真实 I/O 与 widget 队列，所有等待有界。
+构造期间重复 provider 覆盖、过早观察状态等测试问题已修正；一次诊断运行手动取消，不计入通过结果。
+没有据此放宽生产校验、覆盖整包内容或修改领域算法。
+
+本机最终回归 **29 项通过**（新闭环 + sync_history / sync_edit_session / content_sync_sheet），
+新输出 `app/coverage/native-interaction-final`：内容同步面板 **139/143=97.20%**、
+状态 provider **5/5**、ContentInput **27/31=87.10%**。
+设置页/控制器仅执行本轮无账号路径，分别 **95/196、69/318**，不称完整设置覆盖超过 80%；
+本批没有生产代码修改，前批服务设置覆盖独立保留，不混合旧输出。
+workspace analyze 无问题，apps/packages **1178 文件格式无变化**，diff 检查通过。
+日志 `sync-native-*`，Mac 完整结果为 `sync-native-reflow-result.json` 与 `sync-native-ui-result.json`。
+
+Mac 日志有 `Failed to foreground app; open returned 1`：Runner 构建和自动化交互断言实际完成，
+不是人工操作或前台窗口截图验收。本批没有运行 iOS Flutter 交互用例；第二十九批 iOS 完整构建与
+11 项原生 XCTest 仍为此前证据。两个远端任务与本机进程都已前台收齐，没有常驻服务。
+
+`docs/sync-real-device-acceptance.md` 明确列出团队自有容器/签名、系统账号、两设备与合成资料条件，
+以及每项首期操作和预期结果，所有真实设备结果均标为待执行。
+真实 iCloud 跨设备可见与系统上传确认尚无证据；不因自动化通过把 issue 或 PR 标记为完整验收。
+本轮不增加无条件定时续跑：下一次真实云验收需要具备这些环境条件，并由用户在产品中配置账号。
+当前合入 main 的 63 项未闭环应用用例及其他已记录范围边界仍保留，不重新宣称完整 app/CI 全绿。

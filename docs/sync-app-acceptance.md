@@ -122,3 +122,12 @@
 - `inline_edit_test.dart`: review fixes: switching fields, menu commands, hidden map
 - `inline_edit_test.dart`: E-03 input methods Enter picks a candidate while pinyin is composing
 - `workspace_sidebar_test.dart`: footer add menu imports documents and creates maps from the review tab
+
+## 原生交互补充（第三十批）
+
+macOS 实际 Flutter Runner 的 reflow_reader 和 sync_native 两项集成测试通过。
+后者与普通 widget 共享真实文件双仓库场景，验证输入保护、界面选择冲突、安全撤销/重做、
+设备改名、缓存检查和磁盘重启。相关 widget 回归 29 项通过；未再运行完整应用套件，
+本页原始 63 项未闭环用例的分类没有因此改变。
+
+真实 iCloud 条件与待执行操作见 `sync-real-device-acceptance.md`。原生集成测试不是云端交付证明。
