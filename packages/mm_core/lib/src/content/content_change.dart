@@ -60,6 +60,31 @@ class ContentChange {
       }
       _set(json, change.path, change.after);
     }
+    // Modification time is provenance: restore it only when the whole note
+    // still matches the observed version, preserving later writers. organizedAt
+    // is different: it is the material-collection baseline and participates in
+    // the conditional delta just like authored content.
+    final touchedNotes = <(String, String)>{
+      for (final field in _changes)
+        if (field.path.length > 2 && {'studyNotes', 'researchNotes'}.contains(field.path.first))
+          (field.path[0], field.path[1]),
+    };
+    if (touchedNotes.isNotEmpty) {
+      final beforeDocument = contentDocument(before),
+          afterDocument = contentDocument(after),
+          observed = contentDocument(current);
+      for (final (collection, id) in touchedNotes) {
+        final previous = (beforeDocument[collection] as Map)[id];
+        final desired = (afterDocument[collection] as Map)[id];
+        final actual = (json[collection] as Map)[id];
+        if (previous is Map &&
+            desired is Map &&
+            actual is Map &&
+            contentValueEquals((observed[collection] as Map)[id], previous)) {
+          actual['updatedAt'] = desired['updatedAt'];
+        }
+      }
+    }
     late StudySetContent next;
     try {
       next = contentFromDocument(json, order: after, additionalOrder: current);
@@ -135,9 +160,7 @@ bool _matches(List<String> path, Object? actual, Object? expected) {
     return contentValueEquals(editable(actual), editable(expected));
   }
   if (path.length == 2 && {'studyNotes', 'researchNotes'}.contains(path.first) && actual is Map && expected is Map) {
-    Map<String, Object?> editable(Map value) => Map<String, Object?>.from(value)
-      ..remove('updatedAt')
-      ..remove('organizedAt');
+    Map<String, Object?> editable(Map value) => Map<String, Object?>.from(value)..remove('updatedAt');
     return contentValueEquals(editable(actual), editable(expected));
   }
   return contentValueEquals(actual, expected);
@@ -297,9 +320,7 @@ StudySetContent contentFromDocument(
 }
 
 void _diff(Object? before, Object? after, List<String> path, List<ContentFieldChange> changes) {
-  if (path.length == 3 &&
-      {'studyNotes', 'researchNotes'}.contains(path.first) &&
-      {'updatedAt', 'organizedAt'}.contains(path.last)) {
+  if (path.length == 3 && {'studyNotes', 'researchNotes'}.contains(path.first) && path.last == 'updatedAt') {
     return;
   }
   if (contentValueEquals(before, after)) return;

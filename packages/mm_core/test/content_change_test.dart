@@ -184,6 +184,24 @@ void main() {
     final added = ContentChange.between(StudySetContent.empty, base);
     final touched = base.copyWith(studyNotes: [note.copyWith(updatedAt: DateTime.utc(2026, 4))]);
     expect(added.reversed.apply(touched).studyNotes, isEmpty);
+    final inverse = ContentChange.between(base, edited).reversed;
+    expect(inverse.apply(edited).studyNotes.single.toJson(), note.toJson());
+    // Equal clock values do not prove that another block was not edited.
+    final equalClock = remote.copyWith(
+      studyNotes: [remote.studyNotes.single.copyWith(updatedAt: edited.studyNotes.single.updatedAt)],
+    );
+    expect(inverse.apply(equalClock).studyNotes.single.updatedAt, edited.studyNotes.single.updatedAt);
+    final organized = edited.copyWith(
+      studyNotes: [edited.studyNotes.single.copyWith(organizedAt: DateTime.utc(2026, 2))],
+    );
+    final organizedChange = ContentChange.between(base, organized);
+    expect(organizedChange.fields.map((f) => f.path), contains(equals(['studyNotes', 'n', 'organizedAt'])));
+    expect(organizedChange.reversed.apply(organized).studyNotes.single.toJson(), note.toJson());
+    final reorganized = organized.copyWith(
+      studyNotes: [organized.studyNotes.single.copyWith(organizedAt: DateTime.utc(2026, 3))],
+    );
+    expect(() => organizedChange.reversed.apply(reorganized), throwsA(isA<ContentChangeConflict>()));
+    expect(() => added.reversed.apply(organized), throwsA(isA<ContentChangeConflict>()));
   });
 
   test('compound codec identities roundtrip and referential errors are explicit', () {

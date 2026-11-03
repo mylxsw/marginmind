@@ -214,6 +214,17 @@ void main() {
     expect(contentFromDocument(contentDocument(base)).toJson(), base.toJson());
   });
 
+  test('concurrent material collection baselines are content conflicts, not latest-clock metadata', () {
+    final base = noteContent([const TextBlock(id: 'a', text: 'A')]);
+    final left = base.copyWith(studyNotes: [base.studyNotes.single.copyWith(organizedAt: DateTime.utc(2026, 2))]);
+    final right = base.copyWith(studyNotes: [base.studyNotes.single.copyWith(organizedAt: DateTime.utc(2026, 3))]);
+    final result = mergeContent(base, left, right);
+    expect(result.clean, isFalse);
+    expect(result.conflicts.single.path, ['studyNotes', 'note', 'organizedAt']);
+    expect(result.content!.studyNotes.single.organizedAt, base.studyNotes.single.organizedAt);
+    expect(mergeContent(base, right, left).conflicts.single.id, result.conflicts.single.id);
+  });
+
   test('concurrent note insertions preserve both blocks and converge in either delivery order', () {
     const a = TextBlock(id: 'a', text: 'A'), b = TextBlock(id: 'b', text: 'B'), c = TextBlock(id: 'c', text: 'C');
     final base = noteContent([a]);

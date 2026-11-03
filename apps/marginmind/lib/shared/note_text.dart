@@ -165,21 +165,29 @@ class NoteFormatController extends TextEditingController {
 /// Gives a note field the formatting keys (⌘B / ⌘I) and lets menus and the
 /// toolbar reach its controller through [NoteFormatIntent].
 class NoteFormatScope extends StatelessWidget {
-  const NoteFormatScope({super.key, required this.controller, required this.child});
+  const NoteFormatScope({super.key, required this.controller, required this.child, this.enabled = true});
 
   final NoteFormatController controller;
   final Widget child;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     controller.markerColor = context.mmColors.secondaryLabel;
     return Actions(
-      actions: {NoteFormatIntent: CallbackAction<NoteFormatIntent>(onInvoke: (i) => controller.apply(i.command))},
+      actions: {
+        NoteFormatIntent: CallbackAction<NoteFormatIntent>(
+          onInvoke: (i) {
+            if (enabled) controller.apply(i.command);
+            return null;
+          },
+        ),
+      },
       child: Focus(
         canRequestFocus: false,
         skipTraversal: true,
         onKeyEvent: (_, event) {
-          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (!enabled || event is KeyUpEvent) return KeyEventResult.ignored;
           for (final entry in noteFormatShortcuts.entries) {
             if (entry.key.accepts(event, HardwareKeyboard.instance)) {
               controller.apply(entry.value);

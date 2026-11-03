@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/shared/content_input.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_sync/mm_sync.dart';
@@ -56,6 +57,48 @@ void main() {
         ),
       ])
       .then((_) {});
+
+  test('independent editor protection holds received candidates until a durable save or cancel', () async {
+    final input = ContentInput(
+      repository: repo,
+      studySetId: id,
+      paths: [
+        ['cards', 'c3'],
+      ],
+      read: (c) => c.card('c3')?.title,
+    );
+    final first = await input.open();
+    await remoteRename(await head(), 'Remote after cancel');
+    expect((await repo.load(id)).card('c3')!.title, first.value);
+    await first.close();
+    expect((await repo.load(id)).card('c3')!.title, 'Remote after cancel');
+    final base = await head();
+    final session = await input.open();
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: scope,
+      deviceId: 'other',
+      sequence: 1,
+      parents: [base.id],
+      payload: {
+        ...base.payload,
+        'content': sharedContent(
+          StudySetEditor(
+            newId: () => 'other',
+            now: () => testNow,
+          ).rename(await repo.load(id), 'c3', 'Remote candidate'),
+        ),
+      },
+    );
+    await repo.receiveSync([remote]);
+    await session.save(() => controller.setTitle('c3', 'Local candidate'));
+    await session.close();
+    expect((await head()).pending, hasLength(1));
+    expect(
+      (await ledger.history()).values.map((c) => ((c.payload['content'] as Map?)?['cards'] as Map?)?['c3']?['title']),
+      containsAll(['Remote candidate', 'Local candidate']),
+    );
+  });
 
   test('workspace creation and typing publish one transaction; cancellation publishes none', () async {
     final before = (await ledger.history()).values.where((c) => c.scope == scope).length;

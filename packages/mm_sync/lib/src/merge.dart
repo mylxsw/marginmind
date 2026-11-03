@@ -112,7 +112,7 @@ Object? _merge(Object? base, Object? left, Object? right, List<String> path, Lis
   if (contentValueEquals(right, base)) return left;
   // Metadata timestamps don't own edits. Keep the latest provenance without
   // letting it override text or imply causal ordering.
-  if (path.isNotEmpty && {'updatedAt', 'organizedAt'}.contains(path.last) && left is String && right is String) {
+  if (path.isNotEmpty && path.last == 'updatedAt' && left is String && right is String) {
     final a = DateTime.tryParse(left), b = DateTime.tryParse(right);
     if (a != null && b != null) return a.isAfter(b) ? left : right;
   }

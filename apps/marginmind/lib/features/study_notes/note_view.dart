@@ -14,6 +14,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../shared/l10n.dart';
+import '../../shared/content_input.dart';
 import '../../app/providers.dart';
 import 'note_session.dart';
 import '../assistant/settings/ai_task_status.dart';
@@ -686,6 +687,9 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                                   NoteEditableText(
                                     key: ValueKey('note-title-${note.id}'),
                                     text: note.title,
+                                    input: _input([
+                                      ['studyNotes', note.id, 'title'],
+                                    ], (c) => c.studyNote(note.id)?.title),
                                     style: MMNoteTypography.title.copyWith(color: c.label),
                                     onSave: (v) => v.trim().isEmpty
                                         ? Future.value()
@@ -724,7 +728,19 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                                           ),
                                           Expanded(
                                             child: NoteEditableText(
+                                              key: ValueKey('note-section-title-${section.id}'),
                                               text: section.title,
+                                              input: _input(
+                                                [
+                                                  ['studyNotes', note.id, 'sections', 'items', section.id, 'title'],
+                                                ],
+                                                (c) => c
+                                                    .studyNote(note.id)
+                                                    ?.sections
+                                                    .where((s) => s.id == section.id)
+                                                    .firstOrNull
+                                                    ?.title,
+                                              ),
                                               style: MMNoteTypography.heading.copyWith(color: c.label),
                                               onSave: (v) => v.trim().isEmpty
                                                   ? Future.value()
@@ -843,6 +859,17 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     return NoteEditableText(
       key: ValueKey(id),
       text: block?.text ?? (kind == 'cue' ? section.question ?? '' : ''),
+      input: _input(
+        [
+          ['studyNotes', note.id, 'sections', 'items', section.id],
+        ],
+        (c) {
+          final latest = c.studyNote(note.id)?.sections.where((s) => s.id == section.id).firstOrNull;
+          if (latest == null) return null;
+          final current = latest.blocks.whereType<TextBlock>().where((b) => b.id == (block?.id ?? id)).firstOrNull;
+          return current?.text ?? (kind == 'cue' ? latest.question ?? '' : '');
+        },
+      ),
       style: MMNoteTypography.body.copyWith(color: context.mmColors.label),
       onSave: (text) => block != null
           ? _owner.editStudyNoteBlock(note.id, block.id, text: text)
@@ -1202,6 +1229,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           children: [
             NoteEditableText(
               key: ValueKey('note-edit-${block.id}'),
+              input: _blockInput(note.id, section.id, block.id),
               onReadTap: block is XrefBlock ? () => _jump(block.toSectionId) : null,
               text: text,
               style: MMNoteTypography.body.copyWith(color: c.label),
@@ -1389,6 +1417,51 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       ),
     ],
   );
+
+  ContentInput<String> _input(List<List<String>> paths, String? Function(StudySetContent) read) => ContentInput(
+    repository: ref.read(contentRepositoryProvider),
+    studySetId: widget.studySetId,
+    paths: paths,
+    read: read,
+  );
+
+  ContentInput<String> _blockInput(String noteId, String sectionId, String blockId) {
+    StudyNoteBlock? block(StudySetContent c) => c
+        .studyNote(noteId)
+        ?.sections
+        .where((s) => s.id == sectionId)
+        .firstOrNull
+        ?.blocks
+        .where((b) => b.id == blockId)
+        .firstOrNull;
+    return ContentInput(
+      repository: ref.read(contentRepositoryProvider),
+      studySetId: widget.studySetId,
+      paths: [
+        ['studyNotes', noteId, 'sections', 'items', sectionId, 'blocks', 'items', blockId],
+      ],
+      relatedPaths: (c) => switch (block(c)) {
+        OwnBlock(:final source, :final sourceId) => [
+          [
+            switch (source) {
+              OwnSource.marginNote => 'marginNotes',
+              OwnSource.card => 'cards',
+              OwnSource.researchNote => 'researchNotes',
+              OwnSource.image => 'cards',
+            },
+            sourceId,
+          ],
+        ],
+        _ => [],
+      },
+      read: (c) => switch (block(c)) {
+        final OwnBlock b => ownNoteText(c, b),
+        TextBlock(:final text) || XrefBlock(:final text) => text,
+        PointsBlock(:final items) => items.join('\n'),
+        _ => null,
+      },
+    );
+  }
 
   String _blockText(StudyNoteBlock block) => switch (block) {
     TextBlock() => block.text,
@@ -1664,11 +1737,19 @@ String? ownNoteText(StudySetContent content, OwnBlock block) => switch (block.so
 
 /// IME-aware in-place editing. A commit is one durable edit; Esc writes nothing.
 class NoteEditableText extends StatefulWidget {
-  const NoteEditableText({super.key, required this.text, required this.style, required this.onSave, this.onReadTap});
+  const NoteEditableText({
+    super.key,
+    required this.text,
+    required this.style,
+    required this.onSave,
+    this.onReadTap,
+    this.input,
+  });
   final String text;
   final TextStyle style;
   final Future<void> Function(String) onSave;
   final VoidCallback? onReadTap;
+  final ContentInput<String>? input;
   @override
   State<NoteEditableText> createState() => _NoteEditableTextState();
 }
@@ -1676,7 +1757,8 @@ class NoteEditableText extends StatefulWidget {
 class _NoteEditableTextState extends State<NoteEditableText> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
-  var _editing = false, _saving = false;
+  var _editing = false, _saving = false, _opening = false;
+  ContentInputSession<String>? _session;
   @override
   void initState() {
     super.initState();
@@ -1690,6 +1772,7 @@ class _NoteEditableTextState extends State<NoteEditableText> {
   @override
   void dispose() {
     _focus.removeListener(_blur);
+    unawaited(_session?.close());
     _focus.dispose();
     _controller.dispose();
     super.dispose();
@@ -1697,14 +1780,26 @@ class _NoteEditableTextState extends State<NoteEditableText> {
 
   Future<void> _commit() async {
     if (_saving || !_editing) return;
-    _saving = true;
+    setState(() => _saving = true);
     try {
-      if (_controller.text != widget.text) await widget.onSave(_controller.text);
+      final text = _controller.text;
+      if (text != (_session?.value ?? widget.text)) {
+        final save = widget.onSave;
+        if (_session case final session?) {
+          await session.save(() => save(text));
+        } else {
+          await save(text);
+        }
+      }
+      final session = _session;
+      _session = null;
       if (mounted) setState(() => _editing = false);
+      await session?.close();
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.noteFailed);
     } finally {
       _saving = false;
+      if (mounted) setState(() {});
     }
   }
 
@@ -1712,11 +1807,12 @@ class _NoteEditableTextState extends State<NoteEditableText> {
   Widget build(BuildContext context) => _editing
       ? MMInlineTextField(
           controller: _controller,
+          readOnly: _saving,
           focusNode: _focus,
           style: widget.style,
           multiline: true,
           onSubmitted: _commit,
-          onCancel: () => setState(() => _editing = false),
+          onCancel: _cancel,
           onTapOutside: _commit,
         )
       : widget.onReadTap == null
@@ -1736,9 +1832,31 @@ class _NoteEditableTextState extends State<NoteEditableText> {
     ),
   );
 
-  void _edit() {
-    _controller.text = widget.text;
-    setState(() => _editing = true);
-    _focus.requestFocus();
+  void _cancel() {
+    if (_saving) return;
+    final session = _session;
+    _session = null;
+    setState(() => _editing = false);
+    unawaited(session?.close());
+  }
+
+  Future<void> _edit() async {
+    if (_opening || _saving || _editing) return;
+    _opening = true;
+    try {
+      final session = widget.input?.requiresProtection == true ? await widget.input!.open() : null;
+      if (!mounted) {
+        await session?.close();
+        return;
+      }
+      _session = session;
+      _controller.text = session?.value ?? widget.text;
+      setState(() => _editing = true);
+      _focus.requestFocus();
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } finally {
+      _opening = false;
+    }
   }
 }

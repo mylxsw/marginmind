@@ -23,6 +23,7 @@ class MMInlineTextField extends StatelessWidget {
     this.hintText,
     this.multiline = false,
     this.maxLines,
+    this.readOnly = false,
   });
 
   final TextEditingController controller;
@@ -45,11 +46,13 @@ class MMInlineTextField extends StatelessWidget {
   /// Null wraps onto as many lines as the text needs; 1 keeps one line
   /// that scrolls.
   final int? maxLines;
+  final bool readOnly;
 
   /// Whether the input method is composing text that is not committed yet.
   static bool isComposing(TextEditingValue value) => value.composing.isValid && !value.composing.isCollapsed;
 
   KeyEventResult _onKey(FocusNode _, KeyEvent event) {
+    if (readOnly) return KeyEventResult.ignored;
     if (event is KeyUpEvent || isComposing(controller.value)) return KeyEventResult.ignored;
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
@@ -92,6 +95,7 @@ class MMInlineTextField extends StatelessWidget {
         child: Material(
           type: MaterialType.transparency,
           child: TextField(
+            readOnly: readOnly,
             controller: controller,
             focusNode: focusNode,
             style: const TextStyle(inherit: false, textBaseline: TextBaseline.alphabetic).merge(style),

@@ -7,6 +7,8 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../../shared/content_input.dart';
+import '../../../app/providers.dart';
 import '../../assistant/widgets/assistant_conversations.dart' show openConversation;
 import '../../workspace/widgets/notices.dart';
 import '../../workspace/workspace_controller.dart';
@@ -68,6 +70,14 @@ class ResearchNoteView extends ConsumerWidget {
         NoteTextField(
           key: ValueKey('note-title-${note.id}'),
           text: note.title,
+          input: ContentInput(
+            repository: ref.read(contentRepositoryProvider),
+            studySetId: studySetId,
+            paths: [
+              ['researchNotes', note.id],
+            ],
+            read: (c) => c.researchNote(note.id)?.title,
+          ),
           style: t.title3,
           semanticLabel: l.researchNoteTitle,
           onCommit: (text) => workspace.editResearchNote(note.id, title: text),
@@ -88,6 +98,14 @@ class ResearchNoteView extends ConsumerWidget {
           NoteTextField(
             key: ValueKey('note-body-${note.id}'),
             text: note.body,
+            input: ContentInput(
+              repository: ref.read(contentRepositoryProvider),
+              studySetId: studySetId,
+              paths: [
+                ['researchNotes', note.id],
+              ],
+              read: (c) => c.researchNote(note.id)?.body,
+            ),
             style: t.body.copyWith(height: 20 / 13),
             multiline: true,
             allowEmpty: true,
@@ -305,6 +323,7 @@ class NoteTextField extends StatefulWidget {
     required this.semanticLabel,
     this.multiline = false,
     this.allowEmpty = false,
+    this.input,
   });
 
   final String text;
@@ -313,6 +332,7 @@ class NoteTextField extends StatefulWidget {
   final String semanticLabel;
   final bool multiline;
   final bool allowEmpty;
+  final ContentInput<String>? input;
 
   @override
   State<NoteTextField> createState() => _NoteTextFieldState();
@@ -321,12 +341,18 @@ class NoteTextField extends StatefulWidget {
 class _NoteTextFieldState extends State<NoteTextField> {
   late final _controller = TextEditingController(text: widget.text);
   final _focus = FocusNode(debugLabel: 'NoteTextField');
+  ContentInputSession<String>? _session;
+  bool _opening = false, _saving = false, _editing = false;
 
   @override
   void initState() {
     super.initState();
     _focus.addListener(() {
-      if (!_focus.hasFocus) _commit();
+      if (_focus.hasFocus) {
+        _begin();
+      } else {
+        _commit();
+      }
       if (mounted) setState(() {});
     });
   }
@@ -335,21 +361,83 @@ class _NoteTextFieldState extends State<NoteTextField> {
   void didUpdateWidget(NoteTextField old) {
     super.didUpdateWidget(old);
     // Undo or an edit made elsewhere changed the note.
-    if (!_focus.hasFocus && widget.text != _controller.text) _controller.text = widget.text;
+    if (!_editing && !_opening && !_saving && widget.text != _controller.text) _controller.text = widget.text;
   }
 
-  void _commit() {
-    final text = widget.multiline ? _controller.text.trimRight() : _controller.text.trim();
-    if (text == widget.text) return;
-    if (text.isEmpty && !widget.allowEmpty) {
-      _controller.text = widget.text;
+  Future<void> _begin() async {
+    if (_editing || _opening || _saving) return;
+    if (widget.input?.requiresProtection != true) {
+      _editing = true;
       return;
     }
-    unawaited(widget.onCommit(text));
+    _opening = true;
+    try {
+      final session = await widget.input!.open();
+      if (!mounted || !_focus.hasFocus) {
+        await session.close();
+        return;
+      }
+      _session = session;
+      _controller.text = session.value;
+      _editing = true;
+    } catch (_) {
+      if (mounted) {
+        _focus.unfocus();
+        MMHud.show(context, context.l10n.noteFailed);
+      }
+    } finally {
+      _opening = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  String get _text => widget.multiline ? _controller.text.trimRight() : _controller.text.trim();
+  bool _changes(String text) => text != (_session?.value ?? widget.text) && (text.isNotEmpty || widget.allowEmpty);
+
+  Future<void> _commit() async {
+    if (!_editing || _saving) return;
+    _saving = true;
+    if (mounted) setState(() {});
+    try {
+      final text = _text, save = widget.onCommit;
+      if (_changes(text)) {
+        if (_session case final session?) {
+          await session.save(() => save(text));
+        } else {
+          await save(text);
+        }
+      } else {
+        _controller.text = _session?.value ?? widget.text;
+      }
+      _editing = false;
+      final session = _session;
+      _session = null;
+      await session?.close();
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } finally {
+      _saving = false;
+      if (mounted) {
+        setState(() {});
+        if (_focus.hasFocus && !_editing) unawaited(_begin());
+      }
+    }
+  }
+
+  void _cancel() {
+    if (_saving) return;
+    _controller.text = _session?.value ?? widget.text;
+    _editing = false;
+    final session = _session;
+    _session = null;
+    _focus.unfocus();
+    unawaited(session?.close());
   }
 
   @override
   void dispose() {
+    // A save that already started keeps its lease until persistence completes.
+    unawaited(_session?.close());
     _focus.dispose();
     _controller.dispose();
     super.dispose();
@@ -366,15 +454,13 @@ class _NoteTextFieldState extends State<NoteTextField> {
       ),
       child: MMInlineTextField(
         controller: _controller,
+        readOnly: _saving || (widget.input?.requiresProtection == true && !_editing),
         focusNode: _focus,
         style: widget.style,
         multiline: widget.multiline,
         semanticLabel: widget.semanticLabel,
         onSubmitted: _focus.unfocus,
-        onCancel: () {
-          _controller.text = widget.text;
-          _focus.unfocus();
-        },
+        onCancel: _cancel,
       ),
     );
   }
