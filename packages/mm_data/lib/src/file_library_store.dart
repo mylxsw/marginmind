@@ -100,7 +100,12 @@ class FileLibraryStore
           final snapshots = await sync.snapshots();
           final current = snapshots[remote.scope];
           final known = await sync.history();
-          var plan = planSyncMerge(known, remote: remote.id, local: current?.commit.id);
+          var plan = planSyncMerge(
+            known,
+            remote: remote.id,
+            local: current?.commit.id,
+            validateTransaction: (payload) => _validateSyncTransaction(id, payload),
+          );
           final expected = {remote.scope: current?.revision};
           try {
             if (plan.state == SyncMergeState.unchanged) {
@@ -168,6 +173,7 @@ class FileLibraryStore
                   shared: plan.deleted ? null : plan.payload,
                   adopt: plan.adopt ? remote.id : null,
                   mergeParent: plan.adopt ? null : remote.id,
+                  pending: plan.pending,
                 ),
               ],
               expected: expected,
@@ -202,6 +208,67 @@ class FileLibraryStore
       });
     }
     return results;
+  }
+
+  void _validateSyncTransaction(String id, Map<String, Object?> payload) {
+    try {
+      _materializeSync(id, payload, null);
+    } on TypeError {
+      throw const FormatException('Malformed shared study set');
+    } on ArgumentError {
+      throw const FormatException('Malformed shared study set');
+    }
+  }
+
+  Future<List<PendingSyncTransaction>> syncConflicts(String id) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) return const [];
+    final head = (await sync.snapshots())[_scope(id)]?.commit;
+    if (head == null || head.pending.isEmpty) return const [];
+    return replaySyncTransactions(
+      syncAncestry(await sync.history(), [head.id], checkKnownForks: false),
+      validate: (payload) => _validateSyncTransaction(id, payload),
+    ).pending;
+  }
+
+  /// Explicit conflict choice; a stale dialog must not overwrite newer edits.
+  /// Choosing the candidate applies only this transaction's changed paths.
+  Future<void> resolveSyncConflict(
+    String id,
+    String transaction, {
+    required String expectedRevision,
+    required bool useCandidate,
+  }) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) throw StateError('This library has not enabled sync');
+    await _queueWrite(id, () async {
+      final current = (await sync.snapshots())[_scope(id)];
+      if (current?.revision != expectedRevision) throw SyncRevisionChanged(_scope(id));
+      if (current == null || !current.commit.pending.contains(transaction)) {
+        throw const FormatException('Transaction is not pending');
+      }
+      final history = await sync.history();
+      final candidate = history[transaction]!;
+      final payload = useCandidate
+          ? chooseSyncTransaction(history[candidate.parents.single]!.payload, candidate.payload, current.commit.payload)
+          : current.commit.payload;
+      final record = _materializeSync(id, payload, current.value);
+      final documents = record.content.documents.map((d) => d.id).toSet();
+      _syncSnapshots = await sync.commit(
+        [
+          SyncMutation(_scope(id), local: record.toJson(), shared: payload, resolves: [transaction]),
+        ],
+        expected: {_scope(id): expectedRevision},
+        tombstoneWhere: (scope) => scope.startsWith('translations/$id/') && !documents.contains(scope.split('/')[2]),
+      );
+      _sets[id] = record;
+      await sync.project(_packagePath(id), () => _writeRecordFile(record));
+      await _syncResearchSessions(id, record.content);
+      _contentChanges.add(id);
+      _libraryChanges.add(null);
+    });
   }
 
   _SetRecord _materializeSync(String id, Map<String, Object?> payload, Map<String, Object?>? current) {

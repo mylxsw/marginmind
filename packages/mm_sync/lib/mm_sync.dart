@@ -5,3 +5,4 @@ export 'src/commit.dart';
 export 'src/merge.dart';
 export 'src/projection.dart';
 export 'src/reconciliation.dart';
+export 'src/transaction_replay.dart';

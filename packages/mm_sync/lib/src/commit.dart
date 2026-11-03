@@ -18,6 +18,8 @@ class SyncCommit {
     this.parents,
     this.payload,
     this.deleted,
+    this.pending,
+    this.resolves,
   );
 
   factory SyncCommit.create({
@@ -28,6 +30,8 @@ class SyncCommit {
     List<String> parents = const [],
     required Map<String, Object?> payload,
     bool deleted = false,
+    List<String> pending = const [],
+    List<String> resolves = const [],
   }) {
     if ([libraryId, scope, deviceId].any((s) => s.isEmpty || s.length > 256) || sequence < 1) {
       throw const FormatException('Invalid sync identity');
@@ -37,6 +41,17 @@ class SyncCommit {
       throw const FormatException('Invalid commit parents');
     }
     if (deleted && payload.isNotEmpty) throw const FormatException('Tombstones cannot contain live content');
+    List<String> references(List<String> values) {
+      final sorted = values.toSet().toList()..sort();
+      if (sorted.length != values.length || sorted.any((s) => !RegExp(r'^[0-9a-f]{64}$').hasMatch(s))) {
+        throw const FormatException('Invalid transaction references');
+      }
+      return List.unmodifiable(sorted);
+    }
+
+    if (deleted && (pending.isNotEmpty || resolves.isNotEmpty)) {
+      throw const FormatException('Resolve pending transactions before deletion');
+    }
     final frozen = _freeze(payload) as Map<String, Object?>;
     final candidate = SyncCommit._(
       '',
@@ -47,6 +62,8 @@ class SyncCommit {
       List.unmodifiable(sorted),
       frozen,
       deleted,
+      references(pending),
+      references(resolves),
     );
     return SyncCommit._(
       syncDigest(candidate._body()),
@@ -57,6 +74,8 @@ class SyncCommit {
       candidate.parents,
       frozen,
       deleted,
+      candidate.pending,
+      candidate.resolves,
     );
   }
 
@@ -65,6 +84,10 @@ class SyncCommit {
   final List<String> parents;
   final Map<String, Object?> payload;
   final bool deleted;
+
+  /// Unresolved atomic transactions remain in the causal ancestry. Carrying
+  /// their IDs acknowledges receipt, never a choice of their final value.
+  final List<String> pending, resolves;
 
   Map<String, Object?> _body() => {
     'protocol': syncProtocolVersion,
@@ -75,11 +98,25 @@ class SyncCommit {
     'parents': parents,
     'deleted': deleted,
     'payload': payload,
+    if (pending.isNotEmpty) 'pending': pending,
+    if (resolves.isNotEmpty) 'resolves': resolves,
   };
   Map<String, Object?> toJson() => {'id': id, ..._body()};
 
   factory SyncCommit.fromJson(Map<String, Object?> json) {
-    const fields = {'id', 'protocol', 'libraryId', 'scope', 'deviceId', 'sequence', 'parents', 'deleted', 'payload'};
+    const fields = {
+      'id',
+      'protocol',
+      'libraryId',
+      'scope',
+      'deviceId',
+      'sequence',
+      'parents',
+      'deleted',
+      'payload',
+      'pending',
+      'resolves',
+    };
     if (json['protocol'] != syncProtocolVersion || json.keys.any((key) => !fields.contains(key))) {
       throw const FormatException('Unsupported sync commit');
     }
@@ -92,6 +129,8 @@ class SyncCommit {
         parents: (json['parents'] as List).cast<String>(),
         payload: (json['payload'] as Map).cast<String, Object?>(),
         deleted: json['deleted'] as bool,
+        pending: ((json['pending'] ?? const []) as List).cast<String>(),
+        resolves: ((json['resolves'] ?? const []) as List).cast<String>(),
       );
       if (result.id != json['id']) throw const FormatException('Commit digest mismatch');
       return result;
@@ -130,6 +169,22 @@ class SyncGraph {
         if (parent.deviceId == c.deviceId && parent.sequence >= c.sequence) {
           throw const FormatException('Invalid causal sequence');
         }
+      }
+    }
+    for (final c in _commits.values) {
+      final history = ancestors(c.id)..remove(c.id);
+      if (!history.containsAll([...c.pending, ...c.resolves]) ||
+          c.pending.any((id) => _commits[id]?.parents.length != 1) ||
+          (c.deleted && c.parents.any((id) => _commits[id]!.pending.isNotEmpty)) ||
+          (c.parents.length == 1 &&
+              !contentValueEquals(
+                _commits[c.parents.single]!.pending.where((id) => !c.resolves.contains(id)).toList(),
+                c.pending,
+              )) ||
+          c.pending.any(c.resolves.contains) ||
+          (c.resolves.isNotEmpty &&
+              (c.parents.length != 1 || !c.resolves.every(_commits[c.parents.single]!.pending.contains)))) {
+        throw const FormatException('Invalid unresolved transaction ancestry');
       }
     }
     final devices = <(String, String, String), List<SyncCommit>>{};

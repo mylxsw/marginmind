@@ -82,25 +82,124 @@ void main() {
     expect((await right.snapshots())['sets/$id']!.commit.id, bHead);
   });
 
-  test('conflict inputs persist; unrelated sets proceed; a later resolved branch clears its diagnostic', () async {
+  test(
+    'pending transactions travel, independent later writes apply, and explicit resolution survives restart',
+    () async {
+      await sendA();
+      await a.update(id, (c) => editor.rename(c, card, 'A'));
+      await b.update(id, (c) => editor.rename(c, card, 'B'));
+      final other = (await a.create(const NewStudySet(title: 'Other', colorIndex: 0))).id;
+      await sendA();
+      expect((await b.load(id)).card(card)!.title, anyOf('A', 'B'));
+      expect(await b.load(other), isA<StudySetContent>());
+      var head = (await right.snapshots())['sets/$id']!;
+      final pending = head.commit.pending.single;
+      expect((await b.syncConflicts(id)).single.transaction, pending);
+      final thirdLedger = FileSyncLedger(Directory('${root.path}/third'), libraryId: 'library', deviceId: 'third');
+      final third = FileLibraryStore(thirdLedger.root, sync: thirdLedger);
+      try {
+        final waiting = await third.receiveSync([head.commit]);
+        expect(waiting.single.reason, 'missingParents');
+        await third.receiveSync((await right.history()).values);
+        expect((await third.syncConflicts(id)).single.transaction, pending);
+        expect(sharedContent(await third.load(id)), sharedContent(await b.load(id)));
+      } finally {
+        await third.dispose();
+      }
+
+      final restored = (await FileSyncLedger.restore(right.root))!;
+      expect((await restored.snapshots())['sets/$id']!.commit.pending, [pending]);
+      await sendB();
+      expect((await left.snapshots())['sets/$id']!.commit.pending, [pending]);
+      await a.rename(id, 'Independent after conflict');
+      await sendA();
+      expect((await b.watchAll().first).firstWhere((s) => s.id == id).title, 'Independent after conflict');
+      expect((await right.snapshots())['sets/$id']!.commit.pending, [pending]);
+      await expectLater(
+        b.resolveSyncConflict(id, pending, expectedRevision: head.revision, useCandidate: true),
+        throwsA(isA<SyncRevisionChanged>()),
+      );
+      head = (await right.snapshots())['sets/$id']!;
+      final candidate = (await right.history())[pending]!;
+      final chosenTitle = ((candidate.payload['content'] as Map)['cards'] as Map)[card]['title'];
+      await b.resolveSyncConflict(id, pending, expectedRevision: head.revision, useCandidate: true);
+      expect((await b.load(id)).card(card)!.title, chosenTitle);
+      expect((await b.watchAll().first).firstWhere((s) => s.id == id).title, 'Independent after conflict');
+      expect((await right.snapshots())['sets/$id']!.commit.resolves, [pending]);
+      await sendB();
+      expect((await a.load(id)).card(card)!.title, chosenTitle);
+      expect((await left.snapshots())['sets/$id']!.commit.pending, isEmpty);
+      final before = (await right.history()).length;
+      await sendA();
+      await sendB();
+      expect((await right.history()).length, before);
+      await b.dispose();
+      b = FileLibraryStore(right.root);
+      expect((await b.load(id)).card(card)!.title, chosenTitle);
+      expect(await b.syncConflicts(id), isEmpty);
+    },
+  );
+
+  test('structural moves are isolated atomically while later metadata continues', () async {
+    late String one, two;
+    await a.update(id, (c) {
+      final first = editor.addTopic(c, title: 'One');
+      one = first.$2.id;
+      final second = editor.addTopic(first.$1, title: 'Two');
+      two = second.$2.id;
+      return second.$1;
+    });
+    await sendA();
+    await a.update(id, (c) => editor.rename(editor.move(c, one, two), card, 'A related'));
+    await b.update(id, (c) => editor.move(c, two, one));
+    await a.rename(id, 'Later metadata');
+    await sendA();
+    final pending = (await b.syncConflicts(id)).single;
+    expect(pending.reason, 'structure');
+    expect(contentIntegrityErrors(await b.load(id)), isEmpty);
+    expect((await b.watchAll().first).single.title, 'Later metadata');
+    final blocked = (await right.history())[pending.transaction]!;
+    if (blocked.deviceId == 'left') expect((await b.load(id)).card(card)!.title, 'Question');
+    await sendB();
+    expect(sharedContent(await a.load(id)), sharedContent(await b.load(id)));
+    final head = (await right.snapshots())['sets/$id']!;
+    await expectLater(
+      b.resolveSyncConflict(id, pending.transaction, expectedRevision: head.revision, useCandidate: true),
+      throwsFormatException,
+    );
+    expect((await right.snapshots())['sets/$id']!.revision, head.revision);
+    await b.resolveSyncConflict(id, pending.transaction, expectedRevision: head.revision, useCandidate: false);
+    await sendB();
+    expect(await a.syncConflicts(id), isEmpty);
+  });
+
+  test('resolved or clean integrations still permit causal deletion', () async {
+    await sendA();
+    await a.rename(id, 'Remote title');
+    await b.update(id, (c) => editor.rename(c, card, 'Local card'));
+    await sendA();
+    await sendB();
+    await a.delete(id);
+    await sendA();
+    expect(await b.watchAll().first, isEmpty);
+    expect((await right.snapshots())['sets/$id']!.deleted, isTrue);
+  });
+
+  test('same-branch unrelated transaction passes a conflict before any merge is returned', () async {
     await sendA();
     await a.update(id, (c) => editor.rename(c, card, 'A'));
     await b.update(id, (c) => editor.rename(c, card, 'B'));
-    final other = (await a.create(const NewStudySet(title: 'Other', colorIndex: 0))).id;
+    await a.rename(id, 'A later independent edit');
     await sendA();
-    expect((await b.load(id)).card(card)!.title, 'B');
-    expect(await b.load(other), isA<StudySetContent>());
-    final issues = await right.issues();
-    expect(issues.values.single['reason'], 'fields');
-    final restored = (await FileSyncLedger.restore(right.root))!;
-    expect(await restored.issues(), issues);
-    final before = (await right.history()).length;
-    await sendA();
-    expect((await right.history()).length, before);
-    // A human-selected common value is still a new causal commit.
-    await a.update(id, (c) => editor.rename(c, card, 'B'));
-    await sendA();
-    expect(await right.issues(), isEmpty);
+    expect((await b.watchAll().first).single.title, 'A later independent edit');
+    final head = (await right.snapshots())['sets/$id']!;
+    expect(head.commit.pending, hasLength(1));
+    final before = (await b.load(id)).card(card)!.title;
+    await b.resolveSyncConflict(id, head.commit.pending.single, expectedRevision: head.revision, useCandidate: false);
+    expect((await b.load(id)).card(card)!.title, before);
+    await sendB();
+    expect((await a.load(id)).card(card)!.title, before);
+    expect((await left.snapshots())['sets/$id']!.commit.pending, isEmpty);
   });
 
   test('out-of-order receipt and editing deferral recover without changing live content', () async {

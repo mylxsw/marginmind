@@ -10,7 +10,17 @@ import 'package:path/path.dart' as p;
 /// One aggregate mutation. [local] is recovery data and never uploaded;
 /// [shared] is the cloud projection. Null is an explicit deletion in both.
 class SyncMutation {
-  SyncMutation(this.scope, {required this.local, required this.shared, this.adopt, this.mergeParent});
+  SyncMutation(
+    this.scope, {
+    required this.local,
+    required this.shared,
+    this.adopt,
+    this.mergeParent,
+    this.pending,
+    this.resolves = const [],
+  });
+  final List<String>? pending;
+  final List<String> resolves;
 
   /// Adopt a received version, or create a merge with this additional parent.
   /// Both require the current head to remain an ancestor of the new version.
@@ -341,6 +351,8 @@ class FileSyncLedger {
           shared: m.shared == null ? null : _freezeMap(m.shared!),
           adopt: m.adopt,
           mergeParent: m.mergeParent,
+          pending: m.pending == null ? null : List.unmodifiable(m.pending!),
+          resolves: List.unmodifiable(m.resolves),
         ),
     ];
     final preconditions = Map<String, String?>.of(expected);
@@ -367,6 +379,7 @@ class FileSyncLedger {
         }
         final previous = _heads[input.scope];
         final sharedChanged =
+            input.resolves.isNotEmpty ||
             input.adopt != null ||
             input.mergeParent != null ||
             previous == null ||
@@ -395,6 +408,10 @@ class FileSyncLedger {
                     }.toList(),
                     payload: input.shared ?? {},
                     deleted: input.shared == null,
+                    pending:
+                        input.pending ??
+                        (previous?.commit.pending ?? const []).where((id) => !input.resolves.contains(id)).toList(),
+                    resolves: input.resolves,
                   )
                 : null);
         changes.add({

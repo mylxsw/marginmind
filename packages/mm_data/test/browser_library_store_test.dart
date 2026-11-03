@@ -254,6 +254,46 @@ void main() {
     expect((await (await store.syncLedger)!.pending()).map((c) => c.id), pending);
   });
 
+  test('unresolved transactions and independent successors recover in IndexedDB', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Base', colorIndex: 0));
+    final base = (await ledger.snapshots())['sets/${set.id}']!.commit;
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: base.scope,
+      deviceId: 'remote',
+      sequence: 1,
+      parents: [base.id],
+      payload: {...base.payload, 'title': 'Remote'},
+    );
+    final later = SyncCommit.create(
+      libraryId: 'library',
+      scope: base.scope,
+      deviceId: 'remote',
+      sequence: 2,
+      parents: [remote.id],
+      payload: {...remote.payload, 'colorIndex': 2},
+    );
+    await store.rename(set.id, 'Local');
+    await store.receiveSync([later, remote]);
+    expect((await store.watchAll().first).single.colorIndex, 2);
+    var head = (await ledger.snapshots())[base.scope]!;
+    final pending = head.commit.pending.single;
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.syncConflicts(set.id)).single.transaction, pending);
+    final reopened = (await store.syncLedger)!;
+    head = (await reopened.snapshots())[base.scope]!;
+    await store.resolveSyncConflict(set.id, pending, expectedRevision: head.revision, useCandidate: true);
+    expect(await store.syncConflicts(set.id), isEmpty);
+    expect((await store.watchAll().first).single.colorIndex, 2);
+    expect((await reopened.snapshots())[base.scope]!.commit.resolves, [pending]);
+  });
+
   test('sync record and head compare-and-swap prevent stale tabs from creating forks', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');

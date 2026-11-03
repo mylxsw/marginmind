@@ -1,5 +1,8 @@
+import 'package:mm_core/mm_core.dart';
+
 import 'commit.dart';
 import 'merge.dart';
+import 'transaction_replay.dart';
 
 class MissingSyncParents implements Exception {
   MissingSyncParents(Iterable<String> ids) : ids = Set.unmodifiable(ids);
@@ -49,6 +52,7 @@ class SyncMergePlan {
     this.payload,
     this.deleted = false,
     this.adopt = false,
+    this.pending = const [],
     Iterable<String> bases = const [],
     Iterable<String> missing = const [],
     Iterable<SyncConflict> conflicts = const [],
@@ -61,6 +65,7 @@ class SyncMergePlan {
   final SyncMergeState state;
   final Map<String, Object?>? payload;
   final bool deleted, adopt;
+  final List<String> pending;
   final List<String> bases, missing;
   final List<SyncConflict> conflicts;
 
@@ -72,19 +77,26 @@ class SyncMergePlan {
     'reason': reason,
     'bases': bases,
     'missing': missing,
+    'pending': pending,
     'conflicts': [for (final c in conflicts) c.toJson()],
   };
 }
 
 /// Plan without IO. A ready candidate still needs domain validation and an
 /// atomic expected-revision check before it can replace a local snapshot.
-SyncMergePlan planSyncMerge(Map<String, SyncCommit> known, {required String remote, String? local}) {
+SyncMergePlan planSyncMerge(
+  Map<String, SyncCommit> known, {
+  required String remote,
+  String? local,
+  void Function(Map<String, Object?>)? validateTransaction,
+}) {
   SyncMergePlan result(
     SyncMergeState state,
     String reason, {
     Map<String, Object?>? payload,
     bool deleted = false,
     bool adopt = false,
+    List<String> pending = const [],
     Iterable<String> bases = const [],
     Iterable<String> missing = const [],
     Iterable<SyncConflict> conflicts = const [],
@@ -96,6 +108,7 @@ SyncMergePlan planSyncMerge(Map<String, SyncCommit> known, {required String remo
     payload: payload,
     deleted: deleted,
     adopt: adopt,
+    pending: pending,
     bases: bases,
     missing: missing,
     conflicts: conflicts,
@@ -110,6 +123,24 @@ SyncMergePlan planSyncMerge(Map<String, SyncCommit> known, {required String remo
   }
   final right = ancestry[remote]!;
   final graph = SyncGraph(ancestry.values);
+  if (validateTransaction != null) {
+    // Validate each integration in its own causal context. A later edit must
+    // not launder a checkpoint that omitted an unresolved transaction.
+    try {
+      for (final c in ancestry.values.where((c) => !c.deleted && c.parents.length > 1)) {
+        final closure = {for (final id in graph.ancestors(c.id)) id: ancestry[id]!};
+        final replay = replaySyncTransactions(closure, validate: validateTransaction);
+        if (!contentValueEquals(replay.payload, c.payload) ||
+            !contentValueEquals(replay.pending.map((p) => p.transaction).toList()..sort(), c.pending)) {
+          return result(SyncMergeState.conflict, 'invalidIntegration');
+        }
+      }
+    } on ConcurrentSyncResolutions {
+      return result(SyncMergeState.conflict, 'concurrentResolutions');
+    } on FormatException {
+      return result(SyncMergeState.conflict, 'invalidIntegration');
+    }
+  }
   if (local != null) {
     final left = ancestry[local]!;
     if (left.scope != right.scope || left.libraryId != right.libraryId) {
@@ -118,7 +149,29 @@ SyncMergePlan planSyncMerge(Map<String, SyncCommit> known, {required String remo
     if (graph.ancestors(local).contains(remote)) return result(SyncMergeState.unchanged, 'alreadyApplied');
   }
   if (local == null || graph.ancestors(remote).contains(local)) {
-    return result(SyncMergeState.ready, 'fastForward', payload: right.payload, deleted: right.deleted, adopt: true);
+    if (!right.deleted &&
+        validateTransaction != null &&
+        ancestry.values.any((c) => c.parents.length > 1 || c.pending.isNotEmpty || c.resolves.isNotEmpty)) {
+      try {
+        final replay = replaySyncTransactions(ancestry, validate: validateTransaction);
+        if (!contentValueEquals(replay.payload, right.payload) ||
+            !contentValueEquals(replay.pending.map((p) => p.transaction).toList()..sort(), right.pending)) {
+          return result(SyncMergeState.conflict, 'invalidIntegration');
+        }
+      } on ConcurrentSyncResolutions {
+        return result(SyncMergeState.conflict, 'concurrentResolutions');
+      } on FormatException {
+        return result(SyncMergeState.conflict, 'invalidIntegration');
+      }
+    }
+    return result(
+      SyncMergeState.ready,
+      'fastForward',
+      payload: right.payload,
+      deleted: right.deleted,
+      adopt: true,
+      pending: right.pending,
+    );
   }
   final bases = graph.mergeBases(local, remote).toList()..sort();
   if (bases.length != 1) {
@@ -130,6 +183,23 @@ SyncMergePlan planSyncMerge(Map<String, SyncCommit> known, {required String remo
       return result(SyncMergeState.ready, 'bothDeleted', payload: {}, deleted: true, bases: bases);
     }
     return result(SyncMergeState.conflict, 'deleteEdit', bases: bases);
+  }
+  if (validateTransaction != null) {
+    try {
+      final replay = replaySyncTransactions(ancestry, validate: validateTransaction);
+      return result(
+        SyncMergeState.ready,
+        replay.pending.isEmpty ? 'merged' : 'pendingTransactions',
+        payload: replay.payload,
+        bases: bases,
+        pending: replay.pending.map((p) => p.transaction).toList()..sort(),
+        conflicts: replay.pending.expand((p) => p.conflicts),
+      );
+    } on ConcurrentSyncResolutions {
+      return result(SyncMergeState.conflict, 'concurrentResolutions', bases: bases);
+    } on FormatException {
+      return result(SyncMergeState.conflict, 'invalidTransactions', bases: bases);
+    }
   }
   final merged = mergeSyncObject(base.payload, left.payload, right.payload);
   return result(
