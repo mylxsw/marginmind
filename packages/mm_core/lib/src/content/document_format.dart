@@ -25,12 +25,40 @@ enum DocumentLayout { fixed, reflow }
 enum WebCaptureMode { readable, original, markdown }
 
 @immutable
+/// How AI reformatted a captured page. The snapshot next to it stays untouched.
+class DocumentOriginFormatting {
+  const DocumentOriginFormatting({
+    required this.model,
+    required this.promptVersion,
+    this.edited = false,
+    this.unformattedSections = 0,
+  });
+  final String model, promptVersion;
+  final bool edited;
+
+  /// Sections kept as captured because formatting was stopped or failed.
+  final int unformattedSections;
+  Map<String, Object?> toJson() => {
+    'model': model,
+    'promptVersion': promptVersion,
+    if (edited) 'edited': true,
+    if (unformattedSections > 0) 'unformattedSections': unformattedSections,
+  };
+  factory DocumentOriginFormatting.fromJson(Map<String, Object?> j) => DocumentOriginFormatting(
+    model: j['model'] as String,
+    promptVersion: j['promptVersion'] as String,
+    edited: j['edited'] as bool? ?? false,
+    unformattedSections: j['unformattedSections'] as int? ?? 0,
+  );
+}
+
 class DocumentOrigin {
   DocumentOrigin({
     required this.url,
     required this.capturedAt,
     this.snapshotFile,
     this.mode = WebCaptureMode.readable,
+    this.formatting,
   }) {
     final uri = Uri.tryParse(url);
     if (uri == null || !{'http', 'https'}.contains(uri.scheme) || uri.host.isEmpty || uri.userInfo.isNotEmpty) {
@@ -41,17 +69,22 @@ class DocumentOrigin {
   final DateTime capturedAt;
   final String? snapshotFile;
   final WebCaptureMode mode;
+  final DocumentOriginFormatting? formatting;
   Map<String, Object?> toJson() => {
     'url': url,
     'capturedAt': capturedAt.toIso8601String(),
     if (snapshotFile != null) 'snapshotFile': snapshotFile,
     'mode': mode.name,
+    if (formatting != null) 'formatting': formatting!.toJson(),
   };
   factory DocumentOrigin.fromJson(Map<String, Object?> j) => DocumentOrigin(
     url: j['url'] as String,
     capturedAt: DateTime.parse(j['capturedAt'] as String),
     snapshotFile: j['snapshotFile'] as String?,
     mode: WebCaptureMode.values.byName(j['mode'] as String? ?? 'readable'),
+    formatting: j['formatting'] == null
+        ? null
+        : DocumentOriginFormatting.fromJson((j['formatting'] as Map).cast<String, Object?>()),
   );
 }
 

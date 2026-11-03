@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foliarc · 网页转文档 AI 整理（交互原型）</title>
+<style>
+/* Tokens copied from packages/mm_design/lib/src/tokens (colors, metrics, typography). */
+:root[data-theme=dark]{--win:#1E1E1F;--side:#2C2C2F;--chrome:#171718;--card:#2C2C2E;--surface:#323235;--label:#F5F5F7;--sec:#AEAEB2;--icon:#AEAEB2;--sep:rgba(255,255,255,.09);--fill:rgba(118,118,128,.24);--qfill:rgba(118,118,128,.14);--sel:rgba(255,255,255,.10);--hover:rgba(255,255,255,.06);--accent:#0A84FF;--accentfill:#0A66D0;--tint:rgba(10,132,255,.2);--pos:#30D158;--cau:#FF9F0A;--crit:#FF453A;--hair:rgba(0,0,0,.5);--border:rgba(255,255,255,.12);--scrim:rgba(0,0,0,.25);--shadow:0 24px 60px rgba(0,0,0,.55);--seg:#636366;--ex:#D1D1D6;--stage:#0b0b0c}
+:root[data-theme=light]{--win:#FFFFFF;--side:#F2F2F6;--chrome:#F2F2F6;--card:#FFFFFF;--surface:#FFFFFF;--label:#1D1D1F;--sec:#636366;--icon:#6E6E73;--sep:rgba(0,0,0,.09);--fill:rgba(120,120,128,.12);--qfill:rgba(120,120,128,.08);--sel:rgba(0,0,0,.075);--hover:rgba(0,0,0,.043);--accent:#007AFF;--accentfill:#0A66D0;--tint:rgba(0,122,255,.12);--pos:#248A3D;--cau:#C93400;--crit:#D70015;--hair:rgba(0,0,0,.08);--border:rgba(0,0,0,.12);--scrim:rgba(0,0,0,.12);--shadow:0 24px 60px rgba(0,0,0,.25);--seg:#fff;--ex:#3A3A3C;--stage:#d9d9de}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--stage);color:var(--label);font:13px/16px -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:default}
+svg{display:block;flex:none}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.scroll{overflow:auto;scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+
+/* Prototype control bar: not part of the product. */
+#bar{height:44px;flex:none;display:flex;align-items:center;gap:16px;padding:0 14px;background:#000;color:#ddd;font-size:12px;border-bottom:1px dashed #555;white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+#bar b{color:#fff;font-weight:600}
+#bar .g{display:flex;align-items:center;gap:6px}
+#bar .g>span{color:#999}
+#bar .o{display:flex;background:#222;border-radius:7px;padding:2px}
+#bar .o button{padding:3px 8px;border-radius:5px;color:#bbb}
+#bar .o button.on{background:#555;color:#fff}
+#bar .re{margin-left:auto;padding:4px 10px;border:1px solid #555;border-radius:7px;color:#eee}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:14px}
+
+/* Desktop window */
+.win{width:min(1326px,100%);height:min(866px,100%);min-width:1040px;background:var(--win);border-radius:16px;border:.5px solid var(--border);box-shadow:var(--shadow);display:flex;overflow:hidden;position:relative}
+.side{width:226px;flex:none;background:var(--side);display:flex;flex-direction:column;padding:0 8px 10px}
+.lights{height:48px;display:flex;align-items:center;gap:8px;padding-left:8px}
+.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.lights .sp{flex:1}
+.lights svg{color:var(--icon);margin-right:8px}
+.grp{font-size:11px;line-height:14px;font-weight:600;color:var(--sec);padding:12px 8px 6px}
+.row{height:28px;border-radius:8px;display:flex;align-items:center;gap:8px;padding:0 8px;overflow:hidden}
+.row svg{color:var(--accent)}
+.row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.on{background:var(--sel)}
+.row.temp span{color:var(--sec)}
+.row .badge{margin-left:auto;background:var(--tint);color:var(--accent);font-size:10px;border-radius:9px;padding:0 6px;line-height:16px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.tabs{height:44px;flex:none;background:var(--chrome);display:flex;align-items:flex-end;padding:0 12px 0 8px;gap:2px}
+.tab{height:38px;padding:0 12px;display:flex;align-items:center;gap:7px;border-radius:9px 9px 0 0;color:var(--sec);max-width:210px;white-space:nowrap}
+.tab span{overflow:hidden;text-overflow:ellipsis}
+.tab.on{background:var(--win);color:var(--label);font-weight:600}
+.tabs .sp{flex:1}
+.tabs .tools{display:flex;gap:14px;align-items:center;height:38px;color:var(--icon)}
+.tabs .dot{width:20px;height:20px;border-radius:50%;background:var(--accent);opacity:.85}
+.urlbar{height:44px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;color:var(--icon)}
+.url{flex:1;height:30px;border-radius:15px;background:var(--qfill);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--label)}
+.url svg{color:var(--icon)}
+.iconbtn{width:28px;height:28px;display:grid;place-items:center;border-radius:7px;color:var(--icon)}
+.iconbtn:hover{background:var(--hover)}
+.content{flex:1;min-height:0;position:relative;overflow:hidden}
+
+/* Messy page shown in the embedded browser; browser content ignores app theme. */
+.web{position:absolute;inset:0;background:#fff;color:#222;overflow:auto;font:15px/1.75 Georgia,"Noto Serif CJK SC","Songti SC",serif}
+.web .nav{background:#b3202a;color:#fff;font:13px/40px sans-serif;padding:0 20px;display:flex;gap:18px;white-space:nowrap;overflow:hidden}
+.web .wrap{display:flex;gap:22px;padding:14px 22px;max-width:1040px;margin:auto}
+.web .col{flex:1;min-width:0}
+.web .aside{width:210px;flex:none;font:12px/1.5 sans-serif;color:#666}
+.web .ad{background:repeating-linear-gradient(45deg,#fff0c9,#fff0c9 8px,#ffe7a8 8px,#ffe7a8 16px);color:#8a5a00;font:600 13px/1.4 sans-serif;padding:14px;margin:12px 0;text-align:center;border:1px solid #f0cf7a}
+.web h1{font:700 25px/1.35 sans-serif;margin:8px 0}
+.web .meta{font:12px sans-serif;color:#888}
+.web .b{font-weight:700;color:#b3202a;margin:14px 0 4px}
+.web p{margin:6px 0}
+.web .card{border:1px solid #eee;padding:8px;margin-bottom:10px;background:#fafafa}
+.web svg{width:100%;height:auto;max-width:440px}
+.pop{position:absolute;top:8px;right:12px;width:290px;background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.28);z-index:2}
+.pop .h{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--label)}
+.pop .h svg{color:var(--accent);width:20px;height:20px}
+.pop p{margin:8px 0 12px;color:var(--sec)}
+.pop .a{display:flex;justify-content:flex-end;gap:8px}
+
+/* Controls */
+.btn{height:32px;min-width:72px;padding:0 14px;border-radius:8px;background:var(--fill);color:var(--label);display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{filter:brightness(1.12)}
+.btn.pri{background:var(--accentfill);color:#fff}
+.btn.plain{background:none;color:var(--accent);min-width:0;padding:0 8px}
+.btn.plain:hover{background:var(--hover)}
+.btn.crit{background:var(--crit);color:#fff}
+.btn:disabled{opacity:.42;filter:none}
+.btn.sm{height:24px;min-width:0;padding:0 9px;font-size:12px;border-radius:6px}
+.link{color:var(--accent)}
+.link:hover{text-decoration:underline}
+.seg{display:inline-flex;background:var(--fill);border-radius:7px;padding:2px}
+.seg button{height:22px;padding:0 10px;border-radius:5px;font-size:12px;color:var(--label)}
+.seg button.on{background:var(--seg);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw{width:32px;height:19px;border-radius:10px;background:var(--fill);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.35);transition:left .15s}
+.sw.on{background:var(--accent)}.sw.on::after{left:15px}
+.sw:disabled{opacity:.42}
+.spin{width:14px;height:14px;border-radius:50%;border:1.6px solid var(--fill);border-top-color:var(--accent);animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Sheet: MMSheet, width MMSizes.webConversionSheetWidth (1080) */
+.scrim{position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;z-index:5}
+.sheet{width:min(1080px,calc(100% - 48px));background:var(--surface);border-radius:16px;border:.5px solid var(--border);box-shadow:var(--shadow);padding:20px 24px;display:flex;flex-direction:column;max-height:calc(100% - 32px);animation:rise .18s ease-out}
+@keyframes rise{from{transform:translateY(8px);opacity:0}}
+.sheet>h2{margin:0 0 16px;font-size:15px;line-height:20px;font-weight:700}
+.sbody{display:flex;height:min(600px,calc(100vh - 44px - 28px - 210px));min-height:220px}
+.left{flex:65;min-width:0;display:flex;flex-direction:column;position:relative}
+.vr{width:.5px;background:var(--sep);margin:0 20px;flex:none}
+.right{flex:35;min-width:0}
+.sbody.full .vr,.sbody.full .right{display:none}
+.sfoot{border-top:.5px solid var(--sep);margin-top:12px;padding-top:14px;display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.sfoot .note{margin-right:auto;font-size:11px;line-height:14px;color:var(--sec)}
+.lab{font-size:12px;line-height:15px;font-weight:500;color:var(--sec);margin-bottom:8px}
+.sec{margin-bottom:22px}
+.input{width:100%;height:36px;border-radius:8px;border:.5px solid var(--border);background:var(--qfill);color:var(--label);font:inherit;padding:0 10px;outline:0}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.fmt{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 12px;border-radius:8px;border:.5px solid var(--hair);background:var(--qfill);width:100%;text-align:left;margin-bottom:8px}
+.fmt:hover{background:var(--hover)}
+.fmt svg{width:22px;height:22px;color:var(--sec)}
+.fmt b{flex:1;font-weight:600}
+.fmt .r{width:16px;height:16px;border-radius:50%;border:1.3px solid var(--sec);flex:none}
+.fmt.on{background:var(--tint);border:1px solid var(--accent)}
+.fmt.on svg{color:var(--accent)}
+.fmt.on .r{border:1.3px solid var(--accent);box-shadow:inset 0 0 0 3px var(--surface),inset 0 0 0 8px var(--accent)}
+.aic{border-radius:10px;border:.5px solid var(--hair);background:var(--qfill);padding:12px}
+.aic.on{border:1px solid var(--accent)}
+.aic .top{display:flex;align-items:center;gap:8px}
+.aic .top svg{color:var(--accent);width:18px;height:18px}
+.aic .top b{flex:1;font-weight:600}
+.aic p{margin:8px 0 0;color:var(--sec);font-size:12px;line-height:17px}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:10px;border-top:.5px solid var(--sep)}
+.pick{height:24px;display:inline-flex;align-items:center;gap:5px;padding:0 8px;border-radius:6px;background:var(--fill);font-size:12px;position:relative}
+.menu{position:absolute;right:0;top:28px;width:230px;background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:5px;box-shadow:0 8px 28px rgba(0,0,0,.35);z-index:4}
+.menu button{display:flex;width:100%;gap:6px;align-items:center;padding:6px 8px;border-radius:7px;text-align:left}
+.menu button:hover{background:var(--accentfill);color:#fff}
+.issue{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;line-height:16px}
+.issue.crit{color:var(--crit)}.issue.mute{color:var(--sec)}
+.issue .link{margin-left:auto;white-space:nowrap}
+
+/* Progress */
+.strip{flex:none;display:flex;align-items:center;gap:10px;min-height:32px;margin-bottom:10px}
+.strip .st{display:flex;align-items:center;gap:7px;min-width:0;font-weight:600;white-space:nowrap}
+.strip .meta{color:var(--sec);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.strip .sp{flex:1}
+.bar{flex:none;height:2px;background:var(--qfill);border-radius:1px;margin:-4px 0 10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.follow{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);height:28px;padding:0 12px;border-radius:14px;background:var(--surface);border:.5px solid var(--border);box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;font-size:12px}
+.stage{display:flex;gap:9px;padding:6px 0;align-items:flex-start;line-height:18px}
+.stage .ico{width:16px;height:18px;display:grid;place-items:center;flex:none}
+.stage.todo{color:var(--sec)}
+.stage small{display:block;color:var(--sec);font-size:11px;line-height:14px}
+.ok{color:var(--pos)}.cau{color:var(--cau)}.bad{color:var(--crit)}
+.dot0{width:6px;height:6px;border-radius:50%;background:var(--fill)}
+.slist{margin:2px 0 6px 25px}
+.srow{display:flex;align-items:center;gap:8px;height:26px;border-radius:6px;padding:0 6px;margin-left:-6px;width:100%;text-align:left}
+.srow:hover{background:var(--hover)}
+.srow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow.cur{background:var(--tint)}
+.srow.todo .t{color:var(--sec)}
+.srow .re{display:none;color:var(--accent);font-size:11px;white-space:nowrap}
+.srow:hover .re{display:block}
+.okline{display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;color:var(--sec)}
+.cauline{margin-top:8px;padding:10px;border-radius:8px;background:color-mix(in srgb,var(--cau) 12%,transparent);font-size:12px;line-height:17px}
+.cauline .a{display:flex;gap:10px;margin-top:6px}
+
+/* Article preview */
+.doc{flex:1;min-height:0;position:relative}
+.docs{position:absolute;inset:0;overflow:auto;scrollbar-width:none}.docs::-webkit-scrollbar{display:none}
+.hd .m{font-size:12px;line-height:15px;font-weight:500;color:var(--sec);margin-bottom:12px}
+.hd h1{font-size:20px;line-height:28px;margin:0 0 20px;font-weight:700}
+.prose{font-size:15px;line-height:1.75;color:var(--label);overflow-wrap:anywhere}
+.prose p{margin:0 0 14px}
+.prose h1,.prose h2{font-size:17px;line-height:1.5;margin:22px 0 10px;font-weight:700}
+.prose h3{font-size:15px;line-height:1.5;margin:18px 0 8px;font-weight:600}
+.prose ul,.prose ol{margin:0 0 14px;padding-left:22px}
+.prose li{margin-bottom:5px}
+.prose blockquote{margin:0 0 14px;padding:0 0 0 12px;border-left:3px solid var(--fill);color:var(--ex)}
+.prose code{font:12.5px/1.5 "SF Mono",Menlo,"JetBrains Mono",Consolas,monospace;background:var(--qfill);padding:1px 4px;border-radius:4px}
+.prose pre{background:var(--qfill);padding:10px 12px;border-radius:8px;overflow:auto;margin:0 0 14px}
+.prose pre code{background:none;padding:0;white-space:pre;font-size:12px}
+.prose table{border-collapse:collapse;margin:0 0 14px;font-size:13.5px;width:100%}
+.prose th,.prose td{border:.5px solid var(--border);padding:6px 9px;text-align:left}
+.prose th{background:var(--qfill);font-weight:600}
+.prose a{color:var(--accent);text-decoration:none}
+.prose figure{margin:0 0 14px}
+.prose figure svg{width:100%;max-width:440px;height:auto;border-radius:6px;background:#fff}
+.prose figcaption{font-size:12px;color:var(--sec);margin-top:4px}
+.caret{display:inline-block;width:2px;height:1.05em;background:var(--accent);margin-left:2px;vertical-align:-.15em;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+.waiting{display:flex;align-items:center;gap:8px;color:var(--sec);padding:6px 0 18px}
+.sourcepre{font:12px/1.6 "SF Mono",Menlo,"JetBrains Mono",Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:var(--label)}
+.rawblk{position:relative;padding-left:10px;border-left:2px dashed var(--fill);margin-bottom:16px;color:var(--sec)}
+.rawblk .tag,.tagx{font-size:11px;line-height:14px;font-weight:600;color:var(--sec);display:block;margin-bottom:6px}
+.failc{border:.5px solid var(--crit);background:color-mix(in srgb,var(--crit) 10%,transparent);border-radius:10px;padding:12px;margin-bottom:16px}
+.failc .h{display:flex;gap:7px;font-weight:600;align-items:center}
+.failc p{margin:6px 0 10px;color:var(--sec);font-size:12px;line-height:17px}
+.failc .a{display:flex;gap:8px}
+.flash{animation:fl 1.1s ease-out}
+@keyframes fl{0%,40%{background:var(--tint)}100%{background:transparent}}
+
+/* PDF pages */
+.pages{background:rgba(120,120,128,.14);border-radius:8px;padding:14px;min-height:100%}
+.page{background:#fff;color:#222;width:100%;max-width:560px;aspect-ratio:1/1.414;margin:0 auto 14px;padding:44px 46px 34px;font:12.5px/1.8 "Songti SC","Noto Serif CJK SC","Noto Serif SC",serif;box-shadow:0 1px 6px rgba(0,0,0,.28);position:relative;overflow:hidden}
+.page .pin{height:calc(100% - 18px);overflow:hidden}
+.page h1{font-size:19px;line-height:1.4;margin:0 0 6px}.page h2{font-size:14.5px;margin:12px 0 5px}.page h3{font-size:13px;margin:10px 0 4px}
+.page p{margin:0 0 7px}.page ul,.page ol{margin:0 0 7px;padding-left:18px}
+.page blockquote{margin:0 0 7px;padding-left:9px;border-left:2px solid #ccc;color:#555}
+.page pre{background:#f4f4f5;padding:7px;font:10.5px/1.5 Menlo,monospace;margin:0 0 7px;overflow:hidden}.page code{font:10.5px Menlo,monospace}
+.page table{border-collapse:collapse;width:100%;margin:0 0 7px;font-size:11px}.page th,.page td{border:.5px solid #bbb;padding:3px 5px;text-align:left}
+.page figure{margin:0 0 7px}.page figure svg{width:70%;height:auto}.page figcaption{font-size:10px;color:#777}
+.page a{color:#0a58ca;text-decoration:none}
+.page .src{font:10px sans-serif;color:#777;margin-bottom:12px}
+.page .no{position:absolute;bottom:14px;left:0;right:0;text-align:center;font:10px sans-serif;color:#999}
+.pages.printed .page{font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif}
+#measure{position:absolute;left:-9999px;top:0;visibility:hidden}
+
+/* Edit + compare */
+.split2{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pane{min-height:0;min-width:0;display:flex;flex-direction:column}
+.panebody{flex:1;min-height:0;position:relative}
+textarea.ed{position:absolute;inset:0;width:100%;height:100%;resize:none;background:var(--qfill);border:.5px solid var(--border);border-radius:8px;color:var(--label);font:12px/1.65 "SF Mono",Menlo,"JetBrains Mono",Consolas,monospace;padding:12px;outline:0}
+textarea.ed:focus{border-color:var(--accent)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;column-gap:20px}
+.cmp .chd{position:sticky;top:0;background:var(--surface);z-index:1;font-size:12px;font-weight:600;color:var(--sec);padding-bottom:8px}
+.cmp .cc{padding:12px 0 2px;border-top:.5px solid var(--sep);min-width:0}
+.cmp .raw{font-size:13px;line-height:1.7;color:var(--ex)}
+.cmp .raw p{margin:0 0 8px}
+.cmp .raw a{color:var(--accent);text-decoration:none}
+.cmp .raw svg,.rawblk svg{width:100%;height:auto;background:#fff;border-radius:4px}
+.cmp .raw del{text-decoration:line-through;color:var(--crit);background:color-mix(in srgb,var(--crit) 10%,transparent);text-decoration-thickness:1px}
+.cmp .prose{font-size:13px;line-height:1.7}
+.cmp .prose p,.cmp .prose ul,.cmp .prose ol,.cmp .prose pre,.cmp .prose blockquote,.cmp .prose table,.cmp .prose figure{margin-bottom:8px}
+.cmp .prose h2{font-size:14px;margin:0 0 6px}
+.ctag{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:0 0 8px;color:var(--cau);font-size:12px}
+
+/* Reader after save */
+.reader{position:absolute;inset:0;background:var(--win);overflow:auto;padding:40px 0 60px}
+.reader .in{width:min(640px,calc(100% - 48px));margin:auto}
+.reader h1.ti{font:700 25px/1.4 inherit;margin:0 0 10px}
+.reader .by{color:var(--sec);font-size:12.5px;display:flex;gap:6px;align-items:center;margin-bottom:26px;position:relative;flex-wrap:wrap}
+.chip{height:20px;border-radius:10px;background:var(--tint);color:var(--accent);display:inline-flex;align-items:center;gap:4px;padding:0 8px;font-size:11px;font-weight:600}
+.chip svg{width:12px;height:12px}
+.reader .prose{font-family:"Songti SC","Noto Serif CJK SC","Noto Serif SC",serif;font-size:16.5px;line-height:32px}
+.reader .prose h1,.reader .prose h2,.reader .prose h3{font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif}
+.reader .prose h2{font-size:20px;margin:30px 0 12px;line-height:1.4}
+.reader .prose code,.reader .prose pre code{font-size:13px}
+.prov{position:absolute;top:28px;left:0;width:310px;background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.35);z-index:3;color:var(--label);font-size:12px;line-height:18px}
+.prov dl{display:grid;grid-template-columns:64px 1fr;gap:4px 8px;margin:0 0 10px}.prov dt{color:var(--sec)}.prov dd{margin:0}
+.prov .a{display:flex;gap:12px}
+.hud{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:10px 16px;font-weight:500;box-shadow:0 8px 28px rgba(0,0,0,.35);z-index:9;display:flex;gap:8px;align-items:center;white-space:nowrap;animation:rise .18s ease-out}
+
+/* Alert over the sheet */
+.alert{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--scrim);z-index:8}
+.alert>div{width:320px;background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.alert h3{margin:0 0 6px;font-size:14px;line-height:19px}
+.alert p{margin:0 0 16px;color:var(--sec);line-height:18px}
+.alert .a{display:flex;justify-content:flex-end;gap:8px}
+
+/* Phone */
+.ph{width:390px;height:min(844px,100%);border-radius:44px;border:8px solid #000;box-shadow:0 0 0 1px #555,var(--shadow);background:var(--win);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.ph .sb{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0;font-weight:600;font-size:13px}
+.ph .urlbar{gap:8px;padding:0 10px}
+.ph .url{height:36px;border-radius:18px;justify-content:center}
+.ph .web .aside{display:none}.ph .web .wrap{padding:10px 14px}.ph .web h1{font-size:21px}
+.ph .pop{left:12px;right:12px;width:auto}
+.ph .scrim{align-items:flex-end}
+.ph .sheet{width:100%;height:calc(100% - 12px);max-height:none;border-radius:28px 28px 0 0;padding:8px 16px 22px;border:0;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px)}}
+.ph .grab{width:36px;height:5px;background:var(--fill);border-radius:3px;margin:0 auto 8px}
+.ph .sheet>h2{text-align:center;margin-bottom:10px}
+.ph .sbody{flex:1;height:auto;min-height:0;flex-direction:column}
+.ph .sbody.idle{overflow:auto;scrollbar-width:none}
+.ph .sbody.idle .right{order:0;flex:none}
+.ph .sbody.idle .left{order:1;flex:none;height:300px;margin-top:0}
+.ph .vr{display:none}
+.ph .sbody:not(.idle) .right{flex:1;min-height:0;overflow:auto;display:none}
+.ph .sbody.showset .right{display:block}.ph .sbody.showset .left{display:none}
+.ph .sfoot{margin-top:10px;padding-top:10px}
+.ph .sfoot .btn{flex:1;height:44px;border-radius:12px;font-size:15px;font-weight:600}
+.ph .sfoot .note{display:none}
+.ph .split2{grid-template-columns:1fr}
+.ph .cmp{grid-template-columns:1fr}
+.ph .cmp .chd{display:none}
+.ph .cmp .cc:nth-child(even){border-top:0;padding-top:0}
+.ph .cmp .cc::before{content:attr(data-l);display:block;font-size:11px;font-weight:600;color:var(--sec);margin-bottom:5px}
+.ph .strip{flex-wrap:wrap}
+.ph .reader{padding-top:10px}
+.ph .reader .in{width:calc(100% - 32px)}
+.ph .page{padding:26px 24px 24px;font-size:10px}
+.ph .page h1{font-size:15px}.ph .page h2{font-size:12px}
+.ph .fmt{min-height:44px}
+.ph .hud{bottom:96px;white-space:normal;width:86%}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="stage"></div>
+<div id="measure"></div>
+<script>
+'use strict';
+/* ---------- Icons ---------- */
+const P={doc:'<path d="M4 2.5h5.5L12.5 5.5V13a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z"/><path d="M9.5 2.5v3h3M5.5 8.5h5M5.5 11h5"/>',
+pdf:'<path d="M4 2.5h5.5L12.5 5.5V13a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z"/><path d="M9.5 2.5v3h3M6 8h4M8 8v3.5"/>',
+md:'<path d="M4 2.5h5.5L12.5 5.5V13a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z"/><path d="M9.5 2.5v3h3M7 8 5.5 9.75 7 11.5M9 8l1.5 1.75L9 11.5"/>',
+ai:'<path d="M7 2.5 8.2 6 11.5 7.2 8.2 8.4 7 12 5.8 8.4 2.5 7.2 5.8 6Z"/><path d="M12 2v2.5M10.8 3.2h2.4M12.2 10.8v2.4M11 12h2.4"/>',
+globe:'<circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c1.8 1.6 2.6 3.4 2.6 5.5S9.8 11.900 8 13.500C6.200 11.900 5.400 10.100 5.400 8S6.200 4.100 8 2.500Z"/>',
+home:'<path d="M3 7.500 8 3l5 4.500V13H9.500v-3h-3v3H3Z"/>',side:'<rect x="2.500" y="3" width="11" height="10" rx="2"/><path d="M6.500 3v10M11 6 9 8l2 2"/>',
+plus:'<path d="M8 3v10M3 8h10"/>',undo:'<path d="M6 4 3 7l3 3M3 7h6.500a3 3 0 0 1 0 6H8"/>',redo:'<path d="m10 4 3 3-3 3M13 7H6.500a3 3 0 0 0 0 6H8"/>',
+back:'<path d="M10 3 5 8l5 5"/>',fwd:'<path d="m6 3 5 5-5 5"/>',reload:'<path d="M12.500 5.500A5 5 0 1 0 13 8M13 3v2.800h-2.800"/>',lock:'<rect x="4" y="7" width="8" height="6.500" rx="1.500"/><path d="M5.500 7V5a2.500 2.500 0 0 1 5 0v2"/>',
+conv:'<path d="M5 2.500h4.500L12.500 5.500V13a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V10"/><path d="M9.500 2.500v3h3M2 7.500h6M6 5.500l2 2-2 2"/>',
+close:'<path d="m4 4 8 8M12 4l-8 8"/>',check:'<path d="m3.500 8.500 3 3 6-7"/>',warn:'<path d="M8 3 2.500 13h11ZM8 7v3M8 11.700v.1"/>',down:'<path d="m4 6 4 4 4-4"/>',map:'<circle cx="8" cy="8" r="2"/><path d="M6.500 6.500 4 4M9.500 6.500 12 4M6.500 9.500 4 12M9.500 9.500 12 12"/>',
+vocab:'<rect x="3" y="2.500" width="10" height="11" rx="2"/><path d="m6 11 2-5 2 5M6.700 9.500h2.600"/>',review:'<circle cx="8" cy="8" r="5.500"/><path d="M8 5v3l2 1.500"/>',tag:'<path d="M3 3h5l5 5-5 5-5-5Z"/><circle cx="5.700" cy="5.700" r=".6"/>',
+stop:'<rect x="4.500" y="4.500" width="7" height="7" rx="1.500"/>',retry:'<path d="M12.500 5.500A5 5 0 1 0 13 8M13 3v2.800h-2.800"/>',arrow:'<path d="M8 3v10M4 9l4 4 4-4"/>',sync:'<path d="M3 8a5 5 0 0 1 8.500-3.500L13 6M13 8a5 5 0 0 1-8.500 3.500L3 10M13 3v3h-3M3 13v-3h3"/>'};
+const I=(n,s)=>`<svg class="ic" viewBox="0 0 16 16"${s?` style="width:${s}px;height:${s}px"`:''}>${P[n]}</svg>`;
+
+/* ---------- Sample article ---------- */
+const TITLE='间隔重复为什么有效：从遗忘曲线到 FSRS',RAW_TITLE=TITLE+' - 学习日报',HOST='xuexi-daily.example.com',DATE='2026-11-03';
+const IMG={'images/curve.png':['遗忘曲线与复习',`<svg viewBox="0 0 440 180" xmlns="http://www.w3.org/2000/svg"><rect width="440" height="180" fill="#fff"/><path d="M40 20v130h380" fill="none" stroke="#999"/><path d="M40 28C70 110 110 132 180 140S340 146 420 148" fill="none" stroke="#d33" stroke-width="2"/><path d="M40 28C60 66 80 80 110 86L110 34C150 60 190 70 230 72L230 36C280 52 350 60 420 62" fill="none" stroke="#0a66d0" stroke-width="2"/><text x="300" y="56" font-size="12" fill="#0a66d0" font-family="sans-serif">按间隔复习</text><text x="300" y="138" font-size="12" fill="#d33" font-family="sans-serif">不复习</text><text x="46" y="170" font-size="11" fill="#777" font-family="sans-serif">时间 →</text></svg>`],
+'images/fsrs.png':['FSRS 的记忆状态示意',`<svg viewBox="0 0 440 130" xmlns="http://www.w3.org/2000/svg"><rect width="440" height="130" fill="#fff"/><g font-family="sans-serif" font-size="13" text-anchor="middle"><rect x="20" y="40" width="110" height="50" rx="8" fill="#e8f1fb" stroke="#0a66d0"/><text x="75" y="70">提取概率 R</text><rect x="165" y="40" width="110" height="50" rx="8" fill="#e8f1fb" stroke="#0a66d0"/><text x="220" y="70">稳定性 S</text><rect x="310" y="40" width="110" height="50" rx="8" fill="#e8f1fb" stroke="#0a66d0"/><text x="365" y="70">难度 D</text></g><path d="M130 65h35M275 65h35" stroke="#777"/></svg>`]};
+/* Raw lines starting with "~" are page debris that formatting removes (shown struck through in the comparison). */
+const SECS=[
+{t:'引言',raw:[`~首页 / 学习方法 / 记忆科学    分享到 微信 微博 复制链接   阅读 12.4万`,`~点击上方蓝字关注我们，回复“记忆”领取资料包`,`间隔重复为什么有效：从遗忘曲线到 FSRS`,`~作者 林序 发布于 2026-10-28 09:12 · 9 分钟阅读`,`你一定有过这样的经历：考前通宵把书看完，考完一周就忘得差不多了。这不是记性不好。　　大脑会主动丢弃它判断为不再需要的信息，而复习正是在告诉它“这条信息还要用”。`,`本文讲三件事 为什么会遗忘 为什么间隔比集中有效 FSRS 如何计算下一次复习的时间`],
+ai:`你一定有过这样的经历：考前通宵把书看完，考完一周就忘得差不多了。这不是记性不好。大脑会主动丢弃它判断为不再需要的信息，而复习正是在告诉它“这条信息还要用”。
+
+本文讲三件事：
+
+- 为什么会遗忘
+- 为什么间隔比集中有效
+- FSRS 如何计算下一次复习的时间`},
+{t:'遗忘曲线',raw:[`**一、遗忘曲线**`,`1885 年，艾宾浩斯用无意义音节测量自己的记忆保持率。他发现遗忘最快发生在学习后的最初几小时，之后逐渐放缓。`,`![](images/curve.png)`,`~图片来源网络，侵删`,`值得注意的是这条曲线并不是固定的。**每复习一次，曲线就变得更平缓**：同样的时间过去，保留下来的内容更多。原始论文的英译本可以在这里找到 [Memory: A Contribution](https://psychclassics.yorku.ca/Ebbinghaus/index.htm)`],
+ai:`## 遗忘曲线
+
+1885 年，艾宾浩斯用无意义音节测量自己的记忆保持率。他发现遗忘最快发生在学习后的最初几小时，之后逐渐放缓。
+
+![遗忘曲线与复习](images/curve.png)
+
+这条曲线并不是固定的。**每复习一次，曲线就变得更平缓**：同样的时间过去，保留下来的内容更多。原始论文的英译本见 [Memory: A Contribution](https://psychclassics.yorku.ca/Ebbinghaus/index.htm)。`},
+{t:'间隔效应',raw:[`**二、间隔效应**`,`~猜你喜欢：7 天背完 3500 词？这个方法太狠了 >>`,`同样学习 60 分钟，分散到几天通常比集中在一次效果更好。心理学称之为间隔效应。原因主要有三点 1. 提取变难 间隔后回想更费力，而费力的回想让记忆更牢固 2. 情境变化 不同时间和环境提供了更多线索 3. 巩固 睡眠让新记忆有时间整合进已有知识`,`“最有效的复习时机，是你快要忘记、但还能想起来的时候。”——罗伯特·比约克`],
+ai:`## 间隔效应
+
+同样学习 60 分钟，分散到几天通常比集中在一次效果更好。心理学称之为**间隔效应**，原因主要有三点：
+
+1. **提取变难**：间隔后回想更费力，而费力的回想让记忆更牢固。
+2. **情境变化**：不同时间和环境提供了更多线索。
+3. **巩固**：睡眠让新记忆有时间整合进已有知识。
+
+> 最有效的复习时机，是你快要忘记、但还能想起来的时候。
+> ——罗伯特·比约克`},
+{t:'FSRS 的三个变量',raw:[`**三、FSRS 怎么做**`,`FSRS 用三个变量描述一张卡片的记忆状态`,`| 变量 | 含义 | 变化方式 |\n| 提取概率 R | 此刻想起来的概率 | 随时间下降 |\n| 稳定性 S | R 从 100% 降到 90% 需要的天数 | 成功复习后上升 |\n| 难度 D | 这张卡片本身有多难 | 根据评分调整 |`,`![](images/fsrs.png)`,`调度时，系统选一个目标记住率，比如 90%，然后算出 R 降到该值的那一天。这就是下次复习的日期。`,`~广告 × 限时 5 折｜记忆大师训练营，名师带你 21 天脱胎换骨，立即抢购`],
+ai:`## FSRS 的三个变量
+
+FSRS 用三个变量描述一张卡片的记忆状态：
+
+| 变量 | 含义 | 变化方式 |
+| --- | --- | --- |
+| 提取概率 R | 此刻想起来的概率 | 随时间下降 |
+| 稳定性 S | R 从 100% 降到 90% 需要的天数 | 成功复习后上升 |
+| 难度 D | 这张卡片本身有多难 | 根据评分调整 |
+
+![FSRS 的记忆状态示意](images/fsrs.png)
+
+调度时，系统选一个目标记住率，比如 90%，然后算出 R 降到该值的那一天。这就是下次复习的日期。`},
+{t:'计算下次复习',raw:[`下面这段代码演示如何由稳定性计算间隔 def next_interval(stability, retention=0.9): factor = 19 / 81 decay = -0.5 return round(stability / factor * (retention ** (1 / decay) - 1))`,`~复制代码  登录后可下载完整源码  评论区见`,`当 retention 等于 0.9 时，间隔恰好等于稳定性。调高目标记住率会缩短间隔，复习量随之增加，所以并不是越高越好。`],
+ai:`## 计算下次复习
+
+下面的代码演示如何由稳定性计算间隔：
+
+\`\`\`python
+def next_interval(stability, retention=0.9):
+    factor = 19 / 81
+    decay = -0.5
+    return round(stability / factor * (retention ** (1 / decay) - 1))
+\`\`\`
+
+当 \`retention\` 等于 0.9 时，间隔恰好等于稳定性。调高目标记住率会缩短间隔，复习量随之增加，所以并不是越高越好。`},
+{t:'实践建议',warn:24,raw:[`**四、实践建议**`,`第一，一张卡片只问一件事。第二，用自己的话写问题，不要照抄原文。第三，每天少量复习，比周末一次补完更容易坚持。第四，把记住率设在 85% 到 92% 之间。`,`我自己的做法是每天早饭后花 15 分钟清空待复习队列，碰到反复答错的卡片就拆成两张。`,`~最后，如果你想系统学习记忆方法，欢迎报名我们的《高效记忆 21 天》课程，前 100 名赠送思维导图模板。扫描下方二维码添加助教微信，备注“记忆”即可。往期学员平均每天多记 80 个单词，真实好评截图见文末。`],
+ai:`## 实践建议
+
+1. 一张卡片只问一件事。
+2. 用自己的话写问题，不要照抄原文。
+3. 每天少量复习，比周末一次补完更容易坚持。
+4. 把记住率设在 85% 到 92% 之间。
+
+我自己的做法是每天早饭后花 15 分钟清空待复习队列，碰到反复答错的卡片就拆成两张。`},
+{t:'小结',raw:[`**五、小结**`,`遗忘是默认行为，复习是一次次地修正它。把时间花在快要忘记的那个时刻，同样的投入能换来更长久的记忆。`,`~点个“在看”再走吧 👍  上一篇：番茄工作法真的有用吗  下一篇：如何读完一本难读的书  ©2026 学习日报 沪ICP备00000000号`],
+ai:`## 小结
+
+遗忘是默认行为，复习是一次次地修正它。把时间花在快要忘记的那个时刻，同样的投入能换来更长久的记忆。`}];
+const rawText=s=>s.raw.map(l=>l.replace(/^~/,'')).join('\n\n');
+const TOTAL=SECS.reduce((n,s)=>n+rawText(s).length,0);
+
+/* ---------- State ---------- */
+const MODELS=[{id:'claude',name:'Claude Sonnet 5.5',svc:'Anthropic',local:false},{id:'qwen',name:'Qwen3 32B',svc:'Ollama（本机）',local:true}];
+const S={config:'ok',sim:'ok',speed:1,theme:'dark',device:'desktop',screen:'browser',popover:true,ai:false,phase:'idle',fmt:'read',tab:'preview',view:'render',secs:[],queue:[],tok:0,active:-1,started:0,err:null,edited:false,mdEdit:null,follow:true,name:RAW_TITLE,nameEdited:false,model:MODELS[0],menu:false,checking:false,saved:null,prov:false,settings:false,alert:null,hud:null,phoneSet:false,netDone:false};
+const $=q=>document.querySelector(q);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const fmtSec=ms=>{const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+const blocked=()=>S.config!=='ok';
+
+function reset(){S.tok++;Object.assign(S,{screen:'browser',popover:true,ai:false,phase:'idle',fmt:'read',tab:'preview',view:'render',secs:[],queue:[],active:-1,err:null,edited:false,mdEdit:null,follow:true,name:RAW_TITLE,nameEdited:false,menu:false,checking:false,saved:null,prov:false,settings:false,alert:null,hud:null,phoneSet:false,netDone:false});render()}
+function hud(t,i){S.hud={t,i};renderHud();clearTimeout(hud.t0);hud.t0=setTimeout(()=>{S.hud=null;renderHud()},2800)}
+function renderHud(){document.querySelectorAll('.hud').forEach(e=>e.remove());if(!S.hud)return;const r=$('.win,.ph');if(!r)return;const d=document.createElement('div');d.className='hud';d.innerHTML=(S.hud.i?I(S.hud.i):'')+esc(S.hud.t);r.appendChild(d)}
+
+/* ---------- Minimal Markdown ---------- */
+function inline(t){let s=esc(t);
+ s=s.replace(/`([^`]+)`/g,(m,a)=>`<code>${a}</code>`).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,a,u)=>`<a href="#" title="${u}">${a}</a>`);return s}
+function md(src){const L=src.split('\n');let o='',i=0;
+ while(i<L.length){let l=L[i];
+  if(!l.trim()){i++;continue}
+  if(l.startsWith('```')){let j=i+1,c=[];while(j<L.length&&!L[j].startsWith('```'))c.push(L[j++]);o+=`<pre><code>${esc(c.join('\n'))}</code></pre>`;i=j+1;continue}
+  let h=l.match(/^(#{1,3}) (.*)/);if(h){o+=`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;i++;continue}
+  let im=l.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);if(im){const f=IMG[im[2]];o+=f?`<figure>${f[1]}${im[1]?`<figcaption>${esc(im[1])}</figcaption>`:''}</figure>`:`<p>${inline(l)}</p>`;i++;continue}
+  if(l.startsWith('|')){let r=[];while(i<L.length&&L[i].startsWith('|'))r.push(L[i++]);const cells=x=>x.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());const body=r.filter((_,k)=>k!==1||!/^[\s|:-]+$/.test(r[1]));let t='<table>';body.forEach((x,k)=>{const tag=k?'td':'th';t+='<tr>'+cells(x).map(c=>`<${tag}>${inline(c)}</${tag}>`).join('')+'</tr>'});o+=t+'</table>';continue}
+  if(l.startsWith('> ')||l==='>'){let r=[];while(i<L.length&&(L[i].startsWith('>')))r.push(L[i++].replace(/^>\s?/,''));o+=`<blockquote>${r.map(inline).join('<br>')}</blockquote>`;continue}
+  if(/^[-*] /.test(l)){let r=[];while(i<L.length&&/^[-*] /.test(L[i]))r.push(L[i++].slice(2));o+='<ul>'+r.map(x=>`<li>${inline(x)}</li>`).join('')+'</ul>';continue}
+  if(/^\d+\. /.test(l)){let r=[];while(i<L.length&&/^\d+\. /.test(L[i]))r.push(L[i++].replace(/^\d+\. /,''));o+='<ol>'+r.map(x=>`<li>${inline(x)}</li>`).join('')+'</ol>';continue}
+  let r=[];while(i<L.length&&L[i].trim()&&!/^(#{1,3} |```|> |[-*] |\d+\. |\||!\[)/.test(L[i]))r.push(L[i++]);
+  if(!r.length){o+=`<p>${inline(l)}</p>`;i++;continue}
+  o+=`<p>${inline(r.join(' '))}</p>`}
+ return o}
+function withCaret(html){const m=html.match(/<\/(p|li|h[1-3]|blockquote|code)>(<\/(ol|ul|pre)>)?$/);return m?html.slice(0,m.index)+'<span class="caret"></span>'+html.slice(m.index):html+'<span class="caret"></span>'}
+
+/* ---------- Runner ---------- */
+const started=()=>S.secs.length>0;
+function initSecs(){S.secs=SECS.map(x=>({...x,out:'',state:'wait',err:null,ack:false,failedOnce:false}))}
+function secText(s){return s.state==='done'||s.state==='run'?s.out:rawText(s)}
+function fullMd(){return S.edited?S.mdEdit:S.secs.map(secText).join('\n\n')}
+function doneCount(){return S.secs.filter(s=>s.state==='done').length}
+function outChars(){return S.secs.reduce((n,s)=>n+s.out.length,0)}
+async function start(){initSecs();Object.assign(S,{phase:'prep',started:Date.now(),elapsed:0,err:null,tab:'preview',view:'render',follow:true,prepStep:0,edited:false,mdEdit:null,netDone:false});const tok=++S.tok;renderSheet();
+ await wait(500/S.speed);if(tok!==S.tok)return;S.prepStep=1;renderRight();await wait(450/S.speed);if(tok!==S.tok)return;S.prepStep=2;S.queue=S.secs.map((_,i)=>i);run(tok)}
+async function run(tok){S.phase='running';S.err=null;renderSheet();
+ while(S.queue.length){const i=S.queue.shift(),s=S.secs[i];if(tok!==S.tok)return;
+  s.state='run';s.out='';s.err=null;S.active=i;S.cur=i;renderRight();paintSec(i);
+  await wait(650/S.speed);if(tok!==S.tok)return;
+  if(S.sim==='fail4'&&i===3&&!s.failedOnce){s.failedOnce=true;await wait(500/S.speed);if(tok!==S.tok)return;s.state='fail';s.err='服务繁忙（429），已自动重试 2 次';renderRight();paintSec(i);continue}
+  const cut=(S.sim==='net'&&i===2&&!S.netDone)?Math.floor(s.ai.length*.45):s.ai.length;
+  let p=0;while(p<cut){if(tok!==S.tok)return;p=Math.min(cut,p+1+Math.floor(Math.random()*5));s.out=s.ai.slice(0,p);paintSec(i);tickMeta();await wait((28+Math.random()*30)/S.speed)}
+  if(cut<s.ai.length){S.netDone=true;s.out='';s.state='wait';S.active=-1;S.phase='stopped';S.err='连接已中断，第 3 段未完成。前 2 段已保留。';S.tok++;renderSheet();return}
+  s.state='done';S.active=-1;renderRight();paintSec(i)}
+ S.active=-1;S.checking=true;renderRight();await wait(700/S.speed);if(tok!==S.tok)return;S.checking=false;S.phase='done';S.elapsed=S.elapsed||Date.now()-S.started;if(!S.nameEdited){S.name=TITLE;const n=$('#nm');if(n)n.value=TITLE}renderSheet()}
+function stopRun(){S.tok++;S.secs.forEach(s=>{if(s.state==='run'){s.state='wait';s.out=''}});S.queue=[];S.active=-1;S.checking=false;S.elapsed=Date.now()-S.started;S.phase='stopped';S.err=null;renderSheet()}
+function resume(){S.queue=S.secs.map((s,i)=>s.state==='wait'||s.state==='fail'?i:-1).filter(i=>i>=0);const tok=++S.tok;S.tab='preview';S.follow=true;run(tok)}
+function rerun(i){if(S.phase==='running'){S.queue.push(i);S.secs[i].state='wait';renderRight();paintSec(i);return}S.queue=[i];S.secs[i].ack=false;S.tab='preview';S.follow=false;const tok=++S.tok;run(tok);setTimeout(()=>scrollToSec(i),30)}
+function useRaw(i){S.secs[i].state='raw';renderRight();paintSec(i);if(S.phase!=='running')renderLeft()}
+function discardAI(){S.tok++;if(!S.nameEdited){S.name=RAW_TITLE;const n=$('#nm');if(n)n.value=RAW_TITLE}Object.assign(S,{ai:false,phase:'idle',secs:[],edited:false,mdEdit:null,err:null,tab:'preview',queue:[],active:-1,phoneSet:false});renderSheet()}
+
+/* ---------- Top level render ---------- */
+function render(){document.documentElement.dataset.theme=S.theme;renderBar();
+ const st=$('#stage');st.innerHTML=S.device==='phone'?phoneShell():desktopShell();
+ paintScreen();renderHud()}
+function renderBar(){const g=(l,k,o)=>`<div class="g"><span>${l}</span><div class="o">${o.map(([v,t])=>`<button class="${S[k]===v?'on':''}" data-b="${k}" data-v="${v}">${t}</button>`).join('')}</div></div>`;
+ $('#bar').innerHTML=`<b>原型控制</b>`+g('模型','config',[['ok','已配置'],['none','未配置'],['off','已停用']])+g('模拟','sim',[['ok','正常'],['fail4','第 4 段失败'],['net','连接中断']])+g('速度','speed',[[1,'1×'],[3,'3×'],[10,'10×']])+g('外观','theme',[['dark','深色'],['light','浅色']])+g('设备','device',[['desktop','桌面'],['phone','手机']])+`<button class="re" data-a="reset">重新开始</button>`}
+function sideRow(i,t,cl){return `<div class="row ${cl||''}">${I(i)}<span>${esc(t)}</span></div>`}
+function desktopShell(){const saved=S.screen==='doc';return `<div class="win"><div class="side">
+ <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="sp"></span>${I('home')}${I('side')}</div>
+ <div class="grp">文档</div>${sideRow('doc','学习的底层逻辑')}${sideRow('doc','论文：检索练习效应')}${saved?sideRow('globe',S.saved.name,'on'):sideRow('globe',RAW_TITLE,'on temp')}
+ <div class="grp">脑图</div>${sideRow('map','主脑图')}
+ <div class="grp">学习</div>${sideRow('vocab','生词本')}<div class="row">${I('review')}<span>复习</span><span class="badge">1</span></div>
+ <div style="height:10px"></div>${sideRow('tag','标签')}
+ <div style="flex:1"></div><div style="display:flex;justify-content:flex-end;color:var(--icon);padding-right:6px">${I('plus')}</div></div>
+ <div class="main"><div class="tabs">${saved?`<div class="tab on">${I('doc')}<span>文档与脑图</span></div>`:`<div class="tab">${I('doc')}<span>文档与脑图</span></div><div class="tab on">${I('globe')}<span>${esc(RAW_TITLE)}</span>${I('close',12)}</div>`}<span class="sp"></span><div class="tools">${I('plus')}${I('undo')}${I('redo')}<span style="width:1px;height:16px;background:var(--sep)"></span>${I('doc')}${I('side')}${I('map')}<span class="dot"></span></div></div>
+ ${saved?'':`<div class="urlbar">${I('back')}${I('fwd')}${I('reload')}<div class="url">${I('lock')}<span>https://${HOST}/memory/spaced-repetition</span></div><button class="iconbtn" data-a="open" title="转换为文档…">${I('conv',18)}</button></div>`}
+ <div class="content" id="content"></div></div></div>`}
+function phoneShell(){const saved=S.screen==='doc';return `<div class="ph"><div class="sb"><span>9:41</span><span>5G 100%</span></div>
+ ${saved?`<div class="urlbar"><button class="iconbtn" data-a="reset">${I('back')}</button><div style="flex:1;text-align:center;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(S.saved.name)}</div><div style="width:28px"></div></div>`:`<div class="urlbar"><button class="iconbtn">${I('close')}</button><div class="url">${I('lock')}<span>${HOST}</span></div><button class="iconbtn" data-a="open" style="color:var(--accent)">${I('conv',20)}</button></div>`}
+ <div class="content" id="content"></div></div>`}
+function paintScreen(){const c=$('#content');if(!c)return;
+ if(S.screen==='doc'){c.innerHTML=readerHtml();if(S.saved.fmt==='pdf')paginate('.reader .pagesHost',S.saved.md,S.saved.printed);return}
+ c.innerHTML=webHtml()+(S.popover&&S.screen==='browser'?`<div class="pop"><div class="h">${I('conv')}保存为文档</div><p>保存后可批注、整理脑图，随时回看。</p><div class="a"><button class="btn pri" data-a="open">转换为文档…</button><button class="btn plain" data-a="later">稍后</button></div></div>`:'');
+ if(S.screen==='sheet'){const d=document.createElement('div');d.className='scrim';d.innerHTML=sheetFrame();(S.device==='phone'?$('.ph'):$('.win')).appendChild(d);renderSheet()}}
+function webHtml(){return `<div class="web"><div class="nav"><span>学习日报</span><span>首页</span><span>学习方法</span><span>记忆科学</span><span>课程</span><span>APP 下载</span></div><div class="wrap"><div class="col">
+ <div class="meta">首页 / 学习方法 / 记忆科学 · 阅读 12.4万</div><h1>${esc(TITLE)}</h1><div class="meta">作者 林序 · 2026-10-28 09:12 · 9 分钟阅读　点击上方蓝字关注我们</div>
+ <div class="ad">限时 5 折｜记忆大师训练营，立即抢购 &gt;&gt;</div>
+ <p>你一定有过这样的经历：考前通宵把书看完，考完一周就忘得差不多了。这不是记性不好。　　大脑会主动丢弃它判断为不再需要的信息，而复习正是在告诉它“这条信息还要用”。</p>
+ <p class="b">一、遗忘曲线</p><p>1885 年，艾宾浩斯用无意义音节测量自己的记忆保持率。他发现遗忘最快发生在学习后的最初几小时，之后逐渐放缓。</p>${IMG['images/curve.png'][1]}
+ <div class="ad">猜你喜欢：7 天背完 3500 词？这个方法太狠了</div>
+ <p class="b">二、间隔效应</p><p>同样学习 60 分钟，分散到几天通常比集中在一次效果更好。心理学称之为间隔效应。原因主要有三点 1. 提取变难 …</p>
+ </div><div class="aside"><div class="card"><b>热门文章</b><br>番茄工作法真的有用吗<br>如何读完一本难读的书<br>21 天养成早起习惯</div><div class="ad">扫码领资料包</div><div class="card"><b>相关课程</b><br>《高效记忆 21 天》<br>¥199</div></div></div></div>`}
+function sheetFrame(){return `<div class="sheet" role="dialog" aria-label="保存到资料库">${S.device==='phone'?'<div class="grab"></div>':''}<h2>保存到资料库</h2><div class="sbody" id="sbody"><div class="left" id="left"></div><div class="vr"></div><div class="right scroll" id="right"></div></div><div class="sfoot" id="foot"></div></div>`}
+
+function renderSheet(){if(!$('#sbody'))return;const b=$('#sbody');
+ const full=(S.phase==='done'||S.phase==='stopped')&&(S.tab==='edit'||S.tab==='compare');
+ b.className='sbody'+(full?' full':'')+(S.phase==='idle'?' idle':'')+(S.phoneSet?' showset':'');
+ renderLeft();renderRight();renderFoot()}
+
+/* ---------- Left pane ---------- */
+function headerHtml(){return `<div class="hd"><div class="m">${HOST} · ${DATE}</div><h1>${esc(S.name||TITLE)}</h1></div>`}
+function renderLeft(){const l=$('#left');if(!l)return;
+ if(S.phase==='idle'){l.innerHTML=`<div class="doc"><div class="docs" id="scr">${S.fmt==='pdf'?headerHtml()+'<div class="pagesHost"></div>':headerHtml()+(S.fmt==='md'?`<pre class="sourcepre">${esc(SECS.map(rawText).join('\n\n'))}</pre>`:`<div class="prose">${SECS.map(s=>s.raw.map(x=>{const r=x.replace(/^~/,'');const m=r.match(/^!\[\]\(([^)]+)\)$/);if(r.startsWith('|'))return md(r);return m?`<figure>${IMG[m[1]][1]}</figure>`:`<p>${inline(r)}</p>`}).join('')).join('')}</div>`)}</div></div>`;
+  if(S.fmt==='pdf')paginate('#left .pagesHost',SECS.map(rawText).join('\n\n'),true);return}
+ if(S.phase==='prep'||S.phase==='running'){l.innerHTML=`${stripRun()}<div class="bar"><i id="pb" style="width:${pct()}%"></i></div><div class="doc"><div class="docs" id="scr">${headerHtml()}${S.secs.map((_,i)=>`<section id="sec${i}"></section>`).join('')}</div>${S.follow?'':`<button class="follow" data-a="follow">${I('arrow',13)}回到最新内容</button>`}</div>`;
+  S.secs.forEach((_,i)=>paintSec(i,true));bindScroll();follow();return}
+ // done / stopped
+ const tabs=`<div class="seg" role="tablist"><button class="${S.tab==='preview'?'on':''}" data-tab="preview">预览</button><button class="${S.tab==='edit'?'on':''}" data-tab="edit">编辑</button><button class="${S.tab==='compare'?'on':''}" data-tab="compare">对照原文</button>${S.device==='phone'?`<button class="${S.phoneSet?'on':''}" data-a="phoneset">设置</button>`:''}</div>`;
+ const n=doneCount(),all=S.secs.length,un=all-n;
+ const stat=S.phase==='stopped'||un>0?`<span class="meta cau" style="color:var(--cau)">${I('warn',13).replace('<svg','<svg style="display:inline;vertical-align:-2px;width:13px;height:13px"')} 已整理 ${n}/${all} 段，其余保留原始内容</span>`:`<span class="meta">${all} 段 · ${outChars().toLocaleString()} 字 · 用时 ${fmtSec(S.elapsed||0)}${S.edited?' · 已编辑':''}</span>`;
+ const resumeB=S.phase==='stopped'||S.secs.some(s=>s.state==='fail'||s.state==='wait')?`<button class="btn sm" data-a="resume">继续整理</button>`:'';
+ const errB=S.err?`<div class="cauline" style="margin:0 0 10px;background:color-mix(in srgb,var(--crit) 10%,transparent)"><b class="bad">${esc(S.err)}</b><div style="color:var(--sec)">可以继续整理，或用已有内容保存；没有整理的部分保留原始内容。</div></div>`:'';
+ let body='';
+ if(S.tab==='preview')body=`<div class="doc"><div class="docs" id="scr">${S.fmt==='pdf'?headerHtml()+'<div class="pagesHost"></div>':S.fmt==='md'?headerHtml()+`<pre class="sourcepre">${esc(fullMd())}</pre>`:headerHtml()+(S.edited?`<div class="prose">${md(S.mdEdit)}</div>`:S.secs.map((_,i)=>`<section id="sec${i}"></section>`).join(''))}</div></div>`;
+ if(S.tab==='edit')body=`<div class="split2"><div class="pane"><div class="lab">Markdown${S.edited?` · <button class="link" data-a="restore">还原 AI 结果</button>`:''}</div><div class="panebody"><textarea class="ed" id="ed" spellcheck="false" aria-label="编辑 Markdown">${esc(fullMd())}</textarea></div></div>${S.device==='phone'?'':`<div class="pane"><div class="lab">实时预览</div><div class="panebody"><div class="docs" id="edpv"></div></div></div>`}</div>`;
+ if(S.tab==='compare')body=`<div class="doc"><div class="docs" id="scr">${compareHtml()}</div></div>`;
+ l.innerHTML=`<div class="strip">${tabs}<span class="sp"></span>${stat}${resumeB}</div>${errB}${body}`;
+ if(S.tab==='preview'){if(S.fmt==='pdf')paginate('#left .pagesHost',fullMd(),false);else if(S.fmt==='read'&&!S.edited)S.secs.forEach((_,i)=>paintSec(i,true))}
+ if(S.tab==='edit'){const e=$('#ed');e.oninput=()=>{S.edited=true;S.mdEdit=e.value;paintEdit();const lab=$('.pane .lab');if(lab&&!lab.querySelector('.link'))lab.innerHTML=`Markdown · <button class="link" data-a="restore">还原 AI 结果</button>`;renderRight()};paintEdit()}
+ if(S.tab==='compare'&&S.compareTo!=null){const t=$('#c'+S.compareTo);if(t)t.scrollIntoView({block:'start'});S.compareTo=null}}
+function paintEdit(){const p=$('#edpv');if(!p)return;p.innerHTML=`<div class="prose" style="font-size:14px">${headerHtml()}${md(S.mdEdit??fullMd())}</div>`}
+function pct(){if(S.phase==='prep')return 2;const n=S.secs.length;const d=S.secs.filter(s=>['done','fail','raw'].includes(s.state)).length;const a=S.active>=0?S.secs[S.active].out.length/S.secs[S.active].ai.length:0;return Math.min(100,(d+a)/n*100)}
+function stripRun(){const stage=S.phase==='prep'?'正在准备':S.checking?'正在检查完整性':`正在整理第 ${Math.min((S.active<0?doneCount():S.active)+1,S.secs.length)}/${S.secs.length} 段`;
+ return `<div class="strip"><span class="st"><span class="spin"></span><span id="st">${stage}</span></span><span class="meta" id="meta"></span><span class="sp"></span>${S.device==='phone'?`<button class="btn sm" data-a="phoneset">${S.phoneSet?'内容':'进度'}</button>`:''}<div class="seg"><button class="${S.view==='render'?'on':''}" data-view="render">排版</button><button class="${S.view==='source'?'on':''}" data-view="source">Markdown</button></div></div>`}
+function tickMeta(){const m=$('#meta');if(m)m.textContent=`已输出 ${outChars().toLocaleString()} 字 · ${fmtSec(Date.now()-S.started)}`;const p=$('#pb');if(p)p.style.width=pct()+'%';const st=$('#st');if(st&&S.active>=0)st.textContent=`正在整理第 ${S.active+1}/${S.secs.length} 段`;if(st&&S.checking)st.textContent='正在检查完整性'}
+function rawLine(l){const r=l.replace(/^~/,''),m=r.match(/^!\[\]\(([^)]+)\)$/);if(r.startsWith('|'))return md(r);return m&&IMG[m[1]]?`<figure style="margin:0;max-width:240px">${IMG[m[1]][1]}</figure>`:inline(r)}
+function secHtml(i,running){const s=S.secs[i],live=S.phase==='prep'||S.phase==='running';
+ if(s.state==='fail')return `<div class="failc"><div class="h">${I('warn',14).replace('<svg','<svg style="color:var(--crit)"')}第 ${i+1} 段没有整理成功</div><p>${esc(s.err)}。其他段落不受影响。</p><div class="a"><button class="btn sm pri" data-rerun="${i}">重试</button><button class="btn sm" data-raw="${i}">使用原始内容</button></div></div>`;
+ if(s.state==='wait'&&live)return '';
+ if(s.state==='wait'||s.state==='raw')return `<div class="rawblk"><span class="tag">第 ${i+1} 段 · 未整理，保留原始内容</span>${s.raw.map(l=>`<p style="margin:0 0 8px;font-size:13px;line-height:1.7">${rawLine(l)}</p>`).join('')}</div>`;
+ if(s.state==='run'&&!s.out)return `<div class="waiting"><span class="spin"></span>正在整理“${esc(s.t)}”…</div>`;
+ if(S.view==='source'&&live)return `<pre class="sourcepre">${esc(s.out)}${s.state==='run'?'<span class="caret"></span>':''}\n\n</pre>`;
+ const h=md(s.out);return `<div class="prose">${s.state==='run'?withCaret(h):h}</div>`}
+function paintSec(i,skip){const e=$('#sec'+i);if(!e)return;e.innerHTML=secHtml(i);if(!skip)follow()}
+function follow(){if(!S.follow)return;const d=$('#scr');if(d&&(S.phase==='running'||S.phase==='prep')){d.scrollTop=d.scrollHeight}}
+function bindScroll(){const d=$('#scr');if(!d)return;let last=d.scrollTop;d.addEventListener('wheel',e=>{if(e.deltaY<0&&S.follow&&S.phase==='running'){S.follow=false;addFollow()}},{passive:true});d.addEventListener('touchmove',()=>{if(S.follow&&S.phase==='running'){S.follow=false;addFollow()}},{passive:true})}
+function addFollow(){const h=$('#left .doc');if(!h||h.querySelector('.follow'))return;const b=document.createElement('button');b.className='follow';b.dataset.a='follow';b.innerHTML=I('arrow',13)+'回到最新内容';h.appendChild(b)}
+function scrollToSec(i){const e=$('#sec'+i),d=$('#scr');if(!e||!d)return;S.follow=false;addFollow();d.scrollTop=e.offsetTop-d.offsetTop;e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash')}
+function compareHtml(){let o=`<div class="cmp"><div class="chd">原始提取</div><div class="chd">AI 整理后${S.edited?'（编辑前）':''}</div>`;
+ S.secs.forEach((s,i)=>{const warn=s.warn&&s.state==='done'&&!s.ack;
+  if(warn)o+=`<div class="ctag" id="c${i}" style="border-top:.5px solid var(--sep);padding-top:10px">${I('warn',13)}<span>这一段比原文少 ${s.warn}%。删除的内容已划线，请确认。</span><button class="btn sm" data-ack="${i}">没问题</button></div>`;
+  o+=`<div class="cc raw" ${warn?'':`id="c${i}"`} data-l="原始提取" ${warn?'style="border-top:0;padding-top:0"':''}>${s.raw.map(l=>{const j=l.startsWith('~');const t=rawLine(l);return `<p>${j?`<del>${t}</del>`:t}</p>`}).join('')}</div><div class="cc" data-l="AI 整理后" ${warn?'style="border-top:0;padding-top:0"':''}><div class="prose">${s.state==='done'?md(s.out):'<span class="tagx">未整理</span>'}</div></div>`});
+ return o+'</div>'}
+/* AI off, PDF: the existing path prints the live page, debris included. */
+function paginate(sel,src,printed){const h=$(sel);if(!h)return;const m=$('#measure');const w=Math.min(h.clientWidth-28,560)||520;m.style.width=w+'px';
+ const pad=S.device==='phone'?48:92;const H=Math.round(w*1.414)-(S.device==='phone'?68:96);
+ const t=document.createElement('div');t.innerHTML=`<h1>${esc(S.saved?.name||S.name||TITLE)}</h1>${printed?'':`<div class="src">${HOST} · ${DATE}</div>`}`+md(src);
+ const probe=document.createElement('div');probe.className='page';probe.style.cssText=`height:auto;aspect-ratio:auto;width:${w}px;padding:0 ${pad/2}px;box-shadow:none`;m.innerHTML='';m.appendChild(probe);
+ const pages=[];let cur=[];[...t.children].forEach(el=>{probe.appendChild(el);if(probe.offsetHeight>H&&cur.length){pages.push(cur);cur=[];probe.innerHTML='';probe.appendChild(el)}cur.push(el.outerHTML)});if(cur.length)pages.push(cur);m.innerHTML='';
+ h.innerHTML=`<div class="pages${printed?' printed':''}">${pages.map((p,i)=>`<div class="page"><div class="pin">${p.join('')}</div><div class="no">${i+1} / ${pages.length}</div></div>`).join('')}</div>`}
+
+/* ---------- Right pane ---------- */
+function formatsHtml(){const rows=[['read','阅读模式','doc'],['pdf','PDF','pdf'],['md','Markdown','md']];return rows.map(([k,l,i])=>`<button class="fmt ${S.fmt===k?'on':''}" data-fmt="${k}" role="radio" aria-checked="${S.fmt===k}"><svg class="ic" viewBox="0 0 16 16">${P[i]}</svg><b>${l}</b><span class="r"></span></button>`).join('')}
+function aiCard(){const off=blocked();const on=S.ai&&!off;
+ let extra='';
+ if(S.config==='none')extra=`<div class="issue mute"><span>添加模型后即可使用</span><button class="link" data-a="settings">去设置</button></div>`;
+ else if(S.config==='off')extra=`<div class="issue crit">${I('warn',13)}<span>模型已停用</span><button class="link" data-a="settings">去设置</button></div>`;
+ else if(on)extra=`<div class="mrow"><span style="color:var(--sec);font-size:12px">模型</span><button class="pick" data-a="menu">${esc(S.model.name)}${I('down',11)}${S.menu?`<div class="menu">${MODELS.map(m=>`<button data-model="${m.id}">${m.id===S.model.id?I('check',12):'<span style="width:12px"></span>'}<span>${esc(m.name)}<br><small style="opacity:.7">${esc(m.svc)}</small></span></button>`).join('')}</div>`:''}</button></div><p>约 ${TOTAL.toLocaleString()} 字，分 ${SECS.length} 段。${S.model.local?'在本机处理，内容不会离开这台设备。':`正文会发送到 ${esc(S.model.svc)}。`}</p>`;
+ return `<div class="aic ${on?'on':''}"><div class="top">${I('ai',18)}<b>AI 整理</b><button class="sw ${on?'on':''}" role="switch" aria-checked="${on}" aria-label="AI 整理" data-a="toggle" ${off?'disabled':''}></button></div><p>修正标题、列表和段落，去掉页面杂质，不改写原文。</p>${extra}</div>`}
+function progressHtml(){const p=S.prepStep||0,running=S.phase==='running'||S.phase==='prep';
+ const stage=(state,t,sub)=>`<div class="stage ${state==='todo'?'todo':''}"><span class="ico">${state==='ok'?`<span class="ok">${I('check',14)}</span>`:state==='run'?'<span class="spin"></span>':'<span class="dot0"></span>'}</span><div>${t}${sub?`<small>${sub}</small>`:''}</div></div>`;
+ const n=doneCount(),all=S.secs.length,organizing=S.phase!=='prep';
+ const rows=S.secs.map((s,i)=>{const ic=s.state==='done'?(s.warn&&!s.ack?`<span class="cau">${I('warn',13)}</span>`:`<span class="ok">${I('check',13)}</span>`):s.state==='run'?'<span class="spin" style="width:12px;height:12px"></span>':s.state==='fail'?`<span class="bad">${I('warn',13)}</span>`:'<span class="dot0" style="margin:0 3.5px"></span>';
+  const canRe=!running&&!S.edited&&(s.state==='done'||s.state==='raw');
+  return `<button class="srow ${s.state==='run'?'cur':''} ${s.state==='wait'||s.state==='raw'?'todo':''}" data-goto="${i}" title="${esc(s.t)}">${ic}<span class="t">${esc(s.t)}</span>${canRe?`<span class="re" data-rerun="${i}">重新整理</span>`:''}</button>`}).join('');
+ const fin=S.phase==='done'||S.phase==='stopped';
+ const warns=S.secs.filter(s=>s.warn&&s.state==='done'&&!s.ack);
+ const check=S.phase==='done'?`<div class="okline"><span class="ok">${I('check',13)}</span>图片 2/2、链接 1/1、代码块 1/1 都在</div>${warns.map(s=>`<div class="cauline"><b class="cau">${esc(s.t)}：比原文少 ${s.warn}%</b><br>可能删掉了推广内容，也可能误删了正文。<div class="a"><button class="link" data-compare="${S.secs.indexOf(s)}">查看对照</button><button class="link" data-ack="${S.secs.indexOf(s)}">没问题</button></div></div>`).join('')}`:'';
+ return `<div class="lab">${S.phase==='done'?'完整性检查':fin?'段落':'整理进度'}</div>
+ ${fin?'':stage(p>=1?'ok':'run','读取网页正文',p>=1?`${TOTAL.toLocaleString()} 字`:'')+stage(p>=2?'ok':p===1?'run':'todo','按章节分段',p>=2?`${SECS.length} 段`:'')}
+ ${fin?'':stage(organizing?(n===all&&!S.active?'ok':'run'):'todo','整理正文',organizing?`${n}/${all}`:'')}
+ ${fin?check:''}
+ ${fin&&S.phase==='done'?'<div class="lab" style="margin-top:14px">段落</div>':''}
+ <div class="${fin?'':'slist'}">${organizing?rows:''}</div>
+ ${fin?'':stage(S.checking?'run':'todo','检查完整性','')}
+ ${fin&&S.edited?`<div class="issue mute" style="margin-top:8px">已手动编辑，不能再按段重新整理。</div>`:''}
+ ${fin?`<div style="margin-top:14px"><button class="link" data-a="discard">放弃整理，用原始内容</button></div>`:''}`}
+function renderRight(){const r=$('#right');if(!r)return;
+ if(!r.querySelector('#nm')){r.innerHTML=`<div class="sec"><div class="lab">文档名称</div><input class="input" id="nm" placeholder="标题" aria-label="文档名称" value="${esc(S.name)}"></div><div class="sec"><div class="lab">保存格式</div><div id="fmts"></div></div><div class="sec" id="aip"></div>`;
+  $('#nm').oninput=e=>{S.name=e.target.value;S.nameEdited=true;renderFoot();const h=$('.hd h1');if(h)h.textContent=S.name}}
+ $('#fmts').innerHTML=formatsHtml();$('#aip').innerHTML=S.phase==='idle'?`<div class="lab">内容处理</div>${aiCard()}`:progressHtml()}
+function renderFoot(){const f=$('#foot');if(!f)return;const emptyName=!S.name.trim();const phone=S.device==='phone';
+ const cancel=`<button class="btn" data-a="cancel">取消</button>`;
+ if(S.phase==='idle'){const ai=S.ai&&!blocked();f.innerHTML=`${cancel}<button class="btn pri" data-a="${ai?'start':'save'}" ${emptyName?'disabled':''}>${ai?'开始整理':'保存文档'}</button>`;return}
+ if(S.phase==='prep'||S.phase==='running'){f.innerHTML=`<span class="note">可以随时停止，已整理的内容会保留。</span>${phone?'':cancel}<button class="btn" data-a="stop">${I('stop',13)}停止整理</button>${phone?'':`<button class="btn pri" disabled>保存文档</button>`}`;return}
+ f.innerHTML=`${cancel}<button class="btn pri" data-a="save" ${emptyName?'disabled':''}>保存文档</button>`}
+
+/* ---------- Reader after save ---------- */
+function readerHtml(){const s=S.saved;const by=`<div class="by"><span class="link">${HOST}</span> · ${DATE}${s.ai?` <button class="chip" data-a="prov">${I('ai',12)}AI 整理</button>`:''}${S.prov?`<div class="prov"><dl><dt>模型</dt><dd>${esc(S.model.name)}</dd><dt>处理</dt><dd>整理格式${s.edited?'，之后手动编辑过':''}${s.partial?`，${s.partial} 段保留原始内容`:''}</dd><dt>原始内容</dt><dd>网页快照已保存</dd></dl><div class="a"><button class="link">查看原网页快照</button><button class="link">打开原网页</button></div></div>`:''}</div>`;
+ if(s.fmt==='pdf')return `<div class="reader" style="padding:14px"><div class="pagesHost" style="max-width:640px;margin:auto"></div></div>`;
+ return `<div class="reader"><div class="in"><h1 class="ti">${esc(s.name)}</h1>${by}<div class="prose">${md(s.md)}</div></div></div>`}
+
+function doSave(){const ai=S.phase!=='idle';const un=ai?S.secs.filter(x=>x.state!=='done').length:0;
+ const src=ai?fullMd():SECS.map(rawText).join('\n\n');S.tok++;
+ S.saved={name:S.name.trim(),fmt:S.fmt,md:src,ai,edited:S.edited,partial:un};
+ S.saved.printed=!ai&&S.fmt==='pdf';
+ S.screen='doc';render();hud(`已保存「${S.saved.name}」`,'check')}
+function tryClose(){const busy=S.phase!=='idle'&&(S.phase==='prep'||S.phase==='running'||doneCount()>0||S.edited);
+ if(busy){alertBox('放弃整理结果？',S.edited?'已整理的内容和你的编辑都不会保留。':'已整理的内容不会保留。',S.phase==='running'||S.phase==='prep'?'继续整理':'返回','放弃',()=>{S.tok++;closeSheet()});return}
+ closeSheet()}
+function closeSheet(){S.tok++;Object.assign(S,{screen:'browser',popover:false,ai:false,phase:'idle',secs:[],queue:[],edited:false,mdEdit:null,tab:'preview',phoneSet:false,menu:false,err:null,name:RAW_TITLE,nameEdited:false,active:-1});render()}
+function alertBox(t,b,no,yes,cb){const r=(S.device==='phone'?$('.ph'):$('.win'));const d=document.createElement('div');d.className='alert';d.innerHTML=`<div role="alertdialog"><h3>${t}</h3><p>${b}</p><div class="a"><button class="btn" data-x="no">${no}</button><button class="btn crit" data-x="yes">${yes}</button></div></div>`;r.appendChild(d);d.addEventListener('click',e=>{const x=e.target.dataset.x;if(!x)return;d.remove();if(x==='yes')cb()})}
+function settingsMock(){const r=(S.device==='phone'?$('.ph'):$('.win'));const d=document.createElement('div');d.className='alert';d.innerHTML=`<div><h3>设置 › AI 功能</h3><p>这里跳转到现有的模型设置页。“网页整理”作为新的一行出现在重型任务里，默认跟随重型任务模型。</p><div class="a"><button class="btn" data-x="no">返回</button><button class="btn pri" data-x="yes">模拟配置完成</button></div></div>`;r.appendChild(d);d.addEventListener('click',e=>{const x=e.target.dataset.x;if(!x)return;d.remove();if(x==='yes'){S.config='ok';renderBar();renderRight();renderFoot();hud('模型已可用','check')}})}
+
+/* ---------- Events ---------- */
+document.addEventListener('click',e=>{const t=e.target;
+ const bb=t.closest('[data-b]');if(bb){let{b:k,v}=bb.dataset;if(k==='speed')v=+v;const prev=S[k];S[k]=v;
+  if(k==='theme'){document.documentElement.dataset.theme=v;renderBar();return}
+  if(k==='device'){if(prev!==v){const mid=S.phase==='running'||S.phase==='prep';render();if(mid){}}return}
+  if(k==='config'){if(blocked())S.ai=false;renderBar();if($('#sbody'))renderSheet();return}
+  renderBar();return}
+ const r=t.closest('[data-rerun]');if(r){e.stopPropagation();rerun(+r.dataset.rerun);return}
+ const raw=t.closest('[data-raw]');if(raw){useRaw(+raw.dataset.raw);return}
+ const ack=t.closest('[data-ack]');if(ack){S.secs[+ack.dataset.ack].ack=true;renderRight();if(S.tab==='compare')renderLeft();hud('已确认','check');return}
+ const cp=t.closest('[data-compare]');if(cp){S.compareTo=+cp.dataset.compare;S.tab='compare';S.phoneSet=false;renderSheet();return}
+ const go=t.closest('[data-goto]');if(go){const i=+go.dataset.goto;S.phoneSet=false;if(S.phase==='done'||S.phase==='stopped'){if(S.tab!=='preview'||S.fmt!=='read'||S.edited){if(S.edited||S.fmt!=='read'){S.compareTo=i;S.tab='compare'}else S.tab='preview';renderSheet()}}if($('#sec'+i))scrollToSec(i);return}
+ const f=t.closest('[data-fmt]');if(f){S.fmt=f.dataset.fmt;$('#fmts').innerHTML=formatsHtml();if(S.phase==='idle'||(S.phase!=='running'&&S.phase!=='prep'&&S.tab==='preview'))renderLeft();if(S.phase==='done'&&S.tab!=='preview'&&S.device!=='phone'){}return}
+ const tb=t.closest('[data-tab]');if(tb){S.tab=tb.dataset.tab;S.phoneSet=false;renderSheet();return}
+ const vw=t.closest('[data-view]');if(vw){S.view=vw.dataset.view;renderLeft();return}
+ const m=t.closest('[data-model]');if(m){S.model=MODELS.find(x=>x.id===m.dataset.model);S.menu=false;renderRight();return}
+ const a=t.closest('[data-a]');
+ if(!a){if(S.menu){S.menu=false;renderRight()}if(S.prov&&!t.closest('.prov')){S.prov=false;paintScreen()}return}
+ switch(a.dataset.a){
+  case'reset':reset();break;
+  case'later':S.popover=false;paintScreen();break;
+  case'open':S.popover=false;S.screen='sheet';render();break;
+  case'toggle':if(!blocked()){S.ai=!S.ai;renderRight();renderFoot()}break;
+  case'menu':S.menu=!S.menu;renderRight();break;
+  case'settings':settingsMock();break;
+  case'start':start();break;
+  case'stop':stopRun();break;
+  case'resume':resume();break;
+  case'follow':S.follow=true;a.remove();follow();break;
+  case'cancel':tryClose();break;
+  case'save':doSave();break;
+  case'restore':alertBox('还原 AI 结果？','你对 Markdown 的修改将被丢弃。','返回','还原',()=>{S.edited=false;S.mdEdit=null;renderSheet()});break;
+  case'discard':alertBox('放弃整理？','将回到未整理的内容。'+(S.edited?'你的编辑也不会保留。':''),'返回','放弃',discardAI);break;
+  case'phoneset':S.phoneSet=!S.phoneSet;renderSheet();break;
+  case'prov':S.prov=!S.prov;paintScreen();break;
+ }});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const al=$('.alert');if(al){al.remove();return}if(S.screen==='sheet')tryClose()});
+const qs=new URLSearchParams(location.search);for(const k of['config','sim','theme','device'])if(qs.get(k))S[k]=qs.get(k);if(qs.get('speed'))S.speed=+qs.get('speed');
+render();
+</script>
+</body>
+</html>

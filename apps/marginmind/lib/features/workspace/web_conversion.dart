@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_assistant/mm_assistant.dart' show RoutingRowState, splitWebMarkdown, webFormatPromptVersion;
 import 'package:mm_book/mm_book.dart' as book;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -11,7 +13,11 @@ import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
 import '../../shared/l10n.dart';
+import '../assistant/settings/ai_task_status.dart' show routingIssueBlocks;
 import 'web_document.dart';
+import 'web_format_runtime.dart';
+import 'web_format_session.dart';
+import 'widgets/web_format_panel.dart';
 import 'workspace_browser.dart';
 import 'workspace_controller.dart';
 
@@ -57,7 +63,7 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
     final converter = ref.read(webDocumentConverterProvider);
     var captureQueue = Future<void>.value();
     final captures = <bool, Future<BrowserDocumentCapture>>{};
-    Future<PreparedWebDocument> prepare(WebCaptureMode mode) async {
+    Future<BrowserDocumentCapture> captureFor(WebCaptureMode mode) async {
       final original = mode == WebCaptureMode.original;
       final pending = captures.putIfAbsent(original, () {
         final next = captureQueue.then(
@@ -79,6 +85,11 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
         rethrow;
       }
       if (cancelled()) throw StateError('stale_capture');
+      return capture;
+    }
+
+    Future<PreparedWebDocument> prepare(WebCaptureMode mode) async {
+      final capture = await captureFor(mode);
       return converter.prepare(
         capture,
         id: id,
@@ -90,14 +101,59 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
     }
 
     if (!context.mounted || cancelled()) return;
+    const parser = book.WebBookParser();
+    final note = context.l10n.webFormatSourceNote;
+    final formatting = WebFormatHost(
+      executor: ref.read(webFormatExecutorProvider(studySetId)),
+      load: () async {
+        final capture = await captureFor(WebCaptureMode.readable);
+        final resources = parser.sanitizeResources(capture.resources);
+        return (
+          markdown: parser.markdown(parser.sanitizeHtml(capture.html, resources.keys.toSet())),
+          pageTitle: capture.title,
+          resources: resources,
+        );
+      },
+      prepare: (mode, body, title, origin) async {
+        final capture = await captureFor(WebCaptureMode.readable);
+        final resources = parser.sanitizeResources(capture.resources);
+        final markdown = parser.withMarkdownAttribution(body, title, capture.url, capture.capturedAt, note: note);
+        final pdf = mode == WebCaptureMode.original
+            ? await session.printDocument(
+                navigationId: generation,
+                html: parser.printableHtml(markdown, resources.keys.toSet()),
+                resources: resources,
+                cancelled: cancelled,
+              )
+            : null;
+        if (cancelled()) throw StateError('stale_capture');
+        return converter.prepare(
+          capture,
+          id: id,
+          title: title,
+          mode: mode,
+          previous: previous,
+          oldChapters: oldChapters,
+          formatted: WebFormattedContent(markdown: markdown, origin: origin, pdf: pdf),
+        );
+      },
+    );
     final PreparedWebDocument? prepared;
-    if (previous != null) {
+    // Silently refetching must not call a model or overwrite approved text, so
+    // AI documents come back through the sheet with formatting offered.
+    if (previous != null && previous.origin!.formatting == null) {
       prepared = await prepare(previous.origin!.mode);
     } else {
       prepared = await showMMSheet<PreparedWebDocument>(
         context: context,
         width: MMSizes.webConversionSheetWidth,
-        builder: (_) => WebConversionSheet(prepare: prepare),
+        builder: (_) => WebConversionSheet(
+          prepare: prepare,
+          formatting: formatting,
+          initialMode: previous?.origin?.mode ?? WebCaptureMode.readable,
+          initialFormatting: previous != null,
+          initialTitle: previous?.title,
+        ),
       );
     }
     if (prepared == null || !context.mounted || cancelled()) return;
@@ -132,9 +188,44 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
   }
 }
 
+typedef WebFormatPageSource = ({String markdown, String pageTitle, Map<String, Uint8List> resources});
+
+/// What the sheet needs to offer AI formatting; absent where it can't run.
+class WebFormatHost {
+  const WebFormatHost({required this.executor, required this.load, required this.prepare});
+  final WebFormatExecutor executor;
+
+  /// The extraction as Markdown, without title or provenance.
+  final Future<WebFormatPageSource> Function() load;
+
+  /// Builds the document from the approved [body]. May print, so it can fail.
+  final Future<PreparedWebDocument> Function(
+    WebCaptureMode mode,
+    String body,
+    String title,
+    DocumentOriginFormatting origin,
+  )
+  prepare;
+}
+
 class WebConversionSheet extends StatefulWidget {
-  const WebConversionSheet({super.key, required this.prepare});
+  const WebConversionSheet({
+    super.key,
+    required this.prepare,
+    this.formatting,
+    this.initialMode = WebCaptureMode.readable,
+    this.initialFormatting = false,
+    this.initialTitle,
+  });
   final Future<PreparedWebDocument> Function(WebCaptureMode) prepare;
+  final WebFormatHost? formatting;
+  final WebCaptureMode initialMode;
+
+  /// Starts with the switch on, for documents that were formatted before.
+  final bool initialFormatting;
+
+  /// Keeps an existing document's name instead of the page title.
+  final String? initialTitle;
   @override
   State<WebConversionSheet> createState() => _WebConversionSheetState();
 }
@@ -142,158 +233,522 @@ class WebConversionSheet extends StatefulWidget {
 class _WebConversionSheetState extends State<WebConversionSheet> {
   final _title = TextEditingController();
   final _prepared = <WebCaptureMode, Future<PreparedWebDocument>>{};
-  WebCaptureMode _mode = WebCaptureMode.readable;
-  bool _edited = false;
+  final _reveal = ValueNotifier<int?>(null);
+  late WebCaptureMode _mode = widget.initialMode;
+  late bool _edited = widget.initialTitle != null;
+  late bool _aiOn = widget.initialFormatting;
+  ModelReference? _aiModel;
+  RoutingRowState? _route;
+  Future<WebFormatPageSource>? _source;
+  WebFormatPageSource? _pageSource;
+  WebFormatSession? _session;
+  WebFormatTab _tab = WebFormatTab.preview;
+  bool _settingsShown = false, _closing = false, _saving = false, _saveFailed = false;
+  (String, String, Future<PreparedWebDocument>)? _formattedPdf;
+  String? _appliedTitle;
+
+  bool get _aiReady => _aiOn && !_routeBlocked;
+  bool get _routeBlocked => _route == null || routingIssueBlocks(_route!.issue);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTitle != null) _title.text = widget.initialTitle!;
+    if (_aiOn && widget.formatting != null) unawaited(_loadSource().then<void>((_) {}, onError: (Object _) {}));
+  }
+
   @override
   void dispose() {
+    _session?.removeListener(_sessionChanged);
+    _session?.dispose();
+    _reveal.dispose();
     _title.dispose();
     super.dispose();
   }
 
+  void _sessionChanged() {
+    final session = _session;
+    if (!mounted || session == null) return;
+    final proposed = session.proposedTitle;
+    // Offered once per proposal; a name the user typed always wins.
+    if (session.finished && proposed != null && !_edited && proposed != _appliedTitle) {
+      _appliedTitle = proposed;
+      _title.text = proposed;
+    }
+    setState(() {});
+  }
+
+  /// Shared by the job-size note and the run. Page capture happens only once.
+  Future<WebFormatPageSource> _loadSource() {
+    final source = _source ??= widget.formatting!.load();
+    source.then(
+      (value) {
+        if (!mounted || _pageSource != null) return;
+        setState(() => _pageSource = value);
+      },
+      onError: (Object _) {
+        if (mounted && identical(_source, source)) setState(() => _source = null);
+      },
+    );
+    return source;
+  }
+
+  Future<void> _start() async {
+    final host = widget.formatting!;
+    setState(() => _saveFailed = false);
+    final session = WebFormatSession(executor: host.executor, pageTitle: _title.text.trim(), model: _aiModel)
+      ..addListener(_sessionChanged);
+    setState(() => _session = session);
+    try {
+      final source = await _loadSource();
+      if (!mounted || _session != session || session.phase != WebFormatPhase.preparing) return;
+      session.start(source.markdown);
+    } catch (_) {
+      if (!mounted || _session != session) return;
+      _drop(session);
+      setState(() => _saveFailed = true);
+    }
+  }
+
+  void _drop(WebFormatSession session) {
+    session.removeListener(_sessionChanged);
+    session.dispose();
+    _session = null;
+    _tab = WebFormatTab.preview;
+    _settingsShown = false;
+    _formattedPdf = null;
+  }
+
+  Future<bool> _confirm(String title, String body, String keep, String discard, {bool destructive = true}) async =>
+      await showMMSheet<bool>(
+        context: context,
+        builder: (context) => MMSheet(
+          title: title,
+          actions: [
+            MMButton(label: keep, onPressed: () => Navigator.of(context).pop(false)),
+            MMButton(
+              label: discard,
+              variant: MMButtonVariant.primary,
+              destructive: destructive,
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+          child: Text(body, style: context.mmText.body),
+        ),
+      ) ??
+      false;
+
+  bool get _hasWork {
+    final session = _session;
+    return session != null && (session.running || session.formattedCount > 0 || session.edited);
+  }
+
+  Future<void> _close() async {
+    final l = context.l10n;
+    if (!_hasWork) {
+      Navigator.of(context).pop();
+      return;
+    }
+    {
+      final discard = await _confirm(
+        l.webFormatConfirmCloseTitle,
+        _session!.edited ? l.webFormatConfirmCloseEdited : l.webFormatConfirmClose,
+        _session!.running ? l.webFormatResume : l.webFormatBack,
+        l.webFormatDiscard,
+      );
+      if (!discard || !mounted) return;
+    }
+    _session?.stop();
+    setState(() => _closing = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  Future<void> _discardFormatting() async {
+    final l = context.l10n;
+    final session = _session!;
+    final discard = await _confirm(
+      l.webFormatConfirmDiscardTitle,
+      session.edited ? l.webFormatConfirmDiscardEdited : l.webFormatConfirmDiscard,
+      l.webFormatBack,
+      l.webFormatDiscard,
+    );
+    if (!discard || !mounted || _session != session) return;
+    setState(() {
+      _drop(session);
+      _aiOn = false;
+      if (_appliedTitle != null && _title.text == _appliedTitle) {
+        _title.clear();
+        _appliedTitle = null;
+      }
+    });
+  }
+
+  Future<void> _revert() async {
+    final l = context.l10n;
+    final session = _session!;
+    final revert = await _confirm(
+      l.webFormatConfirmRevertTitle,
+      l.webFormatConfirmRevert,
+      l.webFormatBack,
+      l.webFormatRevertAction,
+    );
+    if (revert && mounted && _session == session) {
+      session.revertEdits();
+      _formattedPdf = null;
+    }
+  }
+
+  DocumentOriginFormatting _origin(WebFormatSession session) => DocumentOriginFormatting(
+    model: _route?.modelLabel ?? '',
+    promptVersion: webFormatPromptVersion,
+    edited: session.edited,
+    unformattedSections: session.sections.length - session.formattedCount,
+  );
+
+  Future<PreparedWebDocument> _prepareFormatted(WebFormatSession session) =>
+      widget.formatting!.prepare(_mode, session.markdown, _title.text.trim(), _origin(session));
+
+  /// Printing takes seconds, so it runs once per text. The preview tolerates a
+  /// name still being typed; saving prints again if the name in it is outdated.
+  Future<PreparedWebDocument> _pdfFor(WebFormatSession session, {bool exactTitle = false}) {
+    final title = _title.text.trim();
+    final cached = _formattedPdf;
+    if (cached == null || cached.$1 != session.markdown || (exactTitle && cached.$2 != title)) {
+      _formattedPdf = (session.markdown, title, _prepareFormatted(session));
+    }
+    return _formattedPdf!.$3;
+  }
+
+  Future<void> _saveFormatted(WebFormatSession session) async {
+    setState(() {
+      _saving = true;
+      _saveFailed = false;
+    });
+    try {
+      final prepared = _mode == WebCaptureMode.original
+          ? await _pdfFor(session, exactTitle: true)
+          : await _prepareFormatted(session);
+      if (!mounted) return;
+      setState(() => _closing = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).pop(prepared);
+      });
+    } catch (_) {
+      _formattedPdf = null;
+      if (mounted) setState(() => _saveFailed = true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  void _openCompare(int index) {
+    setState(() {
+      _tab = WebFormatTab.compare;
+      _settingsShown = false;
+    });
+    _reveal.value = index;
+  }
+
+  void _revealSection(int index) {
+    final session = _session!;
+    setState(() {
+      _settingsShown = false;
+      if (session.finished && (session.edited || _mode != WebCaptureMode.readable)) {
+        _tab = WebFormatTab.compare;
+      } else {
+        _tab = WebFormatTab.preview;
+      }
+    });
+    _reveal.value = index;
+  }
+
+  Widget _formattedPdfPreview(WebFormatSession session) => FutureBuilder<PreparedWebDocument>(
+    future: _pdfFor(session),
+    builder: (context, snapshot) {
+      final l = context.l10n;
+      if (snapshot.hasError) {
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l.webFormatPdfFailed, style: context.mmText.body),
+              const SizedBox(height: MMSpacing.m),
+              MMButton(label: l.webRetry, onPressed: () => setState(() => _formattedPdf = null)),
+            ],
+          ),
+        );
+      }
+      if (snapshot.connectionState != ConnectionState.done || snapshot.data == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return _Preview(value: snapshot.data!, mode: WebCaptureMode.original);
+    },
+  );
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return FutureBuilder<PreparedWebDocument>(
-      future: _prepared.putIfAbsent(_mode, () => widget.prepare(_mode)),
-      builder: (context, snapshot) {
-        final value = snapshot.connectionState == ConnectionState.done ? snapshot.data : null;
-        if (value != null && !_edited) _title.text = value.package.document.title;
-        final c = context.mmColors;
-        final titleField = MMTextField(
-          controller: _title,
-          placeholder: l.convertTitlePlaceholder,
-          semanticLabel: l.convertDocumentName,
-          maxLines: 1,
-          onChanged: (_) => setState(() => _edited = true),
-        );
-        final formats = [
-          (WebCaptureMode.readable, l.convertReadable, MMIcons.document),
-          (WebCaptureMode.original, l.convertPdf, MMIcons.pdf),
-          (WebCaptureMode.markdown, l.convertMarkdown, MMIcons.markdown),
-        ];
-        final segments = Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: MMSpacing.s,
-          children: [
-            for (final (mode, label, icon) in formats)
-              _FormatOption(
-                label: label,
-                icon: icon,
-                selected: _mode == mode,
-                onTap: () => setState(() => _mode = mode),
-              ),
-          ],
-        );
-        final preview = Semantics(
-          label: l.convertPreview,
-          container: true,
-          child: SizedBox.expand(
-            key: const ValueKey('web-conversion-preview'),
-            child: snapshot.hasError
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(l.docSaveFailed, style: context.mmText.body),
-                        const SizedBox(height: MMSpacing.m),
-                        MMButton(
-                          label: l.webRetry,
-                          onPressed: () => setState(() {
-                            _prepared.remove(_mode);
-                          }),
-                        ),
-                      ],
-                    ),
-                  )
-                : value == null
-                ? const Center(child: CircularProgressIndicator())
-                : _Preview(value: value, mode: _mode),
-          ),
-        );
-        final save = MMButton(
-          label: l.convertSave,
-          variant: MMButtonVariant.primary,
-          onPressed: value == null || _title.text.trim().isEmpty
-              ? null
-              : () {
-                  final package = value.package;
-                  Navigator.of(context).pop(
-                    PreparedWebDocument(
-                      DocumentPackage(
-                        document: package.document.copyWith(title: _title.text.trim()),
-                        files: package.files,
-                        reconcile: package.reconcile,
-                        expectedRevision: package.expectedRevision,
-                        expectedSnapshotFile: package.expectedSnapshotFile,
-                      ),
-                      value.book,
-                      value.markdown,
-                      value.preview,
-                    ),
-                  );
-                },
-        );
-        Widget section(String label, Widget child) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(label, style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
-            const SizedBox(height: MMSpacing.s),
-            child,
-          ],
-        );
-        return MMSheet(
-          title: l.convertTitle,
-          actions: [
-            MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
-            save,
-          ],
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final settings = Column(
-                key: const ValueKey('web-conversion-settings'),
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  section(l.convertDocumentName, titleField),
-                  const SizedBox(height: MMSpacing.xxl),
-                  section(l.convertFormat, segments),
-                ],
-              );
-              final split = constraints.maxWidth >= 720;
-              final previewHeight = (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom - 210)
-                  .clamp(220.0, 600.0);
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (split)
-                    SizedBox(
-                      height: previewHeight,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(flex: 65, child: preview),
-                          const SizedBox(width: MMSpacing.xl),
-                          VerticalDivider(width: 1, thickness: 0.5, color: c.hairline),
-                          const SizedBox(width: MMSpacing.xl),
-                          Expanded(flex: 35, child: SingleChildScrollView(child: settings)),
-                        ],
-                      ),
-                    )
-                  else ...[
-                    settings,
-                    const SizedBox(height: MMSpacing.xl),
-                    SizedBox(height: 300, child: preview),
-                  ],
-                  const SizedBox(height: MMSpacing.m),
-                  Divider(height: 1, thickness: 0.5, color: c.hairline),
-                ],
-              );
-            },
-          ),
-        );
+    final activeSession = _session;
+    return PopScope(
+      canPop: _closing || !_hasWork,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_close());
       },
+      child: FutureBuilder<PreparedWebDocument>(
+        // Formatting always starts from the readable extraction, so a PDF choice
+        // must not print the page here: that happens from the approved Markdown.
+        future: _prepared.putIfAbsent(
+          activeSession != null || _aiReady ? WebCaptureMode.readable : _mode,
+          () => widget.prepare(activeSession != null || _aiReady ? WebCaptureMode.readable : _mode),
+        ),
+        builder: (context, snapshot) {
+          final value = snapshot.connectionState == ConnectionState.done ? snapshot.data : null;
+          if (value != null && !_edited && _appliedTitle == null) _title.text = value.package.document.title;
+          final c = context.mmColors;
+          final titleField = MMTextField(
+            controller: _title,
+            placeholder: l.convertTitlePlaceholder,
+            semanticLabel: l.convertDocumentName,
+            maxLines: 1,
+            onChanged: (_) => setState(() => _edited = true),
+          );
+          final formats = [
+            (WebCaptureMode.readable, l.convertReadable, MMIcons.document),
+            (WebCaptureMode.original, l.convertPdf, MMIcons.pdf),
+            (WebCaptureMode.markdown, l.convertMarkdown, MMIcons.markdown),
+          ];
+          final segments = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: MMSpacing.s,
+            children: [
+              for (final (mode, label, icon) in formats)
+                _FormatOption(
+                  label: label,
+                  icon: icon,
+                  selected: _mode == mode,
+                  onTap: () => setState(() => _mode = mode),
+                ),
+            ],
+          );
+          final session = activeSession;
+          final previewChild = session != null
+              ? WebFormatPane(
+                  session: session,
+                  mode: _mode,
+                  tab: _tab,
+                  onTab: (tab) => setState(() => _tab = tab),
+                  header: _FormatHeader(host: value?.package.document.origin, title: _title.text.trim()),
+                  resources: _pageSource?.resources ?? const {},
+                  pdf: (_) => _formattedPdfPreview(session),
+                  reveal: _reveal,
+                  onRevert: _revert,
+                )
+              : null;
+          final preview = Semantics(
+            label: l.convertPreview,
+            container: true,
+            child: SizedBox.expand(
+              key: const ValueKey('web-conversion-preview'),
+              child:
+                  previewChild ??
+                  (snapshot.hasError
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(l.docSaveFailed, style: context.mmText.body),
+                              const SizedBox(height: MMSpacing.m),
+                              MMButton(
+                                label: l.webRetry,
+                                onPressed: () => setState(() {
+                                  _prepared.remove(_mode);
+                                }),
+                              ),
+                            ],
+                          ),
+                        )
+                      : value == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : _Preview(value: value, mode: _aiReady ? WebCaptureMode.readable : _mode)),
+            ),
+          );
+          final save = MMButton(
+            label: l.convertSave,
+            variant: MMButtonVariant.primary,
+            onPressed: value == null || _title.text.trim().isEmpty || _saving || (session?.running ?? false)
+                ? null
+                : session != null
+                ? () => unawaited(_saveFormatted(session))
+                : () {
+                    final package = value.package;
+                    Navigator.of(context).pop(
+                      PreparedWebDocument(
+                        DocumentPackage(
+                          document: package.document.copyWith(title: _title.text.trim()),
+                          files: package.files,
+                          reconcile: package.reconcile,
+                          expectedRevision: package.expectedRevision,
+                          expectedSnapshotFile: package.expectedSnapshotFile,
+                        ),
+                        value.book,
+                        value.markdown,
+                        value.preview,
+                      ),
+                    );
+                  },
+          );
+          Widget section(String label, Widget child) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(label, style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+              const SizedBox(height: MMSpacing.s),
+              child,
+            ],
+          );
+          final card = widget.formatting == null
+              ? null
+              : WebFormatCard(
+                  enabled: _aiOn,
+                  onEnabled: (value) {
+                    setState(() => _aiOn = value);
+                    if (value) unawaited(_loadSource().then<void>((_) {}, onError: (Object _) {}));
+                  },
+                  scope: _pageSource == null
+                      ? null
+                      : (chars: _pageSource!.markdown.length, sections: splitWebMarkdown(_pageSource!.markdown).length),
+                  model: _aiModel,
+                  onModel: (model) => setState(() => _aiModel = model),
+                  onRoute: (row) {
+                    if (mounted && !identical(row, _route)) setState(() => _route = row);
+                  },
+                );
+          final start = MMButton(
+            label: l.webFormatStart,
+            variant: MMButtonVariant.primary,
+            onPressed: value == null || _title.text.trim().isEmpty ? null : () => unawaited(_start()),
+          );
+          final running = session?.running ?? false;
+          return MMSheet(
+            title: l.convertTitle,
+            footer: running
+                ? Text(l.webFormatStopNote, style: context.mmText.footnote.copyWith(color: c.secondaryLabel))
+                : _saveFailed
+                ? Text(l.docSaveFailed, style: context.mmText.footnote.copyWith(color: c.critical))
+                : null,
+            actions: [
+              MMButton(label: l.cancel, onPressed: () => unawaited(_close())),
+              if (running) MMButton(label: l.webFormatStop, icon: MMIcons.stop, onPressed: session!.stop),
+              if (session == null && _aiReady) start else save,
+            ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final settings = Column(
+                  key: const ValueKey('web-conversion-settings'),
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    section(l.convertDocumentName, titleField),
+                    const SizedBox(height: MMSpacing.xxl),
+                    section(l.convertFormat, segments),
+                    if (session != null) ...[
+                      const SizedBox(height: MMSpacing.xxl),
+                      WebFormatProgress(
+                        session: session,
+                        onReveal: _revealSection,
+                        onCompare: _openCompare,
+                        onDiscard: () => unawaited(_discardFormatting()),
+                      ),
+                    ] else if (card != null) ...[
+                      const SizedBox(height: MMSpacing.xxl),
+                      section(l.webFormatSectionLabel, card),
+                    ],
+                  ],
+                );
+                final split = constraints.maxWidth >= 720;
+                final wide = split && session != null && session.finished && _tab != WebFormatTab.preview;
+                final previewHeight =
+                    (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom - 210).clamp(
+                      220.0,
+                      600.0,
+                    );
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (wide)
+                      SizedBox(height: previewHeight, child: preview)
+                    else if (split)
+                      SizedBox(
+                        height: previewHeight,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(flex: 65, child: preview),
+                            const SizedBox(width: MMSpacing.xl),
+                            VerticalDivider(width: 1, thickness: 0.5, color: c.hairline),
+                            const SizedBox(width: MMSpacing.xl),
+                            Expanded(flex: 35, child: SingleChildScrollView(child: settings)),
+                          ],
+                        ),
+                      )
+                    else if (session != null) ...[
+                      MMSegmentedControl<bool>(
+                        expand: true,
+                        segments: [
+                          MMSegment(value: false, label: l.webFormatTabContent),
+                          MMSegment(value: true, label: l.webFormatTabSettings),
+                        ],
+                        value: _settingsShown,
+                        onChanged: (value) => setState(() => _settingsShown = value),
+                      ),
+                      const SizedBox(height: MMSpacing.s),
+                      SizedBox(
+                        height: (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom - 260)
+                            .clamp(300.0, 700.0),
+                        child: _settingsShown ? SingleChildScrollView(child: settings) : preview,
+                      ),
+                    ] else ...[
+                      settings,
+                      const SizedBox(height: MMSpacing.xl),
+                      SizedBox(height: 300, child: preview),
+                    ],
+                    const SizedBox(height: MMSpacing.m),
+                    Divider(height: 1, thickness: 0.5, color: c.hairline),
+                  ],
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FormatHeader extends StatelessWidget {
+  const _FormatHeader({required this.host, required this.title});
+  final DocumentOrigin? host;
+  final String title;
+  @override
+  Widget build(BuildContext context) {
+    final origin = host;
+    final date = origin?.capturedAt.toLocal().toIso8601String().substring(0, 10);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (origin != null) ...[
+          Text(
+            '${Uri.tryParse(origin.url)?.host} · $date',
+            style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
+          ),
+          const SizedBox(height: MMSpacing.m),
+        ],
+        Text(title, style: context.mmText.title2.copyWith(fontSize: 20, height: 1.4)),
+        const SizedBox(height: MMSpacing.xl),
+      ],
     );
   }
 }

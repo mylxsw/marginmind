@@ -114,6 +114,8 @@ class AnswerBody extends StatefulWidget {
     this.tooltipFor,
     this.cursor = false,
     this.conclusion = false,
+    this.imageBuilder,
+    this.headingStyle,
   });
 
   final String text;
@@ -127,6 +129,12 @@ class AnswerBody extends StatefulWidget {
 
   /// The first paragraph is a check's verdict: shown boxed.
   final bool conclusion;
+
+  /// Images stay plain alt text unless the host can resolve them.
+  final Widget? Function(String source, String alt)? imageBuilder;
+
+  /// A document's heading scale; answers keep their compact headings otherwise.
+  final TextStyle Function(int level)? headingStyle;
 
   @override
   State<AnswerBody> createState() => _AnswerBodyState();
@@ -238,7 +246,15 @@ class _Renderer {
       case 'h1' || 'h2' || 'h3' || 'h4' || 'h5' || 'h6':
         return Padding(
           padding: EdgeInsets.only(top: first ? 0 : 16, bottom: 6),
-          child: Semantics(header: true, child: Text.rich(inline(e.children ?? const [], heading))),
+          child: Semantics(
+            header: true,
+            child: Text.rich(
+              inline(
+                e.children ?? const [],
+                widget.headingStyle == null ? heading : base.merge(widget.headingStyle!(int.parse(e.tag.substring(1)))),
+              ),
+            ),
+          ),
         );
       case 'ul' || 'ol':
         return Padding(
@@ -399,6 +415,11 @@ class _Renderer {
         );
       case 'br':
         return const TextSpan(text: '\n');
+      case 'img':
+        final image = widget.imageBuilder?.call(node.attributes['src'] ?? '', node.attributes['alt'] ?? '');
+        return image == null
+            ? TextSpan(text: node.attributes['alt'] ?? '')
+            : WidgetSpan(alignment: PlaceholderAlignment.middle, child: image);
       case 'a':
         final url = Uri.tryParse(node.attributes['href'] ?? '');
         if (url == null || (url.scheme != 'https' && url.scheme != 'http')) return inline(children, style);

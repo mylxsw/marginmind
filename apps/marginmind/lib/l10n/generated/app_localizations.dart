@@ -11203,6 +11203,445 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to Content'**
   String get phoneNavigationReturnToContent;
+
+  /// No description provided for @aiTaskWebFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Web Page Formatting'**
+  String get aiTaskWebFormat;
+
+  /// No description provided for @webFormatSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get webFormatSectionLabel;
+
+  /// No description provided for @webFormatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Formatting'**
+  String get webFormatTitle;
+
+  /// No description provided for @webFormatHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixes headings, lists and paragraphs and removes page clutter, without rewriting the text.'**
+  String get webFormatHint;
+
+  /// No description provided for @webFormatModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get webFormatModel;
+
+  /// No description provided for @webFormatScope.
+  ///
+  /// In en, this message translates to:
+  /// **'About {chars} characters in {sections} sections.'**
+  String webFormatScope(String chars, String sections);
+
+  /// No description provided for @webFormatSendsTo.
+  ///
+  /// In en, this message translates to:
+  /// **'The text will be sent to {service}.'**
+  String webFormatSendsTo(String service);
+
+  /// No description provided for @webFormatLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Processed on this device; the text doesn’t leave it.'**
+  String get webFormatLocal;
+
+  /// No description provided for @webFormatOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get webFormatOpenSettings;
+
+  /// No description provided for @webFormatStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Formatting'**
+  String get webFormatStart;
+
+  /// No description provided for @webFormatStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get webFormatStop;
+
+  /// No description provided for @webFormatResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get webFormatResume;
+
+  /// No description provided for @webFormatStopNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can stop anytime. Finished sections are kept.'**
+  String get webFormatStopNote;
+
+  /// No description provided for @webFormatPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get webFormatPreparing;
+
+  /// No description provided for @webFormatProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatting section {current} of {total}'**
+  String webFormatProgress(String current, String total);
+
+  /// No description provided for @webFormatChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking completeness'**
+  String get webFormatChecking;
+
+  /// No description provided for @webFormatOutputMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{chars} characters · {time}'**
+  String webFormatOutputMeta(String chars, String time);
+
+  /// No description provided for @webFormatDoneMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{sections} sections · {chars} characters · {time}'**
+  String webFormatDoneMeta(String sections, String chars, String time);
+
+  /// No description provided for @webFormatEditedMark.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited'**
+  String get webFormatEditedMark;
+
+  /// No description provided for @webFormatPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} sections formatted; the rest stay as captured'**
+  String webFormatPartial(String done, String total);
+
+  /// No description provided for @webFormatViewLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Layout'**
+  String get webFormatViewLayout;
+
+  /// No description provided for @webFormatTabPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get webFormatTabPreview;
+
+  /// No description provided for @webFormatTabEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get webFormatTabEdit;
+
+  /// No description provided for @webFormatTabCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get webFormatTabCompare;
+
+  /// No description provided for @webFormatTabSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get webFormatTabSettings;
+
+  /// No description provided for @webFormatTabContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get webFormatTabContent;
+
+  /// No description provided for @webFormatBackToLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Latest'**
+  String get webFormatBackToLatest;
+
+  /// No description provided for @webFormatWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatting “{title}”…'**
+  String webFormatWriting(String title);
+
+  /// No description provided for @webFormatSectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t format section {number}'**
+  String webFormatSectionFailed(String number);
+
+  /// No description provided for @webFormatSectionFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Other sections aren’t affected.'**
+  String get webFormatSectionFailedHint;
+
+  /// No description provided for @webFormatUseSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Original'**
+  String get webFormatUseSource;
+
+  /// No description provided for @webFormatSourceTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Section {number} · Not formatted, kept as captured'**
+  String webFormatSourceTag(String number);
+
+  /// No description provided for @webFormatStageRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read page text'**
+  String get webFormatStageRead;
+
+  /// No description provided for @webFormatStageSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Split into sections'**
+  String get webFormatStageSplit;
+
+  /// No description provided for @webFormatStageFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Format text'**
+  String get webFormatStageFormat;
+
+  /// No description provided for @webFormatStageCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check completeness'**
+  String get webFormatStageCheck;
+
+  /// No description provided for @webFormatProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get webFormatProgressTitle;
+
+  /// No description provided for @webFormatCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completeness'**
+  String get webFormatCheckTitle;
+
+  /// No description provided for @webFormatSections.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections'**
+  String get webFormatSections;
+
+  /// No description provided for @webFormatKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Images {images}/{imagesTotal}, links {links}/{linksTotal}, code blocks {code}/{codeTotal}'**
+  String webFormatKept(
+    String images,
+    String imagesTotal,
+    String links,
+    String linksTotal,
+    String code,
+    String codeTotal,
+  );
+
+  /// No description provided for @webFormatShorter.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}: {percent}% shorter than the original'**
+  String webFormatShorter(String title, String percent);
+
+  /// No description provided for @webFormatLonger.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}: {percent}% longer than the original'**
+  String webFormatLonger(String title, String percent);
+
+  /// No description provided for @webFormatShorterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This may be removed promotion, or article text removed by mistake.'**
+  String get webFormatShorterHint;
+
+  /// No description provided for @webFormatLongerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Text that isn’t in the original may have been added.'**
+  String get webFormatLongerHint;
+
+  /// No description provided for @webFormatViewCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get webFormatViewCompare;
+
+  /// No description provided for @webFormatAcknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks Good'**
+  String get webFormatAcknowledge;
+
+  /// No description provided for @webFormatRerun.
+  ///
+  /// In en, this message translates to:
+  /// **'Format Again'**
+  String get webFormatRerun;
+
+  /// No description provided for @webFormatEditedNoRerun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections can’t be formatted again after manual edits.'**
+  String get webFormatEditedNoRerun;
+
+  /// No description provided for @webFormatDiscardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard and Use Original'**
+  String get webFormatDiscardAction;
+
+  /// No description provided for @webFormatRevert.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert to AI Result'**
+  String get webFormatRevert;
+
+  /// No description provided for @webFormatLivePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Preview'**
+  String get webFormatLivePreview;
+
+  /// No description provided for @webFormatSourceColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Captured'**
+  String get webFormatSourceColumn;
+
+  /// No description provided for @webFormatResultColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Formatted'**
+  String get webFormatResultColumn;
+
+  /// No description provided for @webFormatResultColumnEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Formatted (Before Edits)'**
+  String get webFormatResultColumnEdited;
+
+  /// No description provided for @webFormatNotFormatted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not formatted'**
+  String get webFormatNotFormatted;
+
+  /// No description provided for @webFormatRemovedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This section is {percent}% shorter. Removed text is struck through; please review it.'**
+  String webFormatRemovedHint(String percent);
+
+  /// No description provided for @webFormatAddedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This section is {percent}% longer. Please check that nothing was added.'**
+  String webFormatAddedHint(String percent);
+
+  /// No description provided for @webFormatConfirmCloseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard Formatting?'**
+  String get webFormatConfirmCloseTitle;
+
+  /// No description provided for @webFormatConfirmClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatted text won’t be kept.'**
+  String get webFormatConfirmClose;
+
+  /// No description provided for @webFormatConfirmCloseEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatted text and your edits won’t be kept.'**
+  String get webFormatConfirmCloseEdited;
+
+  /// No description provided for @webFormatDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get webFormatDiscard;
+
+  /// No description provided for @webFormatBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get webFormatBack;
+
+  /// No description provided for @webFormatConfirmRevertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert to AI Result?'**
+  String get webFormatConfirmRevertTitle;
+
+  /// No description provided for @webFormatConfirmRevert.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Markdown edits will be discarded.'**
+  String get webFormatConfirmRevert;
+
+  /// No description provided for @webFormatRevertAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert'**
+  String get webFormatRevertAction;
+
+  /// No description provided for @webFormatConfirmDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard Formatting?'**
+  String get webFormatConfirmDiscardTitle;
+
+  /// No description provided for @webFormatConfirmDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'You’ll return to the unformatted text.'**
+  String get webFormatConfirmDiscard;
+
+  /// No description provided for @webFormatConfirmDiscardEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'You’ll return to the unformatted text, and your edits won’t be kept.'**
+  String get webFormatConfirmDiscardEdited;
+
+  /// No description provided for @webFormatInterruptedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue formatting, or save what you have; unformatted parts stay as captured.'**
+  String get webFormatInterruptedHint;
+
+  /// No description provided for @webFormatSourceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'AI formatted'**
+  String get webFormatSourceNote;
+
+  /// No description provided for @webFormatPdfFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t create the PDF. Try again or choose another format.'**
+  String get webFormatPdfFailed;
+
+  /// No description provided for @webFormatImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get webFormatImage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -18,6 +18,16 @@ class PreparedWebDocument {
   final Uint8List? preview;
 }
 
+/// AI formatted Markdown, with title and provenance, replacing the extraction.
+class WebFormattedContent {
+  const WebFormattedContent({required this.markdown, required this.origin, this.pdf});
+  final String markdown;
+  final DocumentOriginFormatting origin;
+
+  /// The Markdown printed as a reading PDF, for [WebCaptureMode.original].
+  final Uint8List? pdf;
+}
+
 /// No network access: all inputs came from one live browser capture.
 class WebDocumentConverter {
   const WebDocumentConverter({this.inspectPdf = MMPdfEngine.inspectData});
@@ -30,6 +40,7 @@ class WebDocumentConverter {
     required WebCaptureMode mode,
     Document? previous,
     Map<String, String> oldChapters = const {},
+    WebFormattedContent? formatted,
   }) async {
     if (title.trim().isEmpty) throw const FormatException('Empty title');
     const parser = bk.WebBookParser();
@@ -39,21 +50,28 @@ class WebDocumentConverter {
         ? sanitized
         : parser.withAttribution(sanitized, capture.title, capture.url, capture.capturedAt);
     final snapshot = parser.sanitizeHtml(capture.snapshot, capturedResources.keys.toSet());
-    final initial = mode == WebCaptureMode.original
-        ? bk.Book(capture.title, [], capturedResources, [])
+    var parsed = mode == WebCaptureMode.original
+        ? bk.Book(formatted == null ? capture.title : title, [], capturedResources, [])
+        : formatted != null
+        ? bk.Book(title, [], capturedResources, [])
         : parser.parse(capture.title, sourceHtml, capturedResources);
-    var parsed = initial;
-    String? markdown;
-    if (mode == WebCaptureMode.markdown) {
-      markdown = parser.markdown(sourceHtml);
+    final markdown = formatted?.markdown ?? (mode == WebCaptureMode.markdown ? parser.markdown(sourceHtml) : null);
+    if (markdown != null && mode != WebCaptureMode.original) {
       parsed = await const bk.MarkdownBookParser().parse(
         utf8.encode(markdown),
         resolver: (path) async => capturedResources[path],
       );
-      parsed = bk.Book(capture.title, parsed.chapters, parsed.resources, parsed.diagnostics, toc: parsed.toc);
+      parsed = bk.Book(
+        formatted == null ? capture.title : title,
+        parsed.chapters,
+        parsed.resources,
+        parsed.diagnostics,
+        toc: parsed.toc,
+      );
     }
+    final pdfBytes = formatted?.pdf ?? capture.pdf;
     final WebPdfInfo? pdf = mode == WebCaptureMode.original
-        ? await inspectPdf(capture.pdf ?? (throw const FormatException('Missing PDF')))
+        ? await inspectPdf(pdfBytes ?? (throw const FormatException('Missing PDF')))
         : null;
     if (pdf != null && pdf.pageCount < 1) throw const FormatException('Empty PDF');
     // Capture identity includes time and snapshot. Repeated captures of the
@@ -68,12 +86,12 @@ class WebDocumentConverter {
               capture.capturedAt.toIso8601String(),
               snapshot,
               mode.name,
-              if (capture.pdf != null) sha256.convert(capture.pdf!).toString(),
+              if (pdfBytes != null) sha256.convert(pdfBytes).toString(),
             ]),
           ),
         )
         .toString();
-    final revision = pdf != null ? sha256.convert(capture.pdf!).toString() : parsed.revision;
+    final revision = pdf != null ? sha256.convert(pdfBytes!).toString() : parsed.revision;
     final base = 'books/$id/$captureVersion', web = 'web/$id/$captureVersion';
     final files = <String, List<int>>{};
     final json = parsed.toJson();
@@ -97,7 +115,7 @@ class WebDocumentConverter {
     for (final entry in capturedResources.entries) {
       files['$web/${entry.key}'] = entry.value;
     }
-    final sourceBytes = pdf != null ? capture.pdf! : utf8.encode(markdown ?? sourceHtml);
+    final sourceBytes = pdf != null ? pdfBytes! : utf8.encode(markdown ?? sourceHtml);
     final extension = pdf != null
         ? 'pdf'
         : markdown != null
@@ -105,6 +123,8 @@ class WebDocumentConverter {
         : 'html';
     final source = 'documents/${sha256.convert(sourceBytes)}.$extension';
     files['$web/snapshot.html'] = utf8.encode(snapshot);
+    // Also for a PDF: what the user approved stays readable and reusable as text.
+    if (formatted != null) files['$web/formatted.md'] = utf8.encode(formatted.markdown);
     files['$web/resources.json'] = utf8.encode(
       jsonEncode({
         'version': 1,
@@ -114,6 +134,7 @@ class WebDocumentConverter {
         'sourceFile': source,
         'snapshotSha256': sha256.convert(utf8.encode(snapshot)).toString(),
         'diagnostics': capture.diagnostics,
+        if (formatted != null) 'formatting': formatted.origin.toJson(),
         'resources': {for (final e in capturedResources.entries) e.key: sha256.convert(e.value).toString()},
       }),
     );
@@ -144,6 +165,7 @@ class WebDocumentConverter {
         capturedAt: capture.capturedAt,
         mode: mode,
         snapshotFile: '$web/snapshot.html',
+        formatting: formatted?.origin,
       ),
     );
     return PreparedWebDocument(

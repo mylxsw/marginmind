@@ -148,4 +148,31 @@ void main() {
     expect(alignTextAnchor(anchor, [], 'b'), isNull);
     expect(alignTextAnchor(const TextAnchor('main', 0, 1, 'x', revision: 'a'), [chapter('x' * 10002)], 'b'), isNull);
   });
+
+  group('formatted Markdown', () {
+    final url = Uri.parse('https://example.com/a');
+    test('adds an escaped title and noted provenance above the body', () {
+      final text = parser.withMarkdownAttribution(' 正文\n', 'A_b # c', url, DateTime(2026, 11, 3), note: 'AI 整理');
+      expect(text, startsWith('# A\\_b \\# c\n\n<p class="mm-web-source"'));
+      expect(text, contains('example.com</a> · 2026-11-03 · AI 整理</p>'));
+      expect(text, endsWith('正文\n'));
+      expect(parser.withMarkdownAttribution('x', ' ', url, DateTime(2026)), startsWith('# example.com'));
+      expect(parser.withAttribution('<p>B</p>', 'T', url, DateTime(2026, 1, 2)), contains('· 2026-01-02</p>'));
+    });
+
+    test('printable HTML keeps structure and strips anything active', () {
+      final html = parser.printableHtml(
+        '# 标题\n\n<script>alert(1)</script>\n\n| a |\n| --- |\n| b |\n\n'
+        '![ok](resources/image-1.png) ![no](https://evil.example/x.png)\n\n'
+        '<img src="x" onerror="alert(1)"><iframe src="https://evil.example"></iframe>\n\n[l](javascript:alert(1))',
+        {'resources/image-1.png'},
+      );
+      expect(html, contains('<h1'));
+      expect(html, contains('<table>'));
+      expect(html, contains('src="resources/image-1.png"'));
+      for (final bad in ['<script', 'evil.example', 'onerror', '<iframe', 'javascript:']) {
+        expect(html, isNot(contains(bad)), reason: bad);
+      }
+    });
+  });
 }
