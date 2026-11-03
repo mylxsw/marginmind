@@ -537,6 +537,21 @@ void main() {
     });
   });
 
+  test('the executor refuses a study set without a directory, before any model call', () async {
+    final container = ProviderContainer(overrides: await testOverrides());
+    addTearDown(container.dispose);
+    final execute = container.read(webFormatExecutorProvider(''));
+    await expectLater(
+      execute(const {'id': 's1', 'text': '正文'}, null, (_) {}, CancellationToken()),
+      throwsA(isA<ConfigurationFailure>()),
+    );
+    final cancelled = CancellationToken()..cancel();
+    await expectLater(
+      execute(const {'id': 's1', 'text': '正文'}, null, (_) {}, cancelled),
+      throwsA(isA<ResearchFailure>()),
+    );
+  });
+
   testWidgets('document rendering shows images by resource and a labeled placeholder otherwise', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
