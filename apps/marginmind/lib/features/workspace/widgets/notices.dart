@@ -114,6 +114,7 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
     AreaFailedNotice() => l.somethingWentWrong,
     RemovedNotice() => l.removedHud,
     HighlightDeletedNotice(:final underline) => underline ? l.underlineDeletedHud : l.highlightDeletedHud,
+    UndoneNotice(conflict: true) => l.undoContentChanged,
     UndoneNotice(:final redo) => redo ? l.redoneHud : l.undoneHud,
     DocumentRemovedNotice() => l.documentRemovedHud,
     ResearchNoteSavedNotice(:final cardId, :final inSource) =>

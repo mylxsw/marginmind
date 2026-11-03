@@ -1,0 +1,6 @@
+/// Pure synchronization protocol. Local storage and transports own IO.
+library;
+
+export 'src/commit.dart';
+export 'src/merge.dart';
+export 'src/projection.dart';

@@ -11101,6 +11101,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag a box; adjust its corners after release. Use two fingers to move the map.'**
   String get mapSelectionBoxHint;
+
+  /// No description provided for @undoContentChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This step can’t be applied because related content has changed. The current content has been kept.'**
+  String get undoContentChanged;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

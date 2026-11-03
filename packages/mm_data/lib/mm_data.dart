@@ -2,6 +2,7 @@
 library;
 
 export 'src/file_library_store.dart';
+export 'src/file_sync_journal.dart';
 export 'src/research_cache.dart';
 
 export 'src/conversation_storage.dart';

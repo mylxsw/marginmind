@@ -6296,4 +6296,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapSelectionBoxHint => 'Drag a box; adjust its corners after release. Use two fingers to move the map.';
+
+  @override
+  String get undoContentChanged =>
+      'This step can’t be applied because related content has changed. The current content has been kept.';
 }

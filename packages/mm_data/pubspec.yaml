@@ -14,6 +14,8 @@ dependencies:
   meta: ^1.16.0
   mm_core:
     path: ../mm_core
+  mm_sync:
+    path: ../mm_sync
   path: ^1.9.0
 
 dev_dependencies:

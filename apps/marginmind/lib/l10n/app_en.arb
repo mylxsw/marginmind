@@ -3204,5 +3204,6 @@
   "mapSelectionBox": "Box",
   "mapSelectionClear": "Clear",
   "mapSelectionTapHint": "Tap nodes to select. Drag to pan; pinch to zoom.",
-  "mapSelectionBoxHint": "Drag a box; adjust its corners after release. Use two fingers to move the map."
+  "mapSelectionBoxHint": "Drag a box; adjust its corners after release. Use two fingers to move the map.",
+  "undoContentChanged": "This step can’t be applied because related content has changed. The current content has been kept."
 }

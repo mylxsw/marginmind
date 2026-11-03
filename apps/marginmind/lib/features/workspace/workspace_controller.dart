@@ -145,9 +145,10 @@ class HighlightDeletedNotice extends WorkspaceNotice {
 }
 
 class UndoneNotice extends WorkspaceNotice {
-  const UndoneNotice({required this.redo});
+  const UndoneNotice({required this.redo, this.conflict = false});
 
   final bool redo;
+  final bool conflict;
 }
 
 class DocumentRemovedNotice extends WorkspaceNotice {
@@ -165,10 +166,10 @@ class ImportedNotice extends WorkspaceNotice {
 /// Model edits belong to the study set. Reference scopes isolate presentation,
 /// while writes, transactions and undo keep one chronological history.
 class WorkspaceEditHistory extends ChangeNotifier {
-  final List<StudySetContent> _undo = [];
-  final List<StudySetContent> _redo = [];
+  final List<ContentChange> _undo = [];
+  final List<ContentChange> _redo = [];
   Future<void> _pendingEdits = Future.value();
-  StudySetContent? _transactionBefore;
+  ContentChange? _transactionChange;
   int _transactionDepth = 0;
   bool _disposed = false;
   void sync() {
@@ -594,17 +595,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   StudySetContentRepository get _repo => ref.read(contentRepositoryProvider);
 
-  /// Content before each undoable edit, newest last; redo holds what undo
-  /// replaced.
+  /// Conditional local transactions, newest last. External repository changes
+  /// never become part of an operation merely because they arrived meanwhile.
   late WorkspaceEditHistory _history;
-  List<StudySetContent> get _undo => _history._undo;
-  List<StudySetContent> get _redo => _history._redo;
+  List<ContentChange> get _undo => _history._undo;
+  List<ContentChange> get _redo => _history._redo;
   static const _historyLimit = 100;
 
   Future<void> get _pendingEdits => _history._pendingEdits;
   set _pendingEdits(Future<void> value) => _history._pendingEdits = value;
-  StudySetContent? get _transactionBefore => _history._transactionBefore;
-  set _transactionBefore(StudySetContent? value) => _history._transactionBefore = value;
+  ContentChange? get _transactionChange => _history._transactionChange;
+  set _transactionChange(ContentChange? value) => _history._transactionChange = value;
   int get _transactionDepth => _history._transactionDepth;
   set _transactionDepth(int value) => _history._transactionDepth = value;
 
@@ -640,10 +641,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> commitTransaction() => _enqueue(() async {
     if (!ref.mounted || _transactionDepth == 0) return;
     if (--_transactionDepth != 0) return;
-    final before = _transactionBefore;
-    _transactionBefore = null;
-    final current = await _repo.load(studySetId);
-    if (before != null && !_sameEdits(before, current)) _record(before);
+    final change = _transactionChange;
+    _transactionChange = null;
+    if (change != null && !change.isEmpty) _record(change);
     _syncHistory();
   });
 
@@ -651,12 +651,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// restore policy as undo so reading position and reviews are preserved.
   Future<void> abortTransaction() => _enqueue(() async {
     if (_transactionDepth == 0) return;
-    final before = _transactionBefore;
-    if (before != null) {
-      await _write((c) => StudySetEditor.restore(before, c));
+    final change = _transactionChange;
+    if (change != null) {
+      await _write(change.reversed.apply);
       if (ref.mounted) state = state.copyWith(clearPending: true);
     }
-    _transactionBefore = null;
+    _transactionChange = null;
     _transactionDepth = 0;
     _syncHistory();
   });
@@ -665,8 +665,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       identical(before, after) ||
       jsonEncode(StudySetEditor.restore(before, after).toJson()) == jsonEncode(after.toJson());
 
-  void _record(StudySetContent before) {
-    _undo.add(before);
+  void _record(ContentChange change) {
+    if (change.isEmpty) return;
+    _undo.add(change);
     if (_undo.length > _historyLimit) _undo.removeAt(0);
     _redo.clear();
   }
@@ -693,9 +694,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     if (undoable && before != null && !_sameEdits(before!, next)) {
       if (_transactionDepth > 0) {
-        _transactionBefore ??= before;
+        final change = ContentChange.between(before!, next);
+        _transactionChange = _transactionChange?.followedBy(change) ?? change;
       } else {
-        _record(before!);
+        _record(ContentChange.between(before!, next));
       }
       _syncHistory();
     }
@@ -746,20 +748,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<UndoneNotice?> redo() => _travel(_redo, _undo, redo: true);
 
-  Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) =>
+  Future<UndoneNotice?> _travel(List<ContentChange> from, List<ContentChange> to, {required bool redo}) =>
       _enqueue(() async {
         if (_blockExpansionEdit()) return null;
         if (_transactionDepth > 0 || _clipboardBusy || from.isEmpty) return null;
-        final snapshot = from.last;
-        StudySetContent? current;
-        await _write((c) {
-          current = c;
-          // An undone assistant change loses its receipt, so its proposal can
-          // be applied again; redo brings the receipt back.
-          return StudySetEditor.restore(snapshot, c).copyWith(assistantReceipts: snapshot.assistantReceipts);
-        });
+        final change = from.last;
+        try {
+          await _write(redo ? change.apply : change.reversed.apply);
+        } on ContentChangeConflict {
+          return UndoneNotice(redo: redo, conflict: true);
+        }
         from.removeLast();
-        to.add(current!);
+        to.add(change);
         if (ref.mounted) state = state.copyWith(clearPending: true);
         _syncHistory();
         return UndoneNotice(redo: redo);
@@ -2688,7 +2688,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       if (!ref.mounted || names.isEmpty) return false;
       late StudySetContent before;
       Card? last;
-      await _write((c) {
+      final next = await _write((c) {
         if (c.map(editor.mapId) == null || (parent != null && c.node(parent, mapId: editor.mapId) == null)) {
           throw StateError('Image destination no longer exists');
         }
@@ -2706,9 +2706,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         return c;
       });
       if (_transactionDepth > 0) {
-        _transactionBefore ??= before;
+        final change = ContentChange.between(before, next);
+        _transactionChange = _transactionChange?.followedBy(change) ?? change;
       } else {
-        _record(before);
+        _record(ContentChange.between(before, next));
       }
       _syncHistory();
       if (ref.mounted && last != null) {

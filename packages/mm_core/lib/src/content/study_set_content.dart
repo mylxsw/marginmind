@@ -189,8 +189,10 @@ class StudySetContent {
 
   /// Children of [parentId] (null = root) in display order.
   List<MapNode> childrenOf(String? parentId, {String mapId = MindMap.defaultId}) =>
-      nodes.where((n) => n.mapId == mapId && n.parentId == parentId).toList()
-        ..sort((a, b) => a.order.compareTo(b.order));
+      nodes.where((n) => n.mapId == mapId && n.parentId == parentId).toList()..sort((a, b) {
+        final order = a.order.compareTo(b.order);
+        return order != 0 ? order : a.cardId.compareTo(b.cardId);
+      });
 
   List<Annotation> annotationsOn(String documentId) => annotations.where((a) => a.documentId == documentId).toList();
 
@@ -456,7 +458,7 @@ class StudySetContent {
     if (noteSourceArchive.isNotEmpty) 'noteSourceArchive': [for (final a in noteSourceArchive) a.toJson()],
   };
 
-  factory StudySetContent.fromJson(Map<String, Object?> j) {
+  factory StudySetContent.fromJson(Map<String, Object?> j, {bool migrateSummaries = true}) {
     List<T> list<T>(String key, T Function(Map<String, Object?>) f) => [
       for (final e in (j[key] as List?) ?? const []) f((e as Map).cast()),
     ];
@@ -465,7 +467,7 @@ class StudySetContent {
     final usedIds = cards.map((c) => c.id).toSet();
     final normalizedSummaries = <MapSummary>[];
     for (final summary in summaries) {
-      if (summary.cardId != null && usedIds.contains(summary.cardId)) {
+      if (!migrateSummaries || summary.cardId != null && usedIds.contains(summary.cardId)) {
         normalizedSummaries.add(summary);
         continue;
       }

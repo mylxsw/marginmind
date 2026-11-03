@@ -6052,4 +6052,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mapSelectionBoxHint => '单指画框，松手后可拖动四角修正；双指移动画布';
+
+  @override
+  String get undoContentChanged => '相关内容已被后续修改，无法执行这一步。当前内容已保留。';
 }
