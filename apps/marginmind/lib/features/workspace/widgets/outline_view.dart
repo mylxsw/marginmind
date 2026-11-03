@@ -339,9 +339,13 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
       _rows.clear();
     }
     final rows = <Widget>[];
+    String? previousSource;
     for (final entry in _entries) {
       final card = entry.card;
       final id = card?.id;
+      final source = entry.annotation?.isText == true ? entry.annotation?.documentId : null;
+      final showPhoneMeta = source == null || source != previousSource;
+      if (source != null) previousSource = source;
       final selected = id == null
           ? widget.rootSelected
           : id == widget.selectedCardId || widget.selectedCardIds.contains(id);
@@ -389,6 +393,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
               : annotation.isText
               ? widget.content.document(annotation.documentId)?.title
               : l.pageNumber(annotation.page),
+          showPhoneMeta: showPhoneMeta,
           dot: isExcerpt || isImage ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,
           bold: bold,
           suspended: card.suspended,
@@ -475,6 +480,7 @@ class _OutlineRow extends StatefulWidget {
     this.onDoubleTap,
     this.sub,
     this.meta,
+    this.showPhoneMeta = true,
     this.dot,
     this.bold = false,
     this.suspended = false,
@@ -485,6 +491,7 @@ class _OutlineRow extends StatefulWidget {
   final String label;
   final String? sub;
   final String? meta;
+  final bool showPhoneMeta;
   final Color? dot;
   final bool bold;
 
@@ -512,14 +519,15 @@ class _OutlineRowState extends State<_OutlineRow> {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
+    final phone = MMInput.of(context).phone;
     final editing = widget.editor != null;
     // The field keeps the row's normal colors so the text stays readable.
-    final fg = widget.selected && !editing
+    final fg = widget.selected && !editing && !phone
         ? c.onAccent
         : widget.suspended
         ? c.secondaryLabel
         : c.label;
-    final fg2 = widget.selected && !editing ? c.onAccent.withValues(alpha: 0.85) : c.secondaryLabel;
+    final fg2 = widget.selected && !editing && !phone ? c.onAccent.withValues(alpha: 0.85) : c.secondaryLabel;
     return Listener(
       onPointerDown: (event) {
         final keyboard = HardwareKeyboard.instance;
@@ -540,12 +548,20 @@ class _OutlineRowState extends State<_OutlineRow> {
         selected: widget.selected,
         canRequestFocus: false,
         builder: (context, s) => Container(
-          padding: EdgeInsets.fromLTRB(8 + widget.depth * 20.0, 5, 8, 5),
+          padding: EdgeInsets.fromLTRB(
+            MMSpacing.s +
+                (phone
+                    ? widget.depth.clamp(0, MMSizes.phoneOutlineMaxDepth) * MMSizes.phoneOutlineIndent
+                    : widget.depth * 20.0),
+            phone ? MMSpacing.s : 5,
+            MMSpacing.s,
+            phone ? MMSpacing.s : 5,
+          ),
           decoration: BoxDecoration(
             color: editing
                 ? c.accentTint
                 : widget.selected
-                ? c.accentFill
+                ? (phone ? c.accentTint : c.accentFill)
                 : (s.hovered ? c.hover : Colors.transparent),
             borderRadius: BorderRadius.circular(MMRadii.row),
           ),
@@ -570,7 +586,7 @@ class _OutlineRowState extends State<_OutlineRow> {
                       widget.editor ??
                           Text(
                             widget.label,
-                            maxLines: 2,
+                            maxLines: phone ? 3 : 2,
                             overflow: TextOverflow.ellipsis,
                             style: _OutlineRow.labelStyle(t, bold: widget.bold).copyWith(color: fg),
                           ),
@@ -581,10 +597,20 @@ class _OutlineRowState extends State<_OutlineRow> {
                           overflow: TextOverflow.ellipsis,
                           style: t.readingExcerpt.copyWith(color: fg2),
                         ),
+                      if (phone && widget.meta != null && widget.showPhoneMeta)
+                        Padding(
+                          padding: const EdgeInsets.only(top: MMSpacing.xs),
+                          child: Text(
+                            widget.meta!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.footnote.copyWith(color: fg2),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (widget.meta != null)
+                if (!phone && widget.meta != null)
                   ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
                     child: Padding(

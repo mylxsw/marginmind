@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "BEDD4AB5-0E1B-479F-B6FD-74650974102C",
+        "deviceName" : "Foliarc Modal Material",
+        "exportedFileName" : "360D52F4-2521-4F8E-8CD5-F83E90D682B6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-save-visible_0_33DD14CB-D250-4375-820A-99729CE06401.png",
+        "timestamp" : 1793712699.551
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testModalRenameSave()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testModalRenameSave"
+  }
+]

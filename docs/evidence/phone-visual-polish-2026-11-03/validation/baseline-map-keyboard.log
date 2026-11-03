@@ -1,0 +1,43 @@
+00:00 +0: loading /private/tmp/marginmind-ui-polish-baseline/apps/marginmind/test/map_keyboard_test.dart
+00:00 +0: holding outline arrows keeps navigating and never focuses the toolbar (variant: TargetPlatform.macOS)
+00:02 +1: holding canvas arrows keeps navigating through children and at boundaries (variant: TargetPlatform.macOS)
+00:03 +2: repeats keep folding single-shot and leave editing arrows with the text field (variant: TargetPlatform.macOS)
+00:04 +3: macOS menu lists shortcuts, dispatches commands and protects text focus (variant: TargetPlatform.macOS)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.first (dart:core/iterable.dart:663:7)
+#1      _FirstFinderMixin.filter (package:flutter_test/src/finders.dart:1383:28)
+#3      _AncestorFinderMixin.allCandidates (package:flutter_test/src/finders.dart:1857:49)
+#4      FinderBase.evaluate (package:flutter_test/src/finders.dart:1030:76)
+#5      WidgetController.widgetList (package:flutter_test/src/controller.dart:848:19)
+#6      WidgetController._maybeViewOf (package:flutter_test/src/controller.dart:795:34)
+#7      WidgetController.tap (package:flutter_test/src/controller.dart:1078:31)
+#8      main.<anonymous closure> (file:///private/tmp/marginmind-ui-polish-baseline/apps/marginmind/test/map_keyboard_test.dart:240:18)
+<asynchronous suspension>
+#9      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#10     TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 2 frames from dart:async-patch and package:stack_trace)
+
+The test description was:
+  macOS menu lists shortcuts, dispatches commands and protects text focus (variant:
+  TargetPlatform.macOS)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:05 +3 -1: macOS menu lists shortcuts, dispatches commands and protects text focus (variant: TargetPlatform.macOS) [E]
+  Test failed. See exception logs above.
+  The test description was: macOS menu lists shortcuts, dispatches commands and protects text focus (variant: TargetPlatform.macOS)
+
+00:05 +3 -1: Enter, Shift Enter, Tab, Shift Tab and primary Enter restructure in place
+00:06 +4 -1: fold, order, Space, delete, fit and center use shared menu actions
+00:07 +5 -1: root commands safely ignore illegal mutations, Tab creates child
+00:07 +6 -1: keyboard deep creation, growing drafts and selection remain visible at user zoom
+00:08 +7 -1: zoom label follows fit and gestures; zooming out after fit keeps going out
+00:09 +8 -1: Some tests failed.
+
+Failing tests:
+  /private/tmp/marginmind-ui-polish-baseline/apps/marginmind/test/map_keyboard_test.dart: macOS menu lists shortcuts, dispatches commands and protects text focus (variant: TargetPlatform.macOS)

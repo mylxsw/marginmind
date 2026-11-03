@@ -11767,6 +11767,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This item changed while you were editing. Your input is kept. Cancel and reopen Rename to review the latest version.'**
   String get syncRenameStale;
+
+  /// No description provided for @phoneNavigationReturnToReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Reading'**
+  String get phoneNavigationReturnToReading;
+
+  /// No description provided for @phoneNavigationReturnToNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Note'**
+  String get phoneNavigationReturnToNote;
+
+  /// No description provided for @phoneNavigationReturnToContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Content'**
+  String get phoneNavigationReturnToContent;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

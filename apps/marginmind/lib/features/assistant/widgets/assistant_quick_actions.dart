@@ -70,7 +70,11 @@ Future<bool?> showAssistantQuickActions(
     ),
   );
   if (MMInput.of(context).phone) {
-    return showMMBottomSheet<bool>(context: context, builder: (_) => content());
+    return showMMBottomSheet<bool>(
+      context: context,
+      initialFraction: MMSizes.phoneQuickSheetMedium,
+      builder: (_) => content(),
+    );
   }
   return showGeneralDialog<bool>(
     context: context,
@@ -432,6 +436,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
+    final phoneSheet = MMInput.of(context).phone && MMBottomSheet.contains(context);
     final conversation = ref.watch(assistantControllerProvider);
     final background = ref.watch(assistantBackgroundProvider);
     final own = _conversationId != null && conversation.id == _conversationId;
@@ -476,52 +481,74 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
           autofocus: true,
           child: Material(
             key: const ValueKey('assistant-quick-actions'),
-            color: c.glassOpaque,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide(color: c.separator, width: .5),
-            ),
+            color: phoneSheet ? Colors.transparent : c.glassOpaque,
+            shape: phoneSheet
+                ? null
+                : RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(color: c.separator, width: .5),
+                  ),
             clipBehavior: Clip.antiAlias,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: phoneSheet ? EdgeInsets.zero : const EdgeInsets.all(12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      if (showingAnswer)
+                  if (phoneSheet)
+                    MMPhoneSheetHeader(
+                      title: title,
+                      showClose: false,
+                      leading: AssistantIcon(size: MMSizes.phoneMenuIcon, thinking: running),
+                      onClose: () => Navigator.of(context).pop(),
+                      closeKey: const ValueKey('quick-close'),
+                      closeLabel: l.closePanel,
+                      actions: [
+                        if (showingAnswer)
+                          MMIconButton(
+                            icon: MMIcons.chevronLeft,
+                            tooltip: l.back,
+                            onPressed: running ? null : () => setState(() => _menu = true),
+                          ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        if (showingAnswer)
+                          MMIconButton(
+                            icon: MMIcons.chevronLeft,
+                            tooltip: l.back,
+                            onPressed: running ? null : () => setState(() => _menu = true),
+                          ),
+                        AssistantIcon(size: 17, thinking: running),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.headline.copyWith(color: c.label),
+                          ),
+                        ),
                         MMIconButton(
-                          icon: MMIcons.chevronLeft,
-                          tooltip: l.back,
-                          onPressed: running ? null : () => setState(() => _menu = true),
+                          key: const ValueKey('quick-close'),
+                          icon: MMIcons.close,
+                          tooltip: l.closePanel,
+                          onPressed: () => Navigator.of(context).pop(),
                         ),
-                      AssistantIcon(size: 17, thinking: running),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.headline.copyWith(color: c.label),
-                        ),
-                      ),
-                      MMIconButton(
-                        key: const ValueKey('quick-close'),
-                        icon: MMIcons.close,
-                        tooltip: l.closePanel,
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   const SizedBox(height: 8),
                   Flexible(
+                    fit: phoneSheet ? FlexFit.tight : FlexFit.loose,
                     child: Scrollbar(
                       controller: _scroll,
-                      thumbVisibility: true,
+                      thumbVisibility: !phoneSheet,
                       child: SingleChildScrollView(
                         key: const ValueKey('quick-content'),
                         controller: _scroll,
+                        padding: phoneSheet ? const EdgeInsets.symmetric(horizontal: MMSpacing.s) : EdgeInsets.zero,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -607,84 +634,101 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          key: const ValueKey('quick-composer'),
-                          height: 36,
-                          padding: const EdgeInsets.all(3),
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: c.separator),
-                            borderRadius: BorderRadius.circular(widget.origin == PanelOrigin.map && _menu ? 8 : 18),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 8, right: 6),
-                                  child: TextField(
-                                    key: const ValueKey('quick-input'),
-                                    controller: _text,
-                                    focusNode: _focus,
-                                    enabled: canSend,
-                                    style: t.body.copyWith(color: c.label),
-                                    maxLength: 60000,
-                                    decoration: InputDecoration(
-                                      hintText: _conversationId == null
-                                          ? l.assistantQuickAsk
-                                          : l.assistantQuickFollowUp,
-                                      hintStyle: t.body.copyWith(color: c.secondaryLabel),
-                                      isDense: true,
-                                      border: InputBorder.none,
-                                      contentPadding: EdgeInsets.zero,
-                                      counterText: '',
+                  Padding(
+                    padding: phoneSheet
+                        ? const EdgeInsets.fromLTRB(MMSpacing.s, 0, MMSpacing.s, MMSpacing.s)
+                        : EdgeInsets.zero,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            key: const ValueKey('quick-composer'),
+                            height: phoneSheet ? MMSizes.actionSheetRow : 36,
+                            padding: const EdgeInsets.all(3),
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: phoneSheet ? c.quaternaryFill : null,
+                              border: Border.all(
+                                color: phoneSheet ? c.border : c.separator,
+                                width: phoneSheet ? MMSizes.hairline : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                phoneSheet
+                                    ? MMRadii.phoneComposer
+                                    : widget.origin == PanelOrigin.map && _menu
+                                    ? 8
+                                    : 18,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 8, right: 6),
+                                    child: TextField(
+                                      key: const ValueKey('quick-input'),
+                                      controller: _text,
+                                      focusNode: _focus,
+                                      enabled: canSend,
+                                      style: t.body.copyWith(color: c.label),
+                                      maxLength: 60000,
+                                      decoration: InputDecoration(
+                                        hintText: _conversationId == null
+                                            ? l.assistantQuickAsk
+                                            : l.assistantQuickFollowUp,
+                                        hintStyle: t.body.copyWith(color: c.secondaryLabel),
+                                        isDense: true,
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
+                                        counterText: '',
+                                      ),
+                                      onChanged: (_) => setState(() {}),
+                                      onSubmitted: (_) => _send(),
                                     ),
-                                    onChanged: (_) => setState(() {}),
-                                    onSubmitted: (_) => _send(),
                                   ),
                                 ),
-                              ),
-                              ClipOval(
-                                key: const ValueKey('quick-send-surface'),
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
-                                  ),
-                                  child: MMIconButton(
-                                    key: const ValueKey('quick-send'),
-                                    size: 28,
-                                    icon: running ? MMIcons.stop : MMIcons.send,
-                                    tooltip: running ? l.assistantStop : l.assistantSend,
-                                    color: c.onResearch,
-                                    onPressed: running
-                                        ? () => unawaited(
-                                            ref
-                                                .read(assistantControllerProvider.notifier)
-                                                .stop()
-                                                .catchError((Object _) {}),
-                                          )
-                                        : canSend && _text.text.trim().isNotEmpty
-                                        ? () => _send()
-                                        : null,
+                                ClipOval(
+                                  key: const ValueKey('quick-send-surface'),
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
+                                    ),
+                                    child: MMIconButton(
+                                      key: const ValueKey('quick-send'),
+                                      size: phoneSheet ? MMSizes.touchTarget : 28,
+                                      icon: running ? MMIcons.stop : MMIcons.send,
+                                      tooltip: running ? l.assistantStop : l.assistantSend,
+                                      color: c.onResearch,
+                                      onPressed: running
+                                          ? () => unawaited(
+                                              ref
+                                                  .read(assistantControllerProvider.notifier)
+                                                  .stop()
+                                                  .catchError((Object _) {}),
+                                            )
+                                          : canSend && _text.text.trim().isNotEmpty
+                                          ? () => _send()
+                                          : null,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      MMIconButton(
-                        key: const ValueKey('quick-sidebar'),
-                        icon: MMIcons.sidebarRight,
-                        tooltip: l.assistantQuickSidebar,
-                        size: 32,
-                        onPressed: _sending ? null : () => _sidebar(),
-                      ),
-                    ],
+                        if (!phoneSheet) ...[
+                          const SizedBox(width: 6),
+                          MMIconButton(
+                            key: const ValueKey('quick-sidebar'),
+                            icon: MMIcons.sidebarRight,
+                            tooltip: l.assistantQuickSidebar,
+                            size: 32,
+                            onPressed: _sending ? null : () => _sidebar(),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -720,13 +764,15 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
+    final phone = MMInput.of(context).phone;
     return MMInteractive(
       onTap: onTap,
       selected: selected,
       focusNode: focusNode,
       semanticLabel: title,
       builder: (context, s) => Container(
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: verticalPadding),
+        constraints: phone ? const BoxConstraints(minHeight: MMSizes.actionSheetRow) : null,
+        padding: EdgeInsets.symmetric(horizontal: phone ? MMSpacing.m : 10, vertical: verticalPadding),
         decoration: BoxDecoration(
           color: selected || s.hovered || s.focused ? c.hover : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
@@ -735,8 +781,8 @@ class _ActionRow extends StatelessWidget {
           opacity: s.enabled ? 1 : .4,
           child: Row(
             children: [
-              Icon(icon, size: 16, color: selected ? c.research : c.icon),
-              const SizedBox(width: 10),
+              Icon(icon, size: phone ? MMSizes.phoneMenuIcon : 16, color: selected ? c.research : c.icon),
+              SizedBox(width: phone ? MMSpacing.m : 10),
               Expanded(child: Text(title, style: t.body)),
               if (hasSubmenu) Icon(MMIcons.chevronRight, size: 11, color: c.secondaryLabel),
             ],

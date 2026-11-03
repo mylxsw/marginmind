@@ -35,6 +35,7 @@ void main() {
     messenger.setMockMethodCallHandler(channel, (call) async {
       if (call.method == 'available') return true;
       final args = (call.arguments as Map).cast<String, dynamic>();
+      expect(args['modalStyle'], MMModalStyle.nativeConfiguration);
       session = args['id'] as String;
       expect(
         await incoming('validate', {
@@ -81,6 +82,7 @@ void main() {
     messenger.setMockMethodCallHandler(channel, (call) async {
       if (call.method == 'available') return true;
       expect(call.method, 'actions');
+      expect((call.arguments as Map)['modalStyle'], MMModalStyle.nativeConfiguration);
       session = (call.arguments as Map)['id'] as String;
       expect(await incoming('action', {'id': session!, 'action': 'toggle'}), {'selected': true});
       expect(await incoming('action', {'id': session!, 'action': 'toggle'}), {'selected': false});

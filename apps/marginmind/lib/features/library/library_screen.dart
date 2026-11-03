@@ -578,7 +578,9 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
               onTap: () => select(null),
               child: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(child: SizedBox(height: chrome.top + 8)),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: chrome.top + (MMInput.of(context).phone ? MMSpacing.xxl : MMSpacing.s)),
+                  ),
                   if (showContinue) ...[
                     _heading(l.libraryContinue, t),
                     SliverPadding(
@@ -588,7 +590,8 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                             ? SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: ((MediaQuery.sizeOf(context).width - 56) / 340).floor().clamp(1, 3),
                                 mainAxisExtent:
-                                    104 + (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4,
+                                    (MMInput.of(context).phone ? 120 : 104) +
+                                    (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
                               )

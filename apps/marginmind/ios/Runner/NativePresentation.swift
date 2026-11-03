@@ -24,7 +24,9 @@ final class NativePresentation {
   }
 
   /// One presentation policy for outline, forms and reader actions.
-  private func configureSheet(_ navigation: UINavigationController, dark: Bool?) {
+  fileprivate static func configureSheet(_ navigation: UINavigationController, args: [String: Any]) {
+    let dark = args["dark"] as? Bool
+    let material = NativeModalStyle(args: args)
     navigation.modalPresentationStyle = .pageSheet
     if let dark {
       let style: UIUserInterfaceStyle = dark ? .dark : .light
@@ -35,7 +37,32 @@ final class NativePresentation {
         navigation.presentationController?.traitOverrides.userInterfaceStyle = style
       }
     }
+    navigation.loadViewIfNeeded()
+    navigation.view.backgroundColor = material.background
+    navigation.view.layer.borderColor = material.border.resolvedColor(with: navigation.traitCollection).cgColor
+    navigation.view.layer.borderWidth = material.borderWidth
+    navigation.view.layer.cornerRadius = material.radius
+    navigation.view.layer.cornerCurve = .continuous
+    navigation.view.clipsToBounds = true
+    let bar = UINavigationBarAppearance()
+    bar.configureWithOpaqueBackground()
+    bar.backgroundColor = material.background
+    bar.shadowColor = material.border
+    bar.titleTextAttributes = [.foregroundColor: material.label]
+    navigation.navigationBar.standardAppearance = bar
+    navigation.navigationBar.scrollEdgeAppearance = bar
+    navigation.navigationBar.compactAppearance = bar
+    navigation.navigationBar.isTranslucent = false
+    navigation.navigationBar.tintColor = material.accent
+    if let content = navigation.viewControllers.first as? NativeModalTableController {
+      content.modalStyle = material
+      content.view.backgroundColor = material.background
+      content.tableView.backgroundColor = material.background
+      content.tableView.tintColor = material.accent
+      content.tableView.reloadData()
+    }
     if #available(iOS 15.0, *), let sheet = navigation.sheetPresentationController {
+      sheet.preferredCornerRadius = material.radius
       sheet.detents = [.medium(), .large()]
       sheet.prefersGrabberVisible = true
       sheet.prefersScrollingExpandsWhenScrolledToEdge = true
@@ -61,7 +88,7 @@ final class NativePresentation {
       }
       activeActions = actions
       let navigation = UINavigationController(rootViewController: actions)
-      configureSheet(navigation, dark: args["dark"] as? Bool)
+      Self.configureSheet(navigation, args: args)
       presenter.present(navigation, animated: true) { navigation.presentationController?.delegate = actions }
     case "color":
       guard activeColor == nil else { result(FlutterError(code: "busy", message: nil, details: nil)); return }
@@ -86,7 +113,7 @@ final class NativePresentation {
       }
       activeList = list
       let navigation = UINavigationController(rootViewController: list)
-      configureSheet(navigation, dark: args["dark"] as? Bool)
+      Self.configureSheet(navigation, args: args)
       presenter.present(navigation, animated: true) { navigation.presentationController?.delegate = list }
     case "form":
       guard activeForm == nil && activeList == nil && activeActions == nil else {
@@ -98,29 +125,142 @@ final class NativePresentation {
       }
       activeForm = form
       let navigation = UINavigationController(rootViewController: form)
-      configureSheet(navigation, dark: args["dark"] as? Bool)
+      Self.configureSheet(navigation, args: args)
       presenter.present(navigation, animated: true) {
         navigation.presentationController?.delegate = form
       }
     case "confirm":
-      let alert = UIAlertController(title: args["title"] as? String,
-        message: args["message"] as? String, preferredStyle: .actionSheet)
-      if let dark = args["dark"] as? Bool { alert.overrideUserInterfaceStyle = dark ? .dark : .light }
-      for item in args["actions"] as? [[String: Any]] ?? [] {
-        guard let id = item["id"] as? String, let label = item["label"] as? String else { continue }
-        alert.addAction(UIAlertAction(title: label,
-          style: item["destructive"] as? Bool == true ? .destructive : .default) { [weak alert] _ in
-            alert?.dismiss(animated: true) { result(id) }
-          })
-      }
-      alert.addAction(UIAlertAction(title: args["cancel"] as? String, style: .cancel) { [weak alert] _ in alert?.dismiss(animated: true) { result(nil) } })
-      presenter.present(alert, animated: true)
+      let confirmation = NativeConfirmationController(args: args) { result($0) }
+      let navigation = UINavigationController(rootViewController: confirmation)
+      Self.configureSheet(navigation, args: args)
+      presenter.present(navigation, animated: true) { navigation.presentationController?.delegate = confirmation }
     default: result(FlutterMethodNotImplemented)
     }
   }
 }
 
-private final class NativeFormController: UITableViewController, UITextFieldDelegate, UIAdaptivePresentationControllerDelegate {
+/// Palette and geometry come from mm_design's MMModalStyle, never a second
+/// set of native constants. UIKit still owns scrolling, keyboard and detents.
+private struct NativeModalStyle {
+  private let light: [String: Any]
+  private let dark: [String: Any]
+  init(args: [String: Any]) {
+    let style = args["modalStyle"] as? [String: Any] ?? [:]
+    light = style["light"] as? [String: Any] ?? [:]
+    dark = style["dark"] as? [String: Any] ?? [:]
+  }
+  private func color(_ key: String, fallback: UIColor) -> UIColor {
+    let lightValue = light[key] as? NSNumber
+    let darkValue = dark[key] as? NSNumber
+    return UIColor { traits in
+      guard let number = traits.userInterfaceStyle == .dark ? darkValue : lightValue else { return fallback }
+      let value = number.uint32Value
+      return UIColor(red: CGFloat((value >> 16) & 255) / 255,
+        green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255,
+        alpha: CGFloat((value >> 24) & 255) / 255)
+    }
+  }
+  var background: UIColor { color("background", fallback: .systemBackground) }
+  var border: UIColor { color("border", fallback: .separator) }
+  var card: UIColor { color("card", fallback: .secondarySystemGroupedBackground) }
+  var label: UIColor { color("label", fallback: .label) }
+  var secondaryLabel: UIColor { color("secondaryLabel", fallback: .secondaryLabel) }
+  var accent: UIColor { color("accent", fallback: .systemBlue) }
+  var critical: UIColor { color("critical", fallback: .systemRed) }
+  var radius: CGFloat { (light["radius"] as? NSNumber).map { CGFloat(truncating: $0) } ?? 0 }
+  var borderWidth: CGFloat { (light["borderWidth"] as? NSNumber).map { CGFloat(truncating: $0) } ?? 0 }
+}
+
+private class NativeModalTableController: UITableViewController {
+  var modalStyle = NativeModalStyle(args: [:])
+
+  override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+    // Clear cells hold grouped action tiles; leave their layout transparent
+    // over the single opaque panel instead of introducing a second card.
+    if cell.backgroundColor != .clear { cell.backgroundColor = modalStyle.card }
+    cell.detailTextLabel?.textColor = modalStyle.secondaryLabel
+  }
+
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    flattenNavigationButtons()
+  }
+
+  func flattenNavigationButtons() {
+    if #available(iOS 26.0, *) {
+      for item in (navigationItem.leftBarButtonItems ?? []) + (navigationItem.rightBarButtonItems ?? []) {
+        item.hidesSharedBackground = true
+        item.setTitleTextAttributes([.foregroundColor: modalStyle.label], for: .normal)
+        item.setTitleTextAttributes([.foregroundColor: modalStyle.secondaryLabel], for: .disabled)
+      }
+    }
+  }
+}
+
+/// App confirmations use the same opaque sheet as forms and reader panels.
+/// No private UIAlertController subviews or global system appearance overrides.
+private final class NativeConfirmationController: NativeModalTableController, UIAdaptivePresentationControllerDelegate {
+  private let args: [String: Any]
+  private var completion: ((String?) -> Void)?
+  private var actions: [[String: Any]] { args["actions"] as? [[String: Any]] ?? [] }
+
+  init(args: [String: Any], completion: @escaping (String?) -> Void) {
+    self.args = args
+    self.completion = completion
+    super.init(style: .insetGrouped)
+    title = args["title"] as? String
+  }
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    tableView.rowHeight = UITableView.automaticDimension
+    tableView.estimatedRowHeight = 52
+    navigationItem.leftBarButtonItem = UIBarButtonItem(title: args["cancel"] as? String,
+      style: .plain, target: self, action: #selector(cancel))
+  }
+  override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { actions.count }
+  override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+    args["message"] as? String
+  }
+  override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    let action = actions[indexPath.row]
+    let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+    cell.selectionStyle = .none
+    cell.isAccessibilityElement = false
+    let button = UIButton(type: .system)
+    button.setTitle(action["label"] as? String, for: .normal)
+    button.setTitleColor(action["destructive"] as? Bool == true ? modalStyle.critical : modalStyle.label, for: .normal)
+    button.titleLabel?.font = .preferredFont(forTextStyle: .body)
+    button.titleLabel?.adjustsFontForContentSizeCategory = true
+    button.titleLabel?.numberOfLines = 0
+    button.contentHorizontalAlignment = .leading
+    button.translatesAutoresizingMaskIntoConstraints = false
+    button.addAction(UIAction { [weak self] _ in self?.finish(action["id"] as? String) }, for: .touchUpInside)
+    cell.contentView.addSubview(button)
+    NSLayoutConstraint.activate([
+      button.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor),
+      button.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor),
+      button.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
+      button.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor),
+      button.heightAnchor.constraint(greaterThanOrEqualToConstant: 52),
+    ])
+    return cell
+  }
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    finish(actions[indexPath.row]["id"] as? String)
+  }
+  @objc private func cancel() { finish(nil) }
+  private func finish(_ value: String?) {
+    guard let done = completion else { return }
+    completion = nil
+    dismiss(animated: true) { done(value) }
+  }
+  func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+    let done = completion; completion = nil; done?(nil)
+  }
+}
+
+private final class NativeFormController: NativeModalTableController, UITextFieldDelegate, UIAdaptivePresentationControllerDelegate {
   private let args: [String: Any]
   private let channel: FlutterMethodChannel
   private var completion: (([String: String]?) -> Void)?
@@ -182,11 +322,7 @@ private final class NativeFormController: UITableViewController, UITextFieldDele
     tableView.cellLayoutMarginsFollowReadableWidth = true
     navigationItem.leftBarButtonItem = UIBarButtonItem(title: args["cancel"] as? String,
       style: .plain, target: self, action: #selector(cancel))
-    if #available(iOS 26.0, *) {
-      submitItem = UIBarButtonItem(title: args["submit"] as? String, style: .prominent, target: self, action: #selector(submit))
-    } else {
-      submitItem = UIBarButtonItem(title: args["submit"] as? String, style: .done, target: self, action: #selector(submit))
-    }
+    submitItem = UIBarButtonItem(title: args["submit"] as? String, style: .done, target: self, action: #selector(submit))
     submitItem.accessibilityIdentifier = "native-form-submit"
     navigationItem.rightBarButtonItem = submitItem
     changed()
@@ -202,6 +338,7 @@ private final class NativeFormController: UITableViewController, UITextFieldDele
     let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
     cell.selectionStyle = .none
     let field = fields[indexPath.section]
+    field.textColor = modalStyle.label
     field.translatesAutoresizingMaskIntoConstraints = false
     cell.contentView.addSubview(field)
     NSLayoutConstraint.activate([
@@ -247,13 +384,18 @@ private final class NativeFormController: UITableViewController, UITextFieldDele
     guard dirty else { finish(nil); return }
     guard !confirming else { return }
     confirming = true
-    let alert = UIAlertController(title: args["discardTitle"] as? String, message: nil, preferredStyle: .actionSheet)
-    alert.addAction(UIAlertAction(title: args["keepEditing"] as? String, style: .cancel) { [weak self] _ in self?.confirming = false })
-    alert.addAction(UIAlertAction(title: args["discard"] as? String, style: .destructive) { [weak self] _ in
+    var confirmationArgs = args
+    confirmationArgs["title"] = args["discardTitle"]
+    confirmationArgs["message"] = nil
+    confirmationArgs["cancel"] = args["keepEditing"]
+    confirmationArgs["actions"] = [["id": "discard", "label": args["discard"] ?? "", "destructive": true]]
+    let confirmation = NativeConfirmationController(args: confirmationArgs) { [weak self] selected in
       self?.confirming = false
-      self?.finish(nil)
-    })
-    present(alert, animated: true)
+      if selected == "discard" { self?.finish(nil) }
+    }
+    let navigation = UINavigationController(rootViewController: confirmation)
+    NativePresentation.configureSheet(navigation, args: confirmationArgs)
+    present(navigation, animated: true) { navigation.presentationController?.delegate = confirmation }
   }
   private func finish(_ result: [String: String]?) {
     guard let complete = completion else { return }
@@ -303,7 +445,7 @@ private final class NativeGlass: NSObject, FlutterPlatformView {
 }
 
 
-private final class NativeListController: UITableViewController, UIAdaptivePresentationControllerDelegate {
+private final class NativeListController: NativeModalTableController, UIAdaptivePresentationControllerDelegate {
   private let args: [String: Any]
   private let channel: FlutterMethodChannel
   private let sections: [[String: Any]]
@@ -332,7 +474,8 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
     tableView.estimatedRowHeight = 60
     tableView.rowHeight = UITableView.automaticDimension
     images.countLimit = 48
-    navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(close))
+    navigationItem.leftBarButtonItem = UIBarButtonItem(title: args["close"] as? String,
+      style: .plain, target: self, action: #selector(close))
     navigationItem.rightBarButtonItem = UIBarButtonItem(title: args["manage"] as? String, style: .plain, target: self, action: #selector(manage))
     sectionButton.showsMenuAsPrimaryAction = true
     sectionButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
@@ -373,6 +516,7 @@ private final class NativeListController: UITableViewController, UIAdaptivePrese
     let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
     cell.accessibilityIdentifier = "native-reader-row-" + id
     cell.textLabel?.text = item["title"] as? String
+    cell.textLabel?.textColor = modalStyle.label
     cell.textLabel?.font = .preferredFont(forTextStyle: .body)
     cell.textLabel?.adjustsFontForContentSizeCategory = true
     cell.textLabel?.numberOfLines = 2
@@ -446,7 +590,7 @@ private final class NativeColorDelegate: NSObject, UIColorPickerViewControllerDe
 
 
 /// UIKit renders action data; Dart remains the sole owner of reader settings.
-private final class NativeActionsController: UITableViewController, UIAdaptivePresentationControllerDelegate {
+private final class NativeActionsController: NativeModalTableController, UIAdaptivePresentationControllerDelegate {
   private var content: [String: Any]
   private let channel: FlutterMethodChannel
   private let requestID: String
@@ -479,7 +623,8 @@ private final class NativeActionsController: UITableViewController, UIAdaptivePr
 
   private func refresh() {
     title = content[appearance ? "appearanceTitle" : "title"] as? String
-    let close = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(closePanel))
+    let close = UIBarButtonItem(title: content["close"] as? String,
+      style: .plain, target: self, action: #selector(closePanel))
     close.accessibilityLabel = content["close"] as? String
     close.accessibilityIdentifier = "native-actions-close"
     navigationItem.leftBarButtonItem = close
@@ -495,6 +640,7 @@ private final class NativeActionsController: UITableViewController, UIAdaptivePr
       undo.isEnabled = content["canUndo"] as? Bool == true
       navigationItem.rightBarButtonItems = [undo]
     }
+    flattenNavigationButtons()
     tableView.reloadData()
   }
 
@@ -577,7 +723,7 @@ private final class NativeActionsController: UITableViewController, UIAdaptivePr
     cell.imageView?.image = UIImage(systemName: row["icon"] as? String ?? "circle")
     cell.imageView?.tintColor = .systemBlue
     let enabled = row["enabled"] as? Bool != false
-    cell.textLabel?.textColor = enabled ? .label : .tertiaryLabel
+    cell.textLabel?.textColor = enabled ? modalStyle.label : modalStyle.secondaryLabel
     cell.imageView?.alpha = enabled ? 1 : 0.3
     cell.selectionStyle = enabled ? .default : .none
     cell.accessibilityIdentifier = "native-actions-" + (row["id"] as? String ?? "")

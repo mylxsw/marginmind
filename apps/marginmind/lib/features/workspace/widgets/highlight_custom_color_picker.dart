@@ -90,7 +90,7 @@ class _HighlightCustomColorPickerState extends State<HighlightCustomColorPicker>
             Row(
               children: [
                 Expanded(child: Text(l.highlightCustomColor, style: context.mmText.headline)),
-                MMIconButton(icon: MMIcons.close, tooltip: l.cancel, onPressed: widget.onCancel, size: 26),
+                MMModalCloseButton(tooltip: l.cancel, onPressed: widget.onCancel, size: 26),
               ],
             ),
             const SizedBox(height: 6),

@@ -1,0 +1,11 @@
+{
+  "captured_scenes_source_unchanged": true,
+  "final_source_matches_runtime": false,
+  "post_capture_changes": [
+    "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart"
+  ],
+  "post_capture_reason": "Map adjustment header also adopts the already verified common close control; no captured scene uses this entry.",
+  "captured_dart_source_sha256": "4cf88a016e09151f41c2e6b4f4aa866acbe5f1d99c0aae02d68df24c08358a6b",
+  "final_dart_source_sha256": "0324fc86da067d79ef641002aa63f7e6e6e2dc35c37712e55a3bbfbcdc50d7ff",
+  "native_swift_sha256": "7f95d54490cc24812283167e652ed16a2f1ae0db3f924a7f91ea691c3758474e"
+}

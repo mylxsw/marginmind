@@ -19,8 +19,7 @@ void showReadingSettings(BuildContext context, WidgetRef ref, String setId, {Doc
       context: context,
       builder: (sheetContext) => MMSheet(
         title: context.l10n.readingSettings,
-        titleTrailing: MMIconButton(
-          icon: MMIcons.close,
+        titleTrailing: MMModalCloseButton(
           tooltip: context.l10n.closePanel,
           onPressed: () => Navigator.of(sheetContext).maybePop(),
         ),

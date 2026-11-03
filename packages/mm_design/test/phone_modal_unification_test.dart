@@ -18,6 +18,80 @@ Future<void> phone(WidgetTester tester, Widget child) async {
 
 void main() {
   final platforms = TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android});
+  for (final dark in [false, true]) {
+    testWidgets('all modal entry points keep controls and nested menus opaque, dark=$dark', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      // A real iPhone host offers native glass. It must never be requested
+      // by controls inside the common form surface.
+      MMNativePresentation.available = true;
+      addTearDown(() => MMNativePresentation.available = false);
+      late BuildContext context;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: dark ? MMTheme.dark() : MMTheme.light(),
+          builder: (_, child) => MMInput(touchPlatform: true, phone: true, child: child!),
+          home: Scaffold(
+            body: Builder(
+              builder: (c) {
+                context = c;
+                return const ColoredBox(color: Colors.green, child: SizedBox.expand());
+              },
+            ),
+          ),
+        ),
+      );
+      for (final open in [showMMSheet<void>, showMMDialog<void>, showMMBottomSheet<void>]) {
+        final completed = open(
+          context: context,
+          builder: (_) => MMSheet(
+            title: 'Form',
+            titleTrailing: MMModalCloseButton(tooltip: 'Close', onPressed: () {}),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const MMGlass(child: Text('Preview')),
+                const MMLiquidGlass(child: Text('Content')),
+                MMSegmentedControl<int>(
+                  value: 0,
+                  onChanged: (_) {},
+                  segments: const [
+                    MMSegment(value: 0, label: 'Existing'),
+                    MMSegment(value: 1, label: 'New'),
+                  ],
+                ),
+                MMDropdownButton<int>(
+                  tooltip: 'Nested menu',
+                  onSelected: (_) {},
+                  itemBuilder: (_) => const [MMDropdownItem<int>(value: 1, child: Text('Choice'))],
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(MMModalSurface), findsOneWidget);
+        expect(find.byIcon(MMIcons.close), findsNothing);
+        expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byType(UiKitView), findsNothing);
+        final contentContext = tester.element(find.text('Preview'));
+        expect(MMFlatSurface.of(contentContext), isTrue);
+        expect(contentContext.mmColors.flat, isTrue);
+        await tester.tap(find.byTooltip('Nested menu'));
+        await tester.pumpAndSettle();
+        expect(find.byType(MMModalSurface), findsNWidgets(2));
+        expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byType(UiKitView), findsNothing);
+        await tester.tap(find.text('Choice'));
+        await tester.pumpAndSettle();
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        await completed;
+        expect(tester.takeException(), isNull);
+      }
+    }, variant: platforms);
+  }
   testWidgets('floating form protects edits across keyboard, rotation, scrim, drag and Back', (tester) async {
     late BuildContext context;
     final allow = ValueNotifier(false);

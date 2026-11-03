@@ -8,6 +8,7 @@ import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'bottom_sheet.dart';
 import 'dialog_scope.dart';
+import 'modal_surface.dart';
 
 /// Presents a compact modal form centered in the window.
 /// Esc cancels; clicking outside does nothing (sheets are modal to the
@@ -58,9 +59,13 @@ Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder
 /// Settings. Esc closes; clicking the scrim does nothing. Fades in with a
 /// slight scale (fade only when motion is reduced). A compact window shows
 /// it as a bottom sheet.
-Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilder builder}) {
+Future<T?> showMMDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  double initialFraction = MMSizes.phoneSheetMedium,
+}) {
   if (MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact) {
-    return showMMBottomSheet<T>(context: context, builder: builder);
+    return showMMBottomSheet<T>(context: context, builder: builder, initialFraction: initialFraction);
   }
   final reduceMotion = MMAppearance.reduceMotionOf(context);
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
@@ -208,14 +213,9 @@ class MMSheet extends StatelessWidget {
     }
     return Material(
       type: MaterialType.transparency,
-      child: Container(
+      child: MMModalSurface(
         padding: EdgeInsets.fromLTRB(24, child == null ? 20 : 24, 24, child == null ? 16 : 18),
-        decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: c.hairline, width: 0.5),
-          boxShadow: c.sheetShadow,
-        ),
+        borderRadius: BorderRadius.circular(16),
         child: MMDialogScope(
           child: Material(type: MaterialType.transparency, child: column),
         ),

@@ -6448,4 +6448,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncRenameStale => '编辑期间内容已变化，输入已保留。请取消并重新打开改名，确认最新版本。';
+
+  @override
+  String get phoneNavigationReturnToReading => '返回阅读';
+
+  @override
+  String get phoneNavigationReturnToNote => '返回笔记';
+
+  @override
+  String get phoneNavigationReturnToContent => '返回内容';
 }

@@ -197,7 +197,7 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header: Document icon + Title + Undo button + Close button
+          // The shared sheet owns dismissal; standalone panels retain Close.
           Row(
             children: [
               const _DocumentIcon(),
@@ -244,26 +244,27 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                 ),
               ),
               const SizedBox(width: 8),
-              Tooltip(
-                message: l.phoneMoreClose,
-                child: Semantics(
-                  button: true,
-                  label: l.phoneMoreClose,
-                  child: SizedBox.square(
-                    dimension: 30,
-                    child: Material(
-                      color: c.fill,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        key: const ValueKey('phone-more-close'),
-                        onTap: _close,
-                        child: Center(child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel)),
+              if (!MMBottomSheet.contains(context))
+                Tooltip(
+                  message: l.phoneMoreClose,
+                  child: Semantics(
+                    button: true,
+                    label: l.phoneMoreClose,
+                    child: SizedBox.square(
+                      dimension: 30,
+                      child: Material(
+                        color: c.fill,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          key: const ValueKey('phone-more-close'),
+                          onTap: _close,
+                          child: Center(child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel)),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 10),

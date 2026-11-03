@@ -256,11 +256,7 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                             ],
                           ),
                         ),
-                        MMIconButton(
-                          icon: MMIcons.close,
-                          tooltip: l.closePanel,
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
+                        MMModalCloseButton(tooltip: l.closePanel, onPressed: () => Navigator.of(context).pop()),
                       ],
                     ),
                     const SizedBox(height: 10),

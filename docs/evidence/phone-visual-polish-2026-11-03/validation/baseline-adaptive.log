@@ -1,0 +1,44 @@
+00:00 +0: loading /private/tmp/marginmind-ui-polish-baseline/packages/mm_design/test/adaptive_test.dart
+00:00 +0: MMSizeClass breakpoints at 600 and 1180, landscape for regular
+00:00 +1: MMSizeClass pointer desktops stay regular; touch windows classify their safe area
+00:00 +2: MMInput defaults to pointer without a scope
+00:00 +3: MMInput a touch platform follows the last pointer; a desktop ignores it
+00:00 +4: touch-sized controls grow to 44 pt under touch
+00:00 +5: touch-sized controls keep desktop sizes with a pointer
+00:00 +6: MMWindowScaffold keeps sidebar, toolbar and body inside the safe area
+00:00 +7: MMWindowScaffold leaves room for window buttons only where they are drawn
+00:00 +8: MMWindowScaffold an overlay sidebar floats over the content and dismisses from the scrim
+00:00 +9: the drawer scrim reaches into the safe area insets
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <62>
+  Actual: <0.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///private/tmp/marginmind-ui-polish-baseline/packages/mm_design/test/adaptive_test.dart:262:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///private/tmp/marginmind-ui-polish-baseline/packages/mm_design/test/adaptive_test.dart line 262
+The test description was:
+  the drawer scrim reaches into the safe area insets
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +9 -1: the drawer scrim reaches into the safe area insets [E]
+  Test failed. See exception logs above.
+  The test description was: the drawer scrim reaches into the safe area insets
+
+00:00 +9 -1: MMDrawer slides in from the end edge with an inset, at most the available width
+00:00 +10 -1: MMSplitView vertical stacks the panes and drags the divider vertically
+00:00 +11 -1: MMSplitView vertical a pointer gets the thin divider
+00:00 +12 -1: MMSplitView vertical mode buttons move to the divider end and to the single pane
+00:00 +13 -1: MMSplitView vertical too short for both panes shows the top one
+00:00 +14 -1: Some tests failed.
+
+Failing tests:
+  /private/tmp/marginmind-ui-polish-baseline/packages/mm_design/test/adaptive_test.dart: the drawer scrim reaches into the safe area insets

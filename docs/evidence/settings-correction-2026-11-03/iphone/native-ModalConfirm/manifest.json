@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1276896C-3960-46EB-814D-785921CCE8EC",
+        "deviceName" : "Foliarc Settings Correction",
+        "exportedFileName" : "F1DF219A-F77A-4A23-B89E-6A7CBB64A5CC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-system-confirmation_0_A4D51235-77A7-40DE-8789-524900BC42FA.png",
+        "timestamp" : 1793717426.071
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testModalConfirm()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testModalConfirm"
+  }
+]

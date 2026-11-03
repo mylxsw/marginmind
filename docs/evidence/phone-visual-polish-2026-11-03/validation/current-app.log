@@ -1,0 +1,35 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_workspace_sidebar_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_workspace_sidebar_test.dart: 320 point drawer destinations remain readable with large en text
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_workspace_sidebar_test.dart: 320 point drawer destinations remain readable with large zh text
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:01 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (4 ms)
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:02 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:02 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:02 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:03 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:03 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:03 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:03 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:03 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:04 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows desktop across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:04 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: phone ratings stay usable with a pointer and accessibility text
+00:04 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: 393x852 library, drawer, review and actions dark=false
+00:04 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: 393x852 library, drawer, review and actions dark=true
+00:05 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: phone library navigation fills the screen and selecting the current filter closes it
+00:05 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: drawer search, settings and return to library
+00:05 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: navigation follows device phone=false touch=true size=Size(393.0, 852.0)
+00:05 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: navigation follows device phone=false touch=false size=Size(1280.0, 820.0)
+00:06 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: navigation follows device phone=true touch=true size=Size(852.0, 393.0)
+00:06 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: (tearDownAll)
+00:06 +18: All tests passed!

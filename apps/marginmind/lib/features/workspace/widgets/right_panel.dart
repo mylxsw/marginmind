@@ -44,7 +44,9 @@ class _RightPanelViewState extends ConsumerState<RightPanelView> {
       child: FocusTraversalGroup(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: MMInput.of(context).phone
+            color: MMInput.of(context).phone && MMBottomSheet.contains(context)
+                ? Colors.transparent
+                : MMInput.of(context).phone
                 ? c.windowBackground
                 : context.mmTouchPlatform
                 ? c.sidebarOpaque
@@ -130,7 +132,7 @@ class RightPanelHeader extends StatelessWidget {
             ),
           ),
           ...actions,
-          MMIconButton(icon: MMIcons.close, tooltip: context.l10n.closePanel, iconSize: 13, onPressed: onClose),
+          MMModalCloseButton(tooltip: context.l10n.closePanel, iconSize: 13, onPressed: onClose),
         ],
       ),
     );

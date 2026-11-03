@@ -5,18 +5,20 @@ import 'package:marginmind/settings/app_settings.dart';
 import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_design/mm_design.dart';
 
-import 'phone_layout_test.dart' show pumpPhone;
+import 'helpers.dart';
 
 void main() {
   for (final width in [320.0, 390.0]) {
     for (final language in [LanguagePreference.en, LanguagePreference.zh]) {
       testWidgets('phone settings $width ${language.name}: all sections and large text stay usable', (tester) async {
-        final container = await pumpPhone(tester, (
-          name: 'small phone',
+        // Isolate settings from demo library cards at large text sizes.
+        final container = await pumpApp(
+          tester,
+          sets: const [],
           size: Size(width, 700),
-          safe: const EdgeInsets.only(top: 20, bottom: 20),
-          platform: TargetPlatform.iOS,
-        ));
+          overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+        );
+        tester.view.padding = const FakeViewPadding(top: 20, bottom: 20);
         container.read(settingsProvider.notifier).setLanguage(language);
         tester.platformDispatcher.textScaleFactorTestValue = 1.3;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -37,9 +39,8 @@ void main() {
           await tester.tap(find.byKey(const ValueKey('phone-settings-back')));
           await tester.pumpAndSettle();
         }
-        final close = find.byKey(const ValueKey('settings-close'));
-        expect(tester.getSize(close).height, greaterThanOrEqualTo(MMSizes.touchTarget));
-        await tester.tap(close);
+        expect(find.descendant(of: find.byType(SettingsWindow), matching: find.byIcon(MMIcons.close)), findsNothing);
+        await tester.tapAt(const Offset(2, 100));
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('settings-window')), findsNothing);
       });

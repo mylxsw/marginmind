@@ -157,11 +157,19 @@ class _MMPhoneDrawerState extends State<MMPhoneDrawer> with SingleTickerProvider
 
 /// A phone navigation action whose label and touch area grow with Dynamic Type.
 class MMPhoneNavigationAction extends StatelessWidget {
-  const MMPhoneNavigationAction({super.key, required this.label, required this.onPressed, this.icon, this.color});
+  const MMPhoneNavigationAction({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.color,
+    this.maxLines = 1,
+  });
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final Color? color;
+  final int? maxLines;
 
   @override
   Widget build(BuildContext context) => MMInteractive(
@@ -185,8 +193,8 @@ class MMPhoneNavigationAction extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: maxLines,
+              overflow: maxLines == null ? TextOverflow.visible : TextOverflow.ellipsis,
               style: context.mmText.title3.copyWith(color: color ?? context.mmColors.secondaryLabel),
             ),
           ),
@@ -281,7 +289,7 @@ class MMPhoneNavigationRow extends StatelessWidget {
             Expanded(
               child: Text(
                 item.label,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: context.mmText.body.copyWith(
                   fontSize: MMPhoneNavigation.rowTextSize,

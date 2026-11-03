@@ -750,7 +750,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                               child: body,
                             ),
                           ),
-                          if (!state.readerPanelVisible)
+                          if (!state.readerPanelVisible && state.panel == null)
                             Positioned(
                               top: 0,
                               left: 0,

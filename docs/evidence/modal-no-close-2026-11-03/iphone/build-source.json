@@ -1,0 +1,7 @@
+{
+  "device": "9128F1D9-4F20-4A67-9E30-96FCD1A8EA58",
+  "test": "modal_no_close_acceptance_test.dart",
+  "commit": "bf8480bcd50d7deb3121c4744014e7f841d79c11",
+  "dart_source_sha256": "4cf88a016e09151f41c2e6b4f4aa866acbe5f1d99c0aae02d68df24c08358a6b",
+  "native_swift_sha256": "7f95d54490cc24812283167e652ed16a2f1ae0db3f924a7f91ea691c3758474e"
+}

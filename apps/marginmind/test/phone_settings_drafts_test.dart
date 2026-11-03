@@ -45,7 +45,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('phone-settings-back')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('settings-close')));
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('ai-tasks-discard')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('ai-tasks-discard')));

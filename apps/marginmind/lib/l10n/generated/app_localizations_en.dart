@@ -6730,4 +6730,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncRenameStale =>
       'This item changed while you were editing. Your input is kept. Cancel and reopen Rename to review the latest version.';
+
+  @override
+  String get phoneNavigationReturnToReading => 'Back to Reading';
+
+  @override
+  String get phoneNavigationReturnToNote => 'Back to Note';
+
+  @override
+  String get phoneNavigationReturnToContent => 'Back to Content';
 }

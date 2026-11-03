@@ -1,0 +1,589 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tokens_test.dart: light colors text tokens reach 4.5:1 on every surface they sit on
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tokens_test.dart: light colors white text on accent fill reaches 4.5:1
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tokens_test.dart: light colors all feature colors share the system accent through theme changes
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tokens_test.dart: light colors withAccent follows the system accent
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tokens_test.dart: dark colors text tokens reach 4.5:1 on every surface they sit on
+00:00 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +27 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +27 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tokens_test.dart: mind map from document geometry fits together [E]
+  Expected: not IconData:<IconData(U+0E357)>
+    Actual: IconData:<IconData(U+0E357)>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/tokens_test.dart 235:5                         main.<fn>
+
+00:00 +28 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +29 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +30 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +31 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +32 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +33 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +34 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +35 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +36 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +37 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=false
+00:00 +38 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: spring lens moves, safe bottom is a maximum and reduced motion is immediate
+00:00 +39 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_settings_sidebar_test.dart: phone settings pop-up separates paint from its hit target
+00:00 +40 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: plain dropdown matches an icon button before and after opening (dark: true)
+00:00 +41 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=true
+00:00 +42 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/solid_control_ink_test.dart: solid controls share white-first ink in every theme; dark=true
+00:00 +43 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart: full-height drawer opens from edge, follows a drag, cancels and dismisses
+00:00 +44 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: a closed More menu lets Escape reach the owning pane
+00:00 +45 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: a closed More menu lets Escape reach the owning pane
+00:00 +46 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: dropdown shows every row at full size in its first frame (reduced: false)
+00:01 +47 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: 10ms double tap uses the correct minimum interval for PointerDeviceKind.mouse
+00:01 +48 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: 10ms double tap uses the correct minimum interval for PointerDeviceKind.mouse
+00:01 +49 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: 10ms double tap uses the correct minimum interval for PointerDeviceKind.touch
+00:01 +50 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: mouse double click follows the host interval while touch keeps its own timing
+00:01 +51 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: PointerDeviceKind.mouse selects on release and double tap activates without selecting twice
+00:01 +52 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: PointerDeviceKind.touch selects on release and double tap activates without selecting twice
+00:01 +53 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: child controls and secondary clicks do not select or activate the parent
+00:01 +54 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: drag and cancelled pointer do not select; distant taps do not activate
+00:01 +55 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/immediate_tap_test.dart: keyboard and accessibility activation still select; disabled surfaces ignore taps
+00:01 +56 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/mixed_checkbox_test.dart: mixed checkbox paints a dash, exposes mixed semantics and selects all on tap
+00:02 +57 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart: Mac control geometry and content typography
+00:02 +58 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_count_test.dart: inline count follows foreground and grows in dark
+00:02 +59 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_count_test.dart: inline count follows foreground and grows in dark
+00:02 +59 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart: phone control geometry and content typography
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following assertion was thrown building _MaterialSwitch(dirty, state:
+_MaterialSwitchState#45bf1(tickers: tracking 4 tickers)):
+No Material widget found.
+_MaterialSwitch widgets require a Material widget ancestor within the closest LookupBoundary.
+In Material Design, most widgets are conceptually "printed" on a sheet of material. In Flutter's
+material library, that material is represented by the Material widget. It is the Material widget
+that renders ink splashes, for instance. Because of this, many material library widgets require that
+there be a Material widget in the tree above them.
+To introduce a Material widget, you can either directly include one, or use a widget that contains
+Material itself, such as a Card, Dialog, Drawer, or Scaffold.
+The specific widget that could not find a Material ancestor was:
+  _MaterialSwitch
+The ancestors of this widget were:
+  ...
+  Switch
+  Semantics
+  MMSwitch-[<'switch'>]
+  Column
+  Builder
+  ...
+
+The relevant error-causing widget was:
+  Switch
+  Switch:file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/lib/src/widgets/choice.dart:112:16
+
+When the exception was thrown, this was the stack:
+#0      debugCheckHasMaterial.<anonymous closure> (package:flutter/src/material/debug.dart:40:7)
+#1      debugCheckHasMaterial (package:flutter/src/material/debug.dart:67:4)
+#2      _MaterialSwitchState.build (package:flutter/src/material/switch.dart:909:12)
+#3      StatefulElement.build (package:flutter/src/widgets/framework.dart:5944:27)
+#4      ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5830:15)
+#5      StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5995:11)
+#6      Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#7      ComponentElement._firstBuild (package:flutter/src/widgets/framework.dart:5812:5)
+#8      StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5986:11)
+#9      ComponentElement.mount (package:flutter/src/widgets/framework.dart:5806:5)
+...     Normal element mounting (16 frames)
+#25     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4600:20)
+#26     MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7277:36)
+#27     MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7292:32)
+...     Normal element mounting (325 frames)
+#352    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4600:20)
+#353    MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7277:36)
+#354    MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7292:32)
+...     Normal element mounting (467 frames)
+#821    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4600:20)
+#822    Element.updateChild (package:flutter/src/widgets/framework.dart:4066:20)
+#823    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#824    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#825    ProxyElement.update (package:flutter/src/widgets/framework.dart:6162:5)
+#826    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#827    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#828    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#829    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5995:11)
+#830    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#831    StatefulElement.update (package:flutter/src/widgets/framework.dart:6020:5)
+#832    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#833    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#834    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#835    ProxyElement.update (package:flutter/src/widgets/framework.dart:6162:5)
+#836    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#837    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#838    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#839    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5995:11)
+#840    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#841    StatefulElement.update (package:flutter/src/widgets/framework.dart:6020:5)
+#842    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#843    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#844    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5995:11)
+#845    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#846    StatefulElement.update (package:flutter/src/widgets/framework.dart:6020:5)
+#847    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#848    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#849    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#850    ProxyElement.update (package:flutter/src/widgets/framework.dart:6162:5)
+#851    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#852    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#853    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5995:11)
+#854    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#855    StatefulElement.update (package:flutter/src/widgets/framework.dart:6020:5)
+#856    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#857    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#858    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#859    ProxyElement.update (package:flutter/src/widgets/framework.dart:6162:5)
+#860    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#861    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#862    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#863    ProxyElement.update (package:flutter/src/widgets/framework.dart:6162:5)
+#864    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#865    _RawViewElement._updateChild (package:flutter/src/widgets/view.dart:488:16)
+#866    _RawViewElement.update (package:flutter/src/widgets/view.dart:575:5)
+#867    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#868    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#869    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#870    StatelessElement.update (package:flutter/src/widgets/framework.dart:5908:5)
+#871    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#872    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5854:16)
+#873    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5995:11)
+#874    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#875    StatefulElement.update (package:flutter/src/widgets/framework.dart:6020:5)
+#876    Element.updateChild (package:flutter/src/widgets/framework.dart:4050:15)
+#877    RootElement._rebuild (package:flutter/src/widgets/binding.dart:2091:16)
+#878    RootElement.update (package:flutter/src/widgets/binding.dart:2069:5)
+#879    RootElement.performRebuild (package:flutter/src/widgets/binding.dart:2083:7)
+#880    Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+#881    BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2763:15)
+#882    BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2820:11)
+#883    BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3124:18)
+#884    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:2432:19)
+#885    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:558:5)
+#886    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1430:15)
+#887    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1345:9)
+#888    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:2261:9)
+#891    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#892    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:2250:27)
+#893    WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
+#896    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#897    WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
+#898    main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart:12:15)
+#899    testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#900    TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 5 frames from dart:async and package:stack_trace)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞═════════════════════════════════════════════════════════
+The following assertion was thrown during layout:
+A RenderFlex overflowed by 99706 pixels on the bottom.
+
+The relevant error-causing widget was:
+  Column
+  Column:file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart:21:24
+
+The overflowing RenderFlex has an orientation of Axis.vertical.
+The edge of the RenderFlex that is overflowing has been marked in the rendering with a yellow and
+black striped pattern. This is usually caused by the contents being too big for the RenderFlex.
+Consider applying a flex factor (e.g. using an Expanded widget) to force the children of the
+RenderFlex to fit within the available space instead of being sized to their natural size.
+This is considered an error condition because it indicates that there is content that cannot be
+seen. If the content is legitimately bigger than the available space, consider clipping it with a
+ClipRect widget before putting it in the flex, or using a scrollable container rather than a Flex,
+like a ListView.
+The specific RenderFlex in question is: RenderFlex#c19fe OVERFLOWING:
+  needs compositing
+  creator: Column ← Builder ← DefaultSelectionStyle ← IconTheme ← IconTheme ← InheritedCupertinoTheme
+    ← CupertinoTheme ← _InheritedTheme ← Theme ← _MMInputScope ← Listener ← MMInput ← ⋯
+  parentData: <none> (can use size)
+  constraints: BoxConstraints(w=800.0, h=600.0)
+  size: Size(800.0, 600.0)
+  direction: vertical
+  mainAxisAlignment: start
+  mainAxisSize: max
+  crossAxisAlignment: center
+  verticalDirection: down
+  spacing: 0.0
+◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +60 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart: phone control geometry and content typography
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <44>
+  Actual: <100000.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart:66:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart line 66
+The test description was:
+  phone control geometry and content typography
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following message was thrown:
+Multiple exceptions (3) were detected during the running of the current test, and at least one was
+unexpected.
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +60 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/semantics_test.dart: a button is named once, not by its label and its text
+00:02 +60 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart: phone control geometry and content typography [E]
+  Test failed. See exception logs above.
+  The test description was: phone control geometry and content typography
+
+00:02 +61 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/semantics_test.dart: a button is named once, not by its label and its text
+00:03 +62 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_sidebar_drawer_test.dart: tablet drawer fills edges with safe controls (Size(820.0, 1180.0), builder: false)
+00:03 +63 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_sidebar_drawer_test.dart: tablet drawer fills edges with safe controls (Size(820.0, 1180.0), builder: false)
+00:03 +64 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_sidebar_drawer_test.dart: tablet drawer fills edges with safe controls (Size(820.0, 1180.0), builder: false)
+00:03 +65 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_sidebar_drawer_test.dart: tablet drawer fills edges with safe controls (Size(820.0, 1180.0), builder: false)
+00:03 +66 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_sidebar_drawer_test.dart: tablet drawer fills edges with safe controls (Size(820.0, 1180.0), builder: false)
+00:03 +67 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_sidebar_drawer_test.dart: tablet drawer fills edges with safe controls (Size(820.0, 1180.0), builder: false)
+00:03 +68 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: empty menus stay hidden until a command overflows
+00:03 +69 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: empty menus stay hidden until a command overflows
+00:03 +70 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: empty menus stay hidden until a command overflows
+00:03 +71 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: empty menus stay hidden until a command overflows
+00:03 +72 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: measures controls in first frame and invokes overflow commands
+00:03 +73 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: labels collapse before commands overflow and restore on resize
+00:03 +74 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: a dialog captures the flat material from its originating pane
+00:03 +75 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: flat surfaces have opaque fills and no backdrop or shadows
+00:03 +76 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_toolbar_test.dart: shared geometry constrains both panes and preserves narrow layouts
+00:03 +77 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:04 +78 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:05 +79 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/ink_toolbar_test.dart: swatches, stroke widths and a text-only button report taps
+00:05 +80 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:05 +81 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:05 +82 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:05 +83 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:05 +84 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:05 +85 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:05 +86 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: iPad toolbar families share compact cells with separate edge hit targets
+00:05 +87 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: iPad toolbar families share compact cells with separate edge hit targets
+00:05 +88 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: iPad toolbar families share compact cells with separate edge hit targets
+00:05 +89 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: iPad toolbar families share compact cells with separate edge hit targets
+00:05 +90 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: false) (variant: TargetPlatform.android)
+00:05 +91 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: false) (variant: TargetPlatform.android)
+00:05 +92 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac light
+00:05 +93 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac light
+00:05 +94 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac light
+00:05 +95 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac light
+00:06 +96 -2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac light
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<Golden "goldens/mac-controls-light.png": Pixel test failed, 0.00%, 12px diff
+detected.
+          Failure feedback can be found at
+/Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/failures>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart:173:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart line 173
+The test description was:
+  mac light
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +96 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: hovering switches submenus and Escape closes the complete menu tree
+00:06 +96 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac light [E]
+  Test failed. See exception logs above.
+  The test description was: mac light
+
+00:06 +97 -3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac dark
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<Golden "goldens/mac-controls-dark.png": Pixel test failed, 0.00%, 10px diff
+detected.
+          Failure feedback can be found at
+/Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/failures>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart:173:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart line 173
+The test description was:
+  mac dark
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +97 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: mac dark [E]
+  Test failed. See exception logs above.
+  The test description was: mac dark
+
+00:06 +97 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: ipad light
+00:06 +98 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: ipad dark
+00:06 +99 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_density_test.dart: tablet dropdown preserves button accessibility and touch target
+00:06 +100 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar avoids another floating control by switching sides
+00:06 +101 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar goes above when both sides touch the avoided area
+00:06 +102 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar sits centered above a selection in the middle
+00:06 +103 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar moves below a selection near the top edge
+00:06 +104 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar stays above a selection near the bottom edge
+00:06 +105 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar is pushed inwards near the left and right edges
+00:06 +106 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar is fully visible in all four corners
+00:06 +107 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar overlaps a selection taller than the viewport instead of leaving it
+00:06 +108 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar picks the roomier side when neither fits
+00:06 +109 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar stays on screen when the selection scrolls out of view
+00:06 +110 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar keeps the left edge when the toolbar is wider than the viewport
+00:06 +111 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: placeFloatingToolbar respects the viewport origin
+00:06 +112 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: flat floating toolbar covers content from its first frame in dark
+00:06 +113 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/floating_toolbar_test.dart: renders on glass in dark appearance
+00:06 +114 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:06 +115 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +116 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +117 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +118 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +119 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +120 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +121 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +122 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +123 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/inline_text_field_test.dart: Enter and keypad Enter submit, Esc cancels, other keys type
+00:07 +124 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/reader_controls_test.dart: line-spacing previews retain accessible labels and segment actions
+00:07 +125 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/reader_controls_test.dart: line-spacing previews retain accessible labels and segment actions
+00:07 +126 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/reader_controls_test.dart: line-spacing previews retain accessible labels and segment actions
+00:07 +127 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/reader_controls_test.dart: line-spacing previews retain accessible labels and segment actions
+00:07 +128 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/reader_controls_test.dart: line-spacing previews retain accessible labels and segment actions
+00:07 +129 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/assistant_icon_motion_test.dart: idle stays still; touch blinks without delaying parent action
+00:08 +130 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/assistant_icon_motion_test.dart: hover follows pointer and settles back on exit
+00:08 +131 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/assistant_icon_motion_test.dart: work moves only eyes and completion settles without a loop
+00:08 +132 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/assistant_icon_motion_test.dart: reduced motion and static swatches suppress work and pointer motion
+00:08 +133 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/assistant_icon_motion_test.dart: hidden and background icons stop ticking, then resume
+00:08 +134 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/assistant_icon_motion_test.dart: rapid interruptions dispose cleanly
+00:08 +135 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/assistant_icon_motion_test.dart: export native animation preview
+00:09 +135 ~1 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart: command icons survive dropdown rendering (cascading: false)
+00:10 +136 ~1 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart: command icons survive dropdown rendering (cascading: true)
+00:10 +137 ~1 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart: context menu preserves icons and selection (phone: false)
+00:10 +138 ~1 -4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart: context menu preserves icons and selection (phone: true)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _IconWidgetFinder:<Found 0 widgets with icon "IconData(U+0E0CC)": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart:73:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart line 73
+The test description was:
+  context menu preserves icons and selection (phone: true)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:11 +138 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart: context menu preserves icons and selection (phone: true) [E]
+  Test failed. See exception logs above.
+  The test description was: context menu preserves icons and selection (phone: true)
+
+00:13 +138 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_test.dart: anchored menu aligns above the button and fits window edges (portal: false)
+00:13 +139 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_test.dart: anchored menu aligns above the button and fits window edges (portal: true)
+00:13 +140 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_test.dart: menu clamps to screen, disables items, selects and dismisses
+00:14 +141 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: (setUpAll)
+00:14 +141 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: MMPhoneGlass.regular dark=false stays opaque without a painted rim
+00:14 +142 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: MMPhoneGlass.thick dark=false stays opaque without a painted rim
+00:14 +143 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: 393x852 phone materials light
+00:14 +144 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: MMPhoneGlass.regular dark=true stays opaque without a painted rim
+00:14 +145 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: MMPhoneGlass.thick dark=true stays opaque without a painted rim
+00:14 +146 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: 393x852 phone materials dark
+00:14 +147 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: nested, flat and zero-blur surfaces avoid redundant filtering
+00:14 +148 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: iPad compact and desktop keep legacy surfaces
+00:14 +149 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_glass_test.dart: (tearDownAll)
+00:14 +149 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_response_test.dart: content toolbar ignores window gestures even inside window chrome
+00:15 +150 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMInput phone only on a touch platform; touch input follows every device
+00:15 +151 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMInput phone only on a touch platform; touch input follows every device
+00:15 +152 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/toolbar_response_test.dart: toolbar actions respond on release without waiting for a title double click
+Toolbar action callback delay: 0ms
+00:15 +153 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMTabBar iOS: equal tabs over the home indicator; disabled tabs ignore taps (variant: TargetPlatform.iOS)
+00:15 +154 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:15 +155 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:15 +156 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:15 +157 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:15 +158 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:15 +159 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:15 +160 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:15 +161 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:16 +162 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:16 +163 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: MMSizeClass pointer desktops stay regular; touch windows classify their safe area
+00:16 +164 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: MMSizeClass pointer desktops stay regular; touch windows classify their safe area
+00:16 +165 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: MMSizeClass pointer desktops stay regular; touch windows classify their safe area
+00:16 +166 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: MMSizeClass pointer desktops stay regular; touch windows classify their safe area
+00:16 +167 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: MMSizeClass pointer desktops stay regular; touch windows classify their safe area
+00:16 +168 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: MMSizeClass pointer desktops stay regular; touch windows classify their safe area
+00:16 +169 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.android)
+00:16 +170 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.android)
+00:16 +171 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.android)
+00:16 +172 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.android)
+00:16 +173 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.android)
+00:16 +174 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.android)
+00:16 +175 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +176 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +177 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +178 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +179 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +180 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +181 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +182 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: window scaffold renders sidebar, toolbar and body (dark)
+00:16 +183 ~1 -5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: the drawer scrim reaches into the safe area insets
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <62>
+  Actual: <0.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart:262:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart line 262
+The test description was:
+  the drawer scrim reaches into the safe area insets
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:16 +183 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:16 +183 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: the drawer scrim reaches into the safe area insets [E]
+  Test failed. See exception logs above.
+  The test description was: the drawer scrim reaches into the safe area insets
+
+00:16 +184 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:16 +185 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:16 +186 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:16 +187 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:16 +188 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:16 +189 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:16 +190 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:17 +191 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:17 +192 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:17 +193 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:17 +194 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:17 +195 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:17 +196 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/components_test.dart: sheet opens centered and closes on Esc
+00:17 +197 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +198 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +199 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +200 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +201 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +202 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +203 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +204 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +205 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +206 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +207 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +208 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +209 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +210 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +211 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +212 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +213 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +214 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +215 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +216 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +217 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:17 +218 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/split_view_test.dart: dragging the divider reports a new fraction; double-click resets
+00:17 +219 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.android)
+00:17 +220 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.android)
+00:17 +221 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.android)
+00:17 +222 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.android)
+00:18 +223 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/research_controls_test.dart: compact text field enforces optional length without a counter
+00:19 +224 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:19 +225 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:19 +226 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:19 +227 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/reader_tap_recognizer_test.dart: PointerDeviceKind.mouse first tap is immediate and second tap reports only double callbacks
+00:19 +228 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/reader_tap_recognizer_test.dart: PointerDeviceKind.mouse first tap is immediate and second tap reports only double callbacks
+00:19 +229 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +230 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +231 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +232 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +233 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +234 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +235 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +236 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +237 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +238 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +239 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: glass material local flat opt-out affects only its subtree and survives route capture
+00:19 +240 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings group separates rows and shows a footer
+00:19 +241 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings group separates rows and shows a footer
+00:19 +242 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings group separates rows and shows a footer
+00:19 +243 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings group separates rows and shows a footer
+00:19 +244 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings group separates rows and shows a footer
+00:19 +245 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:19 +246 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:19 +247 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:19 +248 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:19 +249 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:19 +250 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:19 +251 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:19 +252 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: pop-up button checks the current value and reports a choice
+00:19 +253 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: pop-up button checks the current value and reports a choice
+00:19 +254 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: floating tab bar a pressed tab swells, and settles back on release
+00:19 +255 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: floating tab bar a pressed tab swells, and settles back on release
+00:19 +256 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: plain text field has no fill and aligns right
+00:19 +257 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: plain text field has no fill and aligns right
+00:19 +258 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: plain text field has no fill and aligns right
+00:19 +259 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: plain text field has no fill and aligns right
+00:19 +260 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: plain text field has no fill and aligns right
+00:19 +261 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: touch window chrome the drawer and its scrim cover the floating bar
+00:19 +262 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:19 +263 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:19 +264 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:19 +265 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:20 +266 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.dark)
+00:20 +267 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/liquid_glass_test.dart: sheets a touch action sheet uses the shared opaque material
+00:20 +268 ~1 -6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/settings_form_test.dart: settings input remains usable when narrowed and cannot focus while disabled (Brightness.light)
+00:20 +269 ~1 -6: Some tests failed.
+
+Failing tests:
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/adaptive_test.dart: the drawer scrim reaches into the safe area insets
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_icons_test.dart: context menu preserves icons and selection (phone: true)
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tablet_chrome_test.dart: phone control geometry and content typography
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/tokens_test.dart: mind map from document geometry fits together
+  ... and 2 more

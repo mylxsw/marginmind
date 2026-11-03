@@ -1,0 +1,29 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:00 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:01 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:01 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:01 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:01 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:01 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:01 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: plain dropdown matches an icon button before and after opening (dark: false)
+00:01 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: phone dropdown keeps submenus in one sheet and Back returns to the parent (variant: TargetPlatform.iOS)
+00:01 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: dropdown submenu returns a leaf and closes both menus in Brightness.light
+00:01 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.android)
+00:01 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.android)
+00:01 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.android)
+00:01 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_submenu_test.dart: hovering switches submenus and Escape closes the complete menu tree
+00:01 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: a closed More menu lets Escape reach the owning pane
+00:01 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: true) (variant: TargetPlatform.iOS)
+00:01 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: dropdown shows every row at full size in its first frame (reduced: false)
+00:01 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: true) (variant: TargetPlatform.android)
+00:01 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/dropdown_response_test.dart: dropdown shows every row at full size in its first frame (reduced: true)
+00:01 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: false) (variant: TargetPlatform.iOS)
+00:01 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: false) (variant: TargetPlatform.android)
+00:01 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: true) (variant: TargetPlatform.iOS)
+00:01 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: true) (variant: TargetPlatform.android)
+00:01 +27: All tests passed!

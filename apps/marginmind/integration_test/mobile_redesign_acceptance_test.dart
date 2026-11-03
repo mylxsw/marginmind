@@ -351,7 +351,7 @@ void main() {
     await idle(tester);
     expect(find.byType(WorkspaceSidebar).hitTestable(), findsOneWidget);
     await shot('07-workspace-sidebar');
-    await tester.tap(find.byKey(const ValueKey('phone-resources-close')));
+    await tester.tap(find.byKey(const ValueKey('phone-resources-return')));
     await idle(tester);
     final widgetRef = tester.element(find.byType(MapPane)) as WidgetRef;
     unawaited(showAddWebPage(context(), widgetRef, route.studySetId));

@@ -1,0 +1,5 @@
+Analyzing marginmind...
+
+   info • The import of '../workspace_tabs.dart' is unnecessary because all of the used elements are also provided by the import of '../workspace_controller.dart'. Try removing the import directive • apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart:24:8 • unnecessary_import
+
+1 issue found. (ran in 28.6s)

@@ -39,7 +39,7 @@ class MapPaneHeaderLayout extends MultiChildLayoutDelegate {
       MapPaneSlot.header,
       Offset(
         phone
-            ? 12
+            ? (size.width - header.width) / 2
             : merged
             ? 0
             : MMSpacing.m,

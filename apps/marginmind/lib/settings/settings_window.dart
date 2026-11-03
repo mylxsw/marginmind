@@ -32,6 +32,7 @@ enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice, sy
 Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) {
   return showMMDialog<void>(
     context: context,
+    initialFraction: MMSizes.phoneSheetExpanded,
     builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
   );
 }
@@ -325,9 +326,9 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
                       ),
                     Expanded(child: Text(_phoneSection ? title : l.settingsTitle, style: context.mmText.title2)),
                     if (!_phoneSection)
-                      MMIconButton(
+                      MMModalCloseButton(
                         key: const ValueKey('settings-close'),
-                        icon: MMIcons.close,
+
                         tooltip: l.closePanel,
                         onPressed: () => Navigator.of(context).maybePop(),
                       ),
@@ -364,13 +365,20 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
                           CupertinoListSection.insetGrouped(
                             margin: EdgeInsets.zero,
                             backgroundColor: Colors.transparent,
+                            decoration: BoxDecoration(
+                              color: c.card,
+                              borderRadius: BorderRadius.circular(MMRadii.dropdown),
+                            ),
+                            separatorColor: c.separator,
                             children: [
                               for (final (tab, icon, label) in tabs)
                                 CupertinoListTile.notched(
                                   key: ValueKey('settings-tab-${tab.name}'),
+                                  backgroundColor: c.card,
+                                  backgroundColorActivated: Color.alphaBlend(c.pressed, c.card),
                                   leading: Icon(icon, color: c.secondaryLabel),
-                                  title: Text(label),
-                                  trailing: const Icon(Icons.chevron_right),
+                                  title: Text(label, style: context.mmText.body),
+                                  trailing: Icon(MMIcons.chevronRight, color: c.secondaryLabel),
                                   onTap: () => _go(tab),
                                 ),
                             ],
@@ -405,9 +413,9 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
                 child: Row(
                   children: [
                     Expanded(child: Text(l.settingsTitle, style: context.mmText.title3)),
-                    MMIconButton(
+                    MMModalCloseButton(
                       key: const ValueKey('settings-close'),
-                      icon: MMIcons.close,
+
                       tooltip: l.closePanel,
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
@@ -501,9 +509,9 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
                             ),
                           ),
                         ),
-                        MMIconButton(
+                        MMModalCloseButton(
                           key: const ValueKey('settings-close'),
-                          icon: MMIcons.close,
+
                           iconSize: 13,
                           tooltip: '${l.closePanel}（Esc）',
                           onPressed: () => Navigator.of(context).maybePop(),
