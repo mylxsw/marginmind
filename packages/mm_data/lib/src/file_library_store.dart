@@ -26,6 +26,7 @@ import 'file_sync_ledger.dart';
 /// replace this behind the same ports once data grows.
 class FileLibraryStore
     implements
+        ContentEditRepository,
         TranslationStoreRepository,
         StudySetRepository,
         StudySetContentRepository,
@@ -53,6 +54,95 @@ class FileLibraryStore
 
   Map<String, Object> get syncProjectionErrors => _sync?.projectionErrors ?? const {};
   static String _scope(String id) => 'sets/$id';
+
+  final _contentTransactions = <String, int>{};
+  final _editLeases = <_ContentLease>{};
+  final _recoveredEditingDrafts = <String>{};
+  Set<String> get recoveredEditingDrafts => Set.unmodifiable(_recoveredEditingDrafts);
+  final _editSyncErrors = <String, Object>{};
+  Map<String, Object> get editSyncErrors => Map.unmodifiable(_editSyncErrors);
+  Future<void> _editReleaseWork = Future.value();
+
+  @override
+  Future<void> beginContentTransaction(String id) async {
+    await _ensureLoaded();
+    await _queueWrite(id, () async {
+      final record = _require(id);
+      final depth = _contentTransactions[id] ?? 0;
+      final sync = _sync;
+      if (depth == 0 && sync != null) {
+        final snapshot = (await sync.snapshots())[_scope(id)]!;
+        _syncSnapshots = await sync.commit(
+          [SyncMutation(_scope(id), local: record.toJson(), shared: snapshot.commit.payload, deferShared: true)],
+          expected: {_scope(id): _syncSnapshots[_scope(id)]?.revision},
+        );
+      }
+      _contentTransactions[id] = depth + 1;
+    });
+  }
+
+  @override
+  Future<void> endContentTransaction(String id) async {
+    await _ensureLoaded();
+    var ended = false;
+    await _queueWrite(id, () async {
+      final depth = _contentTransactions[id] ?? 0;
+      if (depth == 0) return;
+      if (depth > 1) {
+        _contentTransactions[id] = depth - 1;
+        return;
+      }
+      await _saveRecord(_require(id), finishDraft: true);
+      _contentTransactions.remove(id);
+      ended = true;
+    });
+    if (ended) await _retryAfterEditing(id);
+  }
+
+  @override
+  ContentEditLease protectContent(String id, List<List<String>> paths) {
+    final lease = _ContentLease(this, id, [
+      for (final path in paths) List.unmodifiable(path),
+    ], _ensureLoaded().then((_) => _queueWrite(id, () async {})));
+    _editLeases.add(lease);
+    return lease;
+  }
+
+  bool _protected(String id, Map<String, Object?>? candidate, Map<String, Object?>? current) {
+    if (_contentTransactions.containsKey(id)) return true;
+    Object? at(Object? value, List<String> path) {
+      for (final key in path) {
+        if (value is! Map || !value.containsKey(key)) return contentMissing;
+        value = value[key];
+      }
+      return value;
+    }
+
+    final local = current == null ? null : sharedContent(_SetRecord.fromJson(current).content);
+    for (final lease in _editLeases.where((l) => l.id == id)) {
+      for (final path in lease.paths) {
+        if (candidate == null || !contentValueEquals(at(local, path), at(candidate['content'], path))) return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _retryAfterEditing(String id) async {
+    if (_sync == null) return;
+    try {
+      await reconcileSync();
+      _editSyncErrors.remove(id);
+    } catch (error) {
+      // The user's saved edit remains successful. Retry failures are separate,
+      // observable state and the received commits remain in the durable ledger.
+      _editSyncErrors[id] = error;
+    }
+  }
+
+  Future<void> _releaseEdit(_ContentLease lease) {
+    if (!_editLeases.remove(lease)) return _editReleaseWork;
+    return _editReleaseWork = _editReleaseWork.then((_) => _retryAfterEditing(lease.id));
+  }
 
   /// Receive first, then reconcile through the same queues used by editing.
   /// Other domains stay durably received until their domain handlers run.
@@ -120,7 +210,10 @@ class FileLibraryStore
                 state: SyncMergeState.conflict,
                 reason: 'invalidIdentity',
               );
-            } else if (plan.state == SyncMergeState.ready && canApply?.call(id) == false) {
+            } else if (plan.state == SyncMergeState.ready &&
+                (current?.draft == true ||
+                    canApply?.call(id) == false ||
+                    _protected(id, plan.deleted ? null : plan.payload, current?.value))) {
               plan = SyncMergePlan(
                 remote: remote.id,
                 local: current?.commit.id,
@@ -177,6 +270,11 @@ class FileLibraryStore
                 ),
               ],
               expected: expected,
+              validate: (_) {
+                if (canApply?.call(id) == false || _protected(id, plan.deleted ? null : plan.payload, current?.value)) {
+                  throw const _EditingDeferred();
+                }
+              },
               resolved: accepted,
               tombstoneWhere: (scope) =>
                   (scope.startsWith('translations/$id/') && !documents.contains(scope.split('/')[2])) ||
@@ -198,6 +296,20 @@ class FileLibraryStore
             _contentChanges.add(id);
             _libraryChanges.add(null);
             results.add(plan);
+            return;
+          } on _EditingDeferred {
+            final waiting = SyncMergePlan(
+              remote: remote.id,
+              local: current?.commit.id,
+              state: SyncMergeState.waiting,
+              reason: 'editing',
+            );
+            try {
+              await sync.recordIssue(waiting, scope: remote.scope, expected: current?.revision);
+            } on SyncRevisionChanged {
+              continue;
+            }
+            results.add(waiting);
             return;
           } on SyncRevisionChanged {
             // A receipt/merge caller using the shared ledger may have advanced
@@ -254,6 +366,7 @@ class FileLibraryStore
       final payload = useCandidate
           ? chooseSyncTransaction(history[candidate.parents.single]!.payload, candidate.payload, current.commit.payload)
           : current.commit.payload;
+      if (_protected(id, payload, current.value)) throw StateError('Finish editing before choosing a conflict');
       final record = _materializeSync(id, payload, current.value);
       final documents = record.content.documents.map((d) => d.id).toSet();
       _syncSnapshots = await sync.commit(
@@ -261,6 +374,9 @@ class FileLibraryStore
           SyncMutation(_scope(id), local: record.toJson(), shared: payload, resolves: [transaction]),
         ],
         expected: {_scope(id): expectedRevision},
+        validate: (_) {
+          if (_protected(id, payload, current.value)) throw StateError('Finish editing before choosing a conflict');
+        },
         tombstoneWhere: (scope) => scope.startsWith('translations/$id/') && !documents.contains(scope.split('/')[2]),
       );
       _sets[id] = record;
@@ -420,8 +536,9 @@ class FileLibraryStore
           await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(migrated)));
         }
         if (_sync != null) {
-          if (snapshot == null) {
-            await _saveRecord(record);
+          if (snapshot == null || snapshot.draft) {
+            await _saveRecord(record, finishDraft: snapshot?.draft == true);
+            if (snapshot?.draft == true) _recoveredEditingDrafts.add(record.id);
           } else {
             await _sync!.project(path, () => _writeRecordFile(record));
           }
@@ -508,6 +625,7 @@ class FileLibraryStore
     await _ensureLoaded();
     await _queueWrite(id, () async {
       _require(id);
+      if (_contentTransactions.containsKey(id)) throw StateError('Finish the current edit before deleting');
       final dir = Directory(_packagePath(id));
       if (_sync case final sync?) {
         _syncSnapshots = await sync.commit(
@@ -928,7 +1046,7 @@ class FileLibraryStore
 
   /// Called only inside the set's write queue (or initial load). The ledger is
   /// the commit point; .mmset materialization may be retried without new edits.
-  Future<void> _saveRecord(_SetRecord record) async {
+  Future<void> _saveRecord(_SetRecord record, {bool finishDraft = false}) async {
     final sync = _sync;
     if (sync == null) return _writeRecordFile(record);
     final local = record.toJson();
@@ -954,7 +1072,13 @@ class FileLibraryStore
     final documents = record.content.documents.map((d) => d.id).toSet();
     _syncSnapshots = await sync.commit(
       [
-        SyncMutation(_scope(record.id), local: local, shared: shared),
+        SyncMutation(
+          _scope(record.id),
+          local: local,
+          shared: shared,
+          deferShared: !finishDraft && _contentTransactions.containsKey(record.id),
+          finishDraft: finishDraft,
+        ),
         SyncMutation('reviews/${record.id}', local: reviews, shared: reviews),
         SyncMutation('reading/${record.id}/${sync.deviceId}', local: reading, shared: reading),
       ],
@@ -966,7 +1090,10 @@ class FileLibraryStore
   }
 
   /// Waits for pending writes (used by tests and on shutdown).
-  Future<void> flush() => Future.wait(_writeQueue.values);
+  Future<void> flush() async {
+    await _editReleaseWork;
+    await Future.wait(_writeQueue.values);
+  }
 
   bool get isLoaded => _loaded;
 
@@ -1067,4 +1194,19 @@ class _SetRecord {
     lastOpenedAt: DateTime.parse(j['lastOpenedAt'] as String),
     content: StudySetEditor.initializeMemory(StudySetContent.fromJson(((j['content'] as Map?) ?? const {}).cast())),
   );
+}
+
+class _EditingDeferred implements Exception {
+  const _EditingDeferred();
+}
+
+class _ContentLease implements ContentEditLease {
+  _ContentLease(this.store, this.id, this.paths, this.ready);
+  @override
+  final Future<void> ready;
+  final FileLibraryStore store;
+  final String id;
+  final List<List<String>> paths;
+  @override
+  Future<void> release() => store._releaseEdit(this);
 }

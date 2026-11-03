@@ -530,6 +530,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ref.onDispose(() => _history.removeListener(_historyChanged));
     ref.watch(translationSchedulersProvider(studySetId));
     ref.onDispose(() {
+      unawaited(_takeContentLease()?.release());
       _flashTimer?.cancel();
       for (final timer in _pageTimers.values) {
         timer.cancel();
@@ -642,13 +643,21 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Nested begins join the outer transaction; only the outer commit records
   /// history. Await this before editing. Repeated commit/abort are harmless.
   Future<void> beginTransaction() => _enqueue(() async {
+    if (_transactionDepth == 0) {
+      if (_repo case final ContentEditRepository editing) await editing.beginContentTransaction(studySetId);
+    }
     _transactionDepth++;
     _syncHistory();
   });
 
   Future<void> commitTransaction() => _enqueue(() async {
     if (!ref.mounted || _transactionDepth == 0) return;
-    if (--_transactionDepth != 0) return;
+    if (_transactionDepth > 1) {
+      _transactionDepth--;
+      return;
+    }
+    if (_repo case final ContentEditRepository editing) await editing.endContentTransaction(studySetId);
+    _transactionDepth = 0;
     final change = _transactionChange;
     _transactionChange = null;
     if (change != null && !change.isEmpty) _record(change);
@@ -673,6 +682,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       }
     }
     _transactionChange = null;
+    if (_repo case final ContentEditRepository editing) await editing.endContentTransaction(studySetId);
     _transactionDepth = 0;
     _syncHistory();
   });
@@ -3022,17 +3032,61 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   // ---- in-place editing -------------------------------------------------------
 
   _EditSession? _editing;
+  ContentEditLease? _contentLease;
+  ContentEditLease? _takeContentLease() {
+    final lease = _contentLease;
+    _contentLease = null;
+    return lease;
+  }
+
+  List<List<String>> _cardEditPaths(String id) => [
+    ['cards', id],
+    for (final summary in content.summaries.where((s) => s.cardId == id)) ['summaries', summary.id],
+    for (final note in content.marginNotes.where((n) => n.nodeId == id)) ['marginNotes', note.id],
+    if (content.card(id)?.annotationId case final annotation?) ['annotations', annotation],
+  ];
+
+  List<List<String>> _markEditPaths(String id) => [
+    ['summaries', id],
+    ['relations', id],
+    for (final summary in content.summaries.where((s) => s.id == id))
+      if (summary.cardId case final card?) ..._cardEditPaths(card),
+  ];
+
+  void _protectContent(List<List<String>> paths) {
+    if (_repo case final ContentEditRepository editing) {
+      _contentLease = editing.protectContent(studySetId, paths);
+    }
+  }
 
   /// A card is being created for editing; no other edit may start yet.
   bool _creating = false;
 
   /// Starts editing a card's title (a note's text) in place. Nothing is
   /// written until [finishEditing], so the whole edit is one undo step.
-  void beginEditing(String cardId) {
+  Future<void> beginEditing(String cardId) async {
     if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || content.card(cardId) == null) return;
     // A research card shows its note: the note is edited in the details.
     if (content.card(cardId)!.kind == CardKind.research) return showDetails(cardId);
+    _creating = true;
+    try {
+      _protectContent(_cardEditPaths(cardId));
+      if (_contentLease case final lease?) {
+        await lease.ready;
+        if (!ref.mounted) return;
+        await _refreshContent();
+      }
+      if (!ref.mounted || content.card(cardId) == null) {
+        await _takeContentLease()?.release();
+        return;
+      }
+    } catch (_) {
+      await _takeContentLease()?.release();
+      rethrow;
+    } finally {
+      _creating = false;
+    }
     _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
     state = state.copyWith(selectedCardId: cardId, editingCardId: cardId, layout: _layoutShowingMap);
   }
@@ -3129,6 +3183,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     } finally {
       _creating = false;
     }
+    _protectContent(_cardEditPaths(card.id));
     _editing = _EditSession(
       card.id,
       created: true,
@@ -3144,6 +3199,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> finishEditing(String text, [TextFormat? format]) async {
     final session = _editing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _editing = null;
     final title = text.trim();
     try {
@@ -3166,6 +3222,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       }
     } finally {
       _closeEditor();
+      await lease?.release();
     }
   }
 
@@ -3173,11 +3230,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> cancelEditing() async {
     final session = _editing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _editing = null;
     try {
       if (session.created) await _dropCreated(session);
     } finally {
       _closeEditor();
+      await lease?.release();
     }
   }
 
@@ -3398,13 +3457,32 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       _creating = false;
     }
     if (!ref.mounted) return;
+    _protectContent(_markEditPaths(created!.id));
     _markEditing = _MarkEditSession(created!.id, created: true);
     state = state.copyWith(selectRoot: true, selectedMarkId: created!.id, editingMarkId: created!.id);
   }
 
-  void beginMarkEditing(String id) {
+  Future<void> beginMarkEditing(String id) async {
     if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || !_markExists(content, state.activeMapId, id)) return;
+    _creating = true;
+    try {
+      _protectContent(_markEditPaths(id));
+      if (_contentLease case final lease?) {
+        await lease.ready;
+        if (!ref.mounted) return;
+        await _refreshContent();
+      }
+      if (!ref.mounted || !_markExists(content, state.activeMapId, id)) {
+        await _takeContentLease()?.release();
+        return;
+      }
+    } catch (_) {
+      await _takeContentLease()?.release();
+      rethrow;
+    } finally {
+      _creating = false;
+    }
     _markEditing = _MarkEditSession(id, created: false);
     state = state.copyWith(selectRoot: true, selectedMarkId: id, editingMarkId: id, layout: _layoutShowingMap);
   }
@@ -3414,6 +3492,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> finishMarkEditing(String text) async {
     final session = _markEditing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _markEditing = null;
     final label = text.trim();
     try {
@@ -3428,6 +3507,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       }
     } finally {
       if (ref.mounted) state = state.copyWith(clearMarkEditing: true);
+      await lease?.release();
     }
   }
 
@@ -3435,11 +3515,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> cancelMarkEditing() async {
     final session = _markEditing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _markEditing = null;
     try {
       if (session.created) await abortTransaction();
     } finally {
       if (ref.mounted) state = state.copyWith(clearMarkEditing: true);
+      await lease?.release();
     }
   }
 

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
@@ -200,6 +201,154 @@ void main() {
     await sendB();
     expect((await a.load(id)).card(card)!.title, before);
     expect((await left.snapshots())['sets/$id']!.commit.pending, isEmpty);
+  });
+
+  test('editing sessions persist drafts and publish one atomic shared edit after the outer end', () async {
+    await sendA();
+    final before = (await left.snapshots())['sets/$id']!;
+    final count = (await left.history()).values.where((c) => c.scope == 'sets/$id').length;
+    await a.beginContentTransaction(id);
+    await a.beginContentTransaction(id);
+    await a.update(id, (c) => editor.rename(c, card, 'First keystroke'));
+    await a.update(id, (c) => editor.rename(c, card, 'Final title'));
+    final draft = (await left.snapshots())['sets/$id']!;
+    expect(draft.draft, isTrue);
+    expect(draft.commit.id, before.commit.id);
+    expect((await a.load(id)).card(card)!.title, 'Final title');
+    expect((await left.pending()).where((c) => c.scope == 'sets/$id'), isEmpty);
+    await a.endContentTransaction(id);
+    expect((await left.snapshots())['sets/$id']!.draft, isTrue);
+    await a.endContentTransaction(id);
+    expect((await left.snapshots())['sets/$id']!.draft, isFalse);
+    expect((await left.history()).values.where((c) => c.scope == 'sets/$id'), hasLength(count + 1));
+    await sendA();
+    expect((await b.load(id)).card(card)!.title, 'Final title');
+    await a.endContentTransaction(id); // Idempotent close.
+  });
+
+  test('cancelled drafts produce no shared content edit and cannot be deleted mid-session', () async {
+    final original = await a.load(id);
+    final before = (await left.snapshots())['sets/$id']!.commit.id;
+    await a.beginContentTransaction(id);
+    await a.update(id, (c) => editor.rename(c, card, 'Temporary'));
+    await expectLater(a.delete(id), throwsStateError);
+    await a.update(id, (_) => original);
+    await a.endContentTransaction(id);
+    expect((await left.snapshots())['sets/$id']!.commit.id, before);
+    expect((await left.snapshots())['sets/$id']!.draft, isFalse);
+  });
+
+  test('a crash keeps the last saved draft and reopening seals it as one recoverable edit', () async {
+    final count = (await left.history()).values.where((c) => c.scope == 'sets/$id').length;
+    await a.beginContentTransaction(id);
+    await a.update(id, (c) => editor.rename(c, card, 'Recovered draft'));
+    final restored = (await FileSyncLedger.restore(left.root))!;
+    expect((await restored.snapshots())['sets/$id']!.draft, isTrue);
+    expect((await restored.pending()).where((c) => c.scope == 'sets/$id'), isEmpty);
+    await a.dispose();
+    a = FileLibraryStore(left.root, sync: restored);
+    expect((await a.load(id)).card(card)!.title, 'Recovered draft');
+    expect(a.recoveredEditingDrafts, {id});
+    expect((await restored.snapshots())['sets/$id']!.draft, isFalse);
+    expect((await restored.history()).values.where((c) => c.scope == 'sets/$id'), hasLength(count + 1));
+  });
+
+  test('protected cards defer touching updates, allow unrelated metadata and retry on release', () async {
+    await sendA();
+    final lease = b.protectContent(id, [
+      ['cards', card],
+    ]);
+    await a.rename(id, 'Unrelated metadata');
+    await sendA();
+    expect((await b.watchAll().first).single.title, 'Unrelated metadata');
+    await a.update(id, (c) => editor.rename(c, card, 'Remote text'));
+    await sendA();
+    expect((await b.load(id)).card(card)!.title, 'Question');
+    expect((await right.issues()).values.any((p) => p['reason'] == 'editing'), isTrue);
+    await lease.release();
+    expect((await b.load(id)).card(card)!.title, 'Remote text');
+    expect(await right.issues(), isEmpty);
+    await lease.release();
+  });
+
+  test('draft completion merges queued remote work against the final local transaction', () async {
+    await sendA();
+    await b.beginContentTransaction(id);
+    await b.update(id, (c) => editor.rename(c, card, 'Local final'));
+    await a.rename(id, 'Remote title');
+    await sendA();
+    expect((await b.watchAll().first).single.title, 'Original');
+    await b.endContentTransaction(id);
+    expect((await b.watchAll().first).single.title, 'Remote title');
+    expect((await b.load(id)).card(card)!.title, 'Local final');
+    await sendB();
+    expect(sharedContent(await a.load(id)), sharedContent(await b.load(id)));
+  });
+
+  test('a lease acquired after planning is checked again at the ledger commit point', () async {
+    await sendA();
+    await a.update(id, (c) => editor.rename(c, card, 'Remote'));
+    late ContentEditLease lease;
+    right.beforeAdvance = () async {
+      lease = b.protectContent(id, [
+        ['cards', card],
+      ]);
+    };
+    await sendA();
+    expect((await b.load(id)).card(card)!.title, 'Question');
+    await lease.release();
+    expect((await b.load(id)).card(card)!.title, 'Remote');
+  });
+
+  test('lease readiness waits for an already running repository writer', () async {
+    await sendA();
+    await a.update(id, (c) => editor.rename(c, card, 'Remote'));
+    final entered = Completer<void>(), finish = Completer<void>();
+    right.beforeAdvance = () async {
+      entered.complete();
+      await finish.future;
+    };
+    final receive = sendA();
+    await entered.future;
+    final lease = b.protectContent(id, [
+      ['cards', card],
+    ]);
+    var ready = false;
+    final barrier = lease.ready.then((_) {
+      ready = true;
+    });
+    await Future<void>.delayed(Duration.zero);
+    expect(ready, isFalse);
+    finish.complete();
+    await receive;
+    await barrier;
+    expect(ready, isTrue);
+    expect((await b.load(id)).card(card)!.title, 'Question');
+    await lease.release();
+    expect((await b.load(id)).card(card)!.title, 'Remote');
+  });
+
+  test('release retry failures remain observable and do not lose received input', () async {
+    await sendA();
+    final lease = b.protectContent(id, [
+      ['cards', card],
+    ]);
+    await lease.ready;
+    await a.update(id, (c) => editor.rename(c, card, 'Remote'));
+    await sendA();
+    right.beforeAdvance = () async {
+      throw StateError('temporary I/O failure');
+    };
+    await lease.release();
+    expect(b.editSyncErrors[id], isA<StateError>());
+    expect((await b.load(id)).card(card)!.title, 'Question');
+    final retry = b.protectContent(id, [
+      ['cards', card],
+    ]);
+    await retry.ready;
+    await retry.release();
+    expect(b.editSyncErrors, isEmpty);
+    expect((await b.load(id)).card(card)!.title, 'Remote');
   });
 
   test('out-of-order receipt and editing deferral recover without changing live content', () async {

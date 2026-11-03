@@ -49,6 +49,8 @@ dependencies:
   connectivity_plus: 6.1.5
 
 dev_dependencies:
+  mm_sync:
+    path: ../../packages/mm_sync
   shared_preferences_platform_interface: ^2.4.2
   integration_test:
     sdk: flutter

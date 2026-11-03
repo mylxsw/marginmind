@@ -294,6 +294,28 @@ void main() {
     expect((await reopened.snapshots())[base.scope]!.commit.resolves, [pending]);
   });
 
+  test('local editing drafts survive IndexedDB failure and reopen as one shared transaction', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Base', colorIndex: 0));
+    final before = (await ledger.history()).values.where((c) => c.scope == 'sets/${set.id}').length;
+    await store.beginContentTransaction(set.id);
+    await store.update(set.id, (c) => editor.addTopic(c, title: 'First').$1);
+    await store.rename(set.id, 'Saved draft');
+    expect((await ledger.pending()).where((c) => c.scope == 'sets/${set.id}'), isEmpty);
+    BrowserFiles.close();
+    await expectLater(store.endContentTransaction(set.id), throwsStateError);
+    await store.dispose();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.watchAll().first).single.title, 'Saved draft');
+    expect(store.recoveredEditingDrafts, {set.id});
+    final restored = (await store.syncLedger)!;
+    expect((await restored.snapshots())['sets/${set.id}']!.draft, isFalse);
+    expect((await restored.history()).values.where((c) => c.scope == 'sets/${set.id}'), hasLength(before + 1));
+  });
+
   test('sync record and head compare-and-swap prevent stale tabs from creating forks', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');

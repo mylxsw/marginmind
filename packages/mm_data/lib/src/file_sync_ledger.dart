@@ -17,8 +17,11 @@ class SyncMutation {
     this.adopt,
     this.mergeParent,
     this.pending,
+    this.deferShared = false,
+    this.finishDraft = false,
     this.resolves = const [],
   });
+  final bool deferShared, finishDraft;
   final List<String>? pending;
   final List<String> resolves;
 
@@ -30,7 +33,8 @@ class SyncMutation {
 }
 
 class LocalSyncSnapshot {
-  LocalSyncSnapshot(this.scope, this.revision, this.value, this.commit);
+  LocalSyncSnapshot(this.scope, this.revision, this.value, this.commit, {this.draft = false});
+  final bool draft;
   final String scope, revision;
   final Map<String, Object?>? value;
   final SyncCommit commit;
@@ -201,7 +205,15 @@ class FileSyncLedger {
           !changed.add(scope) ||
           !change.containsKey('local') ||
           (change.containsKey('adopt') && change['adopt'] != true) ||
-          change.keys.any((k) => !{'scope', 'local', 'commit', if (record['version'] == 2) 'adopt'}.contains(k))) {
+          (change.containsKey('draft') && change['draft'] != true) ||
+          change.keys.any(
+            (k) => !{
+              'scope',
+              'local',
+              'commit',
+              if (record['version'] == 2) ...['adopt', 'draft'],
+            }.contains(k),
+          )) {
         throw const FormatException('Invalid local sync mutation');
       }
       final previous = heads[scope]?.commit;
@@ -211,6 +223,9 @@ class FileSyncLedger {
           commit.libraryId != libraryId ||
           (change['local'] == null) != commit.deleted) {
         throw const FormatException('Local snapshot/commit mismatch');
+      }
+      if (change['draft'] == true && (previous == null || change['commit'] != null || commit.deleted)) {
+        throw const FormatException('Invalid local editing draft');
       }
       if (change['commit'] != null) {
         if (change['adopt'] == true) {
@@ -243,6 +258,7 @@ class FileSyncLedger {
         record['id'] as String,
         change['local'] == null ? null : _freezeMap(_map(change['local'])),
         commit,
+        draft: change['draft'] == true,
       );
     }
     for (final e in diagnostics.entries) {
@@ -351,6 +367,8 @@ class FileSyncLedger {
           shared: m.shared == null ? null : _freezeMap(m.shared!),
           adopt: m.adopt,
           mergeParent: m.mergeParent,
+          deferShared: m.deferShared,
+          finishDraft: m.finishDraft,
           pending: m.pending == null ? null : List.unmodifiable(m.pending!),
           resolves: List.unmodifiable(m.resolves),
         ),
@@ -378,6 +396,24 @@ class FileSyncLedger {
           throw const FormatException('Invalid sync mutation');
         }
         final previous = _heads[input.scope];
+        if (previous?.draft == true && !input.deferShared && !input.finishDraft) {
+          throw StateError('Finish the local editing draft before publishing');
+        }
+        if (input.deferShared) {
+          if (previous == null ||
+              previous.deleted ||
+              input.local == null ||
+              input.adopt != null ||
+              input.mergeParent != null ||
+              input.resolves.isNotEmpty ||
+              input.finishDraft) {
+            throw const FormatException('Cannot defer this shared mutation');
+          }
+          if (!previous.draft || !contentValueEquals(previous.value, input.local)) {
+            changes.add({'scope': input.scope, 'local': input.local, 'commit': null, 'draft': true});
+          }
+          continue;
+        }
         final sharedChanged =
             input.resolves.isNotEmpty ||
             input.adopt != null ||
@@ -385,7 +421,7 @@ class FileSyncLedger {
             previous == null ||
             previous.deleted != (input.shared == null) ||
             !contentValueEquals(previous.commit.payload, input.shared ?? <String, Object?>{});
-        if (!sharedChanged && contentValueEquals(previous.value, input.local)) continue;
+        if (!sharedChanged && !previous.draft && contentValueEquals(previous.value, input.local)) continue;
         if (input.adopt != null && input.mergeParent != null) throw const FormatException('Ambiguous sync advance');
         final adopted = input.adopt == null ? null : _commits[input.adopt];
         if (input.adopt != null &&
@@ -443,7 +479,20 @@ class FileSyncLedger {
   Future<List<SyncCommit>> pending() => _serial(() async {
     await _load();
     final delivered = await _readDelivered();
-    return List.unmodifiable(_commits.values.where((c) => _outgoing.contains(c.id) && !delivered.contains(c.id)));
+    final drafts = _heads.values
+        .where((s) => s.draft && s.scope.startsWith('sets/'))
+        .map((s) => s.scope.substring(5))
+        .toSet();
+    bool held(SyncCommit c) {
+      final parts = c.scope.split('/');
+      return parts.length > 1 &&
+          {'sets', 'reading', 'reviews', 'translations'}.contains(parts.first) &&
+          drafts.contains(parts[1]);
+    }
+
+    return List.unmodifiable(
+      _commits.values.where((c) => _outgoing.contains(c.id) && !delivered.contains(c.id) && !held(c)),
+    );
   });
 
   Future<void> acknowledge(Iterable<String> ids) {

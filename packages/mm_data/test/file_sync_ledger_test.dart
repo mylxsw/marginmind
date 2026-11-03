@@ -105,6 +105,35 @@ void main() {
     await expectLater(reopened.acknowledge(['unknown']), throwsFormatException);
   });
 
+  test('drafts require an existing live head and cannot be bypassed by ordinary publication', () async {
+    await expectLater(
+      ledger.commit([
+        SyncMutation('sets/a', local: {'n': 1}, shared: {'n': 1}, deferShared: true),
+      ]),
+      throwsFormatException,
+    );
+    await ledger.commit([value('sets/a', 1)]);
+    final before = (await ledger.snapshots())['sets/a']!.commit.id;
+    final draft = await ledger.commit([
+      SyncMutation('sets/a', local: {'n': 2}, shared: {'n': 2}, deferShared: true),
+    ]);
+    expect(draft['sets/a']!.commit.id, before);
+    expect(draft['sets/a']!.value!['n'], 2);
+    expect(await ledger.pending(), isEmpty);
+    await expectLater(ledger.commit([value('sets/a', 3)]), throwsStateError);
+    await expectLater(
+      ledger.commit([
+        SyncMutation('sets/a', local: {'n': 2}, shared: {'n': 2}, deferShared: true, finishDraft: true),
+      ]),
+      throwsFormatException,
+    );
+    await ledger.commit([
+      SyncMutation('sets/a', local: {'n': 2}, shared: {'n': 2}, finishDraft: true),
+    ]);
+    expect((await ledger.snapshots())['sets/a']!.draft, isFalse);
+    expect((await ledger.pending()).last.payload['n'], 2);
+  });
+
   test('batch is atomic, rejects stale revisions and freezes inputs before asynchronous work', () async {
     final first = await ledger.commit([value('a', 1), value('b', 1)]);
     expect(first['a']!.revision, first['b']!.revision);
