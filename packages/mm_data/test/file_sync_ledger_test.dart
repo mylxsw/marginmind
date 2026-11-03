@@ -16,6 +16,46 @@ void main() {
   SyncMutation value(String scope, int n, {int? local}) =>
       SyncMutation(scope, local: {'n': n, 'private': local ?? n}, shared: {'n': n});
 
+  test('recovery acknowledgement is atomic, private and cannot dismiss a newer notice', () async {
+    await ledger.commit([value('set', 1)], recovered: {'set': 'draft-one'});
+    await expectLater(ledger.commit([], recovered: {'unknown': 'draft'}), throwsFormatException);
+    await expectLater(ledger.commit([], recovered: {'set': ''}), throwsFormatException);
+    final directory = Directory('${root.path}/.foliarc-sync/local');
+    final saved = await directory.rename('${directory.path}.saved');
+    final obstruction = File(directory.path);
+    await obstruction.writeAsString('blocked');
+    await expectLater(ledger.acknowledgeRecovery('set', 'draft-one'), throwsA(isA<FileSystemException>()));
+    expect(await ledger.recoveries(), {'set': 'draft-one'});
+    await obstruction.delete();
+    await saved.rename(directory.path);
+    await ledger.commit([value('set', 2)], recovered: {'set': 'draft-two'});
+    await expectLater(ledger.acknowledgeRecovery('set', 'draft-one'), throwsA(isA<SyncRevisionChanged>()));
+    final head = (await ledger.snapshots())['set']!.revision;
+    await ledger.acknowledgeRecovery('set', 'draft-two');
+    expect((await ledger.snapshots())['set']!.revision, head);
+    expect(await (await FileSyncLedger.restore(root))!.recoveries(), isEmpty);
+    expect((await ledger.pending()).map((c) => c.payload), [
+      {'n': 1},
+      {'n': 2},
+    ]);
+  });
+
+  test('version two records migrate without recovery notices', () async {
+    await ledger.commit([value('set', 1)]);
+    final file = await Directory('${root.path}/.foliarc-sync/local').list().cast<File>().single;
+    final body = jsonDecode(await file.readAsString()) as Map<String, dynamic>
+      ..remove('id')
+      ..remove('recoveries');
+    body['version'] = 2;
+    final id = syncDigest(body);
+    await file.delete();
+    await File('${file.parent.path}/$id.json').writeAsString(jsonEncode({'id': id, ...body}));
+    final restored = (await FileSyncLedger.restore(root))!;
+    expect(await restored.recoveries(), isEmpty);
+    await restored.commit([value('set', 2)], recovered: {'set': 'draft'});
+    expect(await (await FileSyncLedger.restore(root))!.recoveries(), {'set': 'draft'});
+  });
+
   test('adoption requires a known compatible descendant and never queues the received version', () async {
     final first = (await ledger.commit([value('set', 1)]))['set']!;
     final remote = SyncCommit.create(
@@ -69,13 +109,14 @@ void main() {
     await expectLater(ledger.receive([otherLibrary]), throwsFormatException);
   });
 
-  test('version one records remain readable and can advance into version two', () async {
+  test('version one records remain readable and can advance into the current version', () async {
     await ledger.commit([value('set', 1)]);
     final file = await Directory('${root.path}/.foliarc-sync/local').list().cast<File>().single;
     final body = jsonDecode(await file.readAsString()) as Map<String, dynamic>
       ..remove('id')
       ..remove('received')
-      ..remove('issues');
+      ..remove('issues')
+      ..remove('recoveries');
     body['version'] = 1;
     final id = syncDigest(body);
     await file.delete();

@@ -28,6 +28,32 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('saved draft recovery and explicit acknowledgement survive IndexedDB reopen', () async {
+    await store.dispose();
+    store = FileLibraryStore.browser(
+      sync: FileSyncLedger.browser(libraryId: 'lib', deviceId: 'device'),
+    );
+    final id = (await store.create(const NewStudySet(title: 'Set', colorIndex: 0))).id;
+    await store.beginContentTransaction(id);
+    await store.update(id, (c) => editor.addNote(c, text: 'Saved before crash').$1);
+    Future<void> reopen() async {
+      await store.dispose();
+      BrowserFiles.close();
+      await BrowserFiles.open(name: database);
+      store = FileLibraryStore.browser();
+    }
+
+    await reopen();
+    final recovered = (await store.contentSyncStatus(id)).recoveryId!;
+    expect((await store.load(id)).cards.single.title, 'Saved before crash');
+    await reopen();
+    expect((await store.contentSyncStatus(id)).recoveryId, recovered);
+    await store.acknowledgeContentRecovery(id, recovered);
+    await reopen();
+    expect((await store.contentSyncStatus(id)).recoveryId, isNull);
+    expect((await store.load(id)).cards.single.title, 'Saved before crash');
+  });
+
   test('received versions and applied state survive IndexedDB reopen without echo uploads', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');

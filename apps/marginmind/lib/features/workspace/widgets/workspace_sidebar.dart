@@ -29,6 +29,7 @@ import '../../study_notes/note_updates.dart';
 import '../../study_notes/note_export_sheet.dart';
 import 'notices.dart';
 import 'phone_workspace_sidebar.dart';
+import 'content_sync_sheet.dart';
 
 /// Study set sidebar: documents, mind maps, notes and learning tools,
 /// followed by cards and tags. Sidebar search is temporarily hidden.
@@ -392,6 +393,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         notes: [for (final row in notes) phoneRow(row)],
         showNotes: betaEnabled && (matches(l.phoneNavigationNotes) || notes.isNotEmpty),
         learning: [
+          ContentSyncSidebarItem(studySetId: studySetId),
           if (matches(l.sectionCards))
             MMPhoneNavigationRow(
               item: MMSidebarItem(
@@ -504,6 +506,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         ),
       ),
       children: [
+        ContentSyncSidebarItem(studySetId: studySetId),
         if (empty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),

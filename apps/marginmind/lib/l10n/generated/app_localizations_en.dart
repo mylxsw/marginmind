@@ -6300,4 +6300,127 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get undoContentChanged =>
       'This step can’t be applied because related content has changed. The current content has been kept.';
+
+  @override
+  String get syncTitle => 'Sync and recovery';
+
+  @override
+  String get syncLocalOnly => 'Saved on this device. No cloud service is connected.';
+
+  @override
+  String get syncWaitingTransfer => 'Saved changes are waiting for a sync service.';
+
+  @override
+  String get syncRecovered =>
+      'Saved work was recovered after an interrupted edit. Review it before dismissing this notice.';
+
+  @override
+  String get syncAcknowledge => 'I have reviewed this work';
+
+  @override
+  String get syncRepair => 'Some local files need repair. Saved work remains in the recovery history.';
+
+  @override
+  String get syncEditing => 'Finish the current edit before choosing a version. Received changes are kept safely.';
+
+  @override
+  String get syncRetry => 'Retry';
+
+  @override
+  String get syncStale => 'Content changed during review. Review the refreshed versions before choosing again.';
+
+  @override
+  String get syncActionFailed => 'The operation could not finish. Saved work is retained; you can retry.';
+
+  @override
+  String get syncLoadFailed => 'Sync information could not be read. Retry without changing saved work.';
+
+  @override
+  String get syncCurrent => 'Current content';
+
+  @override
+  String get syncCandidate => 'Proposed change';
+
+  @override
+  String get syncKeep => 'Keep current content';
+
+  @override
+  String get syncUse => 'Apply this change';
+
+  @override
+  String get syncChoiceHint => 'These related changes form one edit. Your choice applies to all of them.';
+
+  @override
+  String get syncInvalidCandidate =>
+      'This change cannot be applied safely to the current structure. Keep current content or review its dependencies first.';
+
+  @override
+  String get syncNoConflicts => 'No conflicts need a choice. This does not confirm cloud delivery.';
+
+  @override
+  String get syncAbsent => 'Not present';
+
+  @override
+  String get syncStructureValue => 'Structure or reference changed';
+
+  @override
+  String syncConflictCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count edits need a choice',
+      one: '1 edit needs a choice',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncEntity(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'studySet': 'Study set',
+      'card': 'Card',
+      'document': 'Document',
+      'studyNote': 'Study note',
+      'researchNote': 'Research note',
+      'annotation': 'Highlight',
+      'marginNote': 'Margin note',
+      'map': 'Mind map',
+      'relation': 'Relation',
+      'summary': 'Summary',
+      'bookmark': 'Bookmark',
+      'other': 'Content',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String syncField(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'title': 'Title',
+      'text': 'Text',
+      'tags': 'Tags',
+      'order': 'Order',
+      'structure': 'Structure',
+      'source': 'Source',
+      'appearance': 'Appearance',
+      'collectionBaseline': 'Material collection baseline',
+      'other': 'Related content',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String syncProblem(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'editing': 'Received changes are waiting for an edit to finish.',
+      'missingHistory': 'Earlier versions have not arrived yet. Received work is retained.',
+      'unrelatedHistory': 'These versions have no shared history. Both branches are retained for recovery.',
+      'ambiguousHistory': 'These branches have multiple possible starting points. Both are retained for review.',
+      'concurrentChoices': 'Another device made a different conflict choice. Both choices are retained for review.',
+      'deletion': 'A deletion overlaps an edit. Both versions are retained for recovery.',
+      'invalidHistory': 'A received branch failed validation. It is retained without replacing your content.',
+      'other': 'A received version is not supported. Your content has not been replaced.',
+    });
+    return '$_temp0';
+  }
 }

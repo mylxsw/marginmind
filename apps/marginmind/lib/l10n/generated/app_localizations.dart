@@ -11107,6 +11107,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This step can’t be applied because related content has changed. The current content has been kept.'**
   String get undoContentChanged;
+
+  /// No description provided for @syncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync and recovery'**
+  String get syncTitle;
+
+  /// No description provided for @syncLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device. No cloud service is connected.'**
+  String get syncLocalOnly;
+
+  /// No description provided for @syncWaitingTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved changes are waiting for a sync service.'**
+  String get syncWaitingTransfer;
+
+  /// No description provided for @syncRecovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved work was recovered after an interrupted edit. Review it before dismissing this notice.'**
+  String get syncRecovered;
+
+  /// No description provided for @syncAcknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'I have reviewed this work'**
+  String get syncAcknowledge;
+
+  /// No description provided for @syncRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Some local files need repair. Saved work remains in the recovery history.'**
+  String get syncRepair;
+
+  /// No description provided for @syncEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the current edit before choosing a version. Received changes are kept safely.'**
+  String get syncEditing;
+
+  /// No description provided for @syncRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get syncRetry;
+
+  /// No description provided for @syncStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Content changed during review. Review the refreshed versions before choosing again.'**
+  String get syncStale;
+
+  /// No description provided for @syncActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The operation could not finish. Saved work is retained; you can retry.'**
+  String get syncActionFailed;
+
+  /// No description provided for @syncLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync information could not be read. Retry without changing saved work.'**
+  String get syncLoadFailed;
+
+  /// No description provided for @syncCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current content'**
+  String get syncCurrent;
+
+  /// No description provided for @syncCandidate.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed change'**
+  String get syncCandidate;
+
+  /// No description provided for @syncKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep current content'**
+  String get syncKeep;
+
+  /// No description provided for @syncUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply this change'**
+  String get syncUse;
+
+  /// No description provided for @syncChoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'These related changes form one edit. Your choice applies to all of them.'**
+  String get syncChoiceHint;
+
+  /// No description provided for @syncInvalidCandidate.
+  ///
+  /// In en, this message translates to:
+  /// **'This change cannot be applied safely to the current structure. Keep current content or review its dependencies first.'**
+  String get syncInvalidCandidate;
+
+  /// No description provided for @syncNoConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'No conflicts need a choice. This does not confirm cloud delivery.'**
+  String get syncNoConflicts;
+
+  /// No description provided for @syncAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not present'**
+  String get syncAbsent;
+
+  /// No description provided for @syncStructureValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Structure or reference changed'**
+  String get syncStructureValue;
+
+  /// No description provided for @syncConflictCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 edit needs a choice} other{{count} edits need a choice}}'**
+  String syncConflictCount(int count);
+
+  /// No description provided for @syncEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, studySet{Study set} card{Card} document{Document} studyNote{Study note} researchNote{Research note} annotation{Highlight} marginNote{Margin note} map{Mind map} relation{Relation} summary{Summary} bookmark{Bookmark} other{Content}}'**
+  String syncEntity(String kind);
+
+  /// No description provided for @syncField.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, title{Title} text{Text} tags{Tags} order{Order} structure{Structure} source{Source} appearance{Appearance} collectionBaseline{Material collection baseline} other{Related content}}'**
+  String syncField(String kind);
+
+  /// No description provided for @syncProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, editing{Received changes are waiting for an edit to finish.} missingHistory{Earlier versions have not arrived yet. Received work is retained.} unrelatedHistory{These versions have no shared history. Both branches are retained for recovery.} ambiguousHistory{These branches have multiple possible starting points. Both are retained for review.} concurrentChoices{Another device made a different conflict choice. Both choices are retained for review.} deletion{A deletion overlaps an edit. Both versions are retained for recovery.} invalidHistory{A received branch failed validation. It is retained without replacing your content.} other{A received version is not supported. Your content has not been replaced.}}'**
+  String syncProblem(String kind);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

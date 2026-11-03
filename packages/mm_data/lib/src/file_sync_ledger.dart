@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'library_io.dart' if (dart.library.js_interop) 'library_browser_io.dart';
 import 'sync_ledger_io.dart' if (dart.library.js_interop) 'sync_ledger_browser.dart';
@@ -65,6 +66,9 @@ class FileSyncLedger {
   final _commits = <String, SyncCommit>{};
   final _outgoing = <String>{};
   final _issues = <String, Map<String, Object?>>{};
+  final _recoveries = <String, String>{};
+  final _changes = StreamController<void>.broadcast();
+  Stream<void> get changes => _changes.stream;
   final _projectionErrors = <String, Object>{};
   Map<String, Object> get projectionErrors => Map.unmodifiable(_projectionErrors);
   Future<void> _queue = Future.value();
@@ -120,7 +124,7 @@ class FileSyncLedger {
         if (record['id'] != syncDigest(body) || p.basename(file.path) != '${record['id']}.json') {
           throw const FormatException('Local sync ledger digest mismatch');
         }
-        if (!{1, 2}.contains(record['version']) ||
+        if (!{1, 2, 3}.contains(record['version']) ||
             record['sequence'] is! int ||
             record['changes'] is! List ||
             record['libraryId'] != libraryId ||
@@ -134,7 +138,8 @@ class FileSyncLedger {
                 'libraryId',
                 'deviceId',
                 'changes',
-                if (record['version'] == 2) ...['received', 'issues'],
+                if (record['version'] != 1) ...['received', 'issues'],
+                if (record['version'] == 3) 'recoveries',
               }.contains(k),
             )) {
           throw const FormatException('Unsupported local sync record');
@@ -145,13 +150,14 @@ class FileSyncLedger {
     records.sort((a, b) => (a['sequence'] as int).compareTo(b['sequence'] as int));
     final heads = <String, LocalSyncSnapshot>{}, commits = <String, SyncCommit>{};
     final outgoing = <String>{}, issues = <String, Map<String, Object?>>{};
+    final recoveries = <String, String>{};
     var sequence = 0;
     String? last;
     for (final record in records) {
       if (record['sequence'] != sequence + 1 || record['previous'] != last) {
         throw const FormatException('Incomplete or forked local sync history');
       }
-      _replay(record, heads, commits, outgoing, issues);
+      _replay(record, heads, commits, outgoing, issues, recoveries);
       last = record['id'] as String;
       sequence++;
     }
@@ -167,6 +173,9 @@ class FileSyncLedger {
     _issues
       ..clear()
       ..addAll(issues);
+    _recoveries
+      ..clear()
+      ..addAll(recoveries);
     _sequence = sequence;
     _last = last;
     _loaded = true;
@@ -184,12 +193,13 @@ class FileSyncLedger {
     Map<String, SyncCommit> commits,
     Set<String> outgoing,
     Map<String, Map<String, Object?>> issues,
+    Map<String, String> recoveries,
   ) {
-    if (record['version'] == 2 && (record['received'] is! List || record['issues'] is! Map)) {
+    if (record['version'] != 1 && (record['received'] is! List || record['issues'] is! Map)) {
       throw const FormatException('Invalid receipt or diagnostic journal');
     }
-    final received = record['version'] == 2 ? record['received'] as List : const [];
-    final diagnostics = record['version'] == 2 ? _map(record['issues']) : <String, Object?>{};
+    final received = record['version'] != 1 ? record['received'] as List : const [];
+    final diagnostics = record['version'] != 1 ? _map(record['issues']) : <String, Object?>{};
     for (final raw in received) {
       final c = SyncCommit.fromJson(_map(raw));
       if (c.libraryId != libraryId || c.deviceId == deviceId && !commits.containsKey(c.id)) {
@@ -211,7 +221,7 @@ class FileSyncLedger {
               'scope',
               'local',
               'commit',
-              if (record['version'] == 2) ...['adopt', 'draft'],
+              if (record['version'] != 1) ...['adopt', 'draft'],
             }.contains(k),
           )) {
         throw const FormatException('Invalid local sync mutation');
@@ -269,7 +279,19 @@ class FileSyncLedger {
         issues[e.key] = _freezeMap(_map(e.value));
       }
     }
-    if (changed.isEmpty && received.isEmpty && diagnostics.isEmpty) {
+    final notices = record['version'] == 3 ? _map(record['recoveries']) : <String, Object?>{};
+    for (final entry in notices.entries) {
+      if (!heads.containsKey(entry.key) ||
+          entry.value != null && (entry.value is! String || (entry.value as String).isEmpty)) {
+        throw const FormatException('Invalid recovery notice');
+      }
+      if (entry.value == null) {
+        recoveries.remove(entry.key);
+      } else {
+        recoveries[entry.key] = entry.value as String;
+      }
+    }
+    if (changed.isEmpty && received.isEmpty && diagnostics.isEmpty && notices.isEmpty) {
       throw const FormatException('Empty local sync transaction');
     }
   }
@@ -280,9 +302,10 @@ class FileSyncLedger {
     List<Map<String, Object?>> changes, {
     List<SyncCommit> received = const [],
     Map<String, Object?> issues = const {},
+    Map<String, String?> recoveries = const {},
   }) async {
     final body = <String, Object?>{
-      'version': 2,
+      'version': 3,
       'libraryId': libraryId,
       'deviceId': deviceId,
       'sequence': _sequence + 1,
@@ -290,11 +313,13 @@ class FileSyncLedger {
       'changes': changes,
       'received': [for (final c in received) c.toJson()],
       'issues': issues,
+      'recoveries': recoveries,
     };
     final id = syncDigest(body), record = {'id': syncDigest(body), ...body};
     final heads = Map<String, LocalSyncSnapshot>.of(_heads), commits = Map<String, SyncCommit>.of(_commits);
     final outgoing = Set<String>.of(_outgoing), diagnostics = Map<String, Map<String, Object?>>.of(_issues);
-    _replay(record, heads, commits, outgoing, diagnostics);
+    final notices = Map<String, String>.of(_recoveries);
+    _replay(record, heads, commits, outgoing, diagnostics, notices);
     await writeSyncLedgerRecord(p.join(_directory.path, '$id.json'), utf8.encode(jsonEncode(record)));
     _heads
       ..clear()
@@ -308,8 +333,12 @@ class FileSyncLedger {
     _issues
       ..clear()
       ..addAll(diagnostics);
+    _recoveries
+      ..clear()
+      ..addAll(notices);
     _sequence++;
     _last = id;
+    _changes.add(null);
   }
 
   /// Receipt tolerates missing ancestors and keeps all branches, but does not
@@ -357,6 +386,7 @@ class FileSyncLedger {
     void Function(Map<String, LocalSyncSnapshot>)? validate,
     bool Function(String scope)? tombstoneWhere,
     Iterable<String> resolved = const [],
+    Map<String, String> recovered = const {},
   }) {
     // Freeze now, before waiting behind another asynchronous operation.
     final inputs = [
@@ -375,6 +405,7 @@ class FileSyncLedger {
     ];
     final preconditions = Map<String, String?>.of(expected);
     final resolving = resolved.toSet();
+    final recoveries = Map<String, String>.of(recovered);
     return _serial(() async {
       await _load();
       for (final entry in preconditions.entries) {
@@ -461,19 +492,34 @@ class FileSyncLedger {
         for (final id in resolving)
           if (_issues.containsKey(id)) id: null,
       };
-      if (changes.isNotEmpty || cleared.isNotEmpty) await _append(changes, issues: cleared);
+      if (changes.isNotEmpty || cleared.isNotEmpty || recoveries.isNotEmpty) {
+        await _append(changes, issues: cleared, recoveries: recoveries);
+      }
       return Map.unmodifiable(_heads);
     });
   }
 
+  Future<Map<String, String>> recoveries() => _serial(() async {
+    await _load();
+    return Map.unmodifiable(_recoveries);
+  });
+
+  Future<void> acknowledgeRecovery(String scope, String recoveryId) => _serial(() async {
+    await _load();
+    if (_recoveries[scope] != recoveryId) throw SyncRevisionChanged(scope);
+    await _append([], recoveries: {scope: null});
+  });
+
   /// Best-effort materialization is observable, but not the transaction result.
   Future<void> project(String key, Future<void> Function() write) async {
+    final hadError = _projectionErrors.containsKey(key);
     try {
       await write();
       _projectionErrors.remove(key);
     } catch (error) {
       _projectionErrors[key] = error;
     }
+    if (hadError || _projectionErrors.containsKey(key)) _changes.add(null);
   }
 
   Future<List<SyncCommit>> pending() => _serial(() async {
@@ -503,6 +549,7 @@ class FileSyncLedger {
       final delivered = await _readDelivered()
         ..addAll(requested);
       await _atomic(_delivered, {'version': 1, 'ids': delivered.toList()..sort()});
+      _changes.add(null);
     });
   }
 

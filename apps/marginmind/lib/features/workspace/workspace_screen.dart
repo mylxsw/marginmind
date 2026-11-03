@@ -29,6 +29,8 @@ import 'widgets/full_translation_notifications.dart';
 import '../study_notes/note_setup_sheet.dart';
 import 'widgets/map_pane.dart';
 import 'widgets/workspace_toolbar.dart';
+import 'widgets/content_sync_sheet.dart';
+import 'content_sync.dart';
 import 'widgets/notices.dart';
 import 'widgets/reader_pane.dart';
 import 'widgets/right_panel.dart';
@@ -457,7 +459,16 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           priority: 80,
         ),
     ];
+    final syncState = ref.watch(contentSyncProvider(widget.studySetId));
     final globalMenuEntries = <PopupMenuEntry<VoidCallback>>[
+      if (syncState.asData?.value.enabled == true || syncState.hasError)
+        MMDropdownItem(
+          value: () => showContentSyncSheet(context, widget.studySetId),
+          icon: syncState.hasError || syncState.asData?.value.needsAttention == true
+              ? MMIcons.warning
+              : MMIcons.regenerate,
+          child: Text(l.syncTitle),
+        ),
       if (betaEnabled && noteOpen) ...[
         MMDropdownItem(
           value: state.activeDocumentId == null ? null : () => controller.showNoteReference(NoteReference.document),

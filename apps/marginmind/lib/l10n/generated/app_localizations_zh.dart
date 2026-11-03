@@ -6055,4 +6055,119 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get undoContentChanged => '相关内容已被后续修改，无法执行这一步。当前内容已保留。';
+
+  @override
+  String get syncTitle => '同步与恢复';
+
+  @override
+  String get syncLocalOnly => '内容保存在这台设备上，尚未连接云端服务。';
+
+  @override
+  String get syncWaitingTransfer => '已保存的修改正在等待同步服务。';
+
+  @override
+  String get syncRecovered => '已恢复上次中断编辑时保存的内容，请查看后再确认。';
+
+  @override
+  String get syncAcknowledge => '我已查看恢复的内容';
+
+  @override
+  String get syncRepair => '部分本机文件需要修复，已保存的内容仍保留在恢复记录中。';
+
+  @override
+  String get syncEditing => '请结束当前编辑后再选择版本，收到的修改已安全保留。';
+
+  @override
+  String get syncRetry => '重试';
+
+  @override
+  String get syncStale => '查看期间内容已变化，请检查刷新后的版本再选择。';
+
+  @override
+  String get syncActionFailed => '操作未能完成，已保存的内容仍保留，可以重试。';
+
+  @override
+  String get syncLoadFailed => '无法读取同步信息，重试不会改动已保存的内容。';
+
+  @override
+  String get syncCurrent => '当前内容';
+
+  @override
+  String get syncCandidate => '候选修改';
+
+  @override
+  String get syncKeep => '保留当前内容';
+
+  @override
+  String get syncUse => '采用这项修改';
+
+  @override
+  String get syncChoiceHint => '以下关联修改属于同一次编辑，选择将应用于整项修改。';
+
+  @override
+  String get syncInvalidCandidate => '这项修改无法安全应用于当前结构。可以保留当前内容，或先检查关联内容。';
+
+  @override
+  String get syncNoConflicts => '目前没有需要选择的冲突，这不代表内容已送达云端。';
+
+  @override
+  String get syncAbsent => '不存在';
+
+  @override
+  String get syncStructureValue => '结构或引用已变化';
+
+  @override
+  String syncConflictCount(int count) {
+    return '有 $count 项修改需要选择';
+  }
+
+  @override
+  String syncEntity(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'studySet': '学习集',
+      'card': '卡片',
+      'document': '文档',
+      'studyNote': '学习笔记',
+      'researchNote': '研究笔记',
+      'annotation': '标注',
+      'marginNote': '批注',
+      'map': '脑图',
+      'relation': '关系线',
+      'summary': '概要',
+      'bookmark': '书签',
+      'other': '内容',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String syncField(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'title': '标题',
+      'text': '正文',
+      'tags': '标签',
+      'order': '顺序',
+      'structure': '结构',
+      'source': '来源',
+      'appearance': '外观',
+      'collectionBaseline': '资料收集基线',
+      'other': '关联内容',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String syncProblem(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'editing': '收到的修改正在等待当前编辑结束。',
+      'missingHistory': '较早的版本尚未到达，收到的内容已保留。',
+      'unrelatedHistory': '这些版本没有共同历史，双方分支均已保留，等待恢复处理。',
+      'ambiguousHistory': '这些分支存在多个可能的共同起点，双方均已保留，等待进一步检查。',
+      'concurrentChoices': '另一设备作出了不同的冲突选择，双方选择均已保留，等待进一步处理。',
+      'deletion': '删除与编辑发生冲突，双方版本均已保留，等待恢复处理。',
+      'invalidHistory': '收到的分支未通过校验，已保留该分支，没有替换当前内容。',
+      'other': '暂不支持收到的版本，当前内容没有被替换。',
+    });
+    return '$_temp0';
+  }
 }

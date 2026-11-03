@@ -503,6 +503,7 @@ class RacingLedger extends FileSyncLedger {
     void Function(Map<String, LocalSyncSnapshot>)? validate,
     bool Function(String scope)? tombstoneWhere,
     Iterable<String> resolved = const [],
+    Map<String, String> recovered = const {},
   }) async {
     final inputs = mutations.toList();
     if (inputs.any((m) => m.adopt != null || m.mergeParent != null)) {
@@ -516,6 +517,7 @@ class RacingLedger extends FileSyncLedger {
       validate: validate,
       tombstoneWhere: tombstoneWhere,
       resolved: resolved,
+      recovered: recovered,
     );
   }
 }

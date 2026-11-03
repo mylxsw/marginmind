@@ -56,6 +56,7 @@ export 'src/vocabulary/words.dart';
 export 'src/vocabulary/matcher.dart';
 
 export 'src/content/study_note.dart';
+export 'src/content/content_sync_repository.dart';
 export 'src/content/note_material.dart';
 export 'src/content/note_organizer.dart';
 export 'src/content/note_editor.dart';

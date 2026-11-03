@@ -11,6 +11,9 @@ import 'package:path/path.dart' as p;
 import 'format_migration.dart';
 import 'file_translation_store.dart';
 import 'file_sync_ledger.dart';
+import 'content_sync_review.dart';
+
+part 'file_library_sync_status.dart';
 
 /// Stores the library on disk:
 ///
@@ -27,6 +30,7 @@ import 'file_sync_ledger.dart';
 class FileLibraryStore
     implements
         ContentEditRepository,
+        ContentSyncRepository,
         TranslationStoreRepository,
         StudySetRepository,
         StudySetContentRepository,
@@ -55,6 +59,24 @@ class FileLibraryStore
   Map<String, Object> get syncProjectionErrors => _sync?.projectionErrors ?? const {};
   static String _scope(String id) => 'sets/$id';
 
+  final _syncStatusChanges = StreamController<void>.broadcast();
+
+  @override
+  Stream<ContentSyncStatus> watchContentSync(String id) => _watchContentSync(id);
+  @override
+  Future<ContentSyncStatus> contentSyncStatus(String id) => _contentSyncStatus(id);
+  @override
+  Future<void> chooseContentSync(
+    String id,
+    String conflictId, {
+    required String expectedRevision,
+    required bool useCandidate,
+  }) => _chooseContentSync(id, conflictId, expectedRevision: expectedRevision, useCandidate: useCandidate);
+  @override
+  Future<void> acknowledgeContentRecovery(String id, String recoveryId) => _acknowledgeContentRecovery(id, recoveryId);
+  @override
+  Future<void> retryContentSync(String id) => _retryContentSync(id);
+
   final _contentTransactions = <String, int>{};
   final _editLeases = <_ContentLease>{};
   final _recoveredEditingDrafts = <String>{};
@@ -78,6 +100,7 @@ class FileLibraryStore
         );
       }
       _contentTransactions[id] = depth + 1;
+      _syncStatusChanges.add(null);
     });
   }
 
@@ -94,6 +117,7 @@ class FileLibraryStore
       }
       await _saveRecord(_require(id), finishDraft: true);
       _contentTransactions.remove(id);
+      _syncStatusChanges.add(null);
       ended = true;
     });
     if (ended) await _retryAfterEditing(id);
@@ -105,6 +129,7 @@ class FileLibraryStore
       for (final path in paths) List.unmodifiable(path),
     ], _ensureLoaded().then((_) => _queueWrite(id, () async {})));
     _editLeases.add(lease);
+    _syncStatusChanges.add(null);
     return lease;
   }
 
@@ -136,11 +161,14 @@ class FileLibraryStore
       // The user's saved edit remains successful. Retry failures are separate,
       // observable state and the received commits remain in the durable ledger.
       _editSyncErrors[id] = error;
+    } finally {
+      _syncStatusChanges.add(null);
     }
   }
 
   Future<void> _releaseEdit(_ContentLease lease) {
     if (!_editLeases.remove(lease)) return _editReleaseWork;
+    _syncStatusChanges.add(null);
     return _editReleaseWork = _editReleaseWork.then((_) => _retryAfterEditing(lease.id));
   }
 
@@ -537,7 +565,11 @@ class FileLibraryStore
         }
         if (_sync != null) {
           if (snapshot == null || snapshot.draft) {
-            await _saveRecord(record, finishDraft: snapshot?.draft == true);
+            await _saveRecord(
+              record,
+              finishDraft: snapshot?.draft == true,
+              recovered: snapshot?.draft == true ? snapshot!.revision : null,
+            );
             if (snapshot?.draft == true) _recoveredEditingDrafts.add(record.id);
           } else {
             await _sync!.project(path, () => _writeRecordFile(record));
@@ -566,6 +598,11 @@ class FileLibraryStore
         // Do not repair or overwrite its source/backup on the error path.
         _packageLoadErrors[entry.path] = error;
       }
+    }
+    if (_sync case final sync?) {
+      _recoveredEditingDrafts
+        ..clear()
+        ..addAll((await sync.recoveries()).keys.where((s) => s.startsWith('sets/')).map((s) => s.substring(5)));
     }
     _sets
       ..clear()
@@ -1046,7 +1083,7 @@ class FileLibraryStore
 
   /// Called only inside the set's write queue (or initial load). The ledger is
   /// the commit point; .mmset materialization may be retried without new edits.
-  Future<void> _saveRecord(_SetRecord record, {bool finishDraft = false}) async {
+  Future<void> _saveRecord(_SetRecord record, {bool finishDraft = false, String? recovered}) async {
     final sync = _sync;
     if (sync == null) return _writeRecordFile(record);
     final local = record.toJson();
@@ -1083,6 +1120,7 @@ class FileLibraryStore
         SyncMutation('reading/${record.id}/${sync.deviceId}', local: reading, shared: reading),
       ],
       expected: {_scope(record.id): _syncSnapshots[_scope(record.id)]?.revision},
+      recovered: recovered == null ? {} : {_scope(record.id): recovered},
       tombstoneWhere: (scope) =>
           scope.startsWith('translations/${record.id}/') && !documents.contains(scope.split('/')[2]),
     );
@@ -1099,6 +1137,7 @@ class FileLibraryStore
 
   Future<void> dispose() async {
     await flush();
+    await _syncStatusChanges.close();
     await _libraryChanges.close();
     await _contentChanges.close();
   }
