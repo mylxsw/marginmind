@@ -1,0 +1,273 @@
+import 'dart:io';
+
+import 'package:mm_core/mm_core.dart';
+import 'package:mm_data/mm_data.dart';
+import 'package:mm_sync/mm_sync.dart';
+import 'package:test/test.dart';
+
+void main() {
+  late Directory root;
+  late FileSyncLedger left;
+  late RacingLedger right;
+  late FileLibraryStore a, b;
+  late String id, card, doc;
+  final now = DateTime.utc(2026);
+  var serial = 0;
+  late StudySetEditor editor;
+  setUp(() async {
+    root = await Directory.systemTemp.createTemp('receive-sync-');
+    left = FileSyncLedger(Directory('${root.path}/a'), libraryId: 'library', deviceId: 'left');
+    right = RacingLedger(Directory('${root.path}/b'));
+    a = FileLibraryStore(left.root, sync: left, clock: () => now);
+    b = FileLibraryStore(right.root, sync: right, clock: () => now);
+    editor = StudySetEditor(newId: () => 'entity-${++serial}', now: () => now);
+    id = (await a.create(const NewStudySet(title: 'Original', colorIndex: 0))).id;
+    await a.update(id, (c) {
+      final d = editor.addDocument(c, title: 'Doc', fileName: 'documents/a.pdf', pageCount: 10);
+      doc = d.$2.id;
+      final n = editor.addNote(d.$1, text: 'Question');
+      card = n.$2.id;
+      return n.$1;
+    });
+  });
+  tearDown(() async {
+    await a.dispose();
+    await b.dispose();
+    await root.delete(recursive: true);
+  });
+  Future<void> sendA() async => b.receiveSync(await left.pending());
+  Future<void> sendB() async => a.receiveSync(await right.pending());
+
+  test(
+    'fast-forward updates live state, preserves local reading, survives reopen and does not echo receipts',
+    () async {
+      await sendA();
+      expect((await b.load(id)).card(card)!.title, 'Question');
+      expect((await right.pending()).where((c) => c.scope == 'sets/$id'), isEmpty);
+      await b.update(id, (c) => editor.setLastPage(c, doc, 7));
+      await a.update(id, (c) => editor.rename(c, card, 'Remote title'));
+      await sendA();
+      expect((await b.load(id)).card(card)!.title, 'Remote title');
+      expect((await b.load(id)).document(doc)!.lastPage, 7);
+      final before = (await right.history()).length;
+      await sendA();
+      expect((await right.history()).length, before);
+      await b.dispose();
+      b = FileLibraryStore(right.root);
+      expect((await b.load(id)).card(card)!.title, 'Remote title');
+      expect((await b.load(id)).document(doc)!.lastPage, 7);
+      expect((await (await b.syncLedger)!.pending()).where((c) => c.scope == 'sets/$id'), isEmpty);
+    },
+  );
+
+  test('independent offline edits merge, preserve both parents and converge without duplicate merges', () async {
+    await sendA();
+    await a.rename(id, 'Remote set name');
+    await b.update(id, (c) => editor.rename(c, card, 'Local card'));
+    final localId = (await right.snapshots())['sets/$id']!.commit.id;
+    final remoteId = (await left.snapshots())['sets/$id']!.commit.id;
+    await sendA();
+    final merged = (await right.snapshots())['sets/$id']!.commit;
+    expect(merged.parents.toSet(), {localId, remoteId});
+    expect((await b.watchAll().first).single.title, 'Remote set name');
+    expect((await b.load(id)).card(card)!.title, 'Local card');
+    await sendB();
+    await sendA();
+    final aHead = (await left.snapshots())['sets/$id']!.commit.id;
+    final bHead = (await right.snapshots())['sets/$id']!.commit.id;
+    expect(aHead, bHead);
+    await sendB();
+    await sendA();
+    expect((await left.snapshots())['sets/$id']!.commit.id, aHead);
+    expect((await right.snapshots())['sets/$id']!.commit.id, bHead);
+  });
+
+  test('conflict inputs persist; unrelated sets proceed; a later resolved branch clears its diagnostic', () async {
+    await sendA();
+    await a.update(id, (c) => editor.rename(c, card, 'A'));
+    await b.update(id, (c) => editor.rename(c, card, 'B'));
+    final other = (await a.create(const NewStudySet(title: 'Other', colorIndex: 0))).id;
+    await sendA();
+    expect((await b.load(id)).card(card)!.title, 'B');
+    expect(await b.load(other), isA<StudySetContent>());
+    final issues = await right.issues();
+    expect(issues.values.single['reason'], 'fields');
+    final restored = (await FileSyncLedger.restore(right.root))!;
+    expect(await restored.issues(), issues);
+    final before = (await right.history()).length;
+    await sendA();
+    expect((await right.history()).length, before);
+    // A human-selected common value is still a new causal commit.
+    await a.update(id, (c) => editor.rename(c, card, 'B'));
+    await sendA();
+    expect(await right.issues(), isEmpty);
+  });
+
+  test('out-of-order receipt and editing deferral recover without changing live content', () async {
+    final commits = (await left.pending()).where((c) => c.scope == 'sets/$id').toList();
+    final newest = commits.last;
+    final missing = await b.receiveSync([newest]);
+    expect(missing.single.reason, 'missingParents');
+    expect(await b.watchAll().first, isEmpty);
+    await b.receiveSync(commits, canApply: (_) => false);
+    expect(await b.watchAll().first, isEmpty);
+    expect((await right.issues()).values.every((v) => v['reason'] == 'editing'), isTrue);
+    await b.reconcileSync();
+    expect((await b.load(id)).card(card)!.title, 'Question');
+    expect(await right.issues(), isEmpty);
+  });
+
+  test('post-commit projection failure stays committed and deletion retains recoverable history', () async {
+    await sendA();
+    final blocker = Directory('${right.root.path}/sets/$id.mmset/studyset.json.tmp');
+    await blocker.create();
+    await a.rename(id, 'Durable remote');
+    await sendA();
+    expect((await b.watchAll().first).single.title, 'Durable remote');
+    expect(b.syncProjectionErrors, isNotEmpty);
+    await blocker.delete();
+    await a.delete(id);
+    await sendA();
+    expect(await b.watchAll().first, isEmpty);
+    final restored = (await FileSyncLedger.restore(right.root))!;
+    expect((await restored.snapshots())['sets/$id']!.deleted, isTrue);
+    expect((await restored.history()).values.any((c) => c.scope == 'sets/$id' && !c.deleted), isTrue);
+  });
+
+  test('delete against offline edit is a durable conflict, never silent deletion', () async {
+    await sendA();
+    await a.delete(id);
+    await b.rename(id, 'Keep my edit');
+    await sendA();
+    expect((await b.watchAll().first).single.title, 'Keep my edit');
+    expect((await right.issues()).values.single['reason'], 'deleteEdit');
+  });
+
+  test('changed expected revision recomputes the merge and publishes the durable result to watchers', () async {
+    await sendA();
+    final notifications = <StudySetContent>[];
+    final subscription = b.watch(id).listen(notifications.add);
+    await Future<void>.delayed(Duration.zero);
+    await a.update(id, (c) => editor.rename(c, card, 'Remote'));
+    right.beforeAdvance = () async {
+      final head = (await right.snapshots())['sets/$id']!;
+      await right.commit([
+        SyncMutation(
+          'sets/$id',
+          local: {...head.value!, 'title': 'Intervening local'},
+          shared: {...head.commit.payload, 'title': 'Intervening local'},
+        ),
+      ]);
+    };
+    await sendA();
+    await Future<void>.delayed(Duration.zero);
+    expect((await b.watchAll().first).single.title, 'Intervening local');
+    expect((await b.load(id)).card(card)!.title, 'Remote');
+    expect(notifications.last.card(card)!.title, 'Remote');
+    await subscription.cancel();
+  });
+
+  test('new document revision does not inherit an old reading anchor', () async {
+    await sendA();
+    await b.update(id, (c) => editor.setLastPage(c, doc, 9));
+    await a.update(id, (c) => c.copyWith(documents: [c.document(doc)!.copyWith(revision: 'new-revision')]));
+    await sendA();
+    expect((await b.load(id)).document(doc)!.revision, 'new-revision');
+    expect((await b.load(id)).document(doc)!.lastPage, 1);
+  });
+
+  test('a received device fork is quarantined without blocking local edits or restart', () async {
+    await sendA();
+    final accepted = (await right.snapshots())['sets/$id']!.commit;
+    final fork = SyncCommit.create(
+      libraryId: 'library',
+      scope: accepted.scope,
+      deviceId: accepted.deviceId,
+      sequence: accepted.sequence,
+      parents: accepted.parents,
+      payload: {...accepted.payload, 'title': 'Fork'},
+    );
+    await b.receiveSync([fork]);
+    expect((await right.issues()).values.any((v) => v['reason'] == 'invalidHistory'), isTrue);
+    await b.rename(id, 'Local work continues');
+    expect((await b.watchAll().first).single.title, 'Local work continues');
+    final restored = (await FileSyncLedger.restore(right.root))!;
+    expect((await restored.snapshots())['sets/$id']!.value!['title'], 'Local work continues');
+  });
+
+  test('invalid remote identity/content and cloned device identity fail without publishing', () async {
+    final base = (await left.snapshots())['sets/$id']!.commit;
+    final invalid = SyncCommit.create(
+      libraryId: 'library',
+      deviceId: 'other',
+      scope: 'sets/../escape',
+      sequence: 1,
+      payload: base.payload,
+    );
+    await b.receiveSync([invalid]);
+    expect((await right.issues()).values.single['reason'], 'invalidIdentity');
+    final malformed = SyncCommit.create(
+      libraryId: 'library',
+      deviceId: 'other',
+      scope: 'sets/bad',
+      sequence: 1,
+      payload: {...base.payload, 'id': 'bad', 'lastOpenedAt': 'private'},
+    );
+    await b.receiveSync([malformed]);
+    expect((await right.issues()).values.any((v) => v['reason'] == 'invalidContent'), isTrue);
+    expect(await b.watchAll().first, isEmpty);
+    final original = await a.load(id);
+    final unsafe = original.copyWith(documents: [original.document(doc)!.copyWith(fileName: '../../outside.pdf')]);
+    final traversal = SyncCommit.create(
+      libraryId: 'library',
+      deviceId: 'untrusted',
+      scope: 'sets/$id',
+      sequence: 1,
+      payload: {...base.payload, 'content': sharedContent(unsafe)},
+    );
+    await b.receiveSync([traversal]);
+    expect((await right.issues())[traversal.id]!['reason'], 'invalidContent');
+    expect(await b.watchAll().first, isEmpty);
+    for (final path in ['../outside.pdf', '/absolute.pdf', r'C:\outside.pdf', 'documents/../../outside.pdf']) {
+      expect(() => b.resolveFile(id, path), throwsArgumentError);
+    }
+    expect(b.resolveFile(id, ''), endsWith('$id.mmset'));
+    final clone = SyncCommit.create(
+      libraryId: 'library',
+      deviceId: 'right',
+      scope: 'sets/clone',
+      sequence: 1,
+      payload: {},
+    );
+    await expectLater(right.receive([clone]), throwsFormatException);
+    expect((await right.history()).containsKey(clone.id), isFalse);
+  });
+}
+
+class RacingLedger extends FileSyncLedger {
+  RacingLedger(super.root) : super(libraryId: 'library', deviceId: 'right');
+  Future<void> Function()? beforeAdvance;
+
+  @override
+  Future<Map<String, LocalSyncSnapshot>> commit(
+    Iterable<SyncMutation> mutations, {
+    Map<String, String?> expected = const {},
+    void Function(Map<String, LocalSyncSnapshot>)? validate,
+    bool Function(String scope)? tombstoneWhere,
+    Iterable<String> resolved = const [],
+  }) async {
+    final inputs = mutations.toList();
+    if (inputs.any((m) => m.adopt != null || m.mergeParent != null)) {
+      final race = beforeAdvance;
+      beforeAdvance = null;
+      await race?.call();
+    }
+    return super.commit(
+      inputs,
+      expected: expected,
+      validate: validate,
+      tombstoneWhere: tombstoneWhere,
+      resolved: resolved,
+    );
+  }
+}

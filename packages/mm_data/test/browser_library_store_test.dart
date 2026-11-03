@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_data/src/library_browser_io.dart';
+import 'package:mm_sync/mm_sync.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
@@ -25,6 +26,36 @@ void main() {
     await store.dispose();
     BrowserFiles.close();
     web.window.indexedDB.deleteDatabase(database);
+  });
+
+  test('received versions and applied state survive IndexedDB reopen without echo uploads', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Local', colorIndex: 0));
+    final base = (await ledger.snapshots())['sets/${set.id}']!.commit;
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      deviceId: 'remote',
+      scope: base.scope,
+      sequence: 1,
+      parents: [base.id],
+      payload: {...base.payload, 'title': 'Received'},
+    );
+    await store.receiveSync([remote]);
+    expect((await store.watchAll().first).single.title, 'Received');
+    expect((await ledger.pending()).any((c) => c.id == remote.id), isFalse);
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.watchAll().first).single.title, 'Received');
+    final reopened = (await store.syncLedger)!;
+    expect((await reopened.history())[remote.id]!.payload['title'], 'Received');
+    expect((await reopened.snapshots())[base.scope]!.commit.id, remote.id);
+    expect(await reopened.issues(), isEmpty);
+    await store.receiveSync([remote]);
+    expect((await reopened.snapshots())[base.scope]!.commit.id, remote.id);
   });
 
   test('document package stores source, book IR and snapshots using the same browser keys', () async {

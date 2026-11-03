@@ -16,6 +16,76 @@ void main() {
   SyncMutation value(String scope, int n, {int? local}) =>
       SyncMutation(scope, local: {'n': n, 'private': local ?? n}, shared: {'n': n});
 
+  test('adoption requires a known compatible descendant and never queues the received version', () async {
+    final first = (await ledger.commit([value('set', 1)]))['set']!;
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: 'set',
+      deviceId: 'other',
+      sequence: 1,
+      parents: [first.commit.id],
+      payload: {'n': 2},
+    );
+    await expectLater(
+      ledger.commit([
+        SyncMutation('set', local: {'n': 2}, shared: {'n': 2}, adopt: remote.id),
+      ]),
+      throwsFormatException,
+    );
+    await ledger.receive([remote, remote]);
+    await expectLater(ledger.acknowledge([remote.id]), throwsFormatException);
+    await expectLater(
+      ledger.commit([
+        SyncMutation('set', local: {'n': 3}, shared: {'n': 3}, adopt: remote.id),
+      ]),
+      throwsFormatException,
+    );
+    await expectLater(
+      ledger.commit([
+        SyncMutation('set', local: {'n': 2}, shared: {'n': 2}, adopt: remote.id, mergeParent: remote.id),
+      ]),
+      throwsFormatException,
+    );
+    await ledger.commit([
+      SyncMutation('set', local: {'n': 2}, shared: {'n': 2}, adopt: remote.id),
+    ]);
+    expect((await ledger.pending()).map((c) => c.id), [first.commit.id]);
+    await expectLater(
+      ledger.commit([SyncMutation('set', local: first.value, shared: first.commit.payload, adopt: first.commit.id)]),
+      throwsFormatException,
+    );
+    await ledger.commit([value('set', 3)]);
+    expect((await ledger.snapshots())['set']!.commit.sequence, 2); // this device's sequence
+    final reopened = (await FileSyncLedger.restore(root))!;
+    expect((await reopened.snapshots())['set']!.value!['n'], 3);
+    expect((await reopened.pending()).every((c) => c.deviceId == 'device'), isTrue);
+    final otherLibrary = SyncCommit.create(
+      libraryId: 'other-library',
+      scope: 'set',
+      deviceId: 'other',
+      sequence: 1,
+      payload: {},
+    );
+    await expectLater(ledger.receive([otherLibrary]), throwsFormatException);
+  });
+
+  test('version one records remain readable and can advance into version two', () async {
+    await ledger.commit([value('set', 1)]);
+    final file = await Directory('${root.path}/.foliarc-sync/local').list().cast<File>().single;
+    final body = jsonDecode(await file.readAsString()) as Map<String, dynamic>
+      ..remove('id')
+      ..remove('received')
+      ..remove('issues');
+    body['version'] = 1;
+    final id = syncDigest(body);
+    await file.delete();
+    await File('${file.parent.path}/$id.json').writeAsString(jsonEncode({'id': id, ...body}));
+    final reopened = (await FileSyncLedger.restore(root))!;
+    expect((await reopened.snapshots())['set']!.value!['n'], 1);
+    await reopened.commit([value('set', 2)]);
+    expect((await (await FileSyncLedger.restore(root))!.snapshots())['set']!.value!['n'], 2);
+  });
+
   test('one record recovers local state and outbox; local-only changes do not create cloud versions', () async {
     expect(await FileSyncLedger.restore(root), isNull);
     final first = await ledger.commit([value('set', 1)]);

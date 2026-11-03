@@ -23,6 +23,18 @@ StudySetContent materializeShared(Map<String, Object?> shared, StudySetContent l
   final combined = contentDocument(local)..addAll(shared);
   final next = contentFromDocument(combined);
   return StudySetEditor.restore(next, local).copyWith(
+    documents: [
+      for (final document in next.documents)
+        if (local.document(document.id) case final old? when old.revision == document.revision)
+          document.copyWith(
+            lastPage: old.lastPage,
+            lastReadAt: old.lastReadAt,
+            readingPosition: old.readingPosition,
+            cropSuggestionDismissed: old.cropSuggestionDismissed,
+          )
+        else
+          document,
+    ],
     nodes: [
       for (final node in next.nodes)
         node.copyWith(collapsed: local.node(node.cardId, mapId: node.mapId)?.collapsed ?? false),

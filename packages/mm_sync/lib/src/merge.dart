@@ -70,6 +70,18 @@ class ContentMergeResult {
   bool get clean => content != null && conflicts.isEmpty;
 }
 
+/// Shared object merge for aggregate metadata. Domain callers still validate
+/// the candidate and must never publish a result with unresolved conflicts.
+({Map<String, Object?> value, List<SyncConflict> conflicts}) mergeSyncObject(
+  Map<String, Object?> base,
+  Map<String, Object?> left,
+  Map<String, Object?> right,
+) {
+  final conflicts = <SyncConflict>[];
+  final value = _merge(base, left, right, const [], conflicts) as Map<String, Object?>;
+  return (value: value, conflicts: List.unmodifiable(conflicts));
+}
+
 /// Pure three-way content merge. Conflicting values remain at the common base
 /// in the preview; callers must persist the variants before publishing a preview.
 ContentMergeResult mergeContent(StudySetContent base, StudySetContent left, StudySetContent right) {

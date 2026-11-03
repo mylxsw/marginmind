@@ -54,6 +54,189 @@ class FileLibraryStore
   Map<String, Object> get syncProjectionErrors => _sync?.projectionErrors ?? const {};
   static String _scope(String id) => 'sets/$id';
 
+  /// Receive first, then reconcile through the same queues used by editing.
+  /// Other domains stay durably received until their domain handlers run.
+  /// The editing coordinator may defer a set and retry after its edit ends.
+  Future<List<SyncMergePlan>> receiveSync(
+    Iterable<SyncCommit> commits, {
+    bool Function(String studySetId)? canApply,
+  }) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) throw StateError('This library has not enabled sync');
+    await sync.receive(commits);
+    return reconcileSync(canApply: canApply);
+  }
+
+  Future<List<SyncMergePlan>> reconcileSync({bool Function(String studySetId)? canApply}) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) throw StateError('This library has not enabled sync');
+    final history = await sync.history();
+    // Retry every received transaction, not just tips: an incomplete or
+    // invalid descendant must not hide a valid preceding transaction.
+    int depth(SyncCommit c) {
+      try {
+        return syncAncestry(history, [c.id]).length;
+      } on MissingSyncParents {
+        return history.length + 1;
+      } on FormatException {
+        return history.length + 1;
+      }
+    }
+
+    final tips = history.values.where((c) => c.scope.startsWith('sets/') && c.deviceId != sync.deviceId).toList()
+      ..sort((a, b) {
+        // Apply descendants first. Merging an older parent while its already
+        // merged descendant is available creates endless crossed merge commits.
+        final byDepth = depth(b).compareTo(depth(a));
+        return byDepth == 0 ? a.id.compareTo(b.id) : byDepth;
+      });
+    final results = <SyncMergePlan>[];
+    for (final remote in tips) {
+      final id = remote.scope.substring(5);
+      await _queueWrite(id, () async {
+        while (true) {
+          final snapshots = await sync.snapshots();
+          final current = snapshots[remote.scope];
+          final known = await sync.history();
+          var plan = planSyncMerge(known, remote: remote.id, local: current?.commit.id);
+          final expected = {remote.scope: current?.revision};
+          try {
+            if (plan.state == SyncMergeState.unchanged) {
+              await sync.commit([], expected: expected, resolved: [remote.id]);
+              results.add(plan);
+              return;
+            }
+            if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(id)) {
+              plan = SyncMergePlan(
+                remote: remote.id,
+                local: current?.commit.id,
+                state: SyncMergeState.conflict,
+                reason: 'invalidIdentity',
+              );
+            } else if (plan.state == SyncMergeState.ready && canApply?.call(id) == false) {
+              plan = SyncMergePlan(
+                remote: remote.id,
+                local: current?.commit.id,
+                state: SyncMergeState.waiting,
+                reason: 'editing',
+              );
+            }
+            _SetRecord? record;
+            if (plan.state == SyncMergeState.ready && !plan.deleted) {
+              try {
+                record = _materializeSync(id, plan.payload!, current?.value);
+              } on FormatException {
+                plan = SyncMergePlan(
+                  remote: remote.id,
+                  local: current?.commit.id,
+                  state: SyncMergeState.conflict,
+                  reason: 'invalidContent',
+                  bases: plan.bases,
+                );
+              } on TypeError {
+                plan = SyncMergePlan(
+                  remote: remote.id,
+                  local: current?.commit.id,
+                  state: SyncMergeState.conflict,
+                  reason: 'invalidContent',
+                  bases: plan.bases,
+                );
+              } on ArgumentError {
+                plan = SyncMergePlan(
+                  remote: remote.id,
+                  local: current?.commit.id,
+                  state: SyncMergeState.conflict,
+                  reason: 'invalidContent',
+                  bases: plan.bases,
+                );
+              }
+            }
+            if (plan.state != SyncMergeState.ready) {
+              await sync.recordIssue(plan, scope: remote.scope, expected: current?.revision);
+              results.add(plan);
+              return;
+            }
+            final documents = record?.content.documents.map((d) => d.id).toSet() ?? <String>{};
+            final accepted = syncAncestry(known, [remote.id, if (current != null) current.commit.id]).keys;
+            _syncSnapshots = await sync.commit(
+              [
+                SyncMutation(
+                  remote.scope,
+                  local: record?.toJson(),
+                  shared: plan.deleted ? null : plan.payload,
+                  adopt: plan.adopt ? remote.id : null,
+                  mergeParent: plan.adopt ? null : remote.id,
+                ),
+              ],
+              expected: expected,
+              resolved: accepted,
+              tombstoneWhere: (scope) =>
+                  (scope.startsWith('translations/$id/') && !documents.contains(scope.split('/')[2])) ||
+                  (plan.deleted && (scope.startsWith('reading/$id/') || scope == 'reviews/$id')),
+            );
+            // The durable decision precedes projections, live caches and watch
+            // notifications. A projection failure must not invite a second edit.
+            if (record == null) {
+              _sets.remove(id);
+              await sync.project(_packagePath(id), () async {
+                final file = File(p.join(_packagePath(id), 'studyset.json'));
+                if (await file.exists()) await file.delete();
+              });
+            } else {
+              _sets[id] = record;
+              await sync.project(_packagePath(id), () => _writeRecordFile(record!));
+              await _syncResearchSessions(id, record.content);
+            }
+            _contentChanges.add(id);
+            _libraryChanges.add(null);
+            results.add(plan);
+            return;
+          } on SyncRevisionChanged {
+            // A receipt/merge caller using the shared ledger may have advanced
+            // the version while this awaited IO. Recompute from its snapshot.
+            continue;
+          }
+        }
+      });
+    }
+    return results;
+  }
+
+  _SetRecord _materializeSync(String id, Map<String, Object?> payload, Map<String, Object?>? current) {
+    const fields = {'format', 'id', 'title', 'colorIndex', 'folderId', 'starred', 'createdAt', 'content'};
+    if (payload['format'] != currentStudySetFormat ||
+        payload['id'] != id ||
+        payload.keys.any((k) => !fields.contains(k))) {
+      throw const FormatException('Unsupported shared study set');
+    }
+    final shared = (payload['content'] as Map).cast<String, Object?>();
+    final decoded = contentFromDocument(shared);
+    if (!contentValueEquals(sharedContent(decoded), shared) || contentIntegrityErrors(decoded).isNotEmpty) {
+      throw const FormatException('Invalid shared content or local-only fields');
+    }
+    for (final path in [
+      for (final d in decoded.documents) ...[
+        d.fileName,
+        ?d.sourceFileName,
+        ?d.contentManifest,
+        ?d.origin?.snapshotFile,
+      ],
+      for (final c in decoded.cards) ?c.imageFileName,
+      for (final source in decoded.researchSources)
+        for (final version in source.versions) version.snapshotFile,
+    ]) {
+      _validateResourcePath(path);
+    }
+    final local = current == null ? StudySetContent.empty : _SetRecord.fromJson(current).content;
+    return _SetRecord.fromJson({
+      ...payload,
+      'lastOpenedAt': current?['lastOpenedAt'] ?? payload['createdAt'],
+      'content': materializeShared(shared, local).toJson(),
+    });
+  }
+
   final Map<String, _SetRecord> _sets = {};
   List<Folder> _folders = [];
   bool _loaded = false;
@@ -631,7 +814,22 @@ class FileLibraryStore
   @override
   String resolveFile(String studySetId, String fileName) => resourcePath(_resolvePath(studySetId, fileName));
 
-  String _resolvePath(String studySetId, String fileName) => p.join(_packagePath(studySetId), fileName);
+  String _resolvePath(String studySetId, String fileName) {
+    // Existing local callers request the package directory with an empty name.
+    if (fileName.isNotEmpty) _validateResourcePath(fileName);
+    return p.join(_packagePath(studySetId), fileName);
+  }
+
+  // Portable package-relative paths only. In particular a received snapshot
+  // must not turn a later asset read into access outside the study-set package.
+  static void _validateResourcePath(String path) {
+    if (path.contains('\\') ||
+        path.contains(':') ||
+        path.contains('\u0000') ||
+        path.split('/').any((part) => part.isEmpty || part == '.' || part == '..')) {
+      throw ArgumentError.value(path, 'resourcePath', 'Expected a package-relative resource');
+    }
+  }
 
   // ---- internals -----------------------------------------------------------
 
