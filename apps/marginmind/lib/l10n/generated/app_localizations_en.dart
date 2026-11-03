@@ -6667,7 +6667,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncSettingsLegacy =>
-      'This library has earlier sync history that needs migration before it can be transferred. Local history is preserved.';
+      'Earlier sync history could not be verified as a complete portable graph. Local history is preserved; recover missing history on its original device before retrying.';
 
   @override
   String get syncSettingsHistory =>

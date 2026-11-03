@@ -227,7 +227,99 @@ void main() {
     await expectLater(x.run(), problem(SyncTransportProblem.quota));
     expect(await pending(la, other), isNotEmpty);
   });
-  test('v1 history is rejected before network IO without rewriting or deleting it', () async {
+  test('original v3 journal transfers witnessed v1 and modern descendants without rewriting private history', () async {
+    final legacyRoot = Directory('${root.path}/legacy');
+    final initial = FileSyncLedger(legacyRoot, libraryId: 'lib', deviceId: 'old-a');
+    await initial.snapshots();
+    final sample = (await la.snapshots())['sets/$id']!;
+    final shared = {...sample.commit.payload, 'id': 'legacy', 'title': 'Earlier library'};
+    final old = SyncCommit.create(
+      libraryId: 'lib',
+      scope: 'sets/legacy',
+      deviceId: 'old-a',
+      sequence: 1,
+      protocol: 1,
+      payload: shared,
+    );
+    final raw = Map<String, Object?>.of(old.toJson())..remove('legacyCanonical');
+    final body = {
+      'version': 3,
+      'libraryId': 'lib',
+      'deviceId': 'old-a',
+      'sequence': 1,
+      'previous': null,
+      'changes': [
+        {
+          'scope': old.scope,
+          'local': {
+            ...sample.value!,
+            'id': 'legacy',
+            'title': 'Earlier library',
+            'privateProbe': 'NEVER UPLOAD LOCAL RECOVERY',
+          },
+          'commit': raw,
+        },
+      ],
+      'received': [],
+      'issues': {},
+      'recoveries': {},
+    };
+    final journal = File('${legacyRoot.path}/.foliarc-sync/local/${legacySyncDigest(body)}.json');
+    await journal.parent.create(recursive: true);
+    final originalBytes = utf8.encode(jsonEncode({'id': legacySyncDigest(body), ...body}));
+    await journal.writeAsBytes(originalBytes);
+    final restored = (await FileSyncLedger.restore(legacyRoot))!;
+    final source = FileLibraryStore(legacyRoot, sync: restored);
+    final vocabulary = FileVocabularyStore(legacyRoot, sync: restored);
+    final engine = FileSyncEngine(restored, FileSyncReceiver(source, vocabulary));
+    try {
+      expect((await source.watchAll().first).single.title, 'Earlier library');
+      await source.rename('legacy', 'Modern edit');
+      final head = (await restored.snapshots())[old.scope]!.commit;
+      expect(head.parents, [old.id]);
+      await start(engine, ra);
+      await engine.run();
+      final wire = jsonDecode(utf8.decode(ra.objects['commits/${old.id}.json']!)) as Map;
+      expect(wire['legacyCanonical'], old.legacyCanonical);
+      expect(wire['id'], old.id);
+      expect(ra.objects.values.any((b) => utf8.decode(b).contains('NEVER UPLOAD LOCAL RECOVERY')), false);
+      expect(await journal.readAsBytes(), originalBytes);
+      await start(y, rb);
+      await y.run();
+      expect((await b.watchAll().first).single.title, 'Modern edit');
+      expect((await lb.snapshots())[old.scope]!.commit.id, head.id);
+      final reopened = (await FileSyncLedger.restore(lb.root))!;
+      expect((await reopened.history())[old.id]!.legacyCanonical, old.legacyCanonical);
+      await engine.run();
+      expect(await pending(restored, ra), isEmpty);
+    } finally {
+      await source.dispose();
+      await vocabulary.dispose();
+    }
+  });
+
+  test('unwitnessed or incomplete remote legacy graphs publish no received state', () async {
+    final old = SyncCommit.create(
+      libraryId: 'lib',
+      scope: 'sets/legacy',
+      deviceId: 'old',
+      sequence: 1,
+      protocol: 1,
+      payload: {},
+      parents: [syncDigest('absent')],
+    );
+    ra.objects['library.json'] = syncLibraryManifest('lib');
+    final raw = Map.of(old.toJson())..remove('legacyCanonical');
+    ra.objects['commits/${old.id}.json'] = utf8.encode(jsonEncode(raw));
+    await start(x, ra);
+    await expectLater(x.run(), problem(SyncTransportProblem.legacyProtocol));
+    expect((await la.history()).containsKey(old.id), false);
+    ra.objects['commits/${old.id}.json'] = utf8.encode(jsonEncode(old.toJson()));
+    await expectLater(x.run(), problem(SyncTransportProblem.legacyProtocol));
+    expect((await la.history()).containsKey(old.id), false);
+  });
+
+  test('incomplete v1 graph is rejected before network IO without rewriting or deleting history', () async {
     final legacy = SyncCommit.create(
       libraryId: 'lib',
       scope: 'sets/old',
@@ -235,6 +327,7 @@ void main() {
       sequence: 1,
       protocol: 1,
       payload: {},
+      parents: [syncDigest('missing')],
     );
     await la.receive([legacy]);
     await start(x, ra);

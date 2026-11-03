@@ -53,7 +53,8 @@ void main() {
     old['id'] = legacySyncDigest(Map<String, Object?>.of(old)..remove('id'));
     final restored = SyncCommit.fromJson(old);
     expect(restored.protocol, 1);
-    expect(restored.toJson(), old);
+    expect(Map.of(restored.toJson())..remove('legacyCanonical'), old);
+    expect(restored.legacyCanonical, isNotNull);
     final next = commit(sequence: 2, parents: [restored.id], payload: {'n': 2.0});
     expect(next.protocol, 2);
     expect(SyncGraph([restored, next]).ancestors(next.id), contains(restored.id));

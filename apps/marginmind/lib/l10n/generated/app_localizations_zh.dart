@@ -6393,7 +6393,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncSettingsAccountChanged => '账号已变化，原队列已暂停。请明确重新连接后继续。';
 
   @override
-  String get syncSettingsLegacy => '此资料库含早期同步历史，迁移后才能传输。本机历史已保留。';
+  String get syncSettingsLegacy => '早期同步历史尚无法验证为完整、可跨平台传输的版本图。本机历史已保留，请先在原设备补齐历史后重试。';
 
   @override
   String get syncSettingsHistory => '目标服务缺少必要历史。队列已保留；迁移功能完成前请使用原服务。';

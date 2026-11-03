@@ -60,6 +60,7 @@ class SyncCommit {
     this.resolves,
     this.requires,
     this.protocol,
+    this.legacyCanonical,
   );
 
   factory SyncCommit.create({
@@ -115,6 +116,7 @@ class SyncCommit {
       references(resolves),
       Map.unmodifiable(requires),
       protocol,
+      null,
     );
     return SyncCommit._(
       protocol == 1 ? legacySyncDigest(candidate._body()) : syncDigest(candidate._body()),
@@ -129,11 +131,29 @@ class SyncCommit {
       candidate.resolves,
       candidate.requires,
       protocol,
+      protocol == 1 ? canonicalContentJson(candidate._body()) : null,
     );
   }
 
   final String id, libraryId, scope, deviceId;
   final int sequence, protocol;
+
+  /// Exact bytes originally hashed by the unpublished v1 implementation.
+  /// This is an integrity witness, not a signature or a new commit identity.
+  /// Keeping it as text preserves VM double spelling across JavaScript parsing.
+  final String? legacyCanonical;
+
+  bool get portable {
+    if (protocol == syncProtocolVersion) return true;
+    if (legacyCanonical == null) return false;
+    try {
+      syncDigest(_body()); // Reject numbers that cannot survive JSON runtimes.
+      return true;
+    } on FormatException {
+      return false;
+    }
+  }
+
   final List<String> parents;
   final Map<String, Object?> payload;
   final bool deleted;
@@ -158,7 +178,11 @@ class SyncCommit {
     if (resolves.isNotEmpty) 'resolves': resolves,
     if (requires.isNotEmpty) 'requires': requires,
   };
-  Map<String, Object?> toJson() => {'id': id, ..._body()};
+  Map<String, Object?> toJson() => {
+    'id': id,
+    ..._body(),
+    if (legacyCanonical != null && portable) 'legacyCanonical': legacyCanonical,
+  };
 
   factory SyncCommit.fromJson(Map<String, Object?> json) {
     const fields = {
@@ -174,6 +198,7 @@ class SyncCommit {
       'pending',
       'resolves',
       'requires',
+      'legacyCanonical',
     };
     if (!{1, syncProtocolVersion}.contains(json['protocol']) || json.keys.any((key) => !fields.contains(key))) {
       throw const FormatException('Unsupported sync commit');
@@ -192,6 +217,31 @@ class SyncCommit {
         resolves: ((json['resolves'] ?? const []) as List).cast<String>(),
         requires: ((json['requires'] ?? const {}) as Map).cast<String, String>(),
       );
+      if (json.containsKey('legacyCanonical')) {
+        final witness = json['legacyCanonical'] as String;
+        if (result.protocol != 1 ||
+            sha256.convert(utf8.encode(witness)).toString() != json['id'] ||
+            !contentValueEquals(jsonDecode(witness), result._body())) {
+          throw const FormatException('Invalid legacy commit witness');
+        }
+        // Numeric semantics must be portable even when the old spelling differs.
+        syncDigest(result._body());
+        return SyncCommit._(
+          json['id'] as String,
+          result.libraryId,
+          result.scope,
+          result.deviceId,
+          result.sequence,
+          result.parents,
+          result.payload,
+          result.deleted,
+          result.pending,
+          result.resolves,
+          result.requires,
+          result.protocol,
+          witness,
+        );
+      }
       if (result.id != json['id']) throw const FormatException('Commit digest mismatch');
       return result;
     } on TypeError {

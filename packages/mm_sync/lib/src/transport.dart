@@ -108,3 +108,41 @@ bool sameSyncStoredObject(String key, List<int> a, List<int> b) {
   checkSyncObjectData(key, b);
   return key.startsWith('blobs/') ? a.length == b.length : sameSyncObject(a, b);
 }
+
+/// Transporting an old graph is permitted only after its exact legacy hash
+/// witnesses and complete references have been validated. Nothing is re-IDed
+/// or pruned, and private legacy journals are never used as wire objects.
+void validatePortableSyncHistory(Map<String, SyncCommit> history) {
+  if (!history.values.any((c) => c.protocol == 1)) return;
+  try {
+    if (history.values.any((c) => !c.portable)) throw const FormatException('Non-portable legacy value');
+    SyncGraph(history.values);
+    final remaining = <String, int>{}, children = <String, List<String>>{};
+    for (final c in history.values) {
+      final references = {...c.parents, ...c.requires.values};
+      if (references.any((id) => !history.containsKey(id)) ||
+          c.requires.entries.any(
+            (e) => history[e.value]?.scope != e.key || history[e.value]?.libraryId != c.libraryId,
+          )) {
+        throw const FormatException('Incomplete legacy graph');
+      }
+      remaining[c.id] = references.length;
+      for (final ref in references) {
+        children.putIfAbsent(ref, () => []).add(c.id);
+      }
+    }
+    final ready = remaining.keys.where((id) => remaining[id] == 0).toList();
+    var visited = 0;
+    while (ready.isNotEmpty) {
+      final id = ready.removeLast();
+      visited++;
+      for (final child in children[id] ?? const <String>[]) {
+        remaining[child] = remaining[child]! - 1;
+        if (remaining[child] == 0) ready.add(child);
+      }
+    }
+    if (visited != history.length) throw const FormatException('Cyclic legacy dependencies');
+  } on FormatException {
+    throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
+  }
+}

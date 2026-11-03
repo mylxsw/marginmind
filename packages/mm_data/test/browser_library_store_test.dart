@@ -15,6 +15,8 @@ import 'package:mm_sync/mm_sync.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
+import 'fixtures/legacy_vm_graph.dart';
+
 void main() {
   late FileLibraryStore store;
   late String database;
@@ -28,6 +30,71 @@ void main() {
     await store.dispose();
     BrowserFiles.close();
     web.window.indexedDB.deleteDatabase(database);
+  });
+
+  test('VM legacy graph keeps original identities through browser receive, edit and restart', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'portable', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final commits = (jsonDecode(legacyVmGraph) as List)
+        .map((v) => SyncCommit.fromJson((v as Map).cast<String, Object?>()))
+        .toList();
+    expect(commits.first.legacyCanonical, contains('.0'));
+    expect(
+      legacySyncDigest(
+        Map.of(commits.first.toJson())
+          ..remove('id')
+          ..remove('legacyCanonical'),
+      ),
+      isNot(commits.first.id),
+      reason: 'The VM identity cannot be reconstructed from JS numeric spelling',
+    );
+    await store.receiveSync(commits.reversed);
+    expect((await store.watchAll().first).single.title, 'Portable descendant');
+    expect((await store.load('legacy')).cards.single.title, 'Native floating point');
+    await store.rename('legacy', 'Browser successor');
+    final head = (await ledger.snapshots())['sets/legacy']!.commit;
+    expect(head.parents, [commits.last.id]);
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.watchAll().first).single.title, 'Browser successor');
+    final history = await (await store.syncLedger)!.history();
+    expect(history[commits.first.id]!.legacyCanonical, commits.first.legacyCanonical);
+    expect(history[head.id]!.parents, [commits.last.id]);
+    validatePortableSyncHistory(history);
+  });
+
+  test('VM pending conflict identities survive JS replay and explicit resolution', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'portable', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final commits = (jsonDecode(legacyVmConflictGraph) as List)
+        .map((v) => SyncCommit.fromJson((v as Map).cast<String, Object?>()))
+        .toList();
+    await store.receiveSync(commits.reversed);
+    final status = await store.contentSyncStatus('legacy');
+    expect(status.conflicts.map((c) => c.id), commits.last.pending);
+    await store.chooseContentSync(
+      'legacy',
+      status.conflicts.single.id,
+      expectedRevision: status.revision!,
+      useCandidate: true,
+    );
+    final choice = (await ledger.snapshots())['sets/legacy']!.commit;
+    expect(choice.resolves, commits.last.pending);
+    expect(choice.parents, [commits.last.id]);
+    expect(choice.pending, isEmpty);
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.contentSyncStatus('legacy')).conflicts, isEmpty);
+    final history = await (await store.syncLedger)!.history();
+    for (final c in commits) {
+      expect(history[c.id]!.toJson(), c.toJson());
+    }
   });
 
   test('deleted browser content restores as a new identity once across restart', () async {

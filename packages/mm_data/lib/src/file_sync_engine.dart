@@ -87,9 +87,7 @@ class FileSyncEngine {
     }
 
     await receiver.validateLedger(ledger);
-    if ((await ledger.history()).values.any((c) => c.protocol != syncProtocolVersion)) {
-      throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
-    }
+    validatePortableSyncHistory(await ledger.history());
     await check();
     final manifest = await remote.read('library.json');
     await check();
@@ -117,11 +115,9 @@ class FileSyncEngine {
 
     await receiver.validateLedger(ledger);
     var history = await ledger.history();
-    // The unpublished v1 JSON digest cannot be transported safely across VM/JS.
-    // No lossy re-ID, history clearing, or network IO before this explicit gate.
-    if (history.values.any((c) => c.protocol != syncProtocolVersion)) {
-      throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
-    }
+    // Prove complete legacy identities before any network IO. Keep original
+    // commits/references; witnesses travel inside shared objects, never journals.
+    validatePortableSyncHistory(history);
     await receiver.library.prepareSyncResources();
     await check();
     await remote.prepare();
@@ -147,7 +143,7 @@ class FileSyncEngine {
       SyncCommit c;
       try {
         final json = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
-        if (json['protocol'] != syncProtocolVersion) {
+        if (json['protocol'] != syncProtocolVersion && !(json['protocol'] == 1 && json['legacyCanonical'] is String)) {
           throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
         }
         c = SyncCommit.fromJson(json);
@@ -162,14 +158,15 @@ class FileSyncEngine {
       incoming.add(c);
     }
     await check();
-    if (incoming.isNotEmpty) await receiver.receive(incoming);
+    if (incoming.isNotEmpty) {
+      validatePortableSyncHistory({...history, for (final c in incoming) c.id: c});
+      await receiver.receive(incoming);
+    }
     await check();
     await receiver.retry();
     await check();
     history = await ledger.history();
-    if (history.values.any((c) => c.protocol != syncProtocolVersion)) {
-      throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
-    }
+    validatePortableSyncHistory(history);
     final outgoing = (await ledger.pending(
       target: connection.target.key,
       includeDelivered: true,

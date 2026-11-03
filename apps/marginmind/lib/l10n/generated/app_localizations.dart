@@ -11657,7 +11657,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncSettingsLegacy.
   ///
   /// In en, this message translates to:
-  /// **'This library has earlier sync history that needs migration before it can be transferred. Local history is preserved.'**
+  /// **'Earlier sync history could not be verified as a complete portable graph. Local history is preserved; recover missing history on its original device before retrying.'**
   String get syncSettingsLegacy;
 
   /// No description provided for @syncSettingsHistory.

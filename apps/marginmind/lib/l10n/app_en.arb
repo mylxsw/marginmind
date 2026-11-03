@@ -3996,7 +3996,7 @@
   "syncSettingsRepair": "Some local data could not be loaded or recovered. Repair it before transferring this library.",
   "syncSettingsAuth": "Authentication failed. Check your account and app password.",
   "syncSettingsAccountChanged": "The account changed. The previous queue is paused. Reconnect explicitly to continue.",
-  "syncSettingsLegacy": "This library has earlier sync history that needs migration before it can be transferred. Local history is preserved.",
+  "syncSettingsLegacy": "Earlier sync history could not be verified as a complete portable graph. Local history is preserved; recover missing history on its original device before retrying.",
   "syncSettingsHistory": "This target is missing required history. The queue is preserved; use the original service until migration is available.",
   "syncSettingsRetry": "Reload status",
   "syncResourcesTitle": "Files on this device",

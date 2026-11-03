@@ -714,7 +714,24 @@ void main() {
     expect(controller.setup!.joining, true);
   });
 
-  test('legacy graph is blocked before probing remote or storing credentials', () async {
+  test('verified legacy identity can connect without replacing local history', () async {
+    final old = SyncCommit.create(
+      libraryId: ledger.libraryId,
+      scope: 'library',
+      deviceId: 'old',
+      sequence: 1,
+      protocol: 1,
+      payload: {'oldNumeric': 1.0},
+    );
+    await ledger.receive([old]);
+    await connect();
+    expect(controller.failure, isNull);
+    expect(controller.target, isNotNull);
+    expect((await ledger.history())[old.id]!.id, old.id);
+    expect(objects, isEmpty, reason: 'Connection probe never uploads historical data');
+  });
+
+  test('incomplete legacy graph is blocked before probing remote or storing credentials', () async {
     await ledger.receive([
       SyncCommit.create(
         libraryId: ledger.libraryId,
@@ -722,6 +739,7 @@ void main() {
         deviceId: 'old',
         sequence: 1,
         protocol: 1,
+        parents: [syncDigest('missing legacy ancestor')],
         payload: {},
       ),
     ]);

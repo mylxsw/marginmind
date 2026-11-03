@@ -164,9 +164,7 @@ class SyncSettingsController extends ChangeNotifier {
       failure = SyncSettingsFailure.incompleteLibrary;
       throw StateError('Repair local library before transfer');
     }
-    if ((await _ledger!.history()).values.any((c) => c.protocol != syncProtocolVersion)) {
-      throw const SyncTransportException(SyncTransportProblem.legacyProtocol);
-    }
+    validatePortableSyncHistory(await _ledger!.history());
   }
 
   Future<void> cancelActivation() => _action((generation) async {
