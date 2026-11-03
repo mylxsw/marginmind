@@ -21,8 +21,9 @@ import 'app_settings.dart';
 import 'app_icon_picker.dart';
 import 'assistant_icon_picker.dart';
 import 'settings_drafts.dart';
+import 'sync_settings_page.dart';
 
-enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice }
+enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice, sync }
 
 /// The app's settings (⌘,): a centered dialog in the main window's own
 /// language — a floating glass sidebar of sections beside a titled,
@@ -210,7 +211,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
 
   late SettingsTab _tab =
       MMPlatformCapabilities.current.externalCredentials ||
-          [SettingsTab.general, SettingsTab.reading, SettingsTab.maps].contains(widget.initialTab)
+          [SettingsTab.general, SettingsTab.reading, SettingsTab.maps, SettingsTab.sync].contains(widget.initialTab)
       ? widget.initialTab
       : SettingsTab.general;
 
@@ -279,6 +280,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       (SettingsTab.general, MMIcons.settings, l.settingsGeneral),
       (SettingsTab.reading, MMIcons.reading, l.settingsReading),
       (SettingsTab.maps, MMIcons.mindMap, l.mapView),
+      (SettingsTab.sync, MMIcons.regenerate, l.syncSettingsTitle),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.models, MMIcons.ai, l.settingsModels),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.aiTasks, MMIcons.aiTasks, l.aiTasksTitle),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
@@ -298,6 +300,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       ),
       SettingsTab.webSearch => const WebSearchSettingsPage(),
       SettingsTab.voice => const VoiceSettingsPage(),
+      SettingsTab.sync => const SyncSettingsPage(),
     };
     final page = pageFor(_tab);
     if (MMInput.of(context).phone) {

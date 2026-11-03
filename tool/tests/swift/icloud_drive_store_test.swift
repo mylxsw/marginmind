@@ -31,6 +31,8 @@ struct ICloudDriveStoreTest {
     fails(.invalidResponse) { try store.prepare(path, expected: "first") }
     fails(.accountChanged) { try store.prepare(directory, expected: "old") }
     fails(.accountChanged) { try store.prepare(directory, expected: "") }
+    // Settings probes a new library without preparing/writing its directory.
+    try verify(try store.read(path, expected: "first") == nil)
     try store.prepare(directory, expected: "first")
     try verify(try store.read(path, expected: "first") == nil)
     try verify(try store.uploaded(path, bytes: Data(), expected: "first") == false)

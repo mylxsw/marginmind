@@ -11117,13 +11117,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncLocalOnly.
   ///
   /// In en, this message translates to:
-  /// **'Saved on this device. No cloud service is connected.'**
+  /// **'Manage saved content and conflicts here. For service delivery status, open Settings → Sync.'**
   String get syncLocalOnly;
 
   /// No description provided for @syncWaitingTransfer.
   ///
   /// In en, this message translates to:
-  /// **'Saved changes are waiting for a sync service.'**
+  /// **'Saved changes are awaiting service confirmation.'**
   String get syncWaitingTransfer;
 
   /// No description provided for @syncRecovered.
@@ -11461,6 +11461,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{1 translated paragraph needs a choice} other{{count} translated paragraphs need a choice}}. Open the translation beside its source to compare and choose.'**
   String syncTranslationConflicts(int count);
+
+  /// No description provided for @syncSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get syncSettingsTitle;
+
+  /// No description provided for @syncSettingsScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync text, study history and organization manually. Document files and images are not transferred yet. Keep the originals on each device.'**
+  String get syncSettingsScope;
+
+  /// No description provided for @syncSettingsLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'This library is stored on this device. Preparing sync preserves its existing content.'**
+  String get syncSettingsLocal;
+
+  /// No description provided for @syncSettingsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync setup is unavailable on this platform or this build.'**
+  String get syncSettingsUnavailable;
+
+  /// No description provided for @syncSettingsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a shared library'**
+  String get syncSettingsNew;
+
+  /// No description provided for @syncSettingsJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join an existing library'**
+  String get syncSettingsJoin;
+
+  /// No description provided for @syncSettingsLibraryId.
+  ///
+  /// In en, this message translates to:
+  /// **'Library code'**
+  String get syncSettingsLibraryId;
+
+  /// No description provided for @syncSettingsDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s name'**
+  String get syncSettingsDeviceName;
+
+  /// No description provided for @syncSettingsPrepare.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare this library'**
+  String get syncSettingsPrepare;
+
+  /// No description provided for @syncSettingsIdentityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'To join, copy the library code from the other device. Existing local content will also be included; conflicting histories are preserved for review. The library identity cannot be switched after initialization.'**
+  String get syncSettingsIdentityHint;
+
+  /// No description provided for @syncSettingsRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparation saved. Close and reopen Foliarc to initialize sync safely, then connect a service here. Nothing has been uploaded.'**
+  String get syncSettingsRestart;
+
+  /// No description provided for @syncSettingsDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV HTTPS directory'**
+  String get syncSettingsDirectory;
+
+  /// No description provided for @syncSettingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV username'**
+  String get syncSettingsAccount;
+
+  /// No description provided for @syncSettingsPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password / app password (blank to reuse saved credential)'**
+  String get syncSettingsPassword;
+
+  /// No description provided for @syncSettingsConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Check and save WebDAV connection'**
+  String get syncSettingsConnect;
+
+  /// No description provided for @syncSettingsICloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect this device’s iCloud'**
+  String get syncSettingsICloud;
+
+  /// No description provided for @syncSettingsConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting checks the service without uploading. Credentials are stored securely. Changing service or account pauses the previous queue.'**
+  String get syncSettingsConnectHint;
+
+  /// No description provided for @syncSettingsOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync once'**
+  String get syncSettingsOnce;
+
+  /// No description provided for @syncSettingsPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get syncSettingsPause;
+
+  /// No description provided for @syncSettingsPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · runs only when you choose Sync once'**
+  String get syncSettingsPaused;
+
+  /// No description provided for @syncSettingsRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Working… Pause stops subsequent transfers; a request already sent may finish.'**
+  String get syncSettingsRunning;
+
+  /// No description provided for @syncSettingsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared changes awaiting confirmation'**
+  String get syncSettingsPending;
+
+  /// No description provided for @syncSettingsConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata objects confirmed by the service'**
+  String get syncSettingsConfirmed;
+
+  /// No description provided for @syncSettingsStaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Objects staged locally, awaiting cloud confirmation'**
+  String get syncSettingsStaged;
+
+  /// No description provided for @syncSettingsReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata objects received'**
+  String get syncSettingsReceived;
+
+  /// No description provided for @syncSettingsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete this operation. Your local content and pending changes are preserved. Check storage or connection and retry.'**
+  String get syncSettingsError;
+
+  /// No description provided for @syncSettingsInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the library code, device name and HTTPS directory. The username must be the service login account.'**
+  String get syncSettingsInvalid;
+
+  /// No description provided for @syncSettingsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The existing library was not found at this service. Check its code and directory; no empty replacement was created.'**
+  String get syncSettingsMissing;
+
+  /// No description provided for @syncSettingsRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Some local data could not be loaded or recovered. Repair it before transferring this library.'**
+  String get syncSettingsRepair;
+
+  /// No description provided for @syncSettingsAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Check your account and app password.'**
+  String get syncSettingsAuth;
+
+  /// No description provided for @syncSettingsAccountChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The account changed. The previous queue is paused. Reconnect explicitly to continue.'**
+  String get syncSettingsAccountChanged;
+
+  /// No description provided for @syncSettingsLegacy.
+  ///
+  /// In en, this message translates to:
+  /// **'This library has earlier sync history that needs migration before it can be transferred. Local history is preserved.'**
+  String get syncSettingsLegacy;
+
+  /// No description provided for @syncSettingsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'This target is missing required history. The queue is preserved; use the original service until migration is available.'**
+  String get syncSettingsHistory;
+
+  /// No description provided for @syncSettingsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload status'**
+  String get syncSettingsRetry;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -78,7 +78,9 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
         }
       }
     }
-    final queued = (await sync.pending())
+    final target = (await sync.transportConnection())?.target.key;
+    final queued = (await sync.pending(target: target))
+        .where((c) => isSyncWireScope(c.scope))
         .where(
           (c) =>
               c.scope == FileLibraryStore._scope(id) ||

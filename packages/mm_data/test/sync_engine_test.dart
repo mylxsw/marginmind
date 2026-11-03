@@ -91,6 +91,22 @@ void main() {
 
   Future<List<SyncCommit>> pending(FileSyncLedger l, Remote r) async =>
       (await l.pending(target: r.target.key)).where((c) => isSyncWireScope(c.scope)).toList();
+  test('content and folder status follow confirmation for the selected account', () async {
+    await a.createFolder('Folder');
+    expect((await a.contentSyncStatus(id)).queued, greaterThan(0));
+    expect((await a.watchOrganization().first).queued, greaterThan(0));
+    await start(x, ra);
+    await x.run();
+    expect((await a.contentSyncStatus(id)).queued, 0);
+    expect((await a.watchOrganization().first).queued, 0);
+    final other = Remote({}, account: 'other');
+    await x.bind(other);
+    expect((await a.contentSyncStatus(id)).queued, greaterThan(0));
+    expect((await a.watchOrganization().first).queued, greaterThan(0));
+    await x.bind(ra);
+    expect((await a.contentSyncStatus(id)).queued, 0);
+    expect((await a.watchOrganization().first).queued, 0);
+  });
   test('two repositories exchange real shared commits and recover delivery without echo or private files', () async {
     final now = DateTime.utc(2026);
     await va.save([

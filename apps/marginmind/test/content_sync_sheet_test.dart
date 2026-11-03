@@ -141,8 +141,11 @@ void main() {
     await pump(tester, sidebar: true);
     await tester.tap(find.byKey(const ValueKey('content-sync-open')));
     await tester.pumpAndSettle();
-    expect(find.text('Saved on this device. No cloud service is connected.'), findsOneWidget);
-    expect(find.text('Saved changes are waiting for a sync service.'), findsOneWidget);
+    expect(
+      find.text('Manage saved content and conflicts here. For service delivery status, open Settings → Sync.'),
+      findsOneWidget,
+    );
+    expect(find.text('Saved changes are awaiting service confirmation.'), findsOneWidget);
     expect(find.textContaining('No conflicts need a choice.'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });

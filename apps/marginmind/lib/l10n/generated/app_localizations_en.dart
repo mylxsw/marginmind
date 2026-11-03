@@ -6305,10 +6305,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncTitle => 'Sync and recovery';
 
   @override
-  String get syncLocalOnly => 'Saved on this device. No cloud service is connected.';
+  String get syncLocalOnly =>
+      'Manage saved content and conflicts here. For service delivery status, open Settings → Sync.';
 
   @override
-  String get syncWaitingTransfer => 'Saved changes are waiting for a sync service.';
+  String get syncWaitingTransfer => 'Saved changes are awaiting service confirmation.';
 
   @override
   String get syncRecovered =>
@@ -6556,4 +6557,118 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0. Open the translation beside its source to compare and choose.';
   }
+
+  @override
+  String get syncSettingsTitle => 'Sync';
+
+  @override
+  String get syncSettingsScope =>
+      'Sync text, study history and organization manually. Document files and images are not transferred yet. Keep the originals on each device.';
+
+  @override
+  String get syncSettingsLocal =>
+      'This library is stored on this device. Preparing sync preserves its existing content.';
+
+  @override
+  String get syncSettingsUnavailable => 'Sync setup is unavailable on this platform or this build.';
+
+  @override
+  String get syncSettingsNew => 'Create a shared library';
+
+  @override
+  String get syncSettingsJoin => 'Join an existing library';
+
+  @override
+  String get syncSettingsLibraryId => 'Library code';
+
+  @override
+  String get syncSettingsDeviceName => 'This device’s name';
+
+  @override
+  String get syncSettingsPrepare => 'Prepare this library';
+
+  @override
+  String get syncSettingsIdentityHint =>
+      'To join, copy the library code from the other device. Existing local content will also be included; conflicting histories are preserved for review. The library identity cannot be switched after initialization.';
+
+  @override
+  String get syncSettingsRestart =>
+      'Preparation saved. Close and reopen Foliarc to initialize sync safely, then connect a service here. Nothing has been uploaded.';
+
+  @override
+  String get syncSettingsDirectory => 'WebDAV HTTPS directory';
+
+  @override
+  String get syncSettingsAccount => 'WebDAV username';
+
+  @override
+  String get syncSettingsPassword => 'Password / app password (blank to reuse saved credential)';
+
+  @override
+  String get syncSettingsConnect => 'Check and save WebDAV connection';
+
+  @override
+  String get syncSettingsICloud => 'Connect this device’s iCloud';
+
+  @override
+  String get syncSettingsConnectHint =>
+      'Connecting checks the service without uploading. Credentials are stored securely. Changing service or account pauses the previous queue.';
+
+  @override
+  String get syncSettingsOnce => 'Sync once';
+
+  @override
+  String get syncSettingsPause => 'Pause';
+
+  @override
+  String get syncSettingsPaused => 'Paused · runs only when you choose Sync once';
+
+  @override
+  String get syncSettingsRunning => 'Working… Pause stops subsequent transfers; a request already sent may finish.';
+
+  @override
+  String get syncSettingsPending => 'Shared changes awaiting confirmation';
+
+  @override
+  String get syncSettingsConfirmed => 'Metadata objects confirmed by the service';
+
+  @override
+  String get syncSettingsStaged => 'Objects staged locally, awaiting cloud confirmation';
+
+  @override
+  String get syncSettingsReceived => 'Metadata objects received';
+
+  @override
+  String get syncSettingsError =>
+      'Could not complete this operation. Your local content and pending changes are preserved. Check storage or connection and retry.';
+
+  @override
+  String get syncSettingsInvalid =>
+      'Check the library code, device name and HTTPS directory. The username must be the service login account.';
+
+  @override
+  String get syncSettingsMissing =>
+      'The existing library was not found at this service. Check its code and directory; no empty replacement was created.';
+
+  @override
+  String get syncSettingsRepair =>
+      'Some local data could not be loaded or recovered. Repair it before transferring this library.';
+
+  @override
+  String get syncSettingsAuth => 'Authentication failed. Check your account and app password.';
+
+  @override
+  String get syncSettingsAccountChanged =>
+      'The account changed. The previous queue is paused. Reconnect explicitly to continue.';
+
+  @override
+  String get syncSettingsLegacy =>
+      'This library has earlier sync history that needs migration before it can be transferred. Local history is preserved.';
+
+  @override
+  String get syncSettingsHistory =>
+      'This target is missing required history. The queue is preserved; use the original service until migration is available.';
+
+  @override
+  String get syncSettingsRetry => 'Reload status';
 }

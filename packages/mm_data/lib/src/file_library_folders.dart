@@ -37,7 +37,9 @@ extension _FileLibraryFolders on FileLibraryStore {
     return LibraryOrganization(
       placements: {for (final record in _sets.values) record.id: record.folderId},
       syncEnabled: true,
-      queued: (await sync.pending()).where((c) => c.scope.startsWith('folders/')).length,
+      queued: (await sync.pending(target: (await sync.transportConnection())?.target.key))
+          .where((c) => c.scope.startsWith('folders/'))
+          .length,
       repairNeeded: sync.projectionErrors.containsKey(_libraryFile.path),
       entries: [
         for (final scope in {...heads.keys.where((s) => s.startsWith('folders/')), ...problems.keys})

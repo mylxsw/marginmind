@@ -6060,10 +6060,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncTitle => '同步与恢复';
 
   @override
-  String get syncLocalOnly => '内容保存在这台设备上，尚未连接云端服务。';
+  String get syncLocalOnly => '在此处理已保存内容和冲突。服务传输状态请查看“设置 → 同步”。';
 
   @override
-  String get syncWaitingTransfer => '已保存的修改正在等待同步服务。';
+  String get syncWaitingTransfer => '已保存的修改正在等待服务确认。';
 
   @override
   String get syncRecovered => '已恢复上次中断编辑时保存的内容，请查看后再确认。';
@@ -6295,4 +6295,106 @@ class AppLocalizationsZh extends AppLocalizations {
   String syncTranslationConflicts(int count) {
     return '有 $count 个译文段落需要选择。请打开原文旁的译文，对照后选择保留的内容。';
   }
+
+  @override
+  String get syncSettingsTitle => '同步';
+
+  @override
+  String get syncSettingsScope => '手动同步文字、学习记录和资料库组织。文档文件和图片暂不传输，请在各设备保留原文件。';
+
+  @override
+  String get syncSettingsLocal => '此资料库保存在本机。准备同步会保留已有内容。';
+
+  @override
+  String get syncSettingsUnavailable => '当前平台或构建暂不支持同步设置。';
+
+  @override
+  String get syncSettingsNew => '创建共享资料库';
+
+  @override
+  String get syncSettingsJoin => '加入已有资料库';
+
+  @override
+  String get syncSettingsLibraryId => '资料库代码';
+
+  @override
+  String get syncSettingsDeviceName => '本机名称';
+
+  @override
+  String get syncSettingsPrepare => '准备此资料库';
+
+  @override
+  String get syncSettingsIdentityHint => '加入时请从另一设备复制资料库代码。已有本机内容也会加入，冲突历史将保留供处理。初始化后不能切换资料库身份。';
+
+  @override
+  String get syncSettingsRestart => '准备信息已保存。请关闭并重新打开 Foliarc，安全初始化后再到此处连接服务。尚未上传任何内容。';
+
+  @override
+  String get syncSettingsDirectory => 'WebDAV HTTPS 目录';
+
+  @override
+  String get syncSettingsAccount => 'WebDAV 用户名';
+
+  @override
+  String get syncSettingsPassword => '密码 / 应用专用密码（留空使用已保存凭据）';
+
+  @override
+  String get syncSettingsConnect => '检查并保存 WebDAV 连接';
+
+  @override
+  String get syncSettingsICloud => '连接本机 iCloud';
+
+  @override
+  String get syncSettingsConnectHint => '连接时只检查服务，不上传内容。凭据存入安全存储，切换服务或账号会暂停原队列。';
+
+  @override
+  String get syncSettingsOnce => '同步一次';
+
+  @override
+  String get syncSettingsPause => '暂停';
+
+  @override
+  String get syncSettingsPaused => '已暂停 · 仅点击“同步一次”时运行';
+
+  @override
+  String get syncSettingsRunning => '正在处理… 暂停会停止后续传输，已发出的请求可能完成。';
+
+  @override
+  String get syncSettingsPending => '待确认的共享变更';
+
+  @override
+  String get syncSettingsConfirmed => '服务已确认的元数据对象';
+
+  @override
+  String get syncSettingsStaged => '仅在本机暂存、等待云端确认的对象';
+
+  @override
+  String get syncSettingsReceived => '已接收的元数据对象';
+
+  @override
+  String get syncSettingsError => '操作未完成。本机内容和待同步变更均保留，请检查存储或连接后重试。';
+
+  @override
+  String get syncSettingsInvalid => '请检查资料库代码、本机名称和 HTTPS 目录。用户名必须是服务的登录账号。';
+
+  @override
+  String get syncSettingsMissing => '此服务中未找到已有资料库。请检查代码和目录；未创建空资料库替代它。';
+
+  @override
+  String get syncSettingsRepair => '部分本机数据未能加载或恢复，请修复后再传输此资料库。';
+
+  @override
+  String get syncSettingsAuth => '认证失败，请检查账号和应用专用密码。';
+
+  @override
+  String get syncSettingsAccountChanged => '账号已变化，原队列已暂停。请明确重新连接后继续。';
+
+  @override
+  String get syncSettingsLegacy => '此资料库含早期同步历史，迁移后才能传输。本机历史已保留。';
+
+  @override
+  String get syncSettingsHistory => '目标服务缺少必要历史。队列已保留；迁移功能完成前请使用原服务。';
+
+  @override
+  String get syncSettingsRetry => '重新读取状态';
 }

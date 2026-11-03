@@ -13,6 +13,7 @@ import 'app/storage.dart';
 import 'app/providers.dart';
 import 'features/assistant/assistant_network.dart';
 import 'settings/app_icon.dart';
+import 'settings/sync_settings_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,10 +33,22 @@ Future<void> main() async {
   }
   final storage = await openStorage();
   final store = storage.store;
+  final sync = SyncSettingsController(
+    store,
+    storage.vocabulary,
+    secrets: const KeychainSecretStore(),
+    canActivate: !kIsWeb && MMPlatformCapabilities.current.secretStore,
+    canStoreSecrets: MMPlatformCapabilities.current.secretStore,
+  );
+  await sync.initialize();
+  // Foreground-only consent ends when the app loses focus or resumes. The
+  // adapter checks the current Apple account again inside each native IO.
+  AppLifecycleListener(onInactive: sync.pause, onResume: sync.pause);
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        syncSettingsControllerProvider.overrideWithValue(sync),
         assistantWebCacheProvider.overrideWithValue(storage.cache),
         studySetRepositoryProvider.overrideWithValue(store),
         contentRepositoryProvider.overrideWithValue(store),
