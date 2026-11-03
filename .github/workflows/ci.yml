@@ -25,6 +25,11 @@ jobs:
       - run: dart format --set-exit-if-changed apps packages
       - run: flutter analyze
       - run: python3 -m unittest discover -s tool/tests
+      - name: WebDAV HTTPS acceptance (isolated synthetic data)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/webdav-test"
+          "$RUNNER_TEMP/webdav-test/bin/pip" install -r tool/webdav-requirements.txt
+          "$RUNNER_TEMP/webdav-test/bin/python" tool/webdav_acceptance.py
       - run: python3 tool/coverage.py
       - uses: actions/upload-artifact@v4
         if: always()

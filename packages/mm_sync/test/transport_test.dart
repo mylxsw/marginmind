@@ -167,6 +167,51 @@ void main() {
       problem(SyncTransportProblem.wrongLibrary),
     );
   });
+  test('DAV matches equivalent encoded segments without accepting path escapes or adjacent folders', () async {
+    var href = '';
+    final directory = Uri.parse('https://dav.example/space%20&%20%E4%B8%AD%E6%96%87/');
+    final root = '${directory.path}foliarc-v2/${syncDigest('library')}/commits/';
+    final encoded = root.replaceAll('&', '%26');
+    final client = MockClient(
+      (_) async => http.Response(
+        '<d:multistatus xmlns:d="DAV:"><d:response><d:href>$href</d:href>'
+        '<d:propstat><d:prop/><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+        '</d:response></d:multistatus>',
+        207,
+      ),
+    );
+    final remote = WebDavSyncTransport(
+      client: client,
+      directory: directory,
+      account: 'a',
+      libraryId: 'library',
+      authorization: 'test',
+    );
+    for (final prefix in ['', 'https://dav.example']) {
+      href = '$prefix$encoded';
+      expect(await remote.listCommits(), isEmpty);
+      href = '$prefix$encoded$objectId.json';
+      expect(await remote.listCommits(), [objectId]);
+    }
+    for (final bad in [
+      encoded.replaceFirst('/commits/', '/commits-other/'),
+      encoded.replaceFirst('/commits/', '%2Fcommits/'),
+      '$encoded%2E%2E/$objectId.json',
+      '$encoded%5c$objectId.json',
+      'https://other.example$encoded$objectId.json',
+    ]) {
+      href = bad;
+      await expectLater(remote.listCommits(), problem(SyncTransportProblem.invalidResponse));
+    }
+    href = '${encoded}nested/$objectId.json';
+    expect(await remote.listCommits(), isEmpty);
+    client.close();
+  });
+  test('unrelated client implementation errors are not hidden as network outages', () async {
+    final client = MockClient((_) async => throw const FormatException('programming error'));
+    await expectLater(dav(client).read('library.json'), throwsFormatException);
+    client.close();
+  });
   test('iCloud staging stays unconfirmed and an account change invalidates in-flight IO', () async {
     final port = Drive();
     expect(

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 
 import 'commit.dart';
+import 'network_error_stub.dart' if (dart.library.io) 'network_error_io.dart';
 import 'transport.dart';
 
 /// WebDAV immutable object store. The configured directory must already exist.
@@ -88,6 +89,14 @@ class WebDavSyncTransport implements SyncObjectTransport {
       throw const SyncTransportException(SyncTransportProblem.unavailable);
     } on http.ClientException {
       throw const SyncTransportException(SyncTransportProblem.unavailable);
+    } catch (error) {
+      // IOClient does not wrap TLS handshake failures. Keep the same bounded,
+      // credential-free failure contract for socket/stream errors as for HTTP
+      // client errors, without importing dart:io into browser builds.
+      if (isNativeNetworkError(error)) {
+        throw const SyncTransportException(SyncTransportProblem.unavailable);
+      }
+      rethrow;
     } finally {
       // IOClient/BrowserClient cancel a timed-out request instead of leaving it
       // running with captured credentials after this operation has failed.
@@ -162,19 +171,30 @@ class WebDavSyncTransport implements SyncObjectTransport {
         throw const FormatException('DAV');
       }
       final ids = <String>{};
+      final prefix = folder.pathSegments.toList()..removeLast(); // Directory's trailing slash.
       for (final response in doc.rootElement.findElements('response', namespaceUri: 'DAV:')) {
         final href = response.getElement('href', namespaceUri: 'DAV:')?.innerText;
         if (href == null) throw const FormatException('Missing href');
-        final uri = folder.resolve(href);
+        final reference = Uri.parse(href);
+        if (reference.pathSegments.any((s) => s == '.' || s == '..' || s.contains('/') || s.contains('\\'))) {
+          throw const FormatException('Invalid href path');
+        }
+        final uri = folder.resolveUri(reference);
+        final segments = uri.pathSegments;
         if (uri.origin != folder.origin ||
             uri.userInfo.isNotEmpty ||
             uri.hasQuery ||
             uri.hasFragment ||
-            !uri.path.startsWith(folder.path)) {
+            segments.length <= prefix.length ||
+            Iterable<int>.generate(prefix.length).any((i) => segments[i] != prefix[i])) {
           throw const FormatException('Foreign href');
         }
-        if (uri.path == folder.path) continue;
-        final relative = uri.path.substring(folder.path.length);
+        // DAV servers may percent-encode characters (e.g. '&') that Dart leaves
+        // literal. Compare decoded segments, never decoded whole paths: an
+        // encoded slash must not turn into a directory boundary.
+        if (segments.length != prefix.length + 1) continue;
+        final relative = segments.last;
+        if (relative.isEmpty) continue;
         if (!RegExp(r'^[a-f0-9]{64}\.json$').hasMatch(relative)) continue;
         final statuses = response.findAllElements('status', namespaceUri: 'DAV:').map((e) => e.innerText.split(' '));
         if (!statuses.any((s) => s.length >= 2 && s[1] == '200')) throw const FormatException('Unavailable child');
