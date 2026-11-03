@@ -556,14 +556,13 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
                               SizedBox(
                                 width: 22,
                                 height: 22,
-                                child: PopupMenuButton<Object>(
-                                  popUpAnimationStyle: AnimationStyle.noAnimation,
-                                  padding: EdgeInsets.zero,
-                                  iconSize: 12,
+                                child: MMDropdownButton<Object>(
                                   tooltip: l.moreTools,
                                   icon: const Icon(MMIcons.more),
                                   onOpened: () => setState(() => _menuOpen = true),
-                                  onCanceled: () => setState(() => _menuOpen = false),
+                                  onClosed: () {
+                                    if (mounted) setState(() => _menuOpen = false);
+                                  },
                                   onSelected: (value) => _perform(() async {
                                     setState(() => _menuOpen = false);
                                     if (value is int) await _session.recolor(note, value);
@@ -577,8 +576,7 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
                                   itemBuilder: (_) => [
                                     PopupMenuItem<Object>(
                                       enabled: false,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                      child: Wrap(
                                         children: [
                                           for (final c in MMAnnotationColor.values)
                                             MMFloatingToolbarColor(

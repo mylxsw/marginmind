@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -8,13 +7,15 @@ import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
+import 'glass.dart';
 
 /// A sheet rising from the bottom of a compact window. Its handle drags it:
 /// down far enough dismisses it. With [expand] it has a medium and a full
 /// height to drag between; otherwise it fits its content. While the soft
 /// keyboard is up the sheet sits on it, and an [expand] sheet takes the
 /// full height. Fills its parent, which should cover the window. On a
-/// touch platform it shares the opaque material of tablet panels.
+/// phone it floats inside the safe area: UIKit glass on iPhone and an opaque
+/// Material surface on Android. Tablet and desktop retain their existing frame.
 class MMBottomSheet extends StatefulWidget {
   const MMBottomSheet({super.key, required this.child, this.onDismiss, this.expand = false, this.scrim = false});
 
@@ -84,10 +85,17 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
     final duration = _dragging ? Duration.zero : MMAppearance.duration(context, MMMotion.layout);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final max = (constraints.maxHeight - safe.top - MMSpacing.s - keyboard).clamp(0.0, double.infinity);
+        final inset = phone ? MMSizes.phoneSheetPadding : 0.0;
+        final bottomInset = phone && keyboard == 0 ? safe.bottom + inset : inset;
+        final max = (constraints.maxHeight - safe.top - MMSpacing.s - keyboard - bottomInset).clamp(
+          0.0,
+          double.infinity,
+        );
         // Compact-height phones have room for one detent only. In portrait,
         // keep the document visible until the user expands the panel.
-        final medium = phone && constraints.maxHeight < constraints.maxWidth ? max : max * MMSizes.bottomSheetMedium;
+        final medium = phone && constraints.maxHeight < constraints.maxWidth
+            ? max
+            : max * (phone ? MMSizes.phoneSheetMedium : MMSizes.bottomSheetMedium);
         final handle = GestureDetector(
           key: const ValueKey('mm-bottom-sheet-handle'),
           behavior: HitTestBehavior.opaque,
@@ -99,7 +107,7 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
             _offset = 0;
           }),
           child: SizedBox(
-            height: MMSizes.bottomSheetHandle,
+            height: max.clamp(0.0, MMSizes.bottomSheetHandle),
             child: Center(
               child: Container(
                 width: 36,
@@ -110,7 +118,7 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
           ),
         );
         // Above the keyboard the home indicator inset no longer applies.
-        final bottom = SizedBox(height: keyboard > 0 ? 0 : safe.bottom);
+        final bottom = SizedBox(height: phone || keyboard > 0 ? 0 : safe.bottom);
         // The sheet already sits on the keyboard and the insets.
         final body = MediaQuery.removeViewInsets(
           context: context,
@@ -125,12 +133,14 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
           ),
         );
         final frame = Padding(
-          padding: EdgeInsets.only(left: safe.left, right: safe.right),
+          padding: EdgeInsets.only(left: phone ? 0 : safe.left, right: phone ? 0 : safe.right),
           child: widget.expand
               ? AnimatedContainer(
                   duration: duration,
                   curve: MMMotion.layoutCurve,
-                  height: keyboard > 0 ? max : (_height ?? medium).clamp(0.0, max),
+                  height: keyboard > 0
+                      ? max
+                      : (_height ?? medium).clamp(max.clamp(0.0, MMSizes.bottomSheetHandle), max),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -153,16 +163,23 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
                   ),
                 ),
         );
-        const radius = BorderRadius.vertical(top: Radius.circular(MMRadii.sheet));
+        final radius = phone
+            ? BorderRadius.circular(
+                defaultTargetPlatform == TargetPlatform.iOS ? MMRadii.phoneSheet : MMRadii.androidSheet,
+              )
+            : const BorderRadius.vertical(top: Radius.circular(MMRadii.sheet));
         final sheet = DecoratedBox(
           key: const ValueKey('mm-bottom-sheet'),
           decoration: BoxDecoration(
-            color: c.windowBackground,
+            color: phone ? null : c.windowBackground,
             borderRadius: radius,
-            border: Border(top: BorderSide(color: c.hairline, width: 0.5)),
+            border: phone ? null : Border(top: BorderSide(color: c.hairline, width: 0.5)),
             boxShadow: c.sheetShadow,
           ),
-          child: frame,
+          child: ClipRRect(
+            borderRadius: radius,
+            child: phone ? MMGlass(borderRadius: radius, opaqueColor: c.windowBackground, child: frame) : frame,
+          ),
         );
         return Stack(
           children: [
@@ -178,9 +195,9 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
             AnimatedPositioned(
               duration: duration,
               curve: MMMotion.layoutCurve,
-              left: 0,
-              right: 0,
-              bottom: keyboard - _offset,
+              left: inset + (phone ? safe.left : 0),
+              right: inset + (phone ? safe.right : 0),
+              bottom: keyboard + bottomInset - _offset,
               child: Material(type: MaterialType.transparency, child: sheet),
             ),
           ],
@@ -197,46 +214,15 @@ class _SheetScope extends InheritedWidget {
   bool updateShouldNotify(_SheetScope oldWidget) => false;
 }
 
-/// Presents [builder] in a fitted [MMBottomSheet] route: the compact form of
-/// sheets and dialogs. Dragging it down pops it like Esc does.
-Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetBuilder builder}) {
-  final c = context.mmColors;
-  final navigator = Navigator.of(context, rootNavigator: true);
-  if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS) {
-    final captured = InheritedTheme.capture(from: context, to: navigator.context);
-    late final _MMCupertinoSheetRoute<T> route;
-    route = _MMCupertinoSheetRoute<T>(
-      showDragHandle: true,
-      reduceMotion: MMAppearance.reduceMotionOf(context),
-      scrollableBuilder: (context, scroll) => captured.wrap(
-        Material(
-          key: const ValueKey('mm-bottom-sheet'),
-          color: c.windowBackground,
-          child: SafeArea(
-            top: true,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-              child: MediaQuery.removeViewInsets(
-                context: context,
-                removeBottom: true,
-                child: _GuardedSheetScroll(
-                  blocked: route.blocked,
-                  sheetController: scroll,
-                  child: _SheetScope(child: Builder(builder: builder)),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    return navigator.push<T>(route);
-  }
+/// Presents phone dialogs and panels in the same floating medium/large frame.
+/// Short contextual menus can opt into a fitted height with [expand] false.
+/// Drag, Escape and system Back all respect the route's PopScope guard.
+Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetBuilder builder, bool expand = true}) {
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: false,
-    barrierColor: c.scrim,
+    barrierColor: Colors.transparent,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: MMAppearance.duration(context, MMMotion.standard),
     pageBuilder: (context, _, _) => capturedThemes.wrap(
@@ -245,6 +231,8 @@ Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetB
         child: FocusScope(
           autofocus: true,
           child: MMBottomSheet(
+            expand: expand && MMInput.of(context).phone,
+            scrim: true,
             onDismiss: () => Navigator.of(context).maybePop(),
             child: Builder(builder: builder),
           ),
@@ -258,80 +246,5 @@ Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetB
         child: child,
       );
     },
-  );
-}
-
-/// CupertinoSheetRoute's direct drag-pop bypasses maybePop. Read the live
-/// disposition before beginning a drag so PopScope-protected forms stay open.
-class _MMCupertinoSheetRoute<T> extends CupertinoSheetRoute<T> {
-  _MMCupertinoSheetRoute({required super.scrollableBuilder, super.showDragHandle, required this.reduceMotion});
-  final bool reduceMotion;
-  @override
-  Duration get transitionDuration => reduceMotion ? Duration.zero : super.transitionDuration;
-  @override
-  Duration get reverseTransitionDuration => reduceMotion ? Duration.zero : super.reverseTransitionDuration;
-  final blocked = ValueNotifier(false);
-  bool _disposed = false;
-  bool _scheduled = false;
-  @override
-  bool get enableDrag => super.enableDrag && popDisposition != RoutePopDisposition.doNotPop;
-  @override
-  void registerPopEntry(PopEntry<Object?> popEntry) {
-    super.registerPopEntry(popEntry);
-    popEntry.canPopNotifier.addListener(_guardChanged);
-    _guardChanged();
-  }
-
-  @override
-  void unregisterPopEntry(PopEntry<Object?> popEntry) {
-    popEntry.canPopNotifier.removeListener(_guardChanged);
-    super.unregisterPopEntry(popEntry);
-    _guardChanged();
-  }
-
-  void _guardChanged() {
-    if (_disposed || _scheduled) return;
-    _scheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scheduled = false;
-      if (_disposed) return;
-      blocked.value = popDisposition == RoutePopDisposition.doNotPop;
-      changedInternalState();
-    });
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    blocked.dispose();
-    super.dispose();
-  }
-}
-
-/// The SDK's sheet scroll position also pops directly, independently of the
-/// route's enableDrag. Use a regular scroll position while a form blocks pop.
-class _GuardedSheetScroll extends StatefulWidget {
-  const _GuardedSheetScroll({required this.blocked, required this.sheetController, required this.child});
-  final ValueListenable<bool> blocked;
-  final ScrollController sheetController;
-  final Widget child;
-  @override
-  State<_GuardedSheetScroll> createState() => _GuardedSheetScrollState();
-}
-
-class _GuardedSheetScrollState extends State<_GuardedSheetScroll> {
-  final _regular = ScrollController();
-  @override
-  void dispose() {
-    _regular.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
-    valueListenable: widget.blocked,
-    child: widget.child,
-    builder: (_, blocked, child) =>
-        PrimaryScrollController(controller: blocked ? _regular : widget.sheetController, child: child!),
   );
 }

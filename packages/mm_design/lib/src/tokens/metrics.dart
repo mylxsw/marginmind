@@ -43,6 +43,7 @@ abstract final class MMRadii {
   static const double phoneReaderToolbar = 28;
   static const double phoneTabBar = 32;
   static const double phoneSheet = 38;
+  static const double androidSheet = 28;
   static const double vocabularyCard = 10;
   static const double vocabularyPos = 4;
   static const double window = 24;
@@ -200,6 +201,7 @@ abstract final class MMSizes {
   /// Bottom sheets of a compact window: the medium height as a fraction of
   /// the space below the safe area top, and the drag handle strip.
   static const double bottomSheetMedium = 0.62;
+  static const double phoneSheetMedium = 0.5;
   static const double bottomSheetHandle = 20;
 
   /// Review rating button under touch.

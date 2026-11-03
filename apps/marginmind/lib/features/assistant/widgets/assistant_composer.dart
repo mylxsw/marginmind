@@ -436,235 +436,244 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
           )
         : CompositedTransformTarget(
             link: _link,
-            child: OverlayPortal(
-              controller: _slash,
-              overlayChildBuilder: (context) => CompositedTransformFollower(
-                link: _link,
-                targetAnchor: Alignment.topLeft,
-                followerAnchor: Alignment.bottomLeft,
-                offset: const Offset(10, -4),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: SizedBox(
-                    width: (_link.leaderSize?.width ?? 300) - 20,
-                    child: commands.isEmpty
-                        ? const SizedBox.shrink()
-                        : PopupList<AssistantSkill>(
-                            key: const ValueKey('assistant-slash-menu'),
-                            items: [for (final s in commands) PopupItem(s, '/${s.command(l)}', icon: s.icon)],
-                            highlighted: _slashAt,
-                            onHover: (i) => setState(() => _slashAt = i),
-                            onSelected: _command,
-                          ),
+            child: MMBackHandler(
+              onBack: () {
+                if (!_slash.isShowing) return false;
+                _slash.hide();
+                return true;
+              },
+              child: OverlayPortal(
+                controller: _slash,
+                overlayChildBuilder: (context) => CompositedTransformFollower(
+                  link: _link,
+                  targetAnchor: Alignment.topLeft,
+                  followerAnchor: Alignment.bottomLeft,
+                  offset: const Offset(10, -4),
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: SizedBox(
+                      width: (_link.leaderSize?.width ?? 300) - 20,
+                      child: commands.isEmpty
+                          ? const SizedBox.shrink()
+                          : PopupList<AssistantSkill>(
+                              key: const ValueKey('assistant-slash-menu'),
+                              items: [for (final s in commands) PopupItem(s, '/${s.command(l)}', icon: s.icon)],
+                              highlighted: _slashAt,
+                              onHover: (i) => setState(() => _slashAt = i),
+                              onSelected: _command,
+                            ),
+                    ),
                   ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, MMSpacing.s, 10, 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (configured &&
-                        quick &&
-                        _text.text.trim().isEmpty &&
-                        !(context.mmTouchPlatform && MediaQuery.viewInsetsOf(context).bottom > 0))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: MMSpacing.xs),
-                        child: _QuickActions(
-                          children: [
-                            for (final s in [AssistantSkill.explain, AssistantSkill.summarize])
-                              _QuickAction(
-                                key: ValueKey('quick-${s.name}'),
-                                label: s.label(l),
-                                icon: s.icon,
-                                onPressed: running || elsewhere || _voice.active
-                                    ? null
-                                    : () => _send(s.prompt(l), s.name),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, MMSpacing.s, 10, 10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (configured &&
+                          quick &&
+                          _text.text.trim().isEmpty &&
+                          !(context.mmTouchPlatform && MediaQuery.viewInsetsOf(context).bottom > 0))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: MMSpacing.xs),
+                          child: _QuickActions(
+                            children: [
+                              for (final s in [AssistantSkill.explain, AssistantSkill.summarize])
+                                _QuickAction(
+                                  key: ValueKey('quick-${s.name}'),
+                                  label: s.label(l),
+                                  icon: s.icon,
+                                  onPressed: running || elsewhere || _voice.active
+                                      ? null
+                                      : () => _send(s.prompt(l), s.name),
+                                ),
+                              Builder(
+                                builder: (button) => _QuickAction(
+                                  key: const ValueKey('quick-more'),
+                                  label: l.assistantMoreActions,
+                                  icon: MMIcons.chevronDown,
+                                  trailing: true,
+                                  onPressed: running || elsewhere || _voice.active ? null : () => _moreActions(button),
+                                ),
                               ),
-                            Builder(
-                              builder: (button) => _QuickAction(
-                                key: const ValueKey('quick-more'),
-                                label: l.assistantMoreActions,
-                                icon: MMIcons.chevronDown,
-                                trailing: true,
-                                onPressed: running || elsewhere || _voice.active ? null : () => _moreActions(button),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    if (_voice.active || (!_voiceNoticeDismissed && _voiceNotice != null)) ...[
-                      _VoiceToolbar(
-                        phase: _voice.phase,
-                        message: _voice.active
-                            ? switch (_voice.phase) {
-                                VoicePhase.connecting => l.voiceConnecting,
-                                VoicePhase.recording => l.voiceListening,
-                                _ => l.voiceFinishing,
-                              }
-                            : _voiceNotice!,
-                        detail: _voiceErrorDetail,
-                        error: _voice.error,
-                        onCancel: _cancelVoice,
-                        onRetry: () => unawaited(_toggleVoice()),
-                        onSettings: () => unawaited(showSettings(context, tab: SettingsTab.voice)),
-                        onDismiss: () => setState(() => _voiceNoticeDismissed = true),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    AssistantTaskActivityView(widget.studySetId),
-                    AnimatedContainer(
-                      key: const ValueKey('assistant-input-container'),
-                      duration: MMMotion.quick,
-                      curve: MMMotion.quickCurve,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _focus.hasFocus ? c.research : c.separator),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (configured &&
-                              chips.isNotEmpty &&
-                              !(MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500))
-                            AssistantContextSummary(
-                              key: ValueKey('composer-contexts-${conversation.id}-${conversation.messages.length}'),
-                              items: chips,
-                              outgoing: outgoing,
-                              onChange: (item) =>
-                                  item.auto ? uiNotifier.toggleAuto(item.id) : uiNotifier.removeContext(item.id),
-                            ),
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: 40 - 14,
-                              maxHeight: context.mmTouchPlatform ? 80 : 140,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(MMSpacing.m, MMSpacing.s, MMSpacing.s, 6),
-                              child: Semantics(
-                                // Keep the label local; EditableText exposes the input role and focus.
-                                container: true,
-                                label: configured ? l.assistantPlaceholder : l.assistantConnectFirst,
-                                child: Material(
-                                  type: MaterialType.transparency,
-                                  child: KeyedSubtree(
-                                    key: _editorKey,
-                                    child: TextField(
-                                      key: const ValueKey('assistant-input'),
-                                      controller: _text,
-                                      focusNode: _focus,
-                                      enabled: configured,
-                                      readOnly: _voice.active,
-                                      minLines: MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500
-                                          ? 1
-                                          : configured && chips.isNotEmpty
-                                          ? 2
-                                          : 3,
-                                      maxLines: null,
-                                      keyboardType: TextInputType.multiline,
-                                      style: t.body.copyWith(
-                                        height: context.mmTouchPlatform ? 1.4 : 20 / 13,
-                                        color: c.label,
-                                      ),
-                                      cursorWidth: 1.5,
-                                      cursorColor: c.research,
-                                      decoration: InputDecoration.collapsed(
-                                        hintText: configured ? l.assistantPlaceholder : l.assistantConnectFirst,
-                                        hintStyle: t.bodySecondary,
+                      if (_voice.active || (!_voiceNoticeDismissed && _voiceNotice != null)) ...[
+                        _VoiceToolbar(
+                          phase: _voice.phase,
+                          message: _voice.active
+                              ? switch (_voice.phase) {
+                                  VoicePhase.connecting => l.voiceConnecting,
+                                  VoicePhase.recording => l.voiceListening,
+                                  _ => l.voiceFinishing,
+                                }
+                              : _voiceNotice!,
+                          detail: _voiceErrorDetail,
+                          error: _voice.error,
+                          onCancel: _cancelVoice,
+                          onRetry: () => unawaited(_toggleVoice()),
+                          onSettings: () => unawaited(showSettings(context, tab: SettingsTab.voice)),
+                          onDismiss: () => setState(() => _voiceNoticeDismissed = true),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      AssistantTaskActivityView(widget.studySetId),
+                      AnimatedContainer(
+                        key: const ValueKey('assistant-input-container'),
+                        duration: MMMotion.quick,
+                        curve: MMMotion.quickCurve,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: _focus.hasFocus ? c.research : c.separator),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (configured &&
+                                chips.isNotEmpty &&
+                                !(MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500))
+                              AssistantContextSummary(
+                                key: ValueKey('composer-contexts-${conversation.id}-${conversation.messages.length}'),
+                                items: chips,
+                                outgoing: outgoing,
+                                onChange: (item) =>
+                                    item.auto ? uiNotifier.toggleAuto(item.id) : uiNotifier.removeContext(item.id),
+                              ),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: 40 - 14,
+                                maxHeight: context.mmTouchPlatform ? 80 : 140,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(MMSpacing.m, MMSpacing.s, MMSpacing.s, 6),
+                                child: Semantics(
+                                  // Keep the label local; EditableText exposes the input role and focus.
+                                  container: true,
+                                  label: configured ? l.assistantPlaceholder : l.assistantConnectFirst,
+                                  child: Material(
+                                    type: MaterialType.transparency,
+                                    child: KeyedSubtree(
+                                      key: _editorKey,
+                                      child: TextField(
+                                        key: const ValueKey('assistant-input'),
+                                        controller: _text,
+                                        focusNode: _focus,
+                                        enabled: configured,
+                                        readOnly: _voice.active,
+                                        minLines: MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500
+                                            ? 1
+                                            : configured && chips.isNotEmpty
+                                            ? 2
+                                            : 3,
+                                        maxLines: null,
+                                        keyboardType: TextInputType.multiline,
+                                        style: t.body.copyWith(
+                                          height: context.mmTouchPlatform ? 1.4 : 20 / 13,
+                                          color: c.label,
+                                        ),
+                                        cursorWidth: 1.5,
+                                        cursorColor: c.research,
+                                        decoration: InputDecoration.collapsed(
+                                          hintText: configured ? l.assistantPlaceholder : l.assistantConnectFirst,
+                                          hintStyle: t.bodySecondary,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) => AssistantConversationRouteControl(
-                                builder: (context, picker, issue) => Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        _BarButton(
-                                          key: _mentionButton,
-                                          icon: MMIcons.mention,
-                                          tooltip: '${l.assistantMention}（@）',
-                                          onPressed: configured && !_voice.active ? _mention : null,
-                                        ),
-                                        if (!context.mmTouchPlatform)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) => AssistantConversationRouteControl(
+                                  builder: (context, picker, issue) => Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
                                           _BarButton(
-                                            key: const ValueKey('assistant-slash'),
-                                            icon: MMIcons.command,
-                                            tooltip: '${l.assistantCommands}（/）',
-                                            onPressed: configured && !_voice.active
-                                                ? () {
-                                                    _text.value = const TextEditingValue(
-                                                      text: '/',
-                                                      selection: TextSelection.collapsed(offset: 1),
-                                                    );
-                                                    _focus.requestFocus();
-                                                  }
+                                            key: _mentionButton,
+                                            icon: MMIcons.mention,
+                                            tooltip: '${l.assistantMention}（@）',
+                                            onPressed: configured && !_voice.active ? _mention : null,
+                                          ),
+                                          if (!context.mmTouchPlatform)
+                                            _BarButton(
+                                              key: const ValueKey('assistant-slash'),
+                                              icon: MMIcons.command,
+                                              tooltip: '${l.assistantCommands}（/）',
+                                              onPressed: configured && !_voice.active
+                                                  ? () {
+                                                      _text.value = const TextEditingValue(
+                                                        text: '/',
+                                                        selection: TextSelection.collapsed(offset: 1),
+                                                      );
+                                                      _focus.requestFocus();
+                                                    }
+                                                  : null,
+                                            ),
+                                          _BarButton(
+                                            key: const ValueKey('assistant-online'),
+                                            icon: MMIcons.web,
+                                            label: constraints.maxWidth < 400
+                                                ? null
+                                                : (conversation.online ? l.assistantOnline : l.assistantOffline),
+                                            color: conversation.online ? c.research : c.secondaryLabel,
+                                            tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
+                                            selected: conversation.online,
+                                            onPressed: configured
+                                                ? () => unawaited(_setOnline(!conversation.online))
                                                 : null,
                                           ),
-                                        _BarButton(
-                                          key: const ValueKey('assistant-online'),
-                                          icon: MMIcons.web,
-                                          label: constraints.maxWidth < 400
-                                              ? null
-                                              : (conversation.online ? l.assistantOnline : l.assistantOffline),
-                                          color: conversation.online ? c.research : c.secondaryLabel,
-                                          tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
-                                          selected: conversation.online,
-                                          onPressed: configured
-                                              ? () => unawaited(_setOnline(!conversation.online))
-                                              : null,
-                                        ),
-                                        Expanded(
-                                          child: Align(
-                                            key: const ValueKey('assistant-model'),
-                                            alignment: Alignment.centerRight,
-                                            child: picker,
+                                          Expanded(
+                                            child: Align(
+                                              key: const ValueKey('assistant-model'),
+                                              alignment: Alignment.centerRight,
+                                              child: picker,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: MMSpacing.xs),
-                                        _BarButton(
-                                          key: const ValueKey('assistant-voice'),
-                                          icon: _voice.phase == VoicePhase.recording
-                                              ? MMIcons.stop
-                                              : MMIcons.microphone,
-                                          tooltip: _voice.phase == VoicePhase.recording ? l.voiceFinish : l.voiceStart,
-                                          color: _voice.active ? c.research : null,
-                                          onPressed:
-                                              configured && (!_voice.active || _voice.phase == VoicePhase.recording)
-                                              ? () => unawaited(_toggleVoice())
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _SendButton(
-                                          running: running,
-                                          enabled: canSend,
-                                          onSend: () => _send(),
-                                          onStop: () =>
-                                              unawaited(ref.read(assistantControllerProvider.notifier).stop()),
-                                        ),
-                                      ],
-                                    ),
-                                    if (issue != null)
-                                      Padding(padding: const EdgeInsets.fromLTRB(6, 4, 6, 0), child: issue),
-                                  ],
+                                          const SizedBox(width: MMSpacing.xs),
+                                          _BarButton(
+                                            key: const ValueKey('assistant-voice'),
+                                            icon: _voice.phase == VoicePhase.recording
+                                                ? MMIcons.stop
+                                                : MMIcons.microphone,
+                                            tooltip: _voice.phase == VoicePhase.recording
+                                                ? l.voiceFinish
+                                                : l.voiceStart,
+                                            color: _voice.active ? c.research : null,
+                                            onPressed:
+                                                configured && (!_voice.active || _voice.phase == VoicePhase.recording)
+                                                ? () => unawaited(_toggleVoice())
+                                                : null,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _SendButton(
+                                            running: running,
+                                            enabled: canSend,
+                                            onSend: () => _send(),
+                                            onStop: () =>
+                                                unawaited(ref.read(assistantControllerProvider.notifier).stop()),
+                                          ),
+                                        ],
+                                      ),
+                                      if (issue != null)
+                                        Padding(padding: const EdgeInsets.fromLTRB(6, 4, 6, 0), child: issue),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

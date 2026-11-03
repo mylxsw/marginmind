@@ -127,7 +127,7 @@ class ModelRoutePicker extends StatelessWidget {
       minWidth: box.size.width < 220 ? 220 : box.size.width,
       entries: [
         if (followLabel != null) ...[
-          MMMenuItem(followLabel!, () => change(null), checked: selected == null, shortcut: followNote),
+          MMMenuItem(followLabel!, () => change(null), checked: selected == null, detail: followNote),
           if (groups.isNotEmpty) const MMMenuDivider(),
         ],
         for (final (i, group) in groups.indexed) ...[
@@ -138,7 +138,7 @@ class ModelRoutePicker extends StatelessWidget {
               option.label,
               option.disabledReason == null ? () => change(option.model) : null,
               checked: option.model == selected,
-              shortcut: option.disabledReason ?? option.note,
+              detail: option.disabledReason ?? option.note,
               disabledReason: option.disabledReason,
             ),
         ],

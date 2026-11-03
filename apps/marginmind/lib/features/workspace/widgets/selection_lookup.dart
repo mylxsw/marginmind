@@ -43,6 +43,12 @@ Future<void> showSelectionLookup(
       viewport: viewport,
     );
   }
+  if (MMInput.of(context).phone) {
+    return showMMBottomSheet<void>(
+      context: context,
+      builder: (_) => inScope(context, SelectionLookup(studySetId: studySetId, paragraph: paragraph, onAsk: onAsk)),
+    );
+  }
   final placement = QuickActionsPlacement(
     toolbar: toolbar,
     selection: selection,

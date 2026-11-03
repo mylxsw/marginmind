@@ -192,6 +192,26 @@ Future<ServiceProtocol?> showServiceList(BuildContext anchor) {
     (ServiceProtocol.gemini, ServiceBrand.gemini, 'Google Gemini'),
     (ServiceProtocol.ollama, ServiceBrand.ollama, l.settingsOllamaLocal),
   ];
+  if (MMInput.of(anchor).phone) {
+    return showMMPhoneDropdown<ServiceProtocol>(
+      anchor,
+      title: l.settingsAddService,
+      entries: [
+        for (final (protocol, brand, name) in services)
+          MMDropdownItem<ServiceProtocol>(
+            key: ValueKey('service-option-${protocol.name}'),
+            value: protocol,
+            child: Row(
+              children: [
+                ServiceLogo(brand: brand, name: name, size: MMSizes.field),
+                const SizedBox(width: MMSpacing.s),
+                Expanded(child: Text(name)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
   return showGeneralDialog<ServiceProtocol>(
     context: anchor,
     barrierDismissible: true,

@@ -81,6 +81,40 @@ class CardImage extends StatelessWidget {
 /// A modal image preview. Its scope is captured before opening the route.
 Future<void> showCardImagePreview(BuildContext context, String fileName) {
   final resolve = CardImageScope.maybeOf(context);
+  if (MMInput.of(context).phone) {
+    return showMMBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m),
+              child: Row(
+                children: [
+                  Expanded(child: Text(context.l10n.previewImage, style: context.mmText.headline)),
+                  MMIconButton(
+                    icon: MMIcons.close,
+                    tooltip: context.l10n.closePanel,
+                    onPressed: () => Navigator.of(sheetContext).maybePop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: InteractiveViewer(
+                minScale: 0.25,
+                maxScale: 8,
+                child: resolve == null
+                    ? CardImage(fileName, fullResolution: true)
+                    : CardImageScope(resolve: resolve, child: CardImage(fileName, fullResolution: true)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   return showDialog<void>(
     context: context,
     builder: (context) => CallbackShortcuts(

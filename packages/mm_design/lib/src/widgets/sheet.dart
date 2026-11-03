@@ -204,17 +204,7 @@ class MMSheet extends StatelessWidget {
         ),
       );
       if (!MMInput.of(context).phone) return frame;
-      return LayoutBuilder(
-        builder: (context, bounds) => SingleChildScrollView(
-          primary: false,
-          physics: bounds.maxHeight < 240 ? null : const NeverScrollableScrollPhysics(),
-          // Keep the field subtree mounted as the keyboard changes the height.
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: bounds.maxHeight < 240 ? double.infinity : bounds.maxHeight),
-            child: frame,
-          ),
-        ),
-      );
+      return _PhoneSheetFrame(child: frame);
     }
     return Material(
       type: MaterialType.transparency,
@@ -226,8 +216,55 @@ class MMSheet extends StatelessWidget {
           border: Border.all(color: c.hairline, width: 0.5),
           boxShadow: c.sheetShadow,
         ),
-        child: MMDialogScope(child: column),
+        child: MMDialogScope(
+          child: Material(type: MaterialType.transparency, child: column),
+        ),
       ),
     );
   }
+}
+
+/// Retains the editor subtree across size changes and scrolls the focused field
+/// into view when a landscape keyboard leaves too little room for the form.
+class _PhoneSheetFrame extends StatefulWidget {
+  const _PhoneSheetFrame({required this.child});
+  final Widget child;
+  @override
+  State<_PhoneSheetFrame> createState() => _PhoneSheetFrameState();
+}
+
+class _PhoneSheetFrameState extends State<_PhoneSheetFrame> {
+  BoxConstraints? _lastBounds;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, bounds) {
+      if (_lastBounds != bounds) {
+        _lastBounds = bounds;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final focused = FocusManager.instance.primaryFocus?.context;
+          if (focused == null || !focused.mounted) return;
+          var inside = false;
+          focused.visitAncestorElements((element) {
+            if (identical(element, this.context)) {
+              inside = true;
+              return false;
+            }
+            return true;
+          });
+          if (inside) {
+            Scrollable.ensureVisible(focused, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd);
+          }
+        });
+      }
+      return SingleChildScrollView(
+        primary: false,
+        physics: bounds.maxHeight < 240 ? null : const NeverScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: bounds.maxHeight < 240 ? double.infinity : bounds.maxHeight),
+          child: widget.child,
+        ),
+      );
+    },
+  );
 }

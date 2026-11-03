@@ -34,13 +34,8 @@ Future<bool?> showAssistantQuickActions(
   ({String mapId, String? parentId})? insertionTarget,
   PanelOrigin origin = PanelOrigin.reader,
   List<String>? expansionTargets,
-}) => showGeneralDialog<bool>(
-  context: context,
-  barrierColor: Colors.transparent,
-  barrierDismissible: true,
-  barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-  transitionDuration: MMMotion.popup,
-  pageBuilder: (_, _, _) => inScope(
+}) {
+  Widget content() => inScope(
     context,
     _QuickActionsLayer(
       placement: QuickActionsPlacement(
@@ -73,9 +68,20 @@ Future<bool?> showAssistantQuickActions(
             )
           : null,
     ),
-  ),
-  transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
-);
+  );
+  if (MMInput.of(context).phone) {
+    return showMMBottomSheet<bool>(context: context, builder: (_) => content());
+  }
+  return showGeneralDialog<bool>(
+    context: context,
+    barrierColor: Colors.transparent,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    transitionDuration: MMMotion.popup,
+    pageBuilder: (_, _, _) => content(),
+    transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
+  );
+}
 
 /// Keeps the toolbar in place and puts the answer below it, or above the
 /// toolbar if that side has more room. Long answers scroll inside the card.
@@ -134,6 +140,25 @@ class _QuickActionsLayerState extends State<_QuickActionsLayer> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      if (MMBottomSheet.contains(context)) {
+        return PopScope(
+          canPop: !_expansionOpen,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && _expansionOpen) _closeExpansion();
+          },
+          child: Stack(
+            key: const ValueKey('quick-actions-layer'),
+            fit: StackFit.expand,
+            children: [
+              Offstage(
+                offstage: _expansionOpen,
+                child: widget.menuBuilder(_expansionOpen, () => setState(() => _expansionOpen = true), _closeExpansion),
+              ),
+              if (_expansionOpen && widget.expansionBuilder != null) widget.expansionBuilder!(true, _closeExpansion),
+            ],
+          ),
+        );
+      }
       final compact = constraints.maxWidth - 16 < QuickActionsSidePlacement.combinedWidth;
       final hideMenu = compact && _expansionOpen;
       return CustomMultiChildLayout(

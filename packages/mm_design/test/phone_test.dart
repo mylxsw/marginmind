@@ -126,10 +126,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Fits the window below the safe area top; the long body scrolls.
+      // Starts at medium height and floats above the home indicator.
       final rect = tester.getRect(sheet);
-      expect(rect.bottom, 800);
-      expect(rect.top, 40 + MMSpacing.s);
+      expect(rect.bottom, 800 - 30 - MMSizes.phoneSheetPadding);
+      expect(rect.left, MMSizes.phoneSheetPadding);
+      expect(rect.right, 400 - MMSizes.phoneSheetPadding);
+      expect(rect.height, (800 - 40 - MMSpacing.s - 30 - MMSizes.phoneSheetPadding) * MMSizes.phoneSheetMedium);
       expect(find.text('OK'), findsOneWidget);
       expect(tester.takeException(), isNull);
       // A short drag springs back.
@@ -146,7 +148,7 @@ void main() {
         builder: (_) => const SizedBox(height: 120, child: Text('Settings')),
       );
       await tester.pumpAndSettle();
-      expect(tester.getRect(sheet).height, MMSizes.bottomSheetHandle + 120 + 30);
+      expect(tester.getRect(sheet).height, rect.height);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
@@ -294,7 +296,7 @@ void main() {
         showMMMenu(context, position: const Offset(10, 10), entries: entries(log));
         await tester.pumpAndSettle();
         expect(sheet, findsOneWidget);
-        expect(tester.getRect(sheet).bottom, 800 - 30);
+        expect(tester.getRect(sheet).bottom, 800 - 30 - MMSizes.phoneSheetPadding);
         expect(
           tester.getSize(find.ancestor(of: find.text('Rename'), matching: find.byType(MMInteractive))).height,
           MMSizes.actionSheetRow,

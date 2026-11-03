@@ -118,7 +118,7 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
         pageBuilder: (_, _, _) => inScope(
           context,
           CustomSingleChildLayout(
-            delegate: AnnotationPalettePlacement(anchor),
+            delegate: AnnotationPalettePlacement.of(context, anchor),
             child: Material(
               type: MaterialType.transparency,
               child: SingleChildScrollView(
@@ -149,77 +149,84 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
     final colors = [..._colors];
     if (colors.isEmpty) colors.add(widget.color);
     final l = context.l10n, c = context.mmColors;
-    return OverlayPortal(
-      controller: _overlay,
-      overlayChildBuilder: (context) => CustomSingleChildLayout(
-        delegate: AnnotationPalettePlacement(boundsOf(_anchor.currentContext!)),
-        child: TapRegion(
-          groupId: annotationTapGroup(widget.studySetId),
-          onTapOutside: (_) {
-            if (!_custom) _close();
-          },
-          child: CallbackShortcuts(
-            bindings: {const SingleActivator(LogicalKeyboardKey.escape): _close},
-            child: FocusScope(
-              node: _paletteFocus,
-              autofocus: true,
-              child: Material(
-                type: MaterialType.transparency,
-                child: SingleChildScrollView(
-                  key: const ValueKey('annotation-color-palette'),
-                  scrollDirection: Axis.horizontal,
-                  child: MMFloatingToolbar(
-                    children: [
-                      for (final color in colors)
-                        MMFloatingToolbarColor(
-                          color: color,
-                          tooltip: l.colorName(color),
-                          selected: color == widget.color,
-                          onPressed: _busy ? null : () => _change(color: color),
-                        ),
-                      AnnotationMoreColorsButton(onPressed: _busy ? null : _more),
-                      if (widget.underline) ...[
-                        const MMToolbarDivider(),
-                        AnnotationLineStylePicker(
-                          value: style,
-                          onChanged: _busy ? null : (v) => _change(style: v),
-                        ),
+    return MMBackHandler(
+      onBack: () {
+        if (!_open) return false;
+        _close();
+        return true;
+      },
+      child: OverlayPortal(
+        controller: _overlay,
+        overlayChildBuilder: (context) => CustomSingleChildLayout(
+          delegate: AnnotationPalettePlacement.of(context, boundsOf(_anchor.currentContext!)),
+          child: TapRegion(
+            groupId: annotationTapGroup(widget.studySetId),
+            onTapOutside: (_) {
+              if (!_custom) _close();
+            },
+            child: CallbackShortcuts(
+              bindings: {const SingleActivator(LogicalKeyboardKey.escape): _close},
+              child: FocusScope(
+                node: _paletteFocus,
+                autofocus: true,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: SingleChildScrollView(
+                    key: const ValueKey('annotation-color-palette'),
+                    scrollDirection: Axis.horizontal,
+                    child: MMFloatingToolbar(
+                      children: [
+                        for (final color in colors)
+                          MMFloatingToolbarColor(
+                            color: color,
+                            tooltip: l.colorName(color),
+                            selected: color == widget.color,
+                            onPressed: _busy ? null : () => _change(color: color),
+                          ),
+                        AnnotationMoreColorsButton(onPressed: _busy ? null : _more),
+                        if (widget.underline) ...[
+                          const MMToolbarDivider(),
+                          AnnotationLineStylePicker(
+                            value: style,
+                            onChanged: _busy ? null : (v) => _change(style: v),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-      child: MMInteractive(
-        key: _anchor,
-        tooltip: l.galleryColors,
-        semanticLabel: '${l.galleryColors}: ${l.colorName(widget.color)}',
-        onTap: widget.enabled ? _toggle : null,
-        builder: (context, s) {
-          final size = widget.compact && !context.mmTouch ? const Size(30, 26) : context.mmToolbarButton;
-          return Container(
-            width: size.width,
-            height: size.height,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: s.hovered || s.pressed ? c.hover : Colors.transparent,
-              borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
-              border: s.focused ? Border.all(color: c.accent, width: 2) : null,
-            ),
-            child: Container(
-              key: const ValueKey('annotation-current-color'),
-              width: 16,
-              height: 16,
+        child: MMInteractive(
+          key: _anchor,
+          tooltip: l.galleryColors,
+          semanticLabel: '${l.galleryColors}: ${l.colorName(widget.color)}',
+          onTap: widget.enabled ? _toggle : null,
+          builder: (context, s) {
+            final size = widget.compact && !context.mmTouch ? const Size(30, 26) : context.mmToolbarButton;
+            return Container(
+              width: size.width,
+              height: size.height,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.enabled ? widget.color.color : widget.color.color.withValues(alpha: .3),
+                color: s.hovered || s.pressed ? c.hover : Colors.transparent,
+                borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
+                border: s.focused ? Border.all(color: c.accent, width: 2) : null,
               ),
-            ),
-          );
-        },
+              child: Container(
+                key: const ValueKey('annotation-current-color'),
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.enabled ? widget.color.color : widget.color.color.withValues(alpha: .3),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

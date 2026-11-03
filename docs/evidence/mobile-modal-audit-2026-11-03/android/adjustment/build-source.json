@@ -1,0 +1,7 @@
+{
+  "device": "emulator-5554",
+  "test": "mobile_map_adjust_sheet_acceptance_test.dart",
+  "commit": "531b11ecdf621a53e63d84c25f09fcd89dd550de",
+  "dart_source_sha256": "afbc7bf0061f09ff1a8e22fcbdb73c350938a07718fb409684cbfaa355dc56ca",
+  "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e"
+}

@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/private/tmp/mm-phone-selection-iphone-complete/native-Landscape.xcresult
+
+2026-11-03 15:11:34.692 xcodebuild[91033:9558157] [MT] IDETestOperationsObserverDebug: 7.398 elapsed -- Testing started completed.
+2026-11-03 15:11:34.692 xcodebuild[91033:9558157] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-03 15:11:34.692 xcodebuild[91033:9558157] [MT] IDETestOperationsObserverDebug: 7.398 sec, +7.398 sec -- end
+Testing started

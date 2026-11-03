@@ -305,6 +305,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       controller.closePanel();
       return true;
     }
+    if (state.pending != null) {
+      controller.dismissPending();
+      return true;
+    }
     if (state.tabs.active?.kind != WorkspaceTabKind.documentMap) {
       controller.activateTab(WorkspaceTab.documents);
       return true;

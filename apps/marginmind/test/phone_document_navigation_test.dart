@@ -5,6 +5,7 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_book/mm_book.dart';
+import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 import 'reader_crop_test.dart' show drain;
@@ -32,7 +33,9 @@ void main() {
     owner.showReaderPanel(ReaderPanelMode.outline);
     await drain(tester);
     final frame = find.byKey(const ValueKey('phone-document-navigation'));
-    expect(tester.getSize(frame).width, 393);
+    expect(tester.getSize(frame).width, 393 - MMSizes.phoneSheetPadding * 2);
+    expect(tester.getRect(frame).left, greaterThanOrEqualTo(MMSizes.phoneSheetPadding));
+    expect(tester.getSize(frame).height, lessThan(852 * .7));
     await tester.tap(find.text('Go to chapter').hitTestable());
     await drain(tester);
     expect(container.read(workspaceProvider('demo-1')).readerPanelVisible, false);

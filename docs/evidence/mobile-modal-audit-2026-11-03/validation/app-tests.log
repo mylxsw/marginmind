@@ -1,0 +1,200 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_selection_surfaces_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_selection_surfaces_test.dart: phone lookup, translation and quick actions use the shared frame (light) (variant: TargetPlatform.iOS)
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_selection_surfaces_test.dart: phone lookup, translation and quick actions use the shared frame (light) (variant: TargetPlatform.iOS)
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_selection_surfaces_test.dart: phone lookup, translation and quick actions use the shared frame (light) (variant: TargetPlatform.iOS)
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:01 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_selection_surfaces_test.dart: phone lookup, translation and quick actions use the shared frame (light) (variant: TargetPlatform.iOS)
+00:01 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_selection_surfaces_test.dart: phone lookup, translation and quick actions use the shared frame (light) (variant: TargetPlatform.iOS)
+00:01 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (5 ms)
+00:01 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_selection_surfaces_test.dart: phone lookup, translation and quick actions use the shared frame (light) (variant: TargetPlatform.iOS)
+00:01 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:02 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:02 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:02 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:02 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored highlight shows its orb on open and document switch
+00:03 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:03 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:03 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:03 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:03 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:03 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+00:04 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored underline shows its orb on open and document switch
+00:04 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 zh: all sections and large text stay usable
+00:04 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:04 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+00:05 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:05 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+00:05 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+00:05 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: restored area shows its orb on open and document switch
+00:06 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_task_recovery_test.dart: production RunStore save failure keeps the same handle and retry button through repeated failures
+00:06 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_task_recovery_test.dart: production RunStore save failure keeps the same handle and retry button through repeated failures
+00:06 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:06 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:06 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:06 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:07 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:07 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:07 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:07 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:07 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:08 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:08 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:08 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:08 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:09 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:09 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:09 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:09 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (false)
+00:09 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/highlight_custom_color_test.dart: inactive brush is neutral; real custom colors apply and are reusable in light (variant: TargetPlatform.macOS)
+00:09 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:10 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:11 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:11 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:11 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/highlight_custom_color_test.dart: custom colors render on PDF marks and margin notes; recolor undo restores exact RGB
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (5 ms)
+00:12 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+PdfDocument initial load: PdfDocumentRefKey(b.pdf) (0 ms)
+00:12 +44: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: phone reading controls complete navigation, annotations, docking and immersion (true)
+00:13 +45: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:13 +46: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: palette, translation and preserved selection in light
+00:13 +47: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: add to map makes a child of selected root, existing highlight=false
+00:14 +48: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: add to map makes a child of selected root, existing highlight=false
+00:14 +49: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: add to map makes a child of selected root, existing highlight=false
+00:14 +50: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: palette, translation and preserved selection in dark
+00:14 +51: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: native light typography and progressively disclosed controls
+00:14 +52: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=false touch=true size=Size(1194.0, 834.0)
+00:15 +53: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=false touch=true size=Size(1194.0, 834.0)
+00:15 +54: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=false touch=true size=Size(1194.0, 834.0)
+00:15 +55: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: unsupported hosts hide lookup pronunciation
+00:15 +56: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: unsupported hosts hide lookup pronunciation
+00:15 +57: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: unsupported hosts hide lookup pronunciation
+00:16 +58: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: unsupported hosts hide lookup pronunciation
+00:16 +59: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: unsupported hosts hide lookup pronunciation
+00:16 +60: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: unsupported hosts hide lookup pronunciation
+00:16 +61: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: unsupported hosts hide lookup pronunciation
+00:16 +62: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: unconfigured model offers setup and settings persist direction
+00:16 +63: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=true touch=true size=Size(900.0, 600.0)
+00:17 +64: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=true touch=true size=Size(900.0, 600.0)
+00:17 +65: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: legacy layout stays intact for phone=true touch=true size=Size(900.0, 600.0)
+00:17 +66: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: lookup skeleton, sentence, add, undo and screenshot in light
+00:17 +67: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: lookup skeleton, sentence, add, undo and screenshot in light
+00:17 +68: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: add to map makes a child of selected excerpt, existing highlight=true
+00:17 +69: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:18 +70: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:18 +71: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:18 +72: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:18 +73: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:18 +74: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:19 +75: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:19 +76: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:19 +77: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_reader_controls_test.dart: reflow reader shares the slot, scrubs the whole book and keeps its chapter
+00:19 +78: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:19 +79: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:20 +80: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:20 +81: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:20 +82: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:20 +83: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:20 +84: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:20 +85: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:20 +86: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:21 +87: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:21 +88: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:21 +89: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:21 +90: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:21 +91: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:21 +92: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:22 +93: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:22 +94: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:22 +95: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:22 +96: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:22 +97: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:22 +98: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=false
+00:22 +99: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: saved sentence works without a model and does not issue another request
+00:22 +100: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: ReaderSelectionCommand.highlight keyboard=false sync=false
+00:22 +101: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:23 +102: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:23 +103: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:23 +104: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:23 +105: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:23 +106: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:23 +107: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:23 +108: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:24 +109: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:24 +110: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: local explain, copy, source note, follow-up and same-conversation sidebar dark=true
+00:24 +111: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: T obeys disabled document text capabilities even with a stale selection
+00:24 +112: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: ReaderSelectionCommand.copy keyboard=true sync=true
+00:24 +113: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: ReaderSelectionCommand.copy keyboard=true sync=true
+00:24 +114: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=false dark=false (variant: TargetPlatform.macOS)
+00:24 +115: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=false dark=false (variant: TargetPlatform.macOS)
+00:24 +116: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=false dark=false (variant: TargetPlatform.macOS)
+00:24 +117: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=false dark=false (variant: TargetPlatform.macOS)
+00:25 +118: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=false dark=false (variant: TargetPlatform.macOS)
+00:25 +119: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=false dark=false (variant: TargetPlatform.macOS)
+00:25 +120: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_toolbar_test.dart: dismiss by outside makes no edits
+00:25 +121: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=true dark=false (variant: TargetPlatform.macOS)
+00:25 +122: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=true dark=false (variant: TargetPlatform.macOS)
+00:25 +123: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=true dark=false (variant: TargetPlatform.macOS)
+00:25 +124: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=true dark=false (variant: TargetPlatform.macOS)
+00:25 +125: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=true dark=false (variant: TargetPlatform.macOS)
+00:26 +126: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=true dark=false (variant: TargetPlatform.macOS)
+00:26 +127: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=false dark=true (variant: TargetPlatform.macOS)
+00:27 +128: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: desktop result actions reveal on hover and keyboard focus, sidebar=true dark=true (variant: TargetPlatform.macOS)
+00:28 +129: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: opening, Esc and outside click keep selection and existing chat intact
+00:28 +130: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: new passage conversation does not inherit chat history or sidebar attachments
+00:29 +131: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: closing a running answer keeps it alive and reopening resumes it; stop works
+00:30 +132: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: unconfigured AI opens setup locally without sending
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'assistant-configure-models'>]: []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart:342:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart line 342
+The test description was:
+  unconfigured AI opens setup locally without sending
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:31 +132 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: unconfigured AI opens setup locally without sending [E]
+  Test failed. See exception logs above.
+  The test description was: unconfigured AI opens setup locally without sending
+  
+00:31 +132 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: highlight entry, outline and verification use the selected passage
+00:32 +133 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: selection change dismisses the floating route
+00:32 +134 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: free question starts locally; unavailable credentials expose model settings in place
+00:32 +135 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: another running chat cannot be replaced by a quick action
+00:33 +136 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: read authorization is actionable within the floating answer
+00:34 +137 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: assistant stays next to the toolbar even when the selection extends below it
+00:34 +138 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: assistant moves above the toolbar near the bottom edge
+00:34 +139 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: a tall selection leaves enough height for the floating answer
+00:34 +140 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: long answer fits and scrolls inside reader at Size(1000.0, 760.0)
+00:34 +141 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: long answer fits and scrolls inside reader at Size(800.0, 600.0)
+00:35 +142 -1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: (tearDownAll)
+00:35 +142 -1: Some tests failed.
+
+Failing tests:
+  /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_quick_actions_test.dart: unconfigured AI opens setup locally without sending

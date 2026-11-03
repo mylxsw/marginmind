@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/private/tmp/mm-modal-iphone-final/native-ModalConfirm.xcresult
+
+2026-11-03 13:02:20.801 xcodebuild[79523:9120743] [MT] IDETestOperationsObserverDebug: 10.408 elapsed -- Testing started completed.
+2026-11-03 13:02:20.801 xcodebuild[79523:9120743] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-03 13:02:20.801 xcodebuild[79523:9120743] [MT] IDETestOperationsObserverDebug: 10.408 sec, +10.408 sec -- end
+Testing started

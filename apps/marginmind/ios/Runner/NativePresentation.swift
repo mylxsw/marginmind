@@ -5,6 +5,7 @@ import UIKit
 /// No additional Flutter engine, repository, or assistant request owner.
 final class NativePresentation {
   private let channel: FlutterMethodChannel
+  private var activeActions: NativeActionsController?
   private var activeColor: NativeColorDelegate?
   private var activeList: NativeListController?
   private var activeForm: NativeFormController?
@@ -22,6 +23,27 @@ final class NativePresentation {
     return root
   }
 
+  /// One presentation policy for outline, forms and reader actions.
+  private func configureSheet(_ navigation: UINavigationController, dark: Bool?) {
+    navigation.modalPresentationStyle = .pageSheet
+    if let dark {
+      let style: UIUserInterfaceStyle = dark ? .dark : .light
+      navigation.overrideUserInterfaceStyle = style
+      // The sheet's material belongs to the presentation controller, outside
+      // the navigation controller's view hierarchy. Keep both traits in sync.
+      if #available(iOS 17.0, *) {
+        navigation.presentationController?.traitOverrides.userInterfaceStyle = style
+      }
+    }
+    if #available(iOS 15.0, *), let sheet = navigation.sheetPresentationController {
+      sheet.detents = [.medium(), .large()]
+      sheet.prefersGrabberVisible = true
+      sheet.prefersScrollingExpandsWhenScrolledToEdge = true
+      sheet.prefersEdgeAttachedInCompactHeight = true
+      sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
+    }
+  }
+
   private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     if call.method == "available" { result(UIDevice.current.userInterfaceIdiom == .phone); return }
     guard UIDevice.current.userInterfaceIdiom == .phone,
@@ -29,6 +51,18 @@ final class NativePresentation {
       result(FlutterError(code: "unavailable", message: "No active iPhone window", details: nil)); return
     }
     switch call.method {
+    case "actions":
+      guard activeActions == nil && activeList == nil && activeForm == nil else {
+        result(FlutterError(code: "busy", message: "A panel is already open", details: nil)); return
+      }
+      let actions = NativeActionsController(args: args, channel: channel) { [weak self] selected in
+        self?.activeActions = nil
+        result(selected)
+      }
+      activeActions = actions
+      let navigation = UINavigationController(rootViewController: actions)
+      configureSheet(navigation, dark: args["dark"] as? Bool)
+      presenter.present(navigation, animated: true) { navigation.presentationController?.delegate = actions }
     case "color":
       guard activeColor == nil else { result(FlutterError(code: "busy", message: nil, details: nil)); return }
       let picker = UIColorPickerViewController()
@@ -43,7 +77,7 @@ final class NativePresentation {
       picker.delegate = delegate
       presenter.present(picker, animated: true) { picker.presentationController?.delegate = delegate }
     case "list":
-      guard activeList == nil && activeForm == nil else {
+      guard activeList == nil && activeForm == nil && activeActions == nil else {
         result(FlutterError(code: "busy", message: "A panel is already open", details: nil)); return
       }
       let list = NativeListController(args: args, channel: channel) { [weak self] selected in
@@ -52,17 +86,10 @@ final class NativePresentation {
       }
       activeList = list
       let navigation = UINavigationController(rootViewController: list)
-      navigation.modalPresentationStyle = .pageSheet
-      if let dark = args["dark"] as? Bool { navigation.overrideUserInterfaceStyle = dark ? .dark : .light }
-      if #available(iOS 15.0, *), let sheet = navigation.sheetPresentationController {
-        sheet.detents = [.medium(), .large()]
-        sheet.prefersGrabberVisible = true
-        sheet.prefersScrollingExpandsWhenScrolledToEdge = true
-        sheet.prefersEdgeAttachedInCompactHeight = true
-      }
+      configureSheet(navigation, dark: args["dark"] as? Bool)
       presenter.present(navigation, animated: true) { navigation.presentationController?.delegate = list }
     case "form":
-      guard activeForm == nil && activeList == nil else {
+      guard activeForm == nil && activeList == nil && activeActions == nil else {
         result(FlutterError(code: "busy", message: "A form is already open", details: nil)); return
       }
       let form = NativeFormController(args: args, channel: channel) { [weak self] values in
@@ -71,15 +98,7 @@ final class NativePresentation {
       }
       activeForm = form
       let navigation = UINavigationController(rootViewController: form)
-      navigation.modalPresentationStyle = .pageSheet
-      if let dark = args["dark"] as? Bool { navigation.overrideUserInterfaceStyle = dark ? .dark : .light }
-      if #available(iOS 15.0, *), let sheet = navigation.sheetPresentationController {
-        sheet.detents = [.medium(), .large()]
-        sheet.prefersGrabberVisible = true
-        sheet.prefersScrollingExpandsWhenScrolledToEdge = true
-        sheet.prefersEdgeAttachedInCompactHeight = true
-        sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
-      }
+      configureSheet(navigation, dark: args["dark"] as? Bool)
       presenter.present(navigation, animated: true) {
         navigation.presentationController?.delegate = form
       }
@@ -417,4 +436,171 @@ private final class NativeColorDelegate: NSObject, UIColorPickerViewControllerDe
   func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) { finish() }
   func presentationControllerDidDismiss(_ presentationController: UIPresentationController) { finish() }
   private func finish() { let complete = completion; completion = nil; complete?(selected) }
+}
+
+
+/// UIKit renders action data; Dart remains the sole owner of reader settings.
+private final class NativeActionsController: UITableViewController, UIAdaptivePresentationControllerDelegate {
+  private var content: [String: Any]
+  private let channel: FlutterMethodChannel
+  private let requestID: String
+  private var completion: ((String?) -> Void)?
+  private var updating = false
+  private var appearance: Bool { content["appearance"] as? Bool == true }
+  private var groups: [[[String: Any]]] {
+    if appearance { return [content["styles"] as? [[String: Any]] ?? []] }
+    return [[]] + (content["groups"] as? [[[String: Any]]] ?? [])
+  }
+
+  init(args: [String: Any], channel: FlutterMethodChannel, completion: @escaping (String?) -> Void) {
+    content = args
+    requestID = args["id"] as? String ?? ""
+    self.channel = channel
+    self.completion = completion
+    super.init(style: .insetGrouped)
+  }
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    view.backgroundColor = .clear
+    tableView.backgroundColor = .clear
+    tableView.accessibilityIdentifier = "native-reader-actions"
+    tableView.rowHeight = UITableView.automaticDimension
+    tableView.estimatedRowHeight = 56
+    refresh()
+  }
+
+  private func refresh() {
+    title = content[appearance ? "appearanceTitle" : "title"] as? String
+    let close = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(closePanel))
+    close.accessibilityLabel = content["close"] as? String
+    close.accessibilityIdentifier = "native-actions-close"
+    navigationItem.leftBarButtonItem = close
+    if appearance {
+      let back = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(back))
+      back.accessibilityLabel = content["back"] as? String
+      back.accessibilityIdentifier = "native-actions-back"
+      navigationItem.rightBarButtonItems = [back]
+    } else {
+      let undo = UIBarButtonItem(image: UIImage(systemName: "arrow.uturn.backward"), style: .plain, target: self, action: #selector(undo))
+      undo.accessibilityLabel = content["undo"] as? String
+      undo.accessibilityIdentifier = "native-actions-undo"
+      undo.isEnabled = content["canUndo"] as? Bool == true
+      navigationItem.rightBarButtonItems = [undo]
+    }
+    tableView.reloadData()
+  }
+
+  @objc private func closePanel() { finish(nil) }
+  @objc private func back() { perform(["id": "back", "inline": true]) }
+  @objc private func undo() { finish("undo") }
+  private func finish(_ selected: String?) {
+    guard let done = completion else { return }
+    completion = nil
+    dismiss(animated: true) { done(selected) }
+  }
+  func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+    let done = completion
+    completion = nil
+    done?(nil)
+  }
+
+  private func perform(_ item: [String: Any]) {
+    guard !updating, item["enabled"] as? Bool != false, let id = item["id"] as? String else { return }
+    guard item["inline"] as? Bool == true else { finish(id); return }
+    updating = true
+    channel.invokeMethod("action", arguments: ["id": requestID, "action": id]) { [weak self] response in
+      guard let self else { return }
+      self.updating = false
+      guard self.completion != nil else { return }
+      if let updated = response as? [String: Any], !updated.isEmpty {
+        self.content = updated
+        self.refresh()
+      }
+    }
+  }
+
+  override func numberOfSections(in tableView: UITableView) -> Int { groups.count }
+  override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    !appearance && section == 0 ? 1 : groups[section].count
+  }
+  override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
+    if !appearance && indexPath.section == 0 {
+      cell.backgroundColor = .clear
+      cell.selectionStyle = .none
+      let stack = UIStackView()
+      stack.axis = .horizontal
+      stack.spacing = 10
+      stack.distribution = .fillEqually
+      stack.translatesAutoresizingMaskIntoConstraints = false
+      for tile in content["tiles"] as? [[String: Any]] ?? [] {
+        var config = UIButton.Configuration.filled()
+        let selected = tile["selected"] as? Bool == true
+        config.title = tile["title"] as? String
+        config.image = UIImage(systemName: tile["icon"] as? String ?? "circle")
+        config.imagePlacement = .top
+        config.imagePadding = 12
+        config.baseBackgroundColor = selected ? .systemBlue : .secondarySystemGroupedBackground
+        config.baseForegroundColor = selected ? .white : .label
+        config.cornerStyle = .large
+        config.titleLineBreakMode = .byWordWrapping
+        config.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 4, bottom: 16, trailing: 4)
+        let button = UIButton(configuration: config, primaryAction: UIAction { [weak self] _ in self?.perform(tile) })
+        button.isEnabled = tile["enabled"] as? Bool != false
+        button.accessibilityIdentifier = "native-actions-" + (tile["id"] as? String ?? "")
+        if selected { button.accessibilityTraits.insert(.selected) }
+        stack.addArrangedSubview(button)
+      }
+      cell.contentView.addSubview(stack)
+      NSLayoutConstraint.activate([
+        stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
+        stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor),
+        stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor),
+        stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor),
+      ])
+      return cell
+    }
+    let row = groups[indexPath.section][indexPath.row]
+    cell.textLabel?.text = row["title"] as? String
+    cell.textLabel?.font = .preferredFont(forTextStyle: .body)
+    cell.textLabel?.adjustsFontForContentSizeCategory = true
+    cell.textLabel?.numberOfLines = 0
+    cell.detailTextLabel?.text = row["value"] as? String
+    cell.imageView?.image = UIImage(systemName: row["icon"] as? String ?? "circle")
+    cell.imageView?.tintColor = .systemBlue
+    let enabled = row["enabled"] as? Bool != false
+    cell.textLabel?.textColor = enabled ? .label : .tertiaryLabel
+    cell.imageView?.alpha = enabled ? 1 : 0.3
+    cell.selectionStyle = enabled ? .default : .none
+    cell.accessibilityIdentifier = "native-actions-" + (row["id"] as? String ?? "")
+    if !enabled { cell.accessibilityTraits.insert(.notEnabled) }
+    if appearance {
+      if row["selected"] as? Bool == true { cell.accessibilityTraits.insert(.selected) }
+      if let paper = row["paper"] as? Int, let ink = row["ink"] as? Int {
+        let color: (Int) -> UIColor = { value in UIColor(red: CGFloat((value >> 16) & 255) / 255,
+          green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255, alpha: 1) }
+        let swatch = UILabel(frame: CGRect(x: 0, y: 0, width: 38, height: 38))
+        swatch.text = "Aa"; swatch.textAlignment = .center
+        swatch.backgroundColor = color(paper); swatch.textColor = color(ink)
+        swatch.layer.cornerRadius = 8; swatch.clipsToBounds = true
+        cell.imageView?.image = nil
+        let accessory = UIView(frame: CGRect(x: 0, y: 0, width: 70, height: 38))
+        accessory.addSubview(swatch)
+        let check = UIImageView(image: UIImage(systemName: "checkmark"))
+        check.frame = CGRect(x: 48, y: 9, width: 20, height: 20)
+        check.tintColor = .systemBlue
+        check.alpha = row["selected"] as? Bool == true ? 1 : 0
+        accessory.addSubview(check)
+        cell.accessoryView = accessory
+      }
+    } else if enabled { cell.accessoryType = .disclosureIndicator }
+    return cell
+  }
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    tableView.deselectRow(at: indexPath, animated: true)
+    guard appearance || indexPath.section != 0 else { return }
+    perform(groups[indexPath.section][indexPath.row])
+  }
 }

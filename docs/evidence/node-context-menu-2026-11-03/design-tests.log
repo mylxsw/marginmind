@@ -1,0 +1,63 @@
+Resolving dependencies in `/Users/mylxsw/Workspace/codes/vibe/marginmind`...
+Downloading packages...
+  _fe_analyzer_shared 103.0.0 (111.0.0 available)
+  analyzer 13.3.0 (14.7.0 available)
+  archive 4.5.2 (4.6.0 available)
+  built_collection 5.1.2 (6.0.0 available)
+  cli_util 0.4.2 (0.6.0 available)
+  connectivity_plus 6.1.5 (7.3.2 available)
+  coverage 1.15.1 (1.16.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  cupertino_ui 1.1.4 (1.1.5 available)
+  dart_agent_core 2.1.8 (2.1.9 available)
+  dbus 0.7.15 (0.8.0 available)
+  http2 2.3.1 (3.1.0 available)
+  jni 1.1.0 (1.1.1 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  material_ui 1.8.0 (1.9.0 available)
+  nm 0.5.0 (0.6.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  pdfium_dart 0.4.0 (0.4.1 available)
+  pdfium_flutter 0.4.0 (0.4.1 available)
+  pdfrx 2.10.1 (2.11.0 available)
+  pdfrx_engine 0.8.0 (0.9.0 available)
+  posix 6.5.2 (6.5.4 available)
+  screen_retriever 0.2.2 (0.3.0 available)
+  shared_preferences_android 2.5.3 (2.5.4 available)
+  shared_preferences_foundation 2.6.0 (2.6.1 available)
+  test 1.31.1 (1.33.0 available)
+  test_api 0.7.12 (0.7.15 available)
+  test_core 0.6.18 (0.6.21 available)
+  vector_graphics 1.2.4 (1.2.6 available)
+  vector_math 2.4.3 (2.4.4 available)
+  xml 7.0.1 (7.1.0 available)
+Got dependencies in `/Users/mylxsw/Workspace/codes/vibe/marginmind`!
+33 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.iOS)
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMTabBar iOS: equal tabs over the home indicator; disabled tabs ignore taps (variant: TargetPlatform.iOS)
+00:00 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_test.dart: menu clamps to screen, disables items, selects and dismisses
+00:00 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/menu_test.dart: menu clamps to screen, disables items, selects and dismisses
+00:00 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: false) (variant: TargetPlatform.android)
+00:00 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a compact sheet or dialog rises from the bottom; dragging down or Esc pops it
+00:00 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: false, dark: true) (variant: TargetPlatform.iOS)
+00:00 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet landscape phone forms stay bottom sheets and scroll above a tall keyboard
+00:00 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: false) (variant: TargetPlatform.iOS)
+00:00 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMBottomSheet a regular tablet window keeps the centered sheet
+00:00 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: false) (variant: TargetPlatform.android)
+00:00 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: false) (variant: TargetPlatform.android)
+00:00 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: action sheet a compact window lists the items above Cancel (touch)
+00:00 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: true) (variant: TargetPlatform.iOS)
+00:00 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: action sheet a compact window lists the items above Cancel (mouse)
+00:00 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: true) (variant: TargetPlatform.android)
+00:01 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: true) (variant: TargetPlatform.android)
+00:01 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_context_menu_test.dart: long phone context menu aligns, scrolls and selects (portal: true, dark: true) (variant: TargetPlatform.android)
+00:01 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_test.dart: MMWindowScaffold floats the bottom bar over the content until the keyboard rises; the sheet covers both
+00:01 +23: All tests passed!

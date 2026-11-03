@@ -20,6 +20,7 @@ import '../../assistant/widgets/expansion_widgets.dart';
 import '../../map_generation/map_generation_controller.dart' show MapSkeletonItem;
 import 'card_field.dart';
 import 'map_drop.dart';
+import 'phone_map_selection.dart';
 import 'map_ghost_node.dart';
 import 'map_source_chip.dart';
 import 'mind_map_geometry.dart';
@@ -144,6 +145,8 @@ class MindMapCanvas extends StatefulWidget {
     this.previewStyle,
     this.toolbarTopInset = 60,
     this.touchSelectionMode,
+    this.phoneSelection,
+    this.onPhoneSelectionDone,
     this.expansion,
     this.skeletons,
     this.draftSources = const {},
@@ -180,6 +183,8 @@ class MindMapCanvas extends StatefulWidget {
   /// When supplied, the pane provides the touch selection control in its
   /// measured header, instead of a separate floating button.
   final bool? touchSelectionMode;
+  final PhoneMapSelectionController? phoneSelection;
+  final VoidCallback? onPhoneSelectionDone;
 
   /// The selected topic, excerpt, image or research note was resized (P2-C06) by
   /// its handle; null width when the handle is double-clicked (default).
@@ -776,7 +781,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   void _ensureVisible(String id, {bool settled = false}) {
     id = _visibleNode(id);
     final rect = _layout?.rects[id];
-    if (!mounted || rect == null || _viewport.isEmpty) return;
+    if (!mounted || rect == null || _viewport.isEmpty || _dragging != null || widget.phoneSelection != null) return;
     final m = widget.transformation.value;
     final scale = mapScale(m);
     final tx = m.storage[12], ty = m.storage[13];
@@ -787,7 +792,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     var dx = 0.0, dy = 0.0;
     if (right > _viewport.width - margin) dx = _viewport.width - margin - right;
     if (left + dx < margin) dx = margin - left;
-    if (bottom > _viewport.height - margin) dy = _viewport.height - margin - bottom;
+    final bottomClearance = MMInput.of(context).phone && widget.selectionToolbar != null && field == null
+        ? 30 + 60 + MMSpacing.m
+        : margin;
+    if (bottom > _viewport.height - bottomClearance) dy = _viewport.height - bottomClearance - bottom;
     if (top + dy < _topClearance) dy = _topClearance - top;
     if (dx == 0 && dy == 0) return;
     widget.transformation.value = m.clone()..setTranslationRaw(tx + dx, ty + dy, 0);
@@ -797,7 +805,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   double get _topClearance => math.max(
     MMSpacing.xxxl * 2 + MMSpacing.l,
     widget.toolbarTopInset +
-        (widget.selectionToolbar == null
+        (widget.selectionToolbar == null || MMInput.of(context).phone
             ? 0
             : context.mmToolbarButton.height + (context.mmTablet ? 4 : 6) + 22 + (context.mmTablet ? 0 : MMSpacing.s)),
   );
@@ -1577,6 +1585,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           moving: moving,
           rootId: rootNodeId,
           gap: _siblingGap,
+          minHitHeight: MMInput.of(context).phone ? 44 / mapScale(widget.transformation.value) : 0,
+          horizontalHitPadding: MMInput.of(context).phone ? 12 / mapScale(widget.transformation.value) : 0,
         );
       }
     }
@@ -1635,11 +1645,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   }
 
   Widget _draggable(String id, _NodeSpec spec, _NodeLook? look, Widget child) {
-    if (id == rootNodeId) return child;
+    if (id == rootNodeId || widget.phoneSelection != null) return child;
     final scale = mapScale(widget.transformation.value);
     final count = widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1;
+    final phone = MMInput.of(context).phone;
     final feedback = Transform.translate(
-      offset: const Offset(-12, -12),
+      offset: phone ? Offset.zero : const Offset(-12, -12),
       child: Opacity(
         opacity: 0.85,
         child: Transform.scale(
@@ -1681,6 +1692,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       child: _PointerDraggable(
         touch: true,
         canStart: () => _touchPointers.length == 1 && _dragging == null,
+        dragAnchorStrategy: phone ? _screenGrabAnchor : pointerDragAnchorStrategy,
         data: id,
         feedback: feedback,
         onDragStarted: () {
@@ -1688,20 +1700,20 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           _touchDragMoved = false;
           _startDrag(id);
           final position = _touchDragOrigin;
-          if (position != null) widget.onContextMenu?.call(id, position);
+          if (!phone && position != null) widget.onContextMenu?.call(id, position);
         },
         onDragUpdate: (_) {
           if (_touchDragOrigin != null &&
               _dragPointer != null &&
               (_dragPointer! - _touchDragOrigin!).distance > kTouchSlop) {
-            if (!_touchDragMoved) dismissMMMenu(context);
+            if (!phone && !_touchDragMoved) dismissMMMenu(context);
             _touchDragMoved = true;
           }
           if (_touchDragMoved) _updateDrag();
         },
         onDragEnd: (_) {
           final showMenu = !_touchDragMoved && !_touchDragCancelled && _dragging != null;
-          if (_touchDragCancelled) dismissMMMenu(context);
+          if (!phone && _touchDragCancelled) dismissMMMenu(context);
           _endDrag(showMenu || _touchDragCancelled ? null : id);
           _touchDragOrigin = null;
         },
@@ -1710,12 +1722,29 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     );
   }
 
+  String _phoneDropHint(AppLocalizations l) {
+    final drop = _drop;
+    if (drop == null) return l.mapDragHint;
+    final title = drop.targetId == rootNodeId ? widget.rootTitle : widget.content.card(drop.targetId)?.title ?? '';
+    return switch (drop.zone) {
+      MapDropZone.child => l.mapDropChild(title),
+      MapDropZone.before => l.mapDropBefore(title),
+      MapDropZone.after => l.mapDropAfter(title),
+    };
+  }
+
   /// The handle on the outer edge of the selected topic, excerpt, image or research
   /// note: dragging it sets the card's width, a double click restores the
   /// default.
   Widget? _resizeHandle(TreeLayoutResult result, AppLocalizations l) {
     final id = widget.selectedCardId;
-    if (widget.onResize == null || id == null || field?.id == id || _dragging != null) return null;
+    if (widget.phoneSelection != null ||
+        widget.onResize == null ||
+        id == null ||
+        field?.id == id ||
+        _dragging != null) {
+      return null;
+    }
     if (widget.selectedCardIds.length > 1 || _cache._specs[id]?.resizable != true) return null;
     final rect = result.rects[id];
     if (rect == null) return null;
@@ -1823,6 +1852,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       widget.expansion == null && (widget.selectedCardIds.contains(id) || id == _selectedNodeId),
       _flashes(id),
       _dragging?.contains(id) ?? false,
+      widget.phoneSelection != null,
       widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1,
       widget.transformation,
       mapScale(widget.transformation.value),
@@ -2372,7 +2402,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         ),
         MindMapIntent: CallbackAction<MindMapIntent>(
           onInvoke: (intent) {
-            if (field == null && _markField == null) _command(intent.command);
+            if (widget.phoneSelection == null && field == null && _markField == null) _command(intent.command);
             return null;
           },
         ),
@@ -2383,6 +2413,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           // Keys the text field leaves alone must not act on the map.
           if ((event is! KeyDownEvent && event is! KeyRepeatEvent) || field != null || _markField != null) {
             return KeyEventResult.ignored;
+          }
+          if (widget.phoneSelection case final selection?) {
+            if (event.logicalKey == LogicalKeyboardKey.escape) selection.cancel();
+            return KeyEventResult.handled;
           }
           if (widget.expansion != null) return _expansionKey(event);
           final key = event.logicalKey;
@@ -2437,336 +2471,352 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           },
           child: Stack(
             children: [
-              Listener(
-                onPointerPanZoomStart: (_) {
-                  _pinchScale = 1;
-                  _manualPreviewViewport();
-                },
-                onPointerPanZoomUpdate: (event) {
-                  final previous = _pinchScale;
-                  if (previous == null || event.scale == previous || event.scale <= 0) return;
-                  _pinchScale = event.scale;
-                  _zoomAt(event.localPosition, event.scale / previous);
-                },
-                onPointerPanZoomEnd: (_) => _pinchScale = null,
-                onPointerDown: (event) {
-                  _pointerTime = event.timeStamp;
-                  _dragPointer = event.position;
-                  if (event.kind == PointerDeviceKind.touch) {
-                    if (_touchPointers.isEmpty) _touchDragCancelled = false;
-                    setState(() => _touchPointers.add(event.pointer));
-                    return;
-                  }
-                  if (field != null ||
-                      widget.selectedMarkId != null ||
-                      widget.onSelectMany == null ||
-                      event.buttons != 1) {
-                    return;
-                  }
-                  final scene = widget.transformation.toScene(event.localPosition);
-                  if (result.rects.entries.any((e) => _drawn(e.key, e.value).inflate(MMSpacing.s).contains(scene))) {
-                    return;
-                  }
-                  if (_markAt(scene) != null) return;
-                  widget.focusNode.requestFocus();
-                  setState(() {
-                    _boxStart = scene;
-                    _boxEnd = scene;
-                    _boxInitial = _additive ? {...widget.selectedCardIds} : {};
-                  });
-                },
-                onPointerMove: (event) {
-                  _dragPointer = event.position;
-                  if (_boxStart == null) return;
-                  setState(() => _boxEnd = widget.transformation.toScene(event.localPosition));
-                  final box = Rect.fromPoints(_boxStart!, _boxEnd!);
-                  widget.onSelectMany!({
-                    ..._boxInitial,
-                    for (final e in result.rects.entries)
-                      if (e.key != rootNodeId && box.overlaps(_drawn(e.key, e.value))) e.key,
-                  });
-                },
-                onPointerUp: (event) {
-                  _touchPointers.remove(event.pointer);
-                  _afterPointerUp();
-                  setState(() {
-                    _boxStart = null;
-                    _boxEnd = null;
-                  });
-                },
-                // Runs before the drag ends, so a cancelled drag drops nothing.
-                onPointerCancel: (event) {
-                  if (event.kind == PointerDeviceKind.touch) _touchDragCancelled = true;
-                  _touchPointers.remove(event.pointer);
-                  _afterPointerUp();
-                  setState(() {
-                    _boxStart = null;
-                    _boxEnd = null;
-                    _drop = null;
-                  });
-                },
-                child: InteractiveViewer(
-                  onInteractionStart: (_) {
+              Semantics(
+                container: true,
+                explicitChildNodes: true,
+                hidden: widget.phoneSelection != null,
+                child: Listener(
+                  onPointerPanZoomStart: (_) {
+                    _pinchScale = 1;
                     _manualPreviewViewport();
                   },
-                  panEnabled: _boxStart == null && _rangePointer == null && _relationDraft == null,
-                  // Zooming is handled above to preserve the pointer anchor.
-                  scaleEnabled: _touchPointers.isNotEmpty,
-                  transformationController: widget.transformation,
-                  constrained: false,
-                  minScale: mapMinScale,
-                  maxScale: mapMaxScale,
-                  // A finite scene boundary pins small maps when zoomed out.
-                  // Manual panning must work at every scale and viewport height.
-                  boundaryMargin: const EdgeInsets.all(double.infinity),
-                  child: MMContextMenuRegion(
-                    behavior: HitTestBehavior.translucent,
-                    longPressHitTest: (point) => _markAt(point) != null,
-                    onTapUp: (details) {
-                      widget.focusNode.requestFocus();
-                      if (widget.expansion != null) return;
-                      final mark = widget.onSelectMark == null ? null : _markAt(details.localPosition);
-                      if (mark != null) {
-                        final now = _pointerTime;
-                        final last = _lastMarkTap;
-                        if (widget.selectedMarkId == mark &&
-                            last?.$1 == mark &&
-                            now - last!.$2 < kDoubleTapTimeout &&
-                            (details.localPosition - last.$3).distance * mapScale(widget.transformation.value) <=
-                                kDoubleTapSlop) {
-                          widget.onEditMark?.call(mark);
-                          _lastMarkTap = null;
-                        } else {
-                          widget.onSelectMark!(mark);
-                          _lastMarkTap = (mark, now, details.localPosition);
-                        }
-                      } else if (widget.connectingFromId != null) {
-                        widget.onCancelConnect?.call();
-                      } else {
-                        _deselect();
-                      }
+                  onPointerPanZoomUpdate: (event) {
+                    final previous = _pinchScale;
+                    if (previous == null || event.scale == previous || event.scale <= 0) return;
+                    _pinchScale = event.scale;
+                    _zoomAt(event.localPosition, event.scale / previous);
+                  },
+                  onPointerPanZoomEnd: (_) => _pinchScale = null,
+                  onPointerDown: (event) {
+                    _pointerTime = event.timeStamp;
+                    _dragPointer = event.position;
+                    if (event.kind == PointerDeviceKind.touch) {
+                      if (_touchPointers.isEmpty) _touchDragCancelled = false;
+                      setState(() => _touchPointers.add(event.pointer));
+                      return;
+                    }
+                    if (field != null ||
+                        widget.selectedMarkId != null ||
+                        widget.onSelectMany == null ||
+                        event.buttons != 1) {
+                      return;
+                    }
+                    final scene = widget.transformation.toScene(event.localPosition);
+                    if (result.rects.entries.any((e) => _drawn(e.key, e.value).inflate(MMSpacing.s).contains(scene))) {
+                      return;
+                    }
+                    if (_markAt(scene) != null) return;
+                    widget.focusNode.requestFocus();
+                    setState(() {
+                      _boxStart = scene;
+                      _boxEnd = scene;
+                      _boxInitial = _additive ? {...widget.selectedCardIds} : {};
+                    });
+                  },
+                  onPointerMove: (event) {
+                    _dragPointer = event.position;
+                    if (_boxStart == null) return;
+                    setState(() => _boxEnd = widget.transformation.toScene(event.localPosition));
+                    final box = Rect.fromPoints(_boxStart!, _boxEnd!);
+                    widget.onSelectMany!({
+                      ..._boxInitial,
+                      for (final e in result.rects.entries)
+                        if (e.key != rootNodeId && box.overlaps(_drawn(e.key, e.value))) e.key,
+                    });
+                  },
+                  onPointerUp: (event) {
+                    _touchPointers.remove(event.pointer);
+                    _afterPointerUp();
+                    setState(() {
+                      _boxStart = null;
+                      _boxEnd = null;
+                    });
+                  },
+                  // Runs before the drag ends, so a cancelled drag drops nothing.
+                  onPointerCancel: (event) {
+                    if (event.kind == PointerDeviceKind.touch) _touchDragCancelled = true;
+                    _touchPointers.remove(event.pointer);
+                    _afterPointerUp();
+                    setState(() {
+                      _boxStart = null;
+                      _boxEnd = null;
+                      _drop = null;
+                    });
+                  },
+                  child: InteractiveViewer(
+                    onInteractionStart: (_) {
+                      _manualPreviewViewport();
                     },
-                    onSecondaryTapUp: widget.onMarkContextMenu == null
-                        ? null
-                        : (details) {
-                            final mark = _markAt(details.localPosition);
-                            if (mark == null) return;
-                            widget.focusNode.requestFocus();
-                            widget.onSelectMark?.call(mark);
-                            widget.onMarkContextMenu!(mark, details.globalPosition);
-                          },
-                    child: MouseRegion(
-                      onHover: widget.connectingFromId == null
+                    panEnabled: _boxStart == null && _rangePointer == null && _relationDraft == null,
+                    // Zooming is handled above to preserve the pointer anchor.
+                    scaleEnabled: _touchPointers.isNotEmpty,
+                    transformationController: widget.transformation,
+                    constrained: false,
+                    minScale: mapMinScale,
+                    maxScale: mapMaxScale,
+                    // A finite scene boundary pins small maps when zoomed out.
+                    // Manual panning must work at every scale and viewport height.
+                    boundaryMargin: const EdgeInsets.all(double.infinity),
+                    child: MMContextMenuRegion(
+                      behavior: HitTestBehavior.translucent,
+                      longPressHitTest: (point) => _markAt(point) != null,
+                      onTapUp: (details) {
+                        widget.focusNode.requestFocus();
+                        if (widget.expansion != null) return;
+                        final mark = widget.onSelectMark == null ? null : _markAt(details.localPosition);
+                        if (mark != null) {
+                          final now = _pointerTime;
+                          final last = _lastMarkTap;
+                          if (widget.selectedMarkId == mark &&
+                              last?.$1 == mark &&
+                              now - last!.$2 < kDoubleTapTimeout &&
+                              (details.localPosition - last.$3).distance * mapScale(widget.transformation.value) <=
+                                  kDoubleTapSlop) {
+                            widget.onEditMark?.call(mark);
+                            _lastMarkTap = null;
+                          } else {
+                            widget.onSelectMark!(mark);
+                            _lastMarkTap = (mark, now, details.localPosition);
+                          }
+                        } else if (widget.connectingFromId != null) {
+                          widget.onCancelConnect?.call();
+                        } else {
+                          _deselect();
+                        }
+                      },
+                      onSecondaryTapUp: widget.onMarkContextMenu == null
                           ? null
-                          : (event) => setState(() => _hover = event.localPosition),
-                      child: SizedBox(
-                        width: math.max(sceneSize.width, 600),
-                        height: math.max(sceneSize.height, 400),
-                        child: AnimatedBuilder(
-                          animation: _motion,
-                          builder: (context, _) {
-                            // All relation labels share the same frame geometry.
-                            late final rects = _drawnRects();
-                            late final obstacles = _obstacles(rects, result);
-                            return Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: RepaintBoundary(
-                                    child: CustomPaint(
-                                      key: const ValueKey('mind-map-edges'),
-                                      painter: _EdgesPainter(
-                                        result,
-                                        c.line,
-                                        _motion.isAnimating ? _from : const {},
-                                        _motion.value,
-                                        palette: palette,
-                                        branches: _branches,
-                                        colors: c,
-                                        contentHeights: {
-                                          for (final e in specs.entries)
-                                            if (e.value.notesHeight > 0) e.key: e.value.contentHeight,
-                                        },
-                                        drafts: {
-                                          for (final d in _drafts) d.id: d.kept,
-                                          for (final id in widget.expansion?.moves.keys ?? <String>[]) id: true,
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (result.summaries.isNotEmpty ||
-                                    _cache._relations.isNotEmpty ||
-                                    widget.connectingFromId != null)
+                          : (details) {
+                              final mark = _markAt(details.localPosition);
+                              if (mark == null) return;
+                              widget.focusNode.requestFocus();
+                              widget.onSelectMark?.call(mark);
+                              widget.onMarkContextMenu!(mark, details.globalPosition);
+                            },
+                      child: MouseRegion(
+                        onHover: widget.connectingFromId == null
+                            ? null
+                            : (event) => setState(() => _hover = event.localPosition),
+                        child: SizedBox(
+                          width: math.max(sceneSize.width, 600),
+                          height: math.max(sceneSize.height, 400),
+                          child: AnimatedBuilder(
+                            animation: _motion,
+                            builder: (context, _) {
+                              // All relation labels share the same frame geometry.
+                              late final rects = _drawnRects();
+                              late final obstacles = _obstacles(rects, result);
+                              return Stack(
+                                children: [
                                   Positioned.fill(
-                                    child: IgnorePointer(
+                                    child: RepaintBoundary(
                                       child: CustomPaint(
-                                        key: const ValueKey('mind-map-marks'),
-                                        painter: _MarksPainter(
-                                          rects: rects,
-                                          leftSide: result.leftSide,
-                                          relations: _drawnRelations,
-                                          summaries: _summaryPlacements(result),
-                                          selectedId: widget.selectedMarkId,
-                                          line: c.research,
-                                          bracket: c.line,
-                                          bracketColors: {
-                                            for (final s in _cache._summaryBranches.entries)
-                                              if (_branches[s.value] case final branch?) s.key: palette.line(branch, c),
+                                        key: const ValueKey('mind-map-edges'),
+                                        painter: _EdgesPainter(
+                                          result,
+                                          c.line,
+                                          _motion.isAnimating ? _from : const {},
+                                          _motion.value,
+                                          palette: palette,
+                                          branches: _branches,
+                                          colors: c,
+                                          contentHeights: {
+                                            for (final e in specs.entries)
+                                              if (e.value.notesHeight > 0) e.key: e.value.contentHeight,
                                           },
-                                          accent: c.accent,
-                                          connectFrom: widget.connectingFromId,
-                                          pointer: _hover,
+                                          drafts: {
+                                            for (final d in _drafts) d.id: d.kept,
+                                            for (final id in widget.expansion?.moves.keys ?? <String>[]) id: true,
+                                          },
                                         ),
                                       ),
                                     ),
                                   ),
-                                for (final e in result.rects.entries)
-                                  if (e.key == field?.id)
-                                    _fieldNode(e.key, specs[e.key]!, e.value, _lookOf(e.key, specs[e.key]!, palette, c))
-                                  else if (!widget.content.summaries.any(
-                                    (s) => s.mapId == widget.mapId && s.cardId == e.key,
-                                  ))
-                                    Positioned.fromRect(
-                                      key: ValueKey(e.key),
-                                      rect: _drawn(e.key, e.value),
-                                      child: nodes[e.key]!,
-                                    ),
-                                for (final id in widget.previewCardIds.map(_visibleNode).toSet())
-                                  if (result.rects[id] case final rect?)
-                                    Positioned.fromRect(
-                                      rect: _drawn(id, rect).inflate(3),
+                                  if (result.summaries.isNotEmpty ||
+                                      _cache._relations.isNotEmpty ||
+                                      widget.connectingFromId != null)
+                                    Positioned.fill(
                                       child: IgnorePointer(
                                         child: CustomPaint(
-                                          key: ValueKey('map-preview-$id'),
-                                          painter: DashedBorderPainter(
-                                            color: c.research,
-                                            radius: MMRadii.card + 3,
-                                            width: 2,
-                                            dash: 5,
-                                            gap: 3,
+                                          key: const ValueKey('mind-map-marks'),
+                                          painter: _MarksPainter(
+                                            rects: rects,
+                                            leftSide: result.leftSide,
+                                            relations: _drawnRelations,
+                                            summaries: _summaryPlacements(result),
+                                            selectedId: widget.selectedMarkId,
+                                            line: c.research,
+                                            bracket: c.line,
+                                            bracketColors: {
+                                              for (final s in _cache._summaryBranches.entries)
+                                                if (_branches[s.value] case final branch?)
+                                                  s.key: palette.line(branch, c),
+                                            },
+                                            accent: c.accent,
+                                            connectFrom: widget.connectingFromId,
+                                            pointer: _hover,
                                           ),
                                         ),
                                       ),
                                     ),
-                                if (widget.expansion != null)
-                                  if (result.rects[_workingTargetId] case final rect?)
-                                    Positioned.fromRect(
-                                      rect: _drawn(_workingTargetId, rect).inflate(4),
-                                      child: ExpansionWorking(
-                                        animate: widget.expansion!.phase == ExpansionPhase.generating,
+                                  for (final e in result.rects.entries)
+                                    if (e.key == field?.id)
+                                      _fieldNode(
+                                        e.key,
+                                        specs[e.key]!,
+                                        e.value,
+                                        _lookOf(e.key, specs[e.key]!, palette, c),
+                                      )
+                                    else if (!widget.content.summaries.any(
+                                      (s) => s.mapId == widget.mapId && s.cardId == e.key,
+                                    ))
+                                      Positioned.fromRect(
+                                        key: ValueKey(e.key),
+                                        rect: _drawn(e.key, e.value),
+                                        child: nodes[e.key]!,
                                       ),
-                                    ),
-                                for (final e in result.summaries.entries)
-                                  if (e.value.label.width > 0 &&
-                                      (field == null ||
-                                          !widget.content.summaries.any((s) => s.id == e.key && s.cardId == field.id)))
-                                    Positioned.fromRect(
-                                      rect: _rect(e.value.label),
-                                      child: _markLabel(e.key, summary: true),
-                                    ),
-                                for (final r in _cache._relations)
-                                  if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
-                                    if (_relationMiddle(r, obstacles) case (final middle, final side))
-                                      if (side < 0)
-                                        // Outward on the left, but never off the canvas.
-                                        Positioned(
-                                          left: math.max(
-                                            MMSpacing.xs,
-                                            middle.dx - MMSpacing.xs - _relationLabelSize(r.id).width,
-                                          ),
-                                          top: middle.dy,
-                                          child: FractionalTranslation(
-                                            translation: const Offset(0, -0.5),
-                                            child: _markLabel(r.id, summary: false),
-                                          ),
-                                        )
-                                      else
-                                        Positioned(
-                                          left: middle.dx + side * MMSpacing.xs,
-                                          top: middle.dy,
-                                          child: FractionalTranslation(
-                                            translation: Offset(side == 0 ? -0.5 : 0, -0.5),
-                                            child: _markLabel(r.id, summary: false),
+                                  for (final id in widget.previewCardIds.map(_visibleNode).toSet())
+                                    if (result.rects[id] case final rect?)
+                                      Positioned.fromRect(
+                                        rect: _drawn(id, rect).inflate(3),
+                                        child: IgnorePointer(
+                                          child: CustomPaint(
+                                            key: ValueKey('map-preview-$id'),
+                                            painter: DashedBorderPainter(
+                                              color: c.research,
+                                              radius: MMRadii.card + 3,
+                                              width: 2,
+                                              dash: 5,
+                                              gap: 3,
+                                            ),
                                           ),
                                         ),
-                                if (widget.expansion == null) ..._interactionWidgets(rects, obstacles),
-                                if (_drop case final drop?)
-                                  if (drop.previewRect(rects, gap: _siblingGap, thickness: 3) case final rect?)
-                                    Positioned.fromRect(
-                                      rect: rect,
+                                      ),
+                                  if (widget.expansion != null)
+                                    if (result.rects[_workingTargetId] case final rect?)
+                                      Positioned.fromRect(
+                                        rect: _drawn(_workingTargetId, rect).inflate(4),
+                                        child: ExpansionWorking(
+                                          animate: widget.expansion!.phase == ExpansionPhase.generating,
+                                        ),
+                                      ),
+                                  for (final e in result.summaries.entries)
+                                    if (e.value.label.width > 0 &&
+                                        (field == null ||
+                                            !widget.content.summaries.any(
+                                              (s) => s.id == e.key && s.cardId == field.id,
+                                            )))
+                                      Positioned.fromRect(
+                                        rect: _rect(e.value.label),
+                                        child: _markLabel(e.key, summary: true),
+                                      ),
+                                  for (final r in _cache._relations)
+                                    if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
+                                      if (_relationMiddle(r, obstacles) case (final middle, final side))
+                                        if (side < 0)
+                                          // Outward on the left, but never off the canvas.
+                                          Positioned(
+                                            left: math.max(
+                                              MMSpacing.xs,
+                                              middle.dx - MMSpacing.xs - _relationLabelSize(r.id).width,
+                                            ),
+                                            top: middle.dy,
+                                            child: FractionalTranslation(
+                                              translation: const Offset(0, -0.5),
+                                              child: _markLabel(r.id, summary: false),
+                                            ),
+                                          )
+                                        else
+                                          Positioned(
+                                            left: middle.dx + side * MMSpacing.xs,
+                                            top: middle.dy,
+                                            child: FractionalTranslation(
+                                              translation: Offset(side == 0 ? -0.5 : 0, -0.5),
+                                              child: _markLabel(r.id, summary: false),
+                                            ),
+                                          ),
+                                  if (widget.expansion == null) ..._interactionWidgets(rects, obstacles),
+                                  if (_drop case final drop?)
+                                    if (drop.previewRect(rects, gap: _siblingGap, thickness: 3) case final rect?)
+                                      Positioned.fromRect(
+                                        rect: rect,
+                                        child: IgnorePointer(
+                                          child: DecoratedBox(
+                                            key: const ValueKey('map-drop-preview'),
+                                            decoration: drop.zone == MapDropZone.child
+                                                ? BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(MMRadii.card),
+                                                    border: Border.all(color: c.accent, width: 2),
+                                                  )
+                                                : BoxDecoration(
+                                                    color: c.accent,
+                                                    borderRadius: BorderRadius.circular(2),
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                  if (_dragging == null)
+                                    Positioned.fill(
                                       child: IgnorePointer(
-                                        child: DecoratedBox(
-                                          key: const ValueKey('map-drop-preview'),
-                                          decoration: drop.zone == MapDropZone.child
-                                              ? BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(MMRadii.card),
-                                                  border: Border.all(color: c.accent, width: 2),
-                                                )
-                                              : BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
-                                        ),
-                                      ),
-                                    ),
-                                if (_dragging == null)
-                                  Positioned.fill(
-                                    child: IgnorePointer(
-                                      child: ValueListenableBuilder<String?>(
-                                        valueListenable: _hovered,
-                                        builder: (context, hovered, _) => Stack(
-                                          clipBehavior: Clip.none,
-                                          children: [
-                                            for (final id in {hovered, widget.selectedCardId})
-                                              if (specs[id]?.segments.isEmpty ?? false)
-                                                if (specs[id]?.meta case final meta?)
-                                                  if (result.rects[id!] case final r?)
-                                                    if (_shown(id, r) case final shown)
-                                                      // Beside the card on its outer side, past the fold
-                                                      // button: below it would cover the next sibling.
-                                                      if (result.leftSide.contains(id))
-                                                        Positioned(
-                                                          left: shown.left - _sourceGap(id),
-                                                          top: shown.top + MMSpacing.xs,
-                                                          child: FractionalTranslation(
-                                                            translation: const Offset(-1, 0),
+                                        child: ValueListenableBuilder<String?>(
+                                          valueListenable: _hovered,
+                                          builder: (context, hovered, _) => Stack(
+                                            clipBehavior: Clip.none,
+                                            children: [
+                                              for (final id in {hovered, widget.selectedCardId})
+                                                if (specs[id]?.segments.isEmpty ?? false)
+                                                  if (specs[id]?.meta case final meta?)
+                                                    if (result.rects[id!] case final r?)
+                                                      if (_shown(id, r) case final shown)
+                                                        // Beside the card on its outer side, past the fold
+                                                        // button: below it would cover the next sibling.
+                                                        if (result.leftSide.contains(id))
+                                                          Positioned(
+                                                            left: shown.left - _sourceGap(id),
+                                                            top: shown.top + MMSpacing.xs,
+                                                            child: FractionalTranslation(
+                                                              translation: const Offset(-1, 0),
+                                                              child: _SourceLabel(meta, maxWidth: shown.width),
+                                                            ),
+                                                          )
+                                                        else
+                                                          Positioned(
+                                                            left: shown.right + _sourceGap(id),
+                                                            top: shown.top + MMSpacing.xs,
                                                             child: _SourceLabel(meta, maxWidth: shown.width),
                                                           ),
-                                                        )
-                                                      else
-                                                        Positioned(
-                                                          left: shown.right + _sourceGap(id),
-                                                          top: shown.top + MMSpacing.xs,
-                                                          child: _SourceLabel(meta, maxWidth: shown.width),
-                                                        ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                for (final id in expandable.where((_) => widget.expansion == null))
-                                  if (result.rects[id] case final r?)
-                                    if (_shown(id, r) case final shown)
-                                      if (result.leftSide.contains(id))
-                                        Positioned(
-                                          // Keep an in-flight press attached to its node when
-                                          // another fold removes or inserts nearby controls.
-                                          key: ValueKey('map-fold-$id'),
-                                          left: shown.left - 3,
-                                          top: shown.top + specs[id]!.contentHeight / 2 - 9,
-                                          child: FractionalTranslation(
-                                            translation: const Offset(-1, 0),
+                                  for (final id in expandable.where((_) => widget.expansion == null))
+                                    if (result.rects[id] case final r?)
+                                      if (_shown(id, r) case final shown)
+                                        if (result.leftSide.contains(id))
+                                          Positioned(
+                                            // Keep an in-flight press attached to its node when
+                                            // another fold removes or inserts nearby controls.
+                                            key: ValueKey('map-fold-$id'),
+                                            left: shown.left - 3,
+                                            top: shown.top + specs[id]!.contentHeight / 2 - 9,
+                                            child: FractionalTranslation(
+                                              translation: const Offset(-1, 0),
+                                              child: foldButtons[id]!,
+                                            ),
+                                          )
+                                        else
+                                          Positioned(
+                                            key: ValueKey('map-fold-$id'),
+                                            left: shown.right + 3,
+                                            top: shown.top + specs[id]!.contentHeight / 2 - 9,
                                             child: foldButtons[id]!,
                                           ),
-                                        )
-                                      else
-                                        Positioned(
-                                          key: ValueKey('map-fold-$id'),
-                                          left: shown.right + 3,
-                                          top: shown.top + specs[id]!.contentHeight / 2 - 9,
-                                          child: foldButtons[id]!,
-                                        ),
-                                if (widget.expansion == null) ?_resizeHandle(result, l),
-                              ],
-                            );
-                          },
+                                  if (widget.expansion == null) ?_resizeHandle(result, l),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -2839,62 +2889,97 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     ),
                   ),
                 ),
-              if (widget.expansion == null &&
-                  ((widget.selectionToolbar != null && field?.note == null && widget.connectingFromId == null) ||
+              if (_dragging == null &&
+                  widget.expansion == null &&
+                  ((widget.selectionToolbar != null &&
+                          field?.note == null &&
+                          widget.connectingFromId == null &&
+                          (!MMInput.of(context).phone || field == null)) ||
                       widget.mergePreviewCardId != null))
                 Positioned.fill(
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([widget.transformation, _motion]),
-                    builder: (context, _) {
-                      final selected = [
-                        for (final id in {
-                          ...widget.selectedCardIds,
-                          ?widget.selectedCardId,
-                          if (widget.rootSelected) rootNodeId,
-                        })
-                          if (result.rects[_visibleNode(id)] case final rect?)
-                            MatrixUtils.transformRect(widget.transformation.value, _shown(id, rect)),
-                      ];
-                      if (selected.isEmpty) return const SizedBox.shrink();
-                      final bounds = selected.reduce((a, b) => a.expandToInclude(b));
-                      final preview = result.rects[widget.mergePreviewCardId];
-                      return Stack(
-                        children: [
-                          if (preview != null)
-                            Positioned.fromRect(
-                              rect: MatrixUtils.transformRect(
-                                widget.transformation.value,
-                                _shown(widget.mergePreviewCardId!, preview),
-                              ).inflate(7),
-                              child: IgnorePointer(
-                                child: CustomPaint(
-                                  painter: DashedBorderPainter(
-                                    color: mapCanvasColors(
-                                      context.mmColors,
-                                      widget.content.map(widget.mapId)?.backgroundColor,
-                                    ).accent,
-                                    radius: 16,
-                                    width: 2,
-                                    dash: 5,
-                                    gap: 4,
+                  key: const ValueKey('map-selection-toolbar-layer'),
+                  child: Semantics(
+                    container: true,
+                    explicitChildNodes: true,
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([widget.transformation, _motion]),
+                      builder: (context, _) {
+                        final selected = [
+                          for (final id in {
+                            ...widget.selectedCardIds,
+                            ?widget.selectedCardId,
+                            if (widget.rootSelected) rootNodeId,
+                          })
+                            if (result.rects[_visibleNode(id)] case final rect?)
+                              MatrixUtils.transformRect(widget.transformation.value, _shown(id, rect)),
+                        ];
+                        if (selected.isEmpty) return const SizedBox.shrink();
+                        final bounds = selected.reduce((a, b) => a.expandToInclude(b));
+                        final preview = result.rects[widget.mergePreviewCardId];
+                        return Stack(
+                          children: [
+                            if (preview != null)
+                              Positioned.fromRect(
+                                rect: MatrixUtils.transformRect(
+                                  widget.transformation.value,
+                                  _shown(widget.mergePreviewCardId!, preview),
+                                ).inflate(7),
+                                child: IgnorePointer(
+                                  child: CustomPaint(
+                                    painter: DashedBorderPainter(
+                                      color: mapCanvasColors(
+                                        context.mmColors,
+                                        widget.content.map(widget.mapId)?.backgroundColor,
+                                      ).accent,
+                                      radius: 16,
+                                      width: 2,
+                                      dash: 5,
+                                      gap: 4,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          if (widget.selectionToolbar != null && field?.note == null && widget.connectingFromId == null)
-                            Positioned.fill(
-                              child: CustomSingleChildLayout(
-                                delegate: _SelectionToolbarLayout(bounds, widget.toolbarTopInset),
-                                child: SingleChildScrollView(
-                                  key: _toolbarKey,
-                                  scrollDirection: Axis.horizontal,
-                                  child: widget.selectionToolbar!,
+                            if (widget.selectionToolbar != null &&
+                                field?.note == null &&
+                                widget.connectingFromId == null &&
+                                (!MMInput.of(context).phone || field == null))
+                              Positioned.fill(
+                                child: CustomSingleChildLayout(
+                                  delegate: _SelectionToolbarLayout(
+                                    bounds,
+                                    widget.toolbarTopInset,
+                                    docked: MMInput.of(context).phone,
+                                  ),
+                                  child: SingleChildScrollView(
+                                    key: _toolbarKey,
+                                    scrollDirection: Axis.horizontal,
+                                    child: widget.selectionToolbar!,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              if (MMInput.of(context).phone && _dragging != null)
+                Positioned(
+                  left: MMSpacing.m,
+                  right: MMSpacing.m,
+                  bottom: 30,
+                  child: IgnorePointer(
+                    child: MMGlass(
+                      key: const ValueKey('phone-map-drag-hint'),
+                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.m),
+                      child: Text(
+                        _phoneDropHint(l),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.mmText.footnote,
+                      ),
+                    ),
                   ),
                 ),
               if (field?.note case final note?
@@ -2924,6 +3009,19 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                         ],
                       );
                     },
+                  ),
+                ),
+              if (widget.phoneSelection case final selection?)
+                Positioned.fill(
+                  key: const ValueKey('phone-map-selection-layer'),
+                  child: PhoneMapSelectionLayer(
+                    key: const ValueKey('phone-map-selection'),
+                    controller: selection,
+                    transformation: widget.transformation,
+                    nodes: () => _drawnRects()..remove(rootNodeId),
+                    labelForNode: (id) => _cache._specs[id]?.label ?? id,
+                    topInset: widget.toolbarTopInset,
+                    onDone: widget.onPhoneSelectionDone!,
                   ),
                 ),
               if (widget.touchSelectionMode == null &&
@@ -3814,6 +3912,12 @@ class _MarkLabel extends StatelessWidget {
   }
 }
 
+/// Keep the original screen-space grab offset even when the canvas is zoomed.
+Offset _screenGrabAnchor(Draggable<Object> draggable, BuildContext context, Offset position) {
+  final box = context.findRenderObject()! as RenderBox;
+  return position - box.localToGlobal(Offset.zero);
+}
+
 /// Both recognizers see pointer down before the first rebuild. Filtering at
 /// recognizer creation preserves mouse/Pencil drags on hybrid devices.
 class _PointerDraggable extends Draggable<String> {
@@ -3826,7 +3930,8 @@ class _PointerDraggable extends Draggable<String> {
     required super.onDragStarted,
     required super.onDragUpdate,
     required super.onDragEnd,
-  }) : super(dragAnchorStrategy: pointerDragAnchorStrategy, maxSimultaneousDrags: 1);
+    super.dragAnchorStrategy = pointerDragAnchorStrategy,
+  }) : super(maxSimultaneousDrags: 1);
 
   final bool touch;
   final bool Function()? canStart;
@@ -3935,7 +4040,8 @@ class _SegmentDivider extends CustomPainter {
 }
 
 class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
-  const _SelectionToolbarLayout(this.bounds, this.topInset);
+  const _SelectionToolbarLayout(this.bounds, this.topInset, {this.docked = false});
+  final bool docked;
   final Rect bounds;
   final double topInset;
   @override
@@ -3943,12 +4049,18 @@ class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
       BoxConstraints(maxWidth: math.max(0, constraints.maxWidth - 16), maxHeight: constraints.maxHeight);
   @override
   Offset getPositionForChild(Size size, Size childSize) => Offset(
-    (bounds.center.dx - childSize.width / 2).clamp(8.0, math.max(8.0, size.width - childSize.width - 8)),
+    ((docked ? size.width / 2 : bounds.center.dx) - childSize.width / 2).clamp(
+      8.0,
+      math.max(8.0, size.width - childSize.width - 8),
+    ),
     // Clear of the add-child button on the node's top corner.
-    (bounds.top - childSize.height - 22).clamp(topInset, math.max(topInset, size.height - childSize.height - 8)),
+    docked
+        ? math.max(0, size.height - childSize.height - 30)
+        : (bounds.top - childSize.height - 22).clamp(topInset, math.max(topInset, size.height - childSize.height - 8)),
   );
   @override
-  bool shouldRelayout(_SelectionToolbarLayout old) => old.bounds != bounds || old.topInset != topInset;
+  bool shouldRelayout(_SelectionToolbarLayout old) =>
+      old.bounds != bounds || old.topInset != topInset || old.docked != docked;
 }
 
 Color _nodeSelectionColor(MMColors colors) =>

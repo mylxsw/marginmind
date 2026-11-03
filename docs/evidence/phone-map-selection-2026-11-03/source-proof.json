@@ -1,0 +1,58 @@
+{
+  "final_dart_source_sha256": "fbf3176bb7ee82bb35cfb1332d9deb339850e3cd9f340a97baab30de1871c2a1",
+  "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+  "related_tests_passed": 86,
+  "platforms": {
+    "iphone": {
+      "passed": true,
+      "png_count": 11,
+      "build": {
+        "device": "1415C442-DE9B-4F38-823D-1CAF69BB9926",
+        "test": "mobile_map_selection_acceptance_test.dart",
+        "commit": "531b11ecdf621a53e63d84c25f09fcd89dd550de",
+        "dart_source_sha256": "fbf3176bb7ee82bb35cfb1332d9deb339850e3cd9f340a97baab30de1871c2a1",
+        "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e"
+      },
+      "native_tests": {
+        "native-Portrait-summary.json": "Passed",
+        "native-Landscape-summary.json": "Passed"
+      }
+    },
+    "android": {
+      "passed": true,
+      "png_count": 11,
+      "build": {
+        "device": "emulator-5554",
+        "test": "mobile_map_selection_acceptance_test.dart",
+        "commit": "531b11ecdf621a53e63d84c25f09fcd89dd550de",
+        "dart_source_sha256": "fbf3176bb7ee82bb35cfb1332d9deb339850e3cd9f340a97baab30de1871c2a1",
+        "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e"
+      },
+      "native_tests": {}
+    }
+  },
+  "screenshots": {
+    "iphone/dark-01-selection-mode.png": "879986e0b7efdefe135614a17b9791310df99f73ab1392ef6e20ce4012ab0e42",
+    "iphone/light-04-refine-by-tapping.png": "0ea31d3d7cf7583fdba64c47e4d49ca7f9859e6e92f29e8a86c75a1d806bf164",
+    "iphone/light-05-completed-selection.png": "cad73b526ab4aa1d60d7e373db55ad5d2c86c27900a966360f017ea64d793a88",
+    "iphone/light-01-selection-mode.png": "d401a5908f5af3b95a7cab3f8d4a6ff94787bfbd58770a55751b667023046086",
+    "iphone/landscape-selection-controls.png": "66f9361f0e1aa11200ffc18c8ec069d495e496a05712fc763223d8cbb5d07126",
+    "iphone/dark-02-box-with-handles.png": "e116904c3d1e334a98afcf02bea30519373fdf94bf018cba7615a3f5211bb718",
+    "iphone/dark-04-refine-by-tapping.png": "39e48d99e970f803cf5224f9cc499693fc027b65ed112c72b2daf410099c2d7a",
+    "iphone/dark-05-completed-selection.png": "534844eed7dad4b69d969ef306f3206e597e2b3408e88b2c73e2305130f6d4c0",
+    "iphone/light-02-box-with-handles.png": "b4bdcf5215a785f38d8c46793f952aee7b3da0906547d1494fc40d320bc850b6",
+    "iphone/light-03-zoom-preserves-frame.png": "86b2c9748c837e3ef86c1380cb7d10fb62bead0243dcb29860d491774c6422af",
+    "iphone/dark-03-zoom-preserves-frame.png": "67895434dafd89073c8b54ff6d4007464629cca52bd6e704d87972bdbae2e57e",
+    "android/dark-01-selection-mode.png": "eea8ba05ff733871680c0e4e9292e8512fe5ea133a0420c6ef8b6d0052f8014a",
+    "android/light-04-refine-by-tapping.png": "ab1f25e1b0776b5ed4a74dbe0934e3913ab80deeb3a54a2ebd0d9d1577cc2314",
+    "android/light-05-completed-selection.png": "83c09d88bbce0c1040bdc17b38165c6ed2131e26e4e97fa98f4d3f40bd880626",
+    "android/light-01-selection-mode.png": "f4ca56a33b3b4293a5e860a40f90c1043bd4654f93505d7016b957466819e0af",
+    "android/landscape-selection-controls.png": "e21ddf3f289e0569d0335e851e83b56e2a4180da97c8a725f21262764a25dcd5",
+    "android/dark-02-box-with-handles.png": "c9b0956259630ef449318fe8c3226c0b7a2cc0fa590cb89c75b0198022df8d14",
+    "android/dark-04-refine-by-tapping.png": "a0a04b4edf72680b3cd61bb9739916650b043d1e36df66f04e514a250611baf5",
+    "android/dark-05-completed-selection.png": "aca8c0b5e132531b8491df368dd61117305757f9aca19b597c3688d077ea132e",
+    "android/light-02-box-with-handles.png": "ec3c6253697c3743df8ebf1e1c533558b195b426a0e351a70e18c42e206ab451",
+    "android/light-03-zoom-preserves-frame.png": "f88068e377d68767f02bf8afa2220f7ff96a797dde5732c91030dcd733b86f90",
+    "android/dark-03-zoom-preserves-frame.png": "2508ad6f52c94aef3466801006ba3be54ba4b65ca1ed2e6691ad3157fecfb9c4"
+  }
+}

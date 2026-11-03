@@ -14,6 +14,7 @@ import '../reader_margin.dart';
 import '../workspace_controller.dart';
 import '../workspace_pane_chrome_controller.dart';
 import 'phone_reader_appearance_sheet.dart';
+import 'phone_native_more_sheet.dart';
 
 enum PhoneMoreSheetPage { more, appearance }
 
@@ -77,62 +78,68 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
   Widget build(BuildContext context) {
     final c = context.mmColors;
 
-    return Material(
-      type: MaterialType.transparency,
-      child: Container(
-        decoration: BoxDecoration(color: c.windowBackground, borderRadius: BorderRadius.circular(MMRadii.phoneSheet)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // The shared route supplies the interactive handle.
-            if (!MMBottomSheet.contains(context))
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 7, bottom: 4),
-                  width: 38,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: c.secondaryLabel.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(3),
+    return PopScope(
+      canPop: _page == PhoneMoreSheetPage.more,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _page == PhoneMoreSheetPage.appearance) _goBackToMore();
+      },
+      child: Material(
+        type: MaterialType.transparency,
+        child: Container(
+          decoration: BoxDecoration(color: c.windowBackground, borderRadius: BorderRadius.circular(MMRadii.phoneSheet)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // The shared route supplies the interactive handle.
+              if (!MMBottomSheet.contains(context))
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 7, bottom: 4),
+                    width: 38,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: c.secondaryLabel.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
-              ),
-            // Animated size and horizontal slide between More page and Appearance page
-            AnimatedSize(
-              duration: const Duration(milliseconds: 320),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: AnimatedSwitcher(
+              // Animated size and horizontal slide between More page and Appearance page
+              AnimatedSize(
                 duration: const Duration(milliseconds: 320),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeOutCubic,
-                transitionBuilder: (child, animation) {
-                  final isAppearance = child.key == const ValueKey('phone-sheet-appearance');
-                  final inOffset = _forward ? const Offset(1, 0) : const Offset(-1, 0);
-                  final outOffset = _forward ? const Offset(-1, 0) : const Offset(1, 0);
-                  final isIncoming = (isAppearance && _forward) || (!isAppearance && !_forward);
-                  return SlideTransition(
-                    position: Tween<Offset>(
-                      begin: isIncoming ? inOffset : outOffset,
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  );
-                },
-                child: _page == PhoneMoreSheetPage.more
-                    ? _buildMorePage(context, ref)
-                    : KeyedSubtree(
-                        key: const ValueKey('phone-sheet-appearance'),
-                        child: PhoneReaderAppearanceSheet(
-                          studySetId: widget.studySetId,
-                          onBack: _goBackToMore,
-                          onClose: _close,
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 320),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeOutCubic,
+                  transitionBuilder: (child, animation) {
+                    final isAppearance = child.key == const ValueKey('phone-sheet-appearance');
+                    final inOffset = _forward ? const Offset(1, 0) : const Offset(-1, 0);
+                    final outOffset = _forward ? const Offset(-1, 0) : const Offset(1, 0);
+                    final isIncoming = (isAppearance && _forward) || (!isAppearance && !_forward);
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: isIncoming ? inOffset : outOffset,
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    );
+                  },
+                  child: _page == PhoneMoreSheetPage.more
+                      ? _buildMorePage(context, ref)
+                      : KeyedSubtree(
+                          key: const ValueKey('phone-sheet-appearance'),
+                          child: PhoneReaderAppearanceSheet(
+                            studySetId: widget.studySetId,
+                            onBack: _goBackToMore,
+                            onClose: _close,
+                          ),
                         ),
-                      ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -644,6 +651,17 @@ Future<void> showPhoneMoreSheet(
 }) async {
   onOpened?.call();
   try {
+    if (MMInput.of(context).phone && MMNativePresentation.available) {
+      await showPhoneNativeMoreSheet(
+        context,
+        studySetId: studySetId,
+        paneChrome: paneChrome,
+        workspaceContext: workspaceContext,
+        onOrganizeNotes: onOrganizeNotes,
+        appearance: initialPage == PhoneMoreSheetPage.appearance,
+      );
+      return;
+    }
     final container = ProviderScope.containerOf(context, listen: false);
     await showMMBottomSheet<void>(
       context: context,
@@ -657,7 +675,7 @@ Future<void> showPhoneMoreSheet(
             workspaceContext: workspaceContext ?? context,
             onOrganizeNotes: onOrganizeNotes,
             initialPage: initialPage,
-            onClose: () => Navigator.of(sheetContext).maybePop(),
+            onClose: () => Navigator.of(sheetContext).pop(),
           ),
         ),
       ),

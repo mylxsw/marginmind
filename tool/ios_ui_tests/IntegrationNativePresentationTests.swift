@@ -12,6 +12,84 @@ final class IntegrationNativePresentationTests: XCTestCase {
     let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); shot.name = name
     shot.lifetime = .keepAlways; add(shot)
   }
+  func testReaderActionsClose() {
+    let close = app.buttons["native-actions-close"]
+    XCTAssertTrue(close.waitForExistence(timeout: 8), app.debugDescription)
+    close.tap()
+    XCTAssertTrue(close.waitForNonExistence(timeout: 5))
+  }
+  func testReaderActionsDark() { testReaderActions() }
+  func testReaderActions() {
+    let panel = app.tables["native-reader-actions"]
+    XCTAssertTrue(panel.waitForExistence(timeout: 8), app.debugDescription)
+    capture("reader-actions-medium")
+    let mediumTop = app.navigationBars.firstMatch.frame.minY
+    let appearance = app.buttons["native-actions-appearance"]
+    XCTAssertTrue(appearance.exists)
+    appearance.tap()
+    let dark = app.cells["native-actions-style-dark"]
+    XCTAssertTrue(dark.waitForExistence(timeout: 5), app.debugDescription)
+    dark.tap()
+    expectation(for: NSPredicate { _, _ in dark.isSelected }, evaluatedWith: dark)
+    waitForExpectations(timeout: 5)
+    capture("reader-actions-appearance")
+    app.buttons["native-actions-back"].tap()
+    XCTAssertTrue(appearance.waitForExistence(timeout: 5))
+    let margin = app.buttons["native-actions-margin"]
+    if margin.isEnabled {
+      let wasSelected = margin.isSelected
+      margin.tap()
+      expectation(for: NSPredicate { _, _ in margin.isSelected != wasSelected }, evaluatedWith: margin)
+      waitForExpectations(timeout: 5)
+      margin.tap()
+      expectation(for: NSPredicate { _, _ in margin.isSelected == wasSelected }, evaluatedWith: margin)
+      waitForExpectations(timeout: 5)
+    }
+    let vocab = app.buttons["native-actions-vocabulary-hints"]
+    let wasSelected = vocab.isSelected
+    vocab.tap()
+    expectation(for: NSPredicate { _, _ in vocab.isSelected != wasSelected }, evaluatedWith: vocab)
+    waitForExpectations(timeout: 5)
+    vocab.tap()
+    expectation(for: NSPredicate { _, _ in vocab.isSelected == wasSelected }, evaluatedWith: vocab)
+    waitForExpectations(timeout: 5)
+    // Drag the native header; actual UIKit detents must change height.
+    let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: mediumTop / app.frame.height - 0.01))
+    from.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)))
+    XCTAssertLessThan(app.navigationBars.firstMatch.frame.minY, mediumTop - 100)
+    capture("reader-actions-expanded")
+    let outline = app.cells["native-actions-outline"]
+    XCTAssertTrue(outline.isHittable)
+    outline.tap()
+    XCTAssertTrue(panel.waitForNonExistence(timeout: 5))
+    let section = app.buttons["native-reader-section"]
+    XCTAssertTrue(section.waitForExistence(timeout: 8), app.debugDescription)
+    capture("reader-actions-to-outline")
+    app.buttons.matching(NSPredicate(format: "label ==[c] %@", "close")).firstMatch.tap()
+  }
+
+  func testModalConfirm() {
+    let cancel = app.buttons["取消"]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 8), app.debugDescription)
+    capture("modal-system-confirmation")
+    cancel.tap()
+    XCTAssertTrue(cancel.waitForNonExistence(timeout: 5))
+  }
+  func testModalRename() {
+    let field = app.textFields["native-field-title"]
+    XCTAssertTrue(field.waitForExistence(timeout: 8), app.debugDescription)
+    capture("modal-system-form-medium")
+    field.tap()
+    field.typeText(" QA")
+    capture("modal-system-form-keyboard")
+    app.navigationBars.buttons["取消"].tap()
+    let discard = app.buttons["放弃更改"]
+    XCTAssertTrue(discard.waitForExistence(timeout: 5), app.debugDescription)
+    capture("modal-system-form-discard")
+    discard.tap()
+    XCTAssertTrue(field.waitForNonExistence(timeout: 5))
+  }
+
   func testSettingsDiscard() {
     let discard = app.buttons["不保存"]
     XCTAssertTrue(discard.waitForExistence(timeout: 8), app.debugDescription)
@@ -115,6 +193,7 @@ final class IntegrationNativePresentationTests: XCTestCase {
     XCTAssertTrue(picker.waitForNonExistence(timeout: 5))
   }
 
+  func testReaderManageDark() { testReaderManage() }
   func testReaderManage() {
     let section = app.buttons["native-reader-section"]
     XCTAssertTrue(section.waitForExistence(timeout: 8), app.debugDescription)

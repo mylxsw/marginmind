@@ -83,37 +83,45 @@ class _PhoneReaderNavigationFrameState extends State<PhoneReaderNavigationFrame>
       }
       return const SizedBox.shrink();
     }
-    return Material(
-      key: const ValueKey('phone-document-navigation'),
-      color: context.mmColors.windowBackground,
-      child: SafeArea(
-        top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: context.mmText.headline,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+    return MMNativeGlassScope(
+      enabled: true,
+      child: MMBottomSheet(
+        expand: true,
+        scrim: true,
+        onDismiss: widget.onClose,
+        child: Material(
+          key: const ValueKey('phone-document-navigation'),
+          type: MaterialType.transparency,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.title,
+                          style: context.mmText.headline,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      MMIconButton(
+                        key: const ValueKey('phone-document-navigation-close'),
+                        icon: MMIcons.close,
+                        tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                        onPressed: widget.onClose,
+                      ),
+                    ],
                   ),
-                  MMIconButton(
-                    key: const ValueKey('phone-document-navigation-close'),
-                    icon: MMIcons.close,
-                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                    onPressed: widget.onClose,
-                  ),
-                ],
-              ),
+                ),
+                Expanded(child: widget.child),
+              ],
             ),
-            Expanded(child: widget.child),
-          ],
+          ),
         ),
       ),
     );

@@ -3,7 +3,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,19 +29,6 @@ enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice }
 /// scrolling page. Service forms use explicit Save actions. [focus] locates
 /// a feature or model on the AI Features page.
 Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) {
-  if (MMInput.of(context).phone) {
-    return Navigator.of(context).push<void>(
-      defaultTargetPlatform == TargetPlatform.iOS
-          ? CupertinoPageRoute(
-              fullscreenDialog: true,
-              builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
-            )
-          : MaterialPageRoute(
-              fullscreenDialog: true,
-              builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
-            ),
-    );
-  }
   return showMMDialog<void>(
     context: context,
     builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
@@ -318,7 +304,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       if (_phoneSection) _phoneVisited.add(_tab);
       return Material(
         key: const ValueKey('settings-window'),
-        color: c.windowBackground,
+        color: MMBottomSheet.contains(context) ? Colors.transparent : c.windowBackground,
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -353,20 +339,39 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
                       key: const ValueKey('phone-settings-sections'),
                       padding: const EdgeInsets.all(MMSpacing.m),
                       children: [
-                        CupertinoListSection.insetGrouped(
-                          margin: EdgeInsets.zero,
-                          backgroundColor: Colors.transparent,
-                          children: [
-                            for (final (tab, icon, label) in tabs)
-                              CupertinoListTile.notched(
-                                key: ValueKey('settings-tab-${tab.name}'),
-                                leading: Icon(icon, color: c.secondaryLabel),
-                                title: Text(label),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => _go(tab),
-                              ),
-                          ],
-                        ),
+                        if (Theme.of(context).platform != TargetPlatform.iOS)
+                          Material(
+                            color: c.card,
+                            borderRadius: BorderRadius.circular(MMRadii.dropdown),
+                            clipBehavior: Clip.antiAlias,
+                            child: Column(
+                              children: [
+                                for (final (tab, icon, label) in tabs)
+                                  ListTile(
+                                    key: ValueKey('settings-tab-${tab.name}'),
+                                    leading: Icon(icon, color: c.secondaryLabel),
+                                    title: Text(label, style: context.mmText.body),
+                                    trailing: const Icon(MMIcons.chevronRight),
+                                    onTap: () => _go(tab),
+                                  ),
+                              ],
+                            ),
+                          )
+                        else
+                          CupertinoListSection.insetGrouped(
+                            margin: EdgeInsets.zero,
+                            backgroundColor: Colors.transparent,
+                            children: [
+                              for (final (tab, icon, label) in tabs)
+                                CupertinoListTile.notched(
+                                  key: ValueKey('settings-tab-${tab.name}'),
+                                  leading: Icon(icon, color: c.secondaryLabel),
+                                  title: Text(label),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () => _go(tab),
+                                ),
+                            ],
+                          ),
                       ],
                     ),
                     for (final (tab, _, _) in tabs)

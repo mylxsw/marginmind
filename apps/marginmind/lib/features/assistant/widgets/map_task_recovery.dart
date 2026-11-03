@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
 import '../../map_generation/map_generation_controller.dart';
@@ -38,7 +39,7 @@ class MapTaskRecovery extends ConsumerWidget {
                 child: Text(l.mapTaskRetrySave),
               ),
             if (matchingTasks.isNotEmpty)
-              PopupMenuButton<Map<String, dynamic>>(
+              MMDropdownButton<Map<String, dynamic>>(
                 tooltip: l.mapTaskContinue,
                 child: Padding(padding: const EdgeInsets.all(8), child: Text(l.mapTaskContinue)),
                 itemBuilder: (_) => [
@@ -52,15 +53,15 @@ class MapTaskRecovery extends ConsumerWidget {
                     ),
                 ],
                 onSelected: (task) async {
-                  final confirmed = await showDialog<bool>(
+                  final confirmed = await showMMSheet<bool>(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(l.mapTaskContinue),
-                      content: Text(l.mapTaskContinueNotice),
+                    builder: (context) => MMSheet(
+                      title: l.mapTaskContinue,
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.cancel)),
                         TextButton(onPressed: () => Navigator.pop(context, true), child: Text(l.mapTaskContinue)),
                       ],
+                      child: Text(l.mapTaskContinueNotice),
                     ),
                   );
                   if (confirmed != true || !context.mounted) return;

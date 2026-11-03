@@ -1,0 +1,7 @@
+{
+  "device": "emulator-5554",
+  "test": "mobile_modal_acceptance_test.dart",
+  "commit": "531b11ecdf621a53e63d84c25f09fcd89dd550de",
+  "dart_source_sha256": "e0c7d851fcd07fbce5738cce79ffc359c302842d5493e36cda6c40e2d4976e04",
+  "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e"
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1415C442-DE9B-4F38-823D-1CAF69BB9926",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "CF13DA01-EA27-45C1-A863-8FF97B8653B8.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-system-form-discard_0_BF07F7C6-1E55-4A15-BBCE-910B6052B8CE.png",
+        "timestamp" : 1793682107.766
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1415C442-DE9B-4F38-823D-1CAF69BB9926",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "BC48A2D7-FC73-4098-9988-3C0D0F455F2B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-system-form-keyboard_0_60E55B9C-B5B2-431D-A79A-9CE2772582F3.png",
+        "timestamp" : 1793682104.748
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1415C442-DE9B-4F38-823D-1CAF69BB9926",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "EF7090A4-52AF-441E-9A30-CF437ED185BC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-system-form-medium_0_8F6D9B90-A316-44FF-BFF1-5776DC19CCE3.png",
+        "timestamp" : 1793682101.867
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testModalRename()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testModalRename"
+  }
+]

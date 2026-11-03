@@ -1,0 +1,11 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_node_menu_acceptance_test.dart
+Running Xcode build...                                          
+Xcode build done.                                           40.8s
+00:00 +0: phone modal families share one frame and retain native platform behavior
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F9B4B0B7-B6B6-4B50-9268-1B47A4FE27AA/Library/Application Support/Library/sets/21f6e0306f1f467070ca0581c1f026ab.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (8 ms)
+PHONE_SHOT:light-node-menu-medium:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F9B4B0B7-B6B6-4B50-9268-1B47A4FE27AA/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-node-menu-last-actions:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F9B4B0B7-B6B6-4B50-9268-1B47A4FE27AA/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-node-menu-medium:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F9B4B0B7-B6B6-4B50-9268-1B47A4FE27AA/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-node-menu-last-actions:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F9B4B0B7-B6B6-4B50-9268-1B47A4FE27AA/Library/Caches/mobile-redesign-shot
+00:54 +1: (tearDownAll)
+00:55 +1: All tests passed!

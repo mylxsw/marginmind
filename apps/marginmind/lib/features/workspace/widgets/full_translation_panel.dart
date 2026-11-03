@@ -21,6 +21,20 @@ Future<void> showFullTranslationPanel(
   required String documentId,
   required String targetLang,
 }) async {
+  if (MMInput.of(context).phone) {
+    return showMMSheet<void>(
+      context: context,
+      builder: (sheetContext) => MMSheet(
+        title: context.l10n.fullTranslationCapsule,
+        titleTrailing: MMIconButton(
+          icon: MMIcons.close,
+          tooltip: context.l10n.closePanel,
+          onPressed: () => Navigator.of(sheetContext).maybePop(),
+        ),
+        child: FullTranslationPanel(studySetId: studySetId, documentId: documentId, targetLang: targetLang),
+      ),
+    );
+  }
   final renderBox = context.findRenderObject() as RenderBox?;
   final offset = renderBox?.localToGlobal(Offset.zero);
   final size = renderBox?.size;

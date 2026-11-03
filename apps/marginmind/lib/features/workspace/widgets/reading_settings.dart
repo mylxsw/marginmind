@@ -14,6 +14,26 @@ void showReadingSettings(BuildContext context, WidgetRef ref, String setId, {Doc
   final id = ref.read(workspaceProvider(setId)).activeDocumentId;
   final doc = document ?? (id == null ? null : ref.read(workspaceProvider(setId)).content?.document(id));
   if (doc == null || (!doc.capabilities().readingSettings && !doc.capabilities().selectText)) return;
+  if (MMInput.of(context).phone) {
+    showMMSheet<void>(
+      context: context,
+      builder: (sheetContext) => MMSheet(
+        title: context.l10n.readingSettings,
+        titleTrailing: MMIconButton(
+          icon: MMIcons.close,
+          tooltip: context.l10n.closePanel,
+          onPressed: () => Navigator.of(sheetContext).maybePop(),
+        ),
+        child: ReadingSettingsPanel(
+          format: doc.format,
+          studySetId: setId,
+          documentId: doc.id,
+          showVocabulary: usePhoneReaderControls(context) || !doc.capabilities().readingSettings,
+        ),
+      ),
+    );
+    return;
+  }
   showGeneralDialog<void>(
     context: context,
     barrierColor: Colors.transparent,

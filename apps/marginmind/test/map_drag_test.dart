@@ -33,7 +33,7 @@ class _Harness {
   late StudySetContent content;
   late StateSetter rebuild;
 
-  Future<void> pump(StudySetContent initial, {Size size = const Size(700, 500)}) async {
+  Future<void> pump(StudySetContent initial, {Size size = const Size(700, 500), bool phone = false}) async {
     content = initial;
     addTearDown(transform.dispose);
     addTearDown(focus.dispose);
@@ -45,7 +45,7 @@ class _Harness {
             theme: MMTheme.light(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            builder: (context, child) => MMInput(touchPlatform: true, child: child!),
+            builder: (context, child) => MMInput(touchPlatform: true, phone: phone, child: child!),
             home: Scaffold(
               body: Align(
                 alignment: Alignment.topLeft,
@@ -59,6 +59,9 @@ class _Harness {
                     flashCardId: null,
                     transformation: transform,
                     focusNode: focus,
+                    selectionToolbar: phone && selection != null
+                        ? const SizedBox(key: ValueKey('test-phone-toolbar'), width: 240, height: 52)
+                        : null,
                     onSelect: (id) => setState(() {
                       selection = id;
                       selected = {?id};
@@ -185,6 +188,74 @@ void main() {
     expect(h.moves, ['t0:t3:null']);
     expect(h.menus, ['t0', 't0']);
   });
+
+  testWidgets('phone hold only lifts the node; toolbar stays docked and hides throughout a drag', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4), phone: true);
+    await tester.tap(find.byKey(const ValueKey('t0')));
+    await tester.pumpAndSettle();
+    final toolbar = find.byKey(const ValueKey('test-phone-toolbar'));
+    final dock = tester.getRect(toolbar);
+    expect(dock.bottom, 470);
+    h.transform.value = h.transform.value.clone()..translateByDouble(30, 20, 0, 1);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(toolbar), dock, reason: 'selection actions do not follow the node');
+    final hold = await tester.startGesture(h.node('t0').center, kind: PointerDeviceKind.touch);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await tester.pump();
+    expect(h.menus, isEmpty);
+    expect(toolbar, findsNothing);
+    expect(find.byKey(const ValueKey('phone-map-drag-hint')), findsOneWidget);
+    await hold.up();
+    await tester.pumpAndSettle();
+    expect(h.moves, isEmpty);
+    expect(h.menus, isEmpty);
+    expect(toolbar, findsOneWidget);
+    final drag = await tester.startGesture(h.node('t0').center, kind: PointerDeviceKind.touch);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await drag.moveTo(h.node('t3').center);
+    await tester.pump();
+    expect(h.preview, findsOneWidget);
+    expect(toolbar, findsNothing);
+    expect(h.menus, isEmpty);
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(h.moves, ['t0:t3:null']);
+    expect(toolbar, findsOneWidget);
+    expect(find.byKey(const ValueKey('phone-map-drag-hint')), findsNothing);
+  }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
+  testWidgets('phone cancelling an active drag leaves the structure and pinch gesture intact', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4), phone: true);
+    final drag = await tester.startGesture(h.node('t0').center, kind: PointerDeviceKind.touch);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await drag.moveTo(h.node('t3').center);
+    await tester.pump();
+    expect(h.preview, findsOneWidget);
+    await drag.cancel();
+    await tester.pumpAndSettle();
+    expect(h.moves, isEmpty);
+    expect(h.menus, isEmpty);
+    expect(h.preview, findsNothing);
+    expect(find.byKey(const ValueKey('test-phone-toolbar')), findsOneWidget);
+    final a = await tester.startGesture(h.node('t0').center, pointer: 1, kind: PointerDeviceKind.touch);
+    final b = await tester.startGesture(h.node('t3').center, pointer: 2, kind: PointerDeviceKind.touch);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    final before = mapScale(h.transform.value);
+    for (var i = 0; i < 5; i++) {
+      await a.moveBy(const Offset(0, -10));
+      await b.moveBy(const Offset(0, 10));
+      await tester.pump();
+    }
+    await a.up();
+    await b.up();
+    await tester.pumpAndSettle();
+    expect(mapScale(h.transform.value), greaterThan(before));
+    expect(h.moves, isEmpty);
+    expect(h.menus, isEmpty);
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
 
   testWidgets('cancelling a held touch drops no nodes', (tester) async {
     final h = _Harness(tester);

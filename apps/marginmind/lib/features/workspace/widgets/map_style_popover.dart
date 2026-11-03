@@ -162,7 +162,7 @@ class _MapStylePopoverState extends State<MapStylePopover> {
             child: FocusScope(
               autofocus: true,
               child: CustomSingleChildLayout(
-                delegate: AnnotationPalettePlacement(anchor),
+                delegate: AnnotationPalettePlacement.of(context, anchor),
                 child: Material(
                   type: MaterialType.transparency,
                   child: SingleChildScrollView(

@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/private/tmp/mm-modal-iphone-final/native-ModalRename.xcresult
+
+2026-11-03 13:01:52.874 xcodebuild[79101:9118534] [MT] IDETestOperationsObserverDebug: 16.338 elapsed -- Testing started completed.
+2026-11-03 13:01:52.875 xcodebuild[79101:9118534] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-03 13:01:52.875 xcodebuild[79101:9118534] [MT] IDETestOperationsObserverDebug: 16.338 sec, +16.338 sec -- end
+Testing started

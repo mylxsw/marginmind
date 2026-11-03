@@ -143,7 +143,7 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
         pageBuilder: (_, _, _) => inScope(
           context,
           CustomSingleChildLayout(
-            delegate: AnnotationPalettePlacement(boundsOf(_anchor.currentContext!)),
+            delegate: AnnotationPalettePlacement.of(context, boundsOf(_anchor.currentContext!)),
             child: Material(
               type: MaterialType.transparency,
               child: SingleChildScrollView(
@@ -192,46 +192,53 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
       if (colors.length >= 3) colors.remove(colors.last);
       colors.add(color);
     }
-    return OverlayPortal(
-      controller: _overlay,
-      overlayChildBuilder: (context) => CustomSingleChildLayout(
-        delegate: AnnotationPalettePlacement(boundsOf(_anchor.currentContext!)),
-        child: TapRegion(
-          groupId: annotationTapGroup(widget.studySetId),
-          onTapOutside: (_) {
-            if (!_custom && !_busy) _close();
-          },
-          child: CallbackShortcuts(
-            bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => _close(exit: true)},
-            child: FocusScope(
-              autofocus: true,
-              child: Material(
-                type: MaterialType.transparency,
-                child: UnderlineStyleToolbar(
-                  key: const ValueKey('underline-style-toolbar'),
-                  color: color,
-                  style: style,
-                  colors: colors.toList(),
-                  onColor: _busy ? null : (v) => _change(color: v),
-                  onStyle: _busy ? null : (v) => _change(style: v),
-                  onMore: () => _more(color),
-                  onClose: _close,
+    return MMBackHandler(
+      onBack: () {
+        if (!_open) return false;
+        if (!_busy) _close();
+        return true;
+      },
+      child: OverlayPortal(
+        controller: _overlay,
+        overlayChildBuilder: (context) => CustomSingleChildLayout(
+          delegate: AnnotationPalettePlacement.of(context, boundsOf(_anchor.currentContext!)),
+          child: TapRegion(
+            groupId: annotationTapGroup(widget.studySetId),
+            onTapOutside: (_) {
+              if (!_custom && !_busy) _close();
+            },
+            child: CallbackShortcuts(
+              bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => _close(exit: true)},
+              child: FocusScope(
+                autofocus: true,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: UnderlineStyleToolbar(
+                    key: const ValueKey('underline-style-toolbar'),
+                    color: color,
+                    style: style,
+                    colors: colors.toList(),
+                    onColor: _busy ? null : (v) => _change(color: v),
+                    onStyle: _busy ? null : (v) => _change(style: v),
+                    onMore: () => _more(color),
+                    onClose: _close,
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-      child: TapRegion(
-        groupId: annotationTapGroup(widget.studySetId),
-        child: MMToolbarButton(
-          key: _anchor,
-          icon: MMIcons.underline,
-          tooltip: context.l10n.toolUnderline,
-          compact: widget.compact,
-          selected: selected,
-          tint: selected ? color.color : null,
-          onPressed: widget.enabled ? _show : null,
+        child: TapRegion(
+          groupId: annotationTapGroup(widget.studySetId),
+          child: MMToolbarButton(
+            key: _anchor,
+            icon: MMIcons.underline,
+            tooltip: context.l10n.toolUnderline,
+            compact: widget.compact,
+            selected: selected,
+            tint: selected ? color.color : null,
+            onPressed: widget.enabled ? _show : null,
+          ),
         ),
       ),
     );

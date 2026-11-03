@@ -1,0 +1,22 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_map_selection_acceptance_test.dart
+Running Gradle task 'assembleDebug'...                             23.9s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          476ms
+00:00 +0: phone modal families share one frame and retain native platform behavior
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/32fec3b79f5c934c31bfe8a6e197ae39.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (35 ms)
+PHONE_SHOT:light-01-selection-mode:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-02-box-with-handles:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-03-zoom-preserves-frame:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-04-refine-by-tapping:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-05-completed-selection:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-01-selection-mode:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-02-box-with-handles:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-03-zoom-preserves-frame:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-04-refine-by-tapping:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-05-completed-selection:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/32fec3b79f5c934c31bfe8a6e197ae39.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (6 ms)
+PHONE_SHOT:landscape-selection-controls:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+02:16 +1: (tearDownAll)
+02:17 +1: All tests passed!

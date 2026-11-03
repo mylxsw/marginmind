@@ -1,0 +1,2580 @@
+{
+  "scope": [
+    "apps/marginmind/lib",
+    "packages/mm_design/lib",
+    "packages/mm_platform/lib",
+    "iOS/Android host review"
+  ],
+  "counts": {
+    "共享弹窗与面板": 56,
+    "菜单与选项": 81,
+    "原生呈现": 8,
+    "底层路由与桌面回退": 22,
+    "树内浮层与导航": 24,
+    "提示与系统文件面板": 175
+  },
+  "sites": [
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/ai_routing_usage.dart",
+      "line": 135,
+      "snippet": "final ok = await showMMSheet<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 948,
+      "snippet": "showMMSheet<List<ModelReference>>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_overlays.dart",
+      "line": 284,
+      "snippet": "return showMMBottomSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_quick_actions.dart",
+      "line": 73,
+      "snippet": "return showMMBottomSheet<bool>(context: context, builder: (_) => content());",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_task_setup.dart",
+      "line": 47,
+      "snippet": "showMMSheet<AssistantTaskSetup>(context: context, builder: (_) => _Setup(spec, conversation));",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart",
+      "line": 666,
+      "snippet": "final result = await showMMSheet<ExpansionRequest>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/map_task_recovery.dart",
+      "line": 56,
+      "snippet": "final confirmed = await showMMSheet<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/gallery/gallery_screen.dart",
+      "line": 389,
+      "snippet": "onPressed: () => showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/library/new_study_set.dart",
+      "line": 25,
+      "snippet": ": await showMMSheet<_Creation>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/generate_map_sheet.dart",
+      "line": 30,
+      "snippet": "await showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart",
+      "line": 443,
+      "snippet": "showMMSheet<MapGenerationRequest>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_failure.dart",
+      "line": 95,
+      "snippet": "Future<void> showMapGenerationFailure(BuildContext context, MapGenerationPreview preview) => showMMDialog<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/update_map_sheet.dart",
+      "line": 15,
+      "snippet": "Future<void> showUpdateMapSheet(BuildContext context, String studySetId, String mapId) => showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_export_sheet.dart",
+      "line": 34,
+      "snippet": "await showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_organize_sheet.dart",
+      "line": 13,
+      "snippet": "Future<void> resumeNoteOrganization(BuildContext context, NoteContinuation saved) => showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_organize_sheet.dart",
+      "line": 40,
+      "snippet": "}) => showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_setup_sheet.dart",
+      "line": 49,
+      "snippet": "final request = await showMMSheet<_NoteGenerationRequest>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_share_sheet.dart",
+      "line": 13,
+      "snippet": "Future<void> showNoteShareSheet(BuildContext context, StudySetContent content, StudyNote note) => showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1545,
+      "snippet": "void _coverage(StudyNote note, StudySetContent content, Set<String> used, List<String> unused) => showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 21,
+      "snippet": "? showMMBottomSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/web_conversion.dart",
+      "line": 97,
+      "snippet": "prepared = await showMMSheet<PreparedWebDocument>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_panel.dart",
+      "line": 25,
+      "snippet": "return showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_sheet.dart",
+      "line": 41,
+      "snippet": "return showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/highlight_color_button.dart",
+      "line": 76,
+      "snippet": "final picked = await showMMBottomSheet<MMAnnotationColor>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/highlight_custom_color_picker.dart",
+      "line": 17,
+      "snippet": "return showMMBottomSheet<MMAnnotationColor>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_export_sheet.dart",
+      "line": 28,
+      "snippet": "await showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 205,
+      "snippet": "await showMMBottomSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 44,
+      "snippet": "showMMDialog<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 187,
+      "snippet": "final ok = await showMMSheet<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 223,
+      "snippet": "return showMMSheet<String>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 280,
+      "snippet": "final tags = await showMMSheet<List<String>>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_more_sheet.dart",
+      "line": 666,
+      "snippet": "await showMMBottomSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_entry_editor.dart",
+      "line": 99,
+      "snippet": "return showMMSheet<({String title, int page})>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_ocr_controls.dart",
+      "line": 24,
+      "snippet": "await showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_sidebar_tab_bar.dart",
+      "line": 88,
+      "snippet": "child: MMBottomSheet(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reading_settings.dart",
+      "line": 18,
+      "snippet": "showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_lookup.dart",
+      "line": 47,
+      "snippet": "return showMMBottomSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_translation.dart",
+      "line": 28,
+      "snippet": "? showMMBottomSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/workspace_browser.dart",
+      "line": 176,
+      "snippet": "url = await showMMSheet<Uri>(context: context, width: 540, builder: (_) => const _AddressDialog());",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/workspace_browser.dart",
+      "line": 294,
+      "snippet": "await showMMSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
+      "line": 685,
+      "snippet": "? MMBottomSheet(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
+      "line": 902,
+      "snippet": "? MMBottomSheet(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 32,
+      "snippet": "return showMMDialog<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 167,
+      "snippet": ": await showMMSheet<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 655,
+      "snippet": "final confirmed = await showMMSheet<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "apps/marginmind/lib/shared/card_image.dart",
+      "line": 85,
+      "snippet": "return showMMBottomSheet<void>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/bottom_sheet.dart",
+      "line": 20,
+      "snippet": "const MMBottomSheet({super.key, required this.child, this.onDismiss, this.expand = false, this.scrim = false});",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/bottom_sheet.dart",
+      "line": 220,
+      "snippet": "Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetBuilder builder, bool expand = true}) {",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/bottom_sheet.dart",
+      "line": 233,
+      "snippet": "child: MMBottomSheet(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/color_picker.dart",
+      "line": 94,
+      "snippet": "final picked = await showMMBottomSheet<MMAnnotationColor>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 595,
+      "snippet": "showMMBottomSheet<T>(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/menu.dart",
+      "line": 453,
+      "snippet": "return MMBottomSheet(",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/sheet.dart",
+      "line": 15,
+      "snippet": "Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder builder, double width = 420}) {",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/sheet.dart",
+      "line": 17,
+      "snippet": "return showMMBottomSheet<T>(context: context, builder: builder);",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/sheet.dart",
+      "line": 61,
+      "snippet": "Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilder builder}) {",
+      "policy": ""
+    },
+    {
+      "category": "共享弹窗与面板",
+      "path": "packages/mm_design/lib/src/widgets/sheet.dart",
+      "line": 63,
+      "snippet": "return showMMBottomSheet<T>(context: context, builder: builder);",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/settings/ai_task_settings.dart",
+      "line": 653,
+      "snippet": "picker: MMPopUpButton<ReasoningPolicy>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_route_picker.dart",
+      "line": 124,
+      "snippet": "return showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 196,
+      "snippet": "return showMMPhoneDropdown<ServiceProtocol>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/settings/web_search_settings.dart",
+      "line": 215,
+      "snippet": "trailing: MMPopUpButton<WebSearchBackend>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_conversations.dart",
+      "line": 69,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_model_menu.dart",
+      "line": 39,
+      "snippet": "await showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_overlays.dart",
+      "line": 171,
+      "snippet": "return showMMPhoneDropdown<T>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart",
+      "line": 538,
+      "snippet": ": (details) => showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/assistant/widgets/map_task_recovery.dart",
+      "line": 42,
+      "snippet": "MMDropdownButton<Map<String, dynamic>>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/library/library_screen.dart",
+      "line": 520,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/generate_map_sheet.dart",
+      "line": 746,
+      "snippet": "child: MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/update_map_sheet.dart",
+      "line": 227,
+      "snippet": "MMDropdownButton<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_share_sheet.dart",
+      "line": 99,
+      "snippet": "MMDropdownButton<int>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_share_sheet.dart",
+      "line": 127,
+      "snippet": "MMDropdownButton<int>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 502,
+      "snippet": "MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 512,
+      "snippet": "MMDropdownButton<NoteTemplate>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 558,
+      "snippet": "MMDropdownMenuButton<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 563,
+      "snippet": "MMDropdownSubmenu<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 571,
+      "snippet": "MMDropdownSubmenu<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1301,
+      "snippet": "Future<void> _menu(StudyNote note, StudyNoteBlock block, Offset position) => showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_controls.dart",
+      "line": 75,
+      "snippet": "trailing: MMPopUpButton<VocabularyHintMode>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "line": 297,
+      "snippet": "return MMDropdownButton<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "line": 774,
+      "snippet": "final more = MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/voice/voice_settings_page.dart",
+      "line": 175,
+      "snippet": "trailing: MMPopUpButton<VoiceProvider>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/voice/voice_settings_page.dart",
+      "line": 200,
+      "snippet": "trailing: MMPopUpButton<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/voice/voice_settings_page.dart",
+      "line": 225,
+      "snippet": "trailing: MMPopUpButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/voice/voice_settings_page.dart",
+      "line": 247,
+      "snippet": "trailing: MMPopUpButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/document_switcher.dart",
+      "line": 130,
+      "snippet": "return MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_sheet.dart",
+      "line": 352,
+      "snippet": "child: MMPopUpButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_sheet.dart",
+      "line": 371,
+      "snippet": "child: MMPopUpButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 614,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 742,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_workspace_sidebar.dart",
+      "line": 80,
+      "snippet": ": MMDropdownButton<VoidCallback>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_workspace_sidebar.dart",
+      "line": 96,
+      "snippet": ": MMDropdownButton<VoidCallback>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_bookmarks.dart",
+      "line": 137,
+      "snippet": "onContextMenu: (position) => showMMMenu(context, position: position, entries: entries),",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart",
+      "line": 203,
+      "snippet": "return MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_entry_editor.dart",
+      "line": 39,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_margin_notes.dart",
+      "line": 559,
+      "snippet": "child: MMDropdownButton<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_outline.dart",
+      "line": 272,
+      "snippet": "showMMMenu(context, position: details.globalPosition, entries: menu),",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 464,
+      "snippet": "showMMMenu(context, position: position, entries: documents.menuEntries(context, ref));",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 936,
+      "snippet": "MMDropdownButton<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 1049,
+      "snippet": "MMDropdownButton<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 1104,
+      "snippet": "MMDropdownButton<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 1124,
+      "snippet": "MMDropdownButton<Object>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 1616,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_sidebar.dart",
+      "line": 671,
+      "snippet": "onSecondaryTapUp: (details) => showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 1590,
+      "snippet": ": (d) => showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_toolbar.dart",
+      "line": 321,
+      "snippet": "await showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_translation.dart",
+      "line": 221,
+      "snippet": "child: MMPopUpButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_translation.dart",
+      "line": 244,
+      "snippet": "child: MMPopUpButton<TranslationLanguage>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/vocabulary_add_button.dart",
+      "line": 148,
+      "snippet": "await showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_history_controls.dart",
+      "line": 31,
+      "snippet": "return MMDropdownButton<bool>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 168,
+      "snippet": "onContextMenu: (position) => showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 247,
+      "snippet": "onContextMenu: (position) => showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 349,
+      "snippet": "? (position) => showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 490,
+      "snippet": "child: MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 517,
+      "snippet": "? MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 538,
+      "snippet": "? MMDropdownButton<String>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 587,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 608,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_tab_strip.dart",
+      "line": 199,
+      "snippet": "child: MMDropdownButton<WorkspaceTab>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
+      "line": 593,
+      "snippet": "MMDropdownButton<VoidCallback>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
+      "line": 845,
+      "snippet": "MMDropdownButton<VoidCallback>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 600,
+      "snippet": "trailing: MMPopUpButton<AppearancePreference>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 624,
+      "snippet": "trailing: MMPopUpButton<LanguagePreference>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 721,
+      "snippet": "trailing: MMPopUpButton<MMReaderStyle>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 736,
+      "snippet": "final picker = MMPopUpButton<SelectionTranslationDirection>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/adaptive_toolbar.dart",
+      "line": 183,
+      "snippet": "child: MMDropdownButton<VoidCallback>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 28,
+      "snippet": "const MMDropdownButton({",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 58,
+      "snippet": "State<MMDropdownButton<T>> createState() => _MMDropdownButtonState<T>();",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 96,
+      "snippet": "value = await showMMPhoneDropdown<T>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 121,
+      "snippet": "return MMDropdownMenuButton<T>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 338,
+      "snippet": "const MMDropdownMenuButton({",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 359,
+      "snippet": "State<MMDropdownMenuButton<T>> createState() => _MMDropdownMenuButtonState<T>();",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 389,
+      "snippet": "value = await showMMPhoneDropdown<T>(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 520,
+      "snippet": "const MMDropdownSubmenu({",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 549,
+      "snippet": "State<MMDropdownSubmenu<T>> createState() => _MMDropdownSubmenuState<T>();",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 594,
+      "snippet": "Future<T?> showMMPhoneDropdown<T>(BuildContext context, {String? title, required List<PopupMenuEntry<T>> entries}) =>",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/menu.dart",
+      "line": 71,
+      "snippet": "Future<void> showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/settings_form.dart",
+      "line": 171,
+      "snippet": "const MMPopUpButton({",
+      "policy": ""
+    },
+    {
+      "category": "菜单与选项",
+      "path": "packages/mm_design/lib/src/widgets/settings_form.dart",
+      "line": 202,
+      "snippet": "showMMMenu(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/features/library/new_study_set.dart",
+      "line": 59,
+      "snippet": "final source = await MMNativePresentation.confirm(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/features/workspace/widgets/highlight_custom_color_picker.dart",
+      "line": 11,
+      "snippet": "final raw = await MMNativePresentation.pickColor(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 178,
+      "snippet": "return await MMNativePresentation.confirm(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_native_more_sheet.dart",
+      "line": 131,
+      "snippet": "final selected = await MMNativePresentation.actions(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_sidebar.dart",
+      "line": 142,
+      "snippet": "final selection = await MMNativePresentation.list(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 1488,
+      "snippet": "final selection = await MMNativePresentation.list(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 154,
+      "snippet": "? await MMNativePresentation.confirm(",
+      "policy": ""
+    },
+    {
+      "category": "原生呈现",
+      "path": "apps/marginmind/lib/shared/phone_form.dart",
+      "line": 17,
+      "snippet": "return MMNativePresentation.form(",
+      "policy": ""
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 215,
+      "snippet": "return showGeneralDialog<ServiceProtocol>(",
+      "policy": "手机先进入共享服务菜单；非手机保留锚定服务列表。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_overlays.dart",
+      "line": 188,
+      "snippet": "return showGeneralDialog<T>(",
+      "policy": "模型/技能选项与保存笔记在手机有共享菜单/面板分支；原路由为非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_overlays.dart",
+      "line": 295,
+      "snippet": "return showGeneralDialog<void>(",
+      "policy": "模型/技能选项与保存笔记在手机有共享菜单/面板分支；原路由为非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_quick_actions.dart",
+      "line": 75,
+      "snippet": "return showGeneralDialog<bool>(",
+      "policy": "手机使用统一面板，扩写子页处理 Back；非手机保留双列锚定浮层。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 31,
+      "snippet": ": showGeneralDialog<void>(",
+      "policy": "手机先进入统一生词卡面板；非手机保留锚定卡片。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/annotation_color_button.dart",
+      "line": 111,
+      "snippet": "final picked = await showGeneralDialog<MMAnnotationColor>(",
+      "policy": "手机自定义色先走系统/共享颜色选择；此处只用于非手机。贴原文的颜色工具条保留锚定位置并处理 Back。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_panel.dart",
+      "line": 51,
+      "snippet": "return showGeneralDialog<void>(",
+      "policy": "手机使用共享任务面板；原路由为非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/highlight_color_button.dart",
+      "line": 94,
+      "snippet": "final picked = await showGeneralDialog<MMAnnotationColor>(",
+      "policy": "手机预设色进入共享面板，自定义色进入系统/共享颜色选择；原路由为非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_style_popover.dart",
+      "line": 151,
+      "snippet": "final picked = await showGeneralDialog<MMAnnotationColor>(",
+      "policy": "手机自定义色先走系统/共享颜色选择；此处只用于非手机。手机脑图样式入口使用共享面板。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reading_settings.dart",
+      "line": 37,
+      "snippet": "showGeneralDialog<void>(",
+      "policy": "手机使用共享阅读设置面板；原路由为非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_lookup.dart",
+      "line": 58,
+      "snippet": "return showGeneralDialog<void>(",
+      "policy": "手机使用共享查词面板；原路由为非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_translation.dart",
+      "line": 32,
+      "snippet": ": showGeneralDialog<void>(",
+      "policy": "手机使用共享翻译面板；原路由为非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/features/workspace/widgets/underline_tool_button.dart",
+      "line": 136,
+      "snippet": "final picked = await showGeneralDialog<MMAnnotationColor>(",
+      "policy": "手机自定义色先走系统/共享颜色选择；此处只用于非手机。划线工具条保留锚定位置并处理 Back。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "apps/marginmind/lib/shared/card_image.dart",
+      "line": 118,
+      "snippet": "return showDialog<void>(",
+      "policy": "手机先进入统一图片面板；Dialog 仅非手机回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/bottom_sheet.dart",
+      "line": 222,
+      "snippet": "return showGeneralDialog<T>(",
+      "policy": "统一底部面板自身的透明路由。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/color_picker.dart",
+      "line": 111,
+      "snippet": "final picked = await showGeneralDialog<MMAnnotationColor>(",
+      "policy": "手机先进入共享颜色菜单；此处为非手机锚定回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 151,
+      "snippet": "child: PopupMenuButton<T>(",
+      "policy": "手机先进入统一菜单；此处 MenuAnchor/PopupMenuButton 仅非手机使用。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 405,
+      "snippet": "child: MenuAnchor(",
+      "policy": "手机先进入统一菜单；此处 MenuAnchor/PopupMenuButton 仅非手机使用。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 574,
+      "snippet": "return SubmenuButton(",
+      "policy": "手机先进入统一菜单；此处 MenuAnchor/PopupMenuButton 仅非手机使用。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/menu.dart",
+      "line": 87,
+      "snippet": "final selected = await showGeneralDialog<VoidCallback>(",
+      "policy": "手机与窄屏使用共享 MMBottomSheet；页面 portal 保留按住指针。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/sheet.dart",
+      "line": 21,
+      "snippet": "return showGeneralDialog<T>(",
+      "policy": "手机先进入统一面板；此处为桌面/平板居中回退。"
+    },
+    {
+      "category": "底层路由与桌面回退",
+      "path": "packages/mm_design/lib/src/widgets/sheet.dart",
+      "line": 67,
+      "snippet": "return showGeneralDialog<T>(",
+      "policy": "手机先进入统一面板；此处为桌面/平板居中回退。"
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_composer.dart",
+      "line": 445,
+      "snippet": "child: OverlayPortal(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/gallery/gallery_screen.dart",
+      "line": 351,
+      "snippet": "child: MMFloatingToolbarLayout(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart",
+      "line": 218,
+      "snippet": "child: OverlayPortal(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/research/widgets/research_note_popover.dart",
+      "line": 14,
+      "snippet": "const ResearchNotePopover({",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 37,
+      "snippet": "pageBuilder: (_, _, _) => MMFloatingToolbarLayout(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/annotation_color_button.dart",
+      "line": 158,
+      "snippet": "child: OverlayPortal(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_style_popover.dart",
+      "line": 31,
+      "snippet": "Widget build(BuildContext context) => OverlayPortal.overlayChildLayoutBuilder(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_margin_notes.dart",
+      "line": 235,
+      "snippet": "child: MMFloatingToolbarLayout(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 1320,
+      "snippet": "child: PhoneReaderNavigationFrame(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 1723,
+      "snippet": "child: MMFloatingToolbarLayout(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 1733,
+      "snippet": "? ResearchNotePopover(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_sidebar_tab_bar.dart",
+      "line": 29,
+      "snippet": "const PhoneReaderNavigationFrame({",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 853,
+      "snippet": "child: MMFloatingToolbarLayout(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 884,
+      "snippet": "child: PhoneReaderNavigationFrame(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 244,
+      "snippet": "child: OverlayPortal(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/widgets/underline_tool_button.dart",
+      "line": 201,
+      "snippet": "child: OverlayPortal(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
+      "line": 660,
+      "snippet": "MMDrawer(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
+      "line": 922,
+      "snippet": "Widget _phoneDrawer(BuildContext context, Widget child) => MMPhoneDrawer(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "packages/mm_design/lib/src/widgets/floating_toolbar.dart",
+      "line": 198,
+      "snippet": "const MMFloatingToolbarLayout({",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "packages/mm_design/lib/src/widgets/menu.dart",
+      "line": 207,
+      "snippet": "child: OverlayPortal(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "packages/mm_design/lib/src/widgets/phone_navigation.dart",
+      "line": 17,
+      "snippet": "const MMPhoneDrawer({",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "packages/mm_design/lib/src/widgets/window_scaffold.dart",
+      "line": 214,
+      "snippet": "MMDrawer(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "packages/mm_design/lib/src/widgets/window_scaffold.dart",
+      "line": 373,
+      "snippet": "MMDrawer(",
+      "policy": ""
+    },
+    {
+      "category": "树内浮层与导航",
+      "path": "packages/mm_design/lib/src/widgets/window_scaffold.dart",
+      "line": 445,
+      "snippet": "const MMDrawer({",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/app/app_commands.dart",
+      "line": 232,
+      "snippet": "/// \"Tooltip (⌘1)\".",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/app/app_commands.dart",
+      "line": 742,
+      "snippet": "if (context.mounted) MMHud.show(context, l.imageImportFailed, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/map_task_route.dart",
+      "line": 60,
+      "snippet": "MMHud.show(context, message, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/ai_task_settings.dart",
+      "line": 387,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_route_picker.dart",
+      "line": 220,
+      "snippet": "return tooltip == null ? button : Tooltip(message: tooltip!, child: button);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 523,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 543,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 609,
+      "snippet": "if (mounted) MMHud.show(context, l.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 856,
+      "snippet": "if (mounted) MMHud.show(context, l.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 895,
+      "snippet": ": Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 1044,
+      "snippet": "MMHud.show(context, context.l10n.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/settings/model_settings.dart",
+      "line": 1100,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_composer.dart",
+      "line": 789,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_context_summary.dart",
+      "line": 131,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_conversations.dart",
+      "line": 93,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_conversations.dart",
+      "line": 115,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_messages.dart",
+      "line": 142,
+      "snippet": "if (!found && context.mounted) MMHud.show(context, context.l10n.assistantAnchorGone, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_messages.dart",
+      "line": 776,
+      "snippet": "if (context.mounted) MMHud.show(context, l.copiedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_messages.dart",
+      "line": 778,
+      "snippet": "if (context.mounted) MMHud.show(context, l.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_messages.dart",
+      "line": 971,
+      "snippet": "MMHud.show(context, l.copiedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_overlays.dart",
+      "line": 376,
+      "snippet": "if (hud.mounted) MMHud.show(hud, l.assistantSavedNote, action: (l.undo, () => unawaited(workspace.undo())));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_overlays.dart",
+      "line": 380,
+      "snippet": "MMHud.show(context, l.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_permission.dart",
+      "line": 19,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_proposal.dart",
+      "line": 97,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_proposal.dart",
+      "line": 104,
+      "snippet": "if (mounted) MMHud.show(context, l.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_proposal.dart",
+      "line": 114,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.assistantErrorFailed, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/assistant_quick_actions.dart",
+      "line": 422,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.assistantSavedNote);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart",
+      "line": 351,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart",
+      "line": 728,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/assistant/widgets/map_task_recovery.dart",
+      "line": 76,
+      "snippet": "ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.mapTaskCannotContinue)));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/gallery/gallery_screen.dart",
+      "line": 386,
+      "snippet": "MMButton(label: l.galleryShowHud, onPressed: () => MMHud.show(context, l.galleryHudMessage)),",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/library/library_screen.dart",
+      "line": 477,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/library/library_screen.dart",
+      "line": 511,
+      "snippet": "if (context.mounted) MMHud.show(context, l.deletedHud(s.title), icon: MMIcons.trash);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/library/new_study_set.dart",
+      "line": 53,
+      "snippet": "if (context.mounted) MMHud.show(context, failureMessage);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/library/new_study_set.dart",
+      "line": 75,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/library/new_study_set.dart",
+      "line": 141,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/generate_map_sheet.dart",
+      "line": 429,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_empty_state.dart",
+      "line": 281,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_empty_state.dart",
+      "line": 364,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart",
+      "line": 86,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart",
+      "line": 266,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart",
+      "line": 298,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart",
+      "line": 317,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_export_sheet.dart",
+      "line": 166,
+      "snippet": "MMHud.show(context, context.l10n.exportedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_export_sheet.dart",
+      "line": 190,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.copiedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_organize_sheet.dart",
+      "line": 195,
+      "snippet": "MMHud.show(context, message);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_organize_sheet.dart",
+      "line": 304,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_setup_sheet.dart",
+      "line": 301,
+      "snippet": "MMHud.show(context, l.noteGenerated);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_setup_sheet.dart",
+      "line": 333,
+      "snippet": "Widget choice(String key, String label, bool selected, VoidCallback? action) => Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_share_sheet.dart",
+      "line": 52,
+      "snippet": "if (mounted && saved) MMHud.show(context, copy ? context.l10n.copiedHud : context.l10n.studyNoteSavedImage);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 146,
+      "snippet": "MMHud.show(context, stale ? context.l10n.noteUpdateStale : context.l10n.noteFailed);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 193,
+      "snippet": "MMHud.show(context, stale ? context.l10n.noteUpdateStale : context.l10n.noteFailed);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 371,
+      "snippet": "void _undoHud(String text) => MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 395,
+      "snippet": "MMHud.show(context, context.l10n.noteNotIncluded);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1268,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1327,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.noteAddedToMap);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1378,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.noteAddedToMap);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1447,
+      "snippet": "if (mounted) MMHud.show(context, aiInvocationError(context.l10n, error));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1483,
+      "snippet": "if (mounted) MMHud.show(context, aiInvocationError(context.l10n, error));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1537,
+      "snippet": "if (mounted) MMHud.show(context, aiInvocationError(context.l10n, error));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/study_notes/note_view.dart",
+      "line": 1705,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.noteFailed);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 90,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 102,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 121,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 130,
+      "snippet": "if (messengerContext.mounted) MMHud.show(messengerContext, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "line": 136,
+      "snippet": "if (mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/hint_controls.dart",
+      "line": 21,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "line": 206,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "line": 224,
+      "snippet": "child: Tooltip(message: l.vocabularyOccurrences, child: MMCount(counts[e.id]!)),",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "line": 517,
+      "snippet": "if (mounted && !cancel.isCancelled) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "line": 549,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "line": 948,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/reader_crop.dart",
+      "line": 226,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/reader_crop.dart",
+      "line": 232,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/reader_crop.dart",
+      "line": 243,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/web_conversion.dart",
+      "line": 104,
+      "snippet": "MMHud.show(context, context.l10n.docSaving);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/web_conversion.dart",
+      "line": 109,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/web_conversion.dart",
+      "line": 122,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/annotation_color_button.dart",
+      "line": 91,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/card_details.dart",
+      "line": 179,
+      "snippet": "if (context.mounted) MMHud.show(context, l.copiedHud, icon: MMIcons.success);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/card_details.dart",
+      "line": 181,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/document_switcher.dart",
+      "line": 116,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_capsule.dart",
+      "line": 35,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_notifications.dart",
+      "line": 36,
+      "snippet": "MMHud.show(context, l.fullTranslationHudNetworkRestored);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_notifications.dart",
+      "line": 57,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_notifications.dart",
+      "line": 69,
+      "snippet": "MMHud.show(context, l.fullTranslationHudRestAll);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_panel.dart",
+      "line": 284,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_panel.dart",
+      "line": 655,
+      "snippet": "MMHud.show(nav.context, l.translationRemoved);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/full_translation_sheet.dart",
+      "line": 171,
+      "snippet": "if (!viewSaved) MMHud.show(context, hudMessage);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/highlight_color_button.dart",
+      "line": 127,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_export_sheet.dart",
+      "line": 188,
+      "snippet": "final location = await getSaveLocation(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_export_sheet.dart",
+      "line": 202,
+      "snippet": "MMHud.show(context, l.exportedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 95,
+      "snippet": "MMHud.show(context, message, icon: MMIcons.info);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 142,
+      "snippet": "MMHud.show(context, mapEditReasonText(context, reason));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 149,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 170,
+      "snippet": "if (extra > 0) MMHud.show(context, context.l10n.summaryIncludedNodes(extra));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 344,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 401,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.mapIdeaBusy);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 410,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 427,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 848,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.mapIdeaStoppedEmpty);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 855,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 867,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.mapIdeaStoppedEmpty);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "line": 876,
+      "snippet": "MMHud.show(context, context.l10n.mapIdeaNothing);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/map_selection_bar.dart",
+      "line": 340,
+      "snippet": "void invoke() => reason == null ? onPressed?.call() : MMHud.show(context, reason!, icon: MMIcons.info);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/mind_map_canvas.dart",
+      "line": 863,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 107,
+      "snippet": "if (notice.count > 0) MMHud.show(context, l.importedHud(notice.count), icon: MMIcons.success);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 130,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 376,
+      "snippet": "if (inserted && context.mounted) MMHud.show(context, context.l10n.imageInserted);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 378,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.imageImportFailed, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/notices.dart",
+      "line": 387,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.imageImportFailed, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/outline_view.dart",
+      "line": 592,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_more_sheet.dart",
+      "line": 214,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_more_sheet.dart",
+      "line": 247,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_reader_appearance_sheet.dart",
+      "line": 31,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/phone_reader_appearance_sheet.dart",
+      "line": 58,
+      "snippet": "Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_bookmarks.dart",
+      "line": 117,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart",
+      "line": 87,
+      "snippet": "MMHud.show(actionContext, l.compareMapHiddenHud(describeShortcut(AppShortcuts.view2)));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart",
+      "line": 90,
+      "snippet": "if (actionContext.mounted) MMHud.show(actionContext, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart",
+      "line": 140,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart",
+      "line": 298,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_margin_notes.dart",
+      "line": 197,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_margin_notes.dart",
+      "line": 393,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_margin_notes.dart",
+      "line": 410,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_margin_notes.dart",
+      "line": 573,
+      "snippet": "if (context.mounted) MMHud.show(context, l.copiedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_outline.dart",
+      "line": 332,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 228,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "line": 236,
+      "snippet": "if (before != next) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_sidebar.dart",
+      "line": 444,
+      "snippet": "MMHud.show(context, context.l10n.annotationNotFound, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_translation_view.dart",
+      "line": 223,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_translation_view.dart",
+      "line": 244,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_translation_view.dart",
+      "line": 579,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reader_zoom_control.dart",
+      "line": 129,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 180,
+      "snippet": "void _missing() => MMHud.show(context, context.l10n.readerPositionMissing);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 267,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 528,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 1460,
+      "snippet": "MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 1484,
+      "snippet": "MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "line": 1874,
+      "snippet": "if (mounted) MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_tools.dart",
+      "line": 170,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_tools.dart",
+      "line": 308,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/reflow_translation_view.dart",
+      "line": 183,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_lookup.dart",
+      "line": 194,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_toolbar.dart",
+      "line": 195,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.copiedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_toolbar.dart",
+      "line": 246,
+      "snippet": "MMHud.show(context, context.l10n.copiedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_toolbar.dart",
+      "line": 257,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_translation.dart",
+      "line": 179,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.copiedHud);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/selection_translation.dart",
+      "line": 181,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/text_annotation_tools.dart",
+      "line": 48,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 65,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 88,
+      "snippet": "MMHud.show(context, context.l10n.translationEditSaved);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 94,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.translationCopied);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 102,
+      "snippet": "MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 104,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 111,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart",
+      "line": 306,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/underline_tool_button.dart",
+      "line": 100,
+      "snippet": "MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/underline_tool_button.dart",
+      "line": 120,
+      "snippet": "if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/vocabulary_add_button.dart",
+      "line": 63,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/vocabulary_add_button.dart",
+      "line": 72,
+      "snippet": "if (mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/vocabulary_add_button.dart",
+      "line": 78,
+      "snippet": "if (mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 188,
+      "snippet": "MMHud.show(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart",
+      "line": 267,
+      "snippet": ": Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/widgets/workspace_tab_strip.dart",
+      "line": 359,
+      "snippet": "? Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/features/workspace/workspace_browser.dart",
+      "line": 311,
+      "snippet": "if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 673,
+      "snippet": "if (context.mounted) MMHud.show(context, l.websiteDataCleared);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 675,
+      "snippet": "if (context.mounted) MMHud.show(context, l.somethingWentWrong);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/settings/settings_window.dart",
+      "line": 786,
+      "snippet": "ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.l10n.mapCacheClearFailed)));",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/shared/image_picker.dart",
+      "line": 7,
+      "snippet": "for (final file in await openFiles(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "apps/marginmind/lib/shared/pdf_drop.dart",
+      "line": 44,
+      "snippet": "MMHud.show(context, context.l10n.unsupportedFile(unsupported.first.name), icon: MMIcons.close);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "packages/mm_design/lib/src/foundation/interactive.dart",
+      "line": 181,
+      "snippet": "child = Tooltip(message: widget.tooltip!, excludeFromSemantics: widget.semanticLabel != null, child: child);",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "packages/mm_design/lib/src/widgets/dropdown.dart",
+      "line": 106,
+      "snippet": "child: Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "packages/mm_design/lib/src/widgets/menu.dart",
+      "line": 340,
+      "snippet": "return Tooltip(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "packages/mm_platform/lib/src/document_files.dart",
+      "line": 12,
+      "snippet": "final files = await openFiles(",
+      "policy": ""
+    },
+    {
+      "category": "提示与系统文件面板",
+      "path": "packages/mm_platform/lib/src/note_files.dart",
+      "line": 27,
+      "snippet": "final location = await getSaveLocation(",
+      "policy": ""
+    }
+  ]
+}

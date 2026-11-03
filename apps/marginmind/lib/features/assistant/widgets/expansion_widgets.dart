@@ -663,11 +663,16 @@ class ExpansionBar extends ConsumerWidget {
             };
       Future<void> adjust() async {
         var request = s.request;
-        final result = await showDialog<ExpansionRequest>(
+        final result = await showMMSheet<ExpansionRequest>(
           context: context,
           builder: (context) => StatefulBuilder(
-            builder: (context, update) => AlertDialog(
-              content: SizedBox(
+            builder: (context, update) => MMSheet(
+              title: l.mapIdeaAdjust,
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+                TextButton(onPressed: () => Navigator.pop(context, request), child: Text(l.mapIdeaRegenerateAdjusted)),
+              ],
+              child: SizedBox(
                 width: MMSizes.ideaAdjustWidth,
                 child: ExpansionOptions(
                   request: request,
@@ -675,10 +680,6 @@ class ExpansionBar extends ConsumerWidget {
                   onChanged: (r) => update(() => request = r),
                 ),
               ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
-                TextButton(onPressed: () => Navigator.pop(context, request), child: Text(l.mapIdeaRegenerateAdjusted)),
-              ],
             ),
           ),
         );

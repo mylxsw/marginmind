@@ -119,8 +119,8 @@ void main() {
     expect(find.byKey(const ValueKey('phone-reader-style-paper')), findsOneWidget);
     expect(find.byTooltip('返回'), findsOneWidget);
 
-    // Back button returns to More sheet
-    await tester.tap(find.byKey(const ValueKey('phone-appearance-back')));
+    // System Back returns from Appearance to More before closing the sheet.
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('phone-sheet-more')), findsOneWidget);

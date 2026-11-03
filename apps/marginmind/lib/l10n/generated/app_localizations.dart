@@ -11017,6 +11017,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage'**
   String get phoneManageNavigation;
+
+  /// No description provided for @mapPhoneEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get mapPhoneEdit;
+
+  /// No description provided for @mapPhoneChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Child'**
+  String get mapPhoneChild;
+
+  /// No description provided for @mapPhoneSibling.
+  ///
+  /// In en, this message translates to:
+  /// **'Sibling'**
+  String get mapPhoneSibling;
+
+  /// No description provided for @mapPhoneMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get mapPhoneMore;
+
+  /// No description provided for @mapDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to a node to reparent, or to its edge to reorder. Release elsewhere to cancel.'**
+  String get mapDragHint;
+
+  /// No description provided for @mapDropChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to move under “{title}”'**
+  String mapDropChild(String title);
+
+  /// No description provided for @mapDropBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to insert before “{title}”'**
+  String mapDropBefore(String title);
+
+  /// No description provided for @mapDropAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to insert after “{title}”'**
+  String mapDropAfter(String title);
+
+  /// No description provided for @mapSelectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String mapSelectionCount(int count);
+
+  /// No description provided for @mapSelectionTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap'**
+  String get mapSelectionTap;
+
+  /// No description provided for @mapSelectionBox.
+  ///
+  /// In en, this message translates to:
+  /// **'Box'**
+  String get mapSelectionBox;
+
+  /// No description provided for @mapSelectionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get mapSelectionClear;
+
+  /// No description provided for @mapSelectionTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap nodes to select. Drag to pan; pinch to zoom.'**
+  String get mapSelectionTapHint;
+
+  /// No description provided for @mapSelectionBoxHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag a box; adjust its corners after release. Use two fingers to move the map.'**
+  String get mapSelectionBoxHint;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

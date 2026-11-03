@@ -33,6 +33,24 @@ MapDrop? _at(Offset point, {Set<String> moving = const {'c'}}) =>
 
 void main() {
   group('MapDrop.resolve', () {
+    test('touch targets remain usable around visually small zoomed nodes', () {
+      const rects = {'b': Rect.fromLTWH(140, 60, 60, 16)};
+      MapDrop? resolve(Offset point, {bool touch = true, Set<String> moving = const {'c'}}) => MapDrop.resolve(
+        point: point,
+        rects: rects,
+        content: _content(),
+        moving: moving,
+        rootId: 'root',
+        minHitHeight: touch ? 44 : 0,
+        horizontalHitPadding: touch ? 12 : 0,
+      );
+      expect(resolve(const Offset(135, 68))!.zone, MapDropZone.child);
+      expect(resolve(const Offset(135, 50))!.zone, MapDropZone.before);
+      expect(resolve(const Offset(135, 86))!.zone, MapDropZone.after);
+      expect(resolve(const Offset(135, 68), touch: false), isNull);
+      expect(resolve(const Offset(120, 68)), isNull);
+      expect(resolve(const Offset(135, 68), moving: {'b'}), isNull);
+    });
     test('cycle detection and sibling insertion use the selected map', () {
       final content = _content().copyWith(
         nodes: const [

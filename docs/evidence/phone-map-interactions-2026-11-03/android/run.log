@@ -1,0 +1,20 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_map_gestures_acceptance_test.dart
+Running Gradle task 'assembleDebug'...                             20.0s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          476ms
+00:00 +0: phone modal families share one frame and retain native platform behavior
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/a326217e9b538a4c7cddf1fc8b28c7f4.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (28 ms)
+PHONE_SHOT:light-selected-dock:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-hold-to-move:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-child-drop-preview:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-after-drop:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-explicit-more:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-selected-dock:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-hold-to-move:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-child-drop-preview:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-after-drop:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-explicit-more:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+01:30 +1: (tearDownAll)
+01:31 +1: All tests passed!

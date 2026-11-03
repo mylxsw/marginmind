@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/private/tmp/mm-modal-iphone-final/native-ColorPicker.xcresult
+
+2026-11-03 13:02:39.757 xcodebuild[80030:9122864] [MT] IDETestOperationsObserverDebug: 10.259 elapsed -- Testing started completed.
+2026-11-03 13:02:39.758 xcodebuild[80030:9122864] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-03 13:02:39.758 xcodebuild[80030:9122864] [MT] IDETestOperationsObserverDebug: 10.259 sec, +10.259 sec -- end
+Testing started

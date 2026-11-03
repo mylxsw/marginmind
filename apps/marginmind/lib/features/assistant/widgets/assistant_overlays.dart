@@ -166,21 +166,41 @@ Future<T?> showPopupMenu<T>(
   required Rect anchor,
   required List<PopupItem<T>> items,
   double width = 240,
-}) => showGeneralDialog<T>(
-  context: context,
-  barrierDismissible: true,
-  barrierColor: Colors.transparent,
-  barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-  transitionDuration: MMMotion.popup,
-  pageBuilder: (dialog, _, _) => InheritedTheme.captureAll(
-    context,
-    CustomSingleChildLayout(
-      delegate: _AnchoredLayout(anchor, width),
-      child: _KeyboardPopup<T>(items: items),
+}) {
+  if (MMInput.of(context).phone) {
+    return showMMPhoneDropdown<T>(
+      context,
+      entries: [
+        for (final item in items)
+          MMDropdownItem<T>(
+            value: item.value,
+            icon: item.icon,
+            child: Row(
+              children: [
+                Expanded(child: Text(item.label)),
+                if (item.checked == true) const Icon(MMIcons.check),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: true,
+    barrierColor: Colors.transparent,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    transitionDuration: MMMotion.popup,
+    pageBuilder: (dialog, _, _) => InheritedTheme.captureAll(
+      context,
+      CustomSingleChildLayout(
+        delegate: _AnchoredLayout(anchor, width),
+        child: _KeyboardPopup<T>(items: items),
+      ),
     ),
-  ),
-  transitionBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
-);
+    transitionBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
+  );
+}
 
 class _KeyboardPopup<T> extends StatefulWidget {
   const _KeyboardPopup({super.key, required this.items});
@@ -260,6 +280,17 @@ Future<void> showSaveNotePopover(
   Message answer,
   Message question,
 ) {
+  if (MMInput.of(context).phone) {
+    return showMMBottomSheet<void>(
+      context: context,
+      builder: (_) => inScope(
+        context,
+        SingleChildScrollView(
+          child: SaveNotePopover(studySetId: studySetId, answer: answer, question: question),
+        ),
+      ),
+    );
+  }
   final anchor = boundsOf(context);
   return showGeneralDialog<void>(
     context: context,

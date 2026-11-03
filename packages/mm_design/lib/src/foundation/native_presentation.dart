@@ -9,14 +9,18 @@ abstract final class MMNativePresentation {
   static const _channel = MethodChannel('marginmind/presentation');
   static bool available = false;
   static int _sequence = 0;
+  static final _actions = <String, Future<Map<String, Object?>> Function(String)>{};
   static final _previews = <String, Future<Uint8List?> Function(String)>{};
   static final _validators = <String, FutureOr<String?> Function(Map<String, String>)>{};
 
   static Future<void> initialize() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
     _channel.setMethodCallHandler((call) async {
-      if (call.method != 'validate' && call.method != 'preview') throw MissingPluginException();
+      if (call.method != 'validate' && call.method != 'preview' && call.method != 'action') {
+        throw MissingPluginException();
+      }
       final args = Map<String, dynamic>.from(call.arguments as Map);
+      if (call.method == 'action') return await _actions[args['id']]?.call(args['action'] as String);
       if (call.method == 'preview') return await _previews[args['id']]?.call(args['row'] as String);
       final validate = _validators[args['id']];
       if (validate == null) return 'This form has closed.';
@@ -89,6 +93,21 @@ abstract final class MMNativePresentation {
       });
     } finally {
       _previews.remove(id);
+    }
+  }
+
+  /// System medium/large action panel. Inline actions return refreshed content;
+  /// navigation actions are returned only after UIKit has finished dismissing.
+  static Future<String?> actions({
+    required Map<String, Object?> content,
+    required Future<Map<String, Object?>> Function(String) onAction,
+  }) async {
+    final id = '${++_sequence}';
+    _actions[id] = onAction;
+    try {
+      return await _channel.invokeMethod<String>('actions', {'id': id, ...content});
+    } finally {
+      _actions.remove(id);
     }
   }
 

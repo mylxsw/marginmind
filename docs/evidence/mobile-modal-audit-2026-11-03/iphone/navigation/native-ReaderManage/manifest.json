@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1415C442-DE9B-4F38-823D-1CAF69BB9926",
+        "deviceName" : "iPhone 17 Pro",
+        "exportedFileName" : "46FC00F2-A97F-400F-BCCA-9A9CF63C42AF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "reader-management-opened_0_7E3C3934-36A6-407E-A31F-CA9972FDC021.png",
+        "timestamp" : 1793682610.815
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testReaderManage()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testReaderManage"
+  }
+]

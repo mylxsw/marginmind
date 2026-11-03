@@ -24,21 +24,26 @@ Future<void> showSelectionTranslation(
   required Rect toolbar,
   required Rect selection,
   required Rect viewport,
-}) => showGeneralDialog<void>(
-  context: context,
-  barrierColor: Colors.transparent,
-  barrierDismissible: true,
-  barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-  transitionDuration: MMMotion.popup,
-  pageBuilder: (_, _, _) => inScope(
-    context,
-    CustomSingleChildLayout(
-      delegate: QuickActionsPlacement(toolbar: toolbar, selection: selection, viewport: viewport),
-      child: SelectionTranslation(studySetId: studySetId, paragraph: paragraph),
-    ),
-  ),
-  transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
-);
+}) => MMInput.of(context).phone
+    ? showMMBottomSheet<void>(
+        context: context,
+        builder: (_) => inScope(context, SelectionTranslation(studySetId: studySetId, paragraph: paragraph)),
+      )
+    : showGeneralDialog<void>(
+        context: context,
+        barrierColor: Colors.transparent,
+        barrierDismissible: true,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        transitionDuration: MMMotion.popup,
+        pageBuilder: (_, _, _) => inScope(
+          context,
+          CustomSingleChildLayout(
+            delegate: QuickActionsPlacement(toolbar: toolbar, selection: selection, viewport: viewport),
+            child: SelectionTranslation(studySetId: studySetId, paragraph: paragraph),
+          ),
+        ),
+        transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
+      );
 
 class SelectionTranslation extends ConsumerStatefulWidget {
   const SelectionTranslation({super.key, required this.studySetId, required this.paragraph});

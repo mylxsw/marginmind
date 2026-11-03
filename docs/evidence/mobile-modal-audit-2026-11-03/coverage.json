@@ -1,0 +1,133 @@
+{
+  "final_dart_source_sha256": "afbc7bf0061f09ff1a8e22fcbdb73c350938a07718fb409684cbfaa355dc56ca",
+  "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+  "phases": [
+    {
+      "phase": "general",
+      "platform": "iphone",
+      "source": "iphone/general",
+      "dart_source_sha256": "e0c7d851fcd07fbce5738cce79ffc359c302842d5493e36cda6c40e2d4976e04",
+      "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+      "png_count": 22,
+      "passed": true
+    },
+    {
+      "phase": "general",
+      "platform": "android",
+      "source": "android/general",
+      "dart_source_sha256": "e0c7d851fcd07fbce5738cce79ffc359c302842d5493e36cda6c40e2d4976e04",
+      "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+      "png_count": 24,
+      "passed": true
+    },
+    {
+      "phase": "navigation",
+      "platform": "iphone",
+      "source": "iphone/navigation",
+      "dart_source_sha256": "e73a9281ca521d6797e2cf80255f2935253a28a020e6b251a3dc2206d8e05856",
+      "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+      "png_count": 6,
+      "passed": true
+    },
+    {
+      "phase": "navigation",
+      "platform": "android",
+      "source": "android/navigation",
+      "dart_source_sha256": "e73a9281ca521d6797e2cf80255f2935253a28a020e6b251a3dc2206d8e05856",
+      "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+      "png_count": 4,
+      "passed": true
+    },
+    {
+      "phase": "adjustment",
+      "platform": "iphone",
+      "source": "iphone/adjustment",
+      "dart_source_sha256": "afbc7bf0061f09ff1a8e22fcbdb73c350938a07718fb409684cbfaa355dc56ca",
+      "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+      "png_count": 2,
+      "passed": true
+    },
+    {
+      "phase": "adjustment",
+      "platform": "android",
+      "source": "android/adjustment",
+      "dart_source_sha256": "afbc7bf0061f09ff1a8e22fcbdb73c350938a07718fb409684cbfaa355dc56ca",
+      "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e",
+      "png_count": 2,
+      "passed": true
+    }
+  ],
+  "source_differences": {
+    "general_to_navigation": [
+      "apps/marginmind/lib/features/workspace/widgets/reader_sidebar_tab_bar.dart",
+      "apps/marginmind/lib/features/workspace/workspace_screen.dart"
+    ],
+    "navigation_to_adjustment": [
+      "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart"
+    ]
+  },
+  "baseline_commit": "531b11ecdf621a53e63d84c25f09fcd89dd550de",
+  "proof": "Each earlier Dart hash was reproduced by substituting only the listed older files into the final source tree. All other production source is identical across phases.",
+  "screenshots": {
+    "android/adjustment/dark-map-adjustment-sheet.png": "dfb4ec3aa9c91de2df15bfb41d605d22882bae65a06d0280cdfe8973c88c3bea",
+    "android/adjustment/light-map-adjustment-sheet.png": "67d5f54f427b224ab419021fef09715d43525b372e4888bdf3ad31cb32f27980",
+    "android/general/android-09-rename-keyboard.png": "79a5acf621ae65106bca39fe704a8eecd086552079d24c9d494e6806bf585deb",
+    "android/general/android-10-rename-landscape-keyboard.png": "339c331a47e8fce31221b9c79263b58de926e3f391dc15d28c7d3bb860100d53",
+    "android/general/android-10a-landscape-save.png": "fc2ac200da4e56bd5d6a689a0bba7e937af9b18ed2c2448233d8890ef6a6ea7c",
+    "android/general/android-11-confirmation.png": "fab04934692a788502a07b55e9697d110cb62c6ae1bcfb0a5e10737db51f018e",
+    "android/general/android-12-color-picker.png": "b2362291829daa721f542ebfef41a3374cd8a1735a6e5b68983e86a8dbfb87a9",
+    "android/general/android-13-reader-more.png": "c891ab8950695d05eec176b961cca468c940f6cba7bbe217902a6d41e08dc738",
+    "android/general/android-14-reader-appearance.png": "52c295b39854b3e5edc52528947917f9dfe24c385caf45f9498f89177ee55e6e",
+    "android/general/android-15-reader-navigation.png": "b5309adcb9926acdfc87a1dfea1f3f8090dbf11b5d959deecbe310b369818a56",
+    "android/general/dark-01-settings-medium.png": "eb5285fe031a2152a5ab5b14b5abef215cb1836bd2546b8d1cf6e03322e553e1",
+    "android/general/dark-02-settings-expanded-models.png": "09c0dd6244cc850f809535d15240eac9342535f2d5d6be51ffd3b398b6086937",
+    "android/general/dark-03-menu.png": "4a67f04c289f35b8142cfe4e0708e702e25e6714c56a4257d8be5ff2d15a8e5c",
+    "android/general/dark-04-submenu.png": "f7ea4fd4f4ed4e238a503d2de3963ac0488a91a1633daac5708b3ab42cea72e5",
+    "android/general/dark-05-map-generation.png": "d002444b21658f305150f26fb0d680c783b86e8b68336e1738c6867535c8579b",
+    "android/general/dark-06-note-setup.png": "f80efd6c8a61018f93cc127987bdf51c53821f025288471276cb179347445ebe",
+    "android/general/dark-07-map-export.png": "f7c163a6d82fbd7c5d293aa40fc4dfbb2248b4aa56e99386e6a2fef514f5066a",
+    "android/general/dark-08-reading-settings.png": "e559d8a7643021c486997175025a17086cf612c13e9bc0c1ee5f4e98ed997f5b",
+    "android/general/light-01-settings-medium.png": "12b84570c5fa758e5eaf72167c32fa249d2413f03ac66d5056c12c05f4158ba1",
+    "android/general/light-02-settings-expanded-models.png": "53072eaec88366b2a37b09aff0368e0e8b427965eb74a441686424d26b93e3bf",
+    "android/general/light-03-menu.png": "1091c354e90a4d4e6c77292f196c293420ab25824f0d144841118f7e34c5b322",
+    "android/general/light-04-submenu.png": "f25368834736d4760951cccfa8aa4c955e0c5436e335e83edad7a739a92806d1",
+    "android/general/light-05-map-generation.png": "cd43eb928de0260feaf72bdb5ea51464c1fb5897c9fd4154af45c06d804737a7",
+    "android/general/light-06-note-setup.png": "d01af39d1d6d8dc9899a85beb758670a8a9f0a228bf227b355938042555c0cab",
+    "android/general/light-07-map-export.png": "9f201e6539bd85bbee6b1c24565ac18cafbac05278c4b5cdd20308b6b4862b99",
+    "android/general/light-08-reading-settings.png": "fd4b0640b0097e764e7838c16e497cb3e992a983d0265767be0b46390a322500",
+    "android/navigation/dark-navigation-sheet.png": "1e66c62ef6cdffb92f0e0b3e33d2adf5106907602f090f08441d62e8177d4440",
+    "android/navigation/light-navigation-sheet.png": "283fb60d3f80a342671b75801cf6fbe3890ca1a526a15c7dfd7f437b1497fc17",
+    "android/navigation/selection-popover-before-back.png": "235ef420c51b03afacda64f5c6179dc3d40538be076b4845f51d4c820bb4ada3",
+    "android/navigation/selection-popover-closed.png": "473f9a13666edec58445a22cb03525cb5016bf8d3accb4d9cccf5ae03077a473",
+    "iphone/adjustment/dark-map-adjustment-sheet.png": "c2d055a53b9c3523c2d6110458e96ce95f74a2f5bc593b0327e9c327dd729ff2",
+    "iphone/adjustment/light-map-adjustment-sheet.png": "1d82b66dac2db2a67e219e593430ceac031708ec58d357a9892d13df8b85a04e",
+    "iphone/general/dark-01-settings-medium.png": "272efec28c03bb1eee7189dfbb14b937db4bc88f6085a7c9fd737497cba39752",
+    "iphone/general/dark-02-settings-expanded-models.png": "160c3ad194ae8ef589ff5d7fda2981e0003dc0aad1bc98623e2004f4f01ebaa3",
+    "iphone/general/dark-03-menu.png": "275f1287c10e7b78d351af913e2023eb5fe4f25b6ddd8f80d537533111b290e9",
+    "iphone/general/dark-04-submenu.png": "f0452fc4003da00c87c2c96c65392c22e218bb64b59144da6d160fea34668dd1",
+    "iphone/general/dark-05-map-generation.png": "b43892e39385e2adcad2f6f75c19c378adb9f00a4d346b88ff3f19c4d4499776",
+    "iphone/general/dark-06-note-setup.png": "5c739daf15a975fc623bbb10da0a9529992fe041f2a3d9daf4dd9152b53bcbd1",
+    "iphone/general/dark-07-map-export.png": "622b2177d05eedf6269bd6437524a13c34990ee5ada4f23417ce84e3d229d44a",
+    "iphone/general/dark-08-reading-settings.png": "9175f6cd315d71fca853f445753b18d2848a5be71e1395b6050e1fb6c6219951",
+    "iphone/general/light-01-settings-medium.png": "3e062ebf822f145258d4f361124216cb266bbcf45f6a9793660b9dbff1ed3371",
+    "iphone/general/light-02-settings-expanded-models.png": "ea902b49e5ed430b9c8b903b44c8f65474ca6d8f98c6b76eb8afd4a7707b2da6",
+    "iphone/general/light-03-menu.png": "516317ab598daf4985239ef68ea7e4f0236c2de0d0253321b29a02b615220fe3",
+    "iphone/general/light-04-submenu.png": "50fe36e02f932cdf85cab8508f584f5dfaa5f3537433901699397837ac8d85c9",
+    "iphone/general/light-05-map-generation.png": "69eef09191d0d528175cea6a7ec555586b853dae420eedb6cf5c2888e59deede",
+    "iphone/general/light-06-note-setup.png": "fe6fcd1d2dbad3fa11ca1729d24b7ee0435c962add16fdd1fec249e869efdc85",
+    "iphone/general/light-07-map-export.png": "5c656ba0b2b6cc11dea470c3f317dffdcd189b141083be9f68da87f328737607",
+    "iphone/general/light-08-reading-settings.png": "80a8712b7893dd1514d5a1c0ce216385df459a327febff2efbee52844b350825",
+    "iphone/general/native-ColorPicker/system-color-picker.png": "4999f9bd322b3e1569e5b057ff19297020df0a6a12eef0bf1260d3c3f4321d26",
+    "iphone/general/native-ColorPicker/system-color-selected.png": "c4bcff974b7545918b317d327efd1fe4a301fa3359088998f970789bd4943f48",
+    "iphone/general/native-ModalConfirm/modal-system-confirmation.png": "dca4153a28b0b15112189ae8363fee8b49258413ee52040ad3961969ae733c43",
+    "iphone/general/native-ModalRename/modal-system-form-discard.png": "694b57d3a60308b51635e6934bf487e988b9388017083934b7b85bdf9aef1a27",
+    "iphone/general/native-ModalRename/modal-system-form-keyboard.png": "87ecdcd5ac76d93e35ea1b9ca9cd8f856a9c197c2e2229e2c8182bcecd1999a9",
+    "iphone/general/native-ModalRename/modal-system-form-medium.png": "e0bd4da0b74280875764033b72aa043312db90f0e1434b4551d942c998eefe64",
+    "iphone/navigation/dark-navigation-sheet.png": "5a7d1e553d30236f445af2950ae9594a291e9c7b8026365917fbe8a08f2f75a0",
+    "iphone/navigation/light-navigation-sheet.png": "95799d9ae897d8af954cc11b15441eb9025c7663a20ed68d3b56b626d1797e2a",
+    "iphone/navigation/native-ReaderManage/reader-management-opened.png": "33ac8a251b51d3a2448567d33b6d91cc0258965bd226c6ded7e368233150cbb0",
+    "iphone/navigation/native-ReaderManageDark/reader-management-opened.png": "fcc89c447126353b40eb63ff7f6052238852c8ff7e75a12042efeee7c78c1d0d",
+    "iphone/navigation/selection-popover-before-back.png": "19057cd79cba2753a7e694bcbf46c8ccaeab455907badbc681d1130934aef335",
+    "iphone/navigation/selection-popover-closed.png": "28562ce1b82d943ebf948d3ef77c7d750b714d8d4a4260f2303b6d66878d6929"
+  }
+}

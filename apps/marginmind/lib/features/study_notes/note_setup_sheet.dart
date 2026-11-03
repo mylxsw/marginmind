@@ -41,7 +41,7 @@ class _NoteGenerationRequest {
 
 Future<void> showNoteSetupSheet(
   BuildContext context,
-  WidgetRef ref,
+  WidgetRef? ref,
   String setId, {
   BranchScope? branch,
   String? existingId,

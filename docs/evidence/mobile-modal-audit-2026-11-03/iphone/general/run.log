@@ -1,0 +1,26 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_modal_acceptance_test.dart
+Running Xcode build...                                          
+Xcode build done.                                           94.0s
+00:00 +0: phone modal families share one frame and retain native platform behavior
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Application Support/Library/sets/7b996020bfed707499b21a59b953977a.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (11 ms)
+PHONE_SHOT:light-01-settings-medium:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-02-settings-expanded-models:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-03-menu:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-04-submenu:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-05-map-generation:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-06-note-setup:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-07-map-export:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-08-reading-settings:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-01-settings-medium:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-02-settings-expanded-models:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-03-menu:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-04-submenu:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-05-map-generation:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-06-note-setup:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-07-map-export:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-08-reading-settings:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ModalRename:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ModalConfirm:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ColorPicker:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/F4B4E779-E31D-4942-A272-73D4D8E7BC7D/Library/Caches/mobile-redesign-shot
+03:08 +1: (tearDownAll)
+03:09 +1: All tests passed!

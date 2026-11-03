@@ -17,20 +17,32 @@ Future<void> showVocabularyHit(
   required VocabularyHit hit,
   required Future<List<VocabularyHit>> Function(bool Function()) occurrences,
   required Future<void> Function(VocabularyHit) reveal,
-}) => showGeneralDialog<void>(
-  context: context,
-  barrierDismissible: true,
-  barrierColor: Colors.transparent,
-  barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-  transitionDuration: MMMotion.popup,
-  pageBuilder: (_, _, _) => MMFloatingToolbarLayout(
-    anchor: anchor ?? Rect.fromCenter(center: MediaQuery.sizeOf(context).center(Offset.zero), width: 1, height: 1),
-    child: Material(
-      type: MaterialType.transparency,
-      child: VocabularyHitCard(studySetId: studySetId, hit: hit, occurrences: occurrences, reveal: reveal),
-    ),
-  ),
-);
+}) => MMInput.of(context).phone
+    ? showMMBottomSheet<void>(
+        context: context,
+        builder: (_) => UncontrolledProviderScope(
+          container: ProviderScope.containerOf(context, listen: false),
+          child: Material(
+            type: MaterialType.transparency,
+            child: VocabularyHitCard(studySetId: studySetId, hit: hit, occurrences: occurrences, reveal: reveal),
+          ),
+        ),
+      )
+    : showGeneralDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        barrierColor: Colors.transparent,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        transitionDuration: MMMotion.popup,
+        pageBuilder: (_, _, _) => MMFloatingToolbarLayout(
+          anchor:
+              anchor ?? Rect.fromCenter(center: MediaQuery.sizeOf(context).center(Offset.zero), width: 1, height: 1),
+          child: Material(
+            type: MaterialType.transparency,
+            child: VocabularyHitCard(studySetId: studySetId, hit: hit, occurrences: occurrences, reveal: reveal),
+          ),
+        ),
+      );
 
 class VocabularyHitCard extends ConsumerStatefulWidget {
   const VocabularyHitCard({

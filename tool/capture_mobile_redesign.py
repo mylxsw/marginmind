@@ -53,6 +53,16 @@ def main():
                 log.write(line)
                 log.flush()
                 print(line, end='', flush=True)
+                android = re.search(r'PHONE_ANDROID:(Back):(.+)', line)
+                if android:
+                    action, marker = android.group(1), android.group(2).strip()
+                    if not args.device.startswith('emulator-'):
+                        raise RuntimeError('Android system Back requires an emulator fixture')
+                    subprocess.run(['adb', '-s', args.device, 'shell', 'input', 'keyevent', '4'],
+                                   check=True, capture_output=True, timeout=20)
+                    subprocess.run(['adb', '-s', args.device, 'shell', 'run-as', 'io.github.mylxsw.marginmind', 'tee', marker],
+                                   input=('android-done:' + action).encode(), check=True, capture_output=True, timeout=20)
+                    continue
                 native = re.search(r'PHONE_NATIVE:([A-Za-z]+):(.+)', line)
                 if native:
                     action, marker = native.group(1), Path(native.group(2).strip())

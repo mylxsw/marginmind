@@ -1,0 +1,10 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/phone_native_actions_test.dart
+Running Xcode build...                                          
+Xcode build done.                                           25.2s
+00:00 +0: reader actions share the native outline presentation
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/C39D7B0C-7617-4235-801D-F67E93687939/Library/Application Support/Library/sets/4fdc85cb63b8f4b8a2846c646c5df913.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (71 ms)
+PHONE_NATIVE:ReaderActions:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/C39D7B0C-7617-4235-801D-F67E93687939/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ReaderActionsDark:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/C39D7B0C-7617-4235-801D-F67E93687939/Library/Caches/mobile-redesign-shot
+PHONE_NATIVE:ReaderActionsClose:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1415C442-DE9B-4F38-823D-1CAF69BB9926/data/Containers/Data/Application/C39D7B0C-7617-4235-801D-F67E93687939/Library/Caches/mobile-redesign-shot
+01:51 +1: (tearDownAll)
+01:51 +1: All tests passed!

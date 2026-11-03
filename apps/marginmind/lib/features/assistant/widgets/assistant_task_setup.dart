@@ -44,7 +44,7 @@ class AssistantTaskSetup {
 }
 
 Future<AssistantTaskSetup?> showAssistantTaskSetup(BuildContext context, TaskSpec spec, Conversation conversation) =>
-    showDialog<AssistantTaskSetup>(context: context, builder: (_) => _Setup(spec, conversation));
+    showMMSheet<AssistantTaskSetup>(context: context, builder: (_) => _Setup(spec, conversation));
 
 class _Setup extends ConsumerStatefulWidget {
   const _Setup(this.spec, this.conversation);
@@ -67,9 +67,18 @@ class _SetupState extends ConsumerState<_Setup> {
     final catalog = ref.watch(assistantServicesProvider).value;
     final row = route.value;
     final range = widget.spec.type == TaskType.conversationSummarize;
-    return AlertDialog(
-      title: Text(aiTaskName(l, widget.spec.type)),
-      content: SizedBox(
+    return MMSheet(
+      title: aiTaskName(l, widget.spec.type),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+        TextButton(
+          onPressed: (!range || _messages.isNotEmpty)
+              ? () => Navigator.pop(context, AssistantTaskSetup(_model, range ? _messages.toList() : null))
+              : null,
+          child: Text(l.assistantSend),
+        ),
+      ],
+      child: SizedBox(
         width: 440,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -123,15 +132,6 @@ class _SetupState extends ConsumerState<_Setup> {
           ],
         ),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
-        TextButton(
-          onPressed: (!range || _messages.isNotEmpty)
-              ? () => Navigator.pop(context, AssistantTaskSetup(_model, range ? _messages.toList() : null))
-              : null,
-          child: Text(l.assistantSend),
-        ),
-      ],
     );
   }
 }

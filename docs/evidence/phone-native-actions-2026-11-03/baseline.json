@@ -1,0 +1,6 @@
+{
+  "commit": "531b11ecdf621a53e63d84c25f09fcd89dd550de",
+  "scope": "Unmodified mm_design archive; tokens_test, tablet_chrome_test, toolbar_density_test, adaptive_test",
+  "passed": 49,
+  "failed": 5
+}

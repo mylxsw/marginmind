@@ -43,7 +43,8 @@ class MapDrop {
   /// space between siblings. Its top and bottom quarter insert before /
   /// after it; the middle (and the whole root) makes it the parent.
   /// Returns null over empty space and over the moving nodes or their
-  /// descendants.
+  /// descendants. Touch callers may enlarge the hit region in scene units
+  /// without changing node geometry or the insertion preview.
   static MapDrop? resolve({
     required Offset point,
     required Map<String, Rect> rects,
@@ -52,13 +53,16 @@ class MapDrop {
     required Set<String> moving,
     required String rootId,
     double gap = 0,
+    double minHitHeight = 0,
+    double horizontalHitPadding = 0,
   }) {
     String? hit;
     var best = double.infinity;
     for (final e in rects.entries) {
       final r = e.value;
-      if (point.dx < r.left || point.dx > r.right) continue;
-      if (point.dy < r.top - gap / 2 || point.dy > r.bottom + gap / 2) continue;
+      if (point.dx < r.left - horizontalHitPadding || point.dx > r.right + horizontalHitPadding) continue;
+      final halfHeight = math.max(r.height, minHitHeight) / 2;
+      if ((point.dy - r.center.dy).abs() > halfHeight + gap / 2) continue;
       final distance = (point.dy - r.center.dy).abs();
       if (distance < best) {
         best = distance;
@@ -68,7 +72,8 @@ class MapDrop {
     if (hit == null || !_accepts(hit, content, moving, rootId, mapId)) return null;
     if (hit == rootId) return MapDrop(targetId: hit, zone: MapDropZone.child, parentId: null, index: null);
     final r = rects[hit]!;
-    final y = (point.dy - r.top) / r.height;
+    final hitHeight = math.max(r.height, minHitHeight);
+    final y = (point.dy - r.center.dy) / hitHeight + .5;
     final zone = y < 0.25
         ? MapDropZone.before
         : y > 0.75

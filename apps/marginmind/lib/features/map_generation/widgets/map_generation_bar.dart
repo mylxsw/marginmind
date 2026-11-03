@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,9 +26,29 @@ class MapGenerationBar extends ConsumerStatefulWidget {
 class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
   final _adjustLink = LayerLink();
   final _adjustPortal = OverlayPortalController();
+  bool _phoneAdjustOpen = false;
 
   void _toggleAdjust() {
-    _adjustPortal.toggle();
+    if (MMInput.of(context).phone) {
+      unawaited(_showPhoneAdjust());
+    } else {
+      _adjustPortal.toggle();
+    }
+  }
+
+  Future<void> _showPhoneAdjust() async {
+    if (_phoneAdjustOpen) return;
+    final preview = ref.read(mapGenerationControllerProvider(widget.studySetId));
+    if (preview == null) return;
+    _phoneAdjustOpen = true;
+    try {
+      final request = await showMapAdjustSheet(context, preview.request);
+      if (mounted && request != null) {
+        await ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).regenerate(request);
+      }
+    } finally {
+      _phoneAdjustOpen = false;
+    }
   }
 
   void _closeAdjust() {
@@ -187,33 +209,40 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
         ),
         CompositedTransformTarget(
           link: _adjustLink,
-          child: OverlayPortal(
-            controller: _adjustPortal,
-            overlayChildBuilder: (context) => CompositedTransformFollower(
-              link: _adjustLink,
-              targetAnchor: Alignment.topCenter,
-              followerAnchor: Alignment.bottomCenter,
-              offset: const Offset(0, -8),
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: TapRegion(
-                  onTapOutside: (_) => _closeAdjust(),
-                  child: MapAdjustMenu(
-                    request: preview.request,
-                    onRegenerate: (updated) {
-                      _closeAdjust();
-                      controller.regenerate(updated);
-                    },
+          child: MMBackHandler(
+            onBack: () {
+              if (!_adjustPortal.isShowing) return false;
+              _closeAdjust();
+              return true;
+            },
+            child: OverlayPortal(
+              controller: _adjustPortal,
+              overlayChildBuilder: (context) => CompositedTransformFollower(
+                link: _adjustLink,
+                targetAnchor: Alignment.topCenter,
+                followerAnchor: Alignment.bottomCenter,
+                offset: const Offset(0, -8),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: TapRegion(
+                    onTapOutside: (_) => _closeAdjust(),
+                    child: MapAdjustMenu(
+                      request: preview.request,
+                      onRegenerate: (updated) {
+                        _closeAdjust();
+                        controller.regenerate(updated);
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-            child: MMButton(
-              key: const ValueKey('map-generation-adjust-button'),
-              label: l.mapIdeaAdjust,
-              icon: MMIcons.adjust,
-              variant: MMButtonVariant.plain,
-              onPressed: _toggleAdjust,
+              child: MMButton(
+                key: const ValueKey('map-generation-adjust-button'),
+                label: l.mapIdeaAdjust,
+                icon: MMIcons.adjust,
+                variant: MMButtonVariant.plain,
+                onPressed: _toggleAdjust,
+              ),
             ),
           ),
         ),
@@ -408,6 +437,21 @@ class _StepBox extends StatelessWidget {
     );
   }
 }
+
+/// The phone's regeneration form shares the same frame as initial generation.
+Future<MapGenerationRequest?> showMapAdjustSheet(BuildContext context, MapGenerationRequest request) =>
+    showMMSheet<MapGenerationRequest>(
+      context: context,
+      builder: (sheetContext) => MMSheet(
+        title: context.l10n.mapIdeaAdjust,
+        titleTrailing: MMIconButton(
+          icon: MMIcons.close,
+          tooltip: context.l10n.closePanel,
+          onPressed: () => Navigator.of(sheetContext).maybePop(),
+        ),
+        child: MapAdjustMenu(request: request, onRegenerate: (value) => Navigator.of(sheetContext).pop(value)),
+      ),
+    );
 
 class MapAdjustMenu extends StatefulWidget {
   const MapAdjustMenu({super.key, required this.request, required this.onRegenerate});

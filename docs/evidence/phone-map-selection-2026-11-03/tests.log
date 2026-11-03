@@ -1,0 +1,134 @@
+Resolving dependencies in `/Users/mylxsw/Workspace/codes/vibe/marginmind`...
+Downloading packages...
+  _fe_analyzer_shared 103.0.0 (111.0.0 available)
+  analyzer 13.3.0 (14.7.0 available)
+  archive 4.5.2 (4.6.0 available)
+  built_collection 5.1.2 (6.0.0 available)
+  cli_util 0.4.2 (0.6.0 available)
+  connectivity_plus 6.1.5 (7.3.2 available)
+  coverage 1.15.1 (1.16.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  cupertino_ui 1.1.4 (1.1.5 available)
+  dart_agent_core 2.1.8 (2.1.9 available)
+  dbus 0.7.15 (0.8.0 available)
+  http2 2.3.1 (3.1.0 available)
+  jni 1.1.0 (1.1.1 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  material_ui 1.8.0 (1.9.0 available)
+  nm 0.5.0 (0.6.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  pdfium_dart 0.4.0 (0.4.1 available)
+  pdfium_flutter 0.4.0 (0.4.1 available)
+  pdfrx 2.10.1 (2.11.0 available)
+  pdfrx_engine 0.8.0 (0.9.0 available)
+  posix 6.5.2 (6.5.4 available)
+  screen_retriever 0.2.2 (0.3.0 available)
+  shared_preferences_android 2.5.3 (2.5.4 available)
+  shared_preferences_foundation 2.6.0 (2.6.1 available)
+  test 1.31.1 (1.33.0 available)
+  test_api 0.7.12 (0.7.15 available)
+  test_core 0.6.18 (0.6.21 available)
+  vector_graphics 1.2.4 (1.2.6 available)
+  vector_math 2.4.3 (2.4.4 available)
+  xml 7.0.1 (7.1.0 available)
+Got dependencies in `/Users/mylxsw/Workspace/codes/vibe/marginmind`!
+33 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: a frame can shrink without losing earlier rounds; interrupt restores the previous frame
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_test.dart: phone frame persists, resizes, moves, accumulates and can be refined at zoom 0.5 (variant: TargetPlatform.iOS)
+00:00 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:01 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:02 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:03 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:03 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:03 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:03 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:03 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_map_selection_workspace_test.dart: iPhone 402×874: selection drafts cancel, complete, and restore node dragging (variant: TargetPlatform.iOS)
+00:03 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node toolbar follows each PointerDeviceKind.mouse selection on the next frame
+00:03 +44: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node toolbar follows each PointerDeviceKind.mouse selection on the next frame
+00:04 +45: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node toolbar follows each PointerDeviceKind.mouse selection on the next frame
+00:04 +46: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node toolbar follows each PointerDeviceKind.mouse selection on the next frame
+PointerDeviceKind.mouse c3 selection callback delay: 0ms
+PointerDeviceKind.mouse c4 selection callback delay: 0ms
+PointerDeviceKind.mouse c6 selection callback delay: 0ms
+PointerDeviceKind.mouse c3 selection callback delay: 0ms
+00:06 +47: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node toolbar follows each PointerDeviceKind.touch selection on the next frame
+PointerDeviceKind.touch c3 selection callback delay: 0ms
+PointerDeviceKind.touch c4 selection callback delay: 0ms
+PointerDeviceKind.touch c6 selection callback delay: 0ms
+PointerDeviceKind.touch c3 selection callback delay: 0ms
+00:06 +48: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node toolbar adds an editable note under c3 in one undo step
+00:07 +49: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node toolbar adds an editable note under c6 in one undo step
+00:07 +50: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: one selected node gets its own toolbar; several get the selection bar; no selection gets none
+00:07 +51: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node menu removes c3 and undo restores it without a global delete button
+00:08 +52: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node menu removes c6 and undo restores it without a global delete button
+00:08 +53: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: node menu removes image and undo restores it without a global delete button
+00:08 +54: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_test.dart: only an explicit root click shows its reduced menu; blank canvas clears it
+00:09 +55: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:09 +56: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:10 +57: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:10 +58: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:10 +59: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:11 +60: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: modifier click toggles map and outline selections; delete is one undo step (variant: TargetPlatform.macOS)
+00:12 +61: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: modifier click toggles map and outline selections; delete is one undo step (variant: TargetPlatform.macOS)
+00:12 +62: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:13 +63: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:13 +64: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: copy/cut/paste keep subtrees and types, text fallback, and text editing keeps shortcuts (variant: TargetPlatform.macOS)
+00:13 +65: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: copy/cut/paste keep subtrees and types, text fallback, and text editing keeps shortcuts (variant: TargetPlatform.macOS)
+00:13 +66: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: copy/cut/paste keep subtrees and types, text fallback, and text editing keeps shortcuts (variant: TargetPlatform.macOS)
+00:13 +67: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.iOS)
+00:14 +68: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: dragging one selected root moves the whole selection and rejects selected descendants (variant: TargetPlatform.macOS)
+00:14 +69: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: settings use the shared floating list and return from details (variant: TargetPlatform.iOS)
+00:15 +70: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: native clipboard menu has one shortcut and routes text editing separately (variant: TargetPlatform.macOS)
+00:15 +71: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_selection_clipboard_test.dart: native clipboard menu has one shortcut and routes text editing separately (variant: TargetPlatform.macOS)
+00:15 +72: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: navigation stays scoped to the current study set (variant: TargetPlatform.android)
+00:15 +73: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: navigation stays scoped to the current study set (variant: TargetPlatform.android)
+00:15 +74: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.android)
+00:15 +75: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: system back closes menus, sheets and editing before going up (variant: TargetPlatform.android)
+00:16 +76: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: long press opens an action sheet that back and Cancel close (variant: TargetPlatform.android)
+00:16 +77: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: an excerpt stays on the source and offers View once (variant: TargetPlatform.android)
+00:16 +78: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.android)
+00:16 +79: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: settings use the shared floating list and return from details (variant: TargetPlatform.android)
+00:16 +80: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: review grades with thumb-sized buttons and a tap turns the card (variant: TargetPlatform.android)
+00:16 +81: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a compact iPad keeps tablet headers without phone controls
+00:17 +82: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a phone on its side is not compact: no tabs, as before
+00:17 +83: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: desktop windows have no tabs and keep their menus
+00:17 +84: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: system bars contrast with the theme
+00:17 +85: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: tabs follow the route
+00:17 +86: All tests passed!

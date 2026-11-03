@@ -6002,4 +6002,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneManageNavigation => '管理';
+
+  @override
+  String get mapPhoneEdit => '编辑';
+
+  @override
+  String get mapPhoneChild => '子主题';
+
+  @override
+  String get mapPhoneSibling => '同级';
+
+  @override
+  String get mapPhoneMore => '更多';
+
+  @override
+  String get mapDragHint => '拖到节点中间改归属，拖到边缘调顺序；空白处松手取消';
+
+  @override
+  String mapDropChild(String title) {
+    return '松手移到“$title”下';
+  }
+
+  @override
+  String mapDropBefore(String title) {
+    return '松手放在“$title”前面';
+  }
+
+  @override
+  String mapDropAfter(String title) {
+    return '松手放在“$title”后面';
+  }
+
+  @override
+  String mapSelectionCount(int count) {
+    return '已选 $count 项';
+  }
+
+  @override
+  String get mapSelectionTap => '点选';
+
+  @override
+  String get mapSelectionBox => '框选';
+
+  @override
+  String get mapSelectionClear => '清空';
+
+  @override
+  String get mapSelectionTapHint => '点节点选择或取消；单指移动画布，双指缩放';
+
+  @override
+  String get mapSelectionBoxHint => '单指画框，松手后可拖动四角修正；双指移动画布';
 }

@@ -72,6 +72,25 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
         if (mounted && picked != null) await onChanged(picked);
         return;
       }
+      if (MMInput.of(context).phone) {
+        final picked = await showMMBottomSheet<MMAnnotationColor>(
+          context: context,
+          expand: false,
+          builder: (_) => inScope(
+            context,
+            SingleChildScrollView(
+              child: _HighlightColors(
+                current: widget.color,
+                moreOnly: widget.moreOnly,
+                colors: widget.colors,
+                mixed: widget.mixed,
+              ),
+            ),
+          ),
+        );
+        if (mounted && picked != null) await onChanged(picked);
+        return;
+      }
       final picked = await showGeneralDialog<MMAnnotationColor>(
         context: context,
         barrierColor: Colors.transparent,
@@ -81,7 +100,7 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
         pageBuilder: (_, _, _) => inScope(
           context,
           CustomSingleChildLayout(
-            delegate: AnnotationPalettePlacement(anchor),
+            delegate: AnnotationPalettePlacement.of(context, anchor),
             child: _HighlightColors(
               current: widget.color,
               moreOnly: widget.moreOnly,

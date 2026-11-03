@@ -1,0 +1,7 @@
+{
+  "device": "1415C442-DE9B-4F38-823D-1CAF69BB9926",
+  "test": "mobile_map_selection_acceptance_test.dart",
+  "commit": "531b11ecdf621a53e63d84c25f09fcd89dd550de",
+  "dart_source_sha256": "fbf3176bb7ee82bb35cfb1332d9deb339850e3cd9f340a97baab30de1871c2a1",
+  "native_swift_sha256": "34e0aa0bbaba459bc2b8d606f0cc4ad913c3858f90d25e74a64e82a186ea243e"
+}

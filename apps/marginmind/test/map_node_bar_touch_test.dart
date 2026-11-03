@@ -51,6 +51,24 @@ void main() {
     });
   }
 
+  testWidgets('phone actions are labelled, compact and expose the full menu explicitly', (tester) async {
+    final invoked = <String>[];
+    await _pumpBar(tester, invoked: invoked, phone: true);
+    final toolbar = find.byKey(const ValueKey('phone-map-node-toolbar'));
+    expect(tester.getSize(toolbar).width, lessThanOrEqualTo(304));
+    for (final id in ['edit', 'child', 'sibling', 'assistant', 'more']) {
+      final button = find.byKey(ValueKey('node-bar-$id'));
+      expect(button, findsOneWidget);
+      expect(tester.getSize(button).shortestSide, greaterThanOrEqualTo(44));
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+    }
+    expect(invoked, ['edit', 'child', 'sibling', 'assistant', 'more']);
+    for (final id in ['delete', 'relation', 'image', 'note']) {
+      expect(find.byKey(ValueKey('node-bar-$id')), findsNothing);
+    }
+  }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
   testWidgets('tablet root shows only applicable icons', (tester) async {
     await _pumpBar(tester, invoked: [], root: true);
     for (final action in ['child', 'image', 'assistant']) {
@@ -67,6 +85,7 @@ Future<void> _pumpBar(
   required List<String> invoked,
   bool dark = false,
   bool root = false,
+  bool phone = false,
 }) async {
   // The assistant action draws AssistantIcon, which reads app settings.
   final overrides = await testOverrides();
@@ -80,10 +99,12 @@ Future<void> _pumpBar(
         supportedLocales: AppLocalizations.supportedLocales,
         home: MMInput(
           touchPlatform: true,
+          phone: phone,
           child: Scaffold(
             body: Center(
               child: MapNodeBar(
                 root: root,
+                onMore: () => invoked.add('more'),
                 onChild: () => invoked.add('child'),
                 onSibling: () => invoked.add('sibling'),
                 onEdit: root ? null : () => invoked.add('edit'),

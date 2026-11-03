@@ -6246,4 +6246,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneManageNavigation => 'Manage';
+
+  @override
+  String get mapPhoneEdit => 'Edit';
+
+  @override
+  String get mapPhoneChild => 'Child';
+
+  @override
+  String get mapPhoneSibling => 'Sibling';
+
+  @override
+  String get mapPhoneMore => 'More';
+
+  @override
+  String get mapDragHint => 'Drag to a node to reparent, or to its edge to reorder. Release elsewhere to cancel.';
+
+  @override
+  String mapDropChild(String title) {
+    return 'Release to move under “$title”';
+  }
+
+  @override
+  String mapDropBefore(String title) {
+    return 'Release to insert before “$title”';
+  }
+
+  @override
+  String mapDropAfter(String title) {
+    return 'Release to insert after “$title”';
+  }
+
+  @override
+  String mapSelectionCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get mapSelectionTap => 'Tap';
+
+  @override
+  String get mapSelectionBox => 'Box';
+
+  @override
+  String get mapSelectionClear => 'Clear';
+
+  @override
+  String get mapSelectionTapHint => 'Tap nodes to select. Drag to pan; pinch to zoom.';
+
+  @override
+  String get mapSelectionBoxHint => 'Drag a box; adjust its corners after release. Use two fingers to move the map.';
 }

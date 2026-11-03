@@ -1,0 +1,57 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/mobile_modal_acceptance_test.dart
+Running Gradle task 'assembleDebug'...                             28.3s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          14.9s
+00:00 +0: phone modal families share one frame and retain native platform behavior
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/86a92ed97a07f11121af39dd53a5ee78.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (43 ms)
+PHONE_SHOT:light-01-settings-medium:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-02-settings-expanded-models:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-03-menu:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-04-submenu:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-05-map-generation:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-06-note-setup:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-07-map-export:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:light-08-reading-settings:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-01-settings-medium:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-02-settings-expanded-models:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-03-menu:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-04-submenu:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-05-map-generation:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-06-note-setup:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-07-map-export:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:dark-08-reading-settings:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:android-09-rename-keyboard:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/86a92ed97a07f11121af39dd53a5ee78.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (31 ms)
+PHONE_SHOT:android-10-rename-landscape-keyboard:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:android-10a-landscape-save:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PdfDocument initial load: PdfDocumentRefKey(/data/user/0/io.github.mylxsw.marginmind/files/Library/sets/86a92ed97a07f11121af39dd53a5ee78.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (22 ms)
+PHONE_SHOT:android-11-confirmation:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:android-12-color-picker:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:android-13-reader-more:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:android-14-reader-appearance:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_SHOT:android-15-reader-navigation:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+PHONE_ANDROID:Back:/data/user/0/io.github.mylxsw.marginmind/cache/mobile-redesign-shot
+02:53 +1: (tearDownAll)
+02:53 +1: All tests passed!

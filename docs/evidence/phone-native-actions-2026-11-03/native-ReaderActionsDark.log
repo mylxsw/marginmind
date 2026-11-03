@@ -1,0 +1,7 @@
+Writing result bundle at path:
+	/private/tmp/marginmind-native-actions-theme/native-ReaderActionsDark.xcresult
+
+2026-11-03 12:21:09.938 xcodebuild[42566:8978594] [MT] IDETestOperationsObserverDebug: 25.033 elapsed -- Testing started completed.
+2026-11-03 12:21:09.939 xcodebuild[42566:8978594] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-03 12:21:09.939 xcodebuild[42566:8978594] [MT] IDETestOperationsObserverDebug: 25.033 sec, +25.033 sec -- end
+Testing started

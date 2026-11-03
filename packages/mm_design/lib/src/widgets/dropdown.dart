@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsRole;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -9,6 +11,7 @@ import '../tokens/metrics.dart';
 import 'flat_surface.dart';
 import 'control_frame.dart';
 import 'toolbar.dart';
+import 'bottom_sheet.dart';
 
 /// Reports menu lifetime to a host that must keep its anchors stationary.
 class MMPopupActivity extends InheritedWidget {
@@ -75,6 +78,45 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
   Widget build(BuildContext context) {
     _activity = MMPopupActivity.maybeOf(context);
     final c = context.mmColors;
+    if (MMInput.of(context).phone) {
+      return Semantics(
+        button: true,
+        enabled: widget.enabled,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(MMRadii.row),
+          onTap: !widget.enabled
+              ? null
+              : () async {
+                  if (_open) return;
+                  setState(() => _open = true);
+                  _activity?.onChanged(this, true);
+                  widget.onOpened?.call();
+                  T? value;
+                  try {
+                    value = await showMMPhoneDropdown<T>(
+                      context,
+                      title: widget.tooltip,
+                      entries: widget.itemBuilder(context),
+                    );
+                  } finally {
+                    _closed();
+                  }
+                  if (mounted && value != null) widget.onSelected?.call(value);
+                },
+          child: Tooltip(
+            message: widget.tooltip ?? '',
+            child:
+                widget.child ??
+                SizedBox.fromSize(
+                  size: context.mmToolbarButton,
+                  child: Center(
+                    child: widget.icon ?? Icon(MMIcons.more, color: widget.enabled ? c.label : c.secondaryLabel),
+                  ),
+                ),
+          ),
+        ),
+      );
+    }
     if (widget.cascading) {
       return MMDropdownMenuButton<T>(
         icon: (widget.icon is Icon ? (widget.icon as Icon).icon : null) ?? MMIcons.more,
@@ -333,44 +375,72 @@ class _MMDropdownMenuButtonState<T> extends State<MMDropdownMenuButton<T>> {
   }
 
   @override
-  Widget build(BuildContext context) => _MMDropdownMenuScope<T>(
-    select: _select,
-    child: CallbackShortcuts(
-      bindings: {if (_controller.isOpen) const SingleActivator(LogicalKeyboardKey.escape): _controller.close},
-      child: MenuAnchor(
-        controller: _controller,
-        childFocusNode: _buttonFocus,
-        consumeOutsideTap: true,
-        style: _dropdownMenuStyle(context),
-        onOpen: () {
-          setState(() {});
-          _buttonFocus.requestFocus();
-          widget.onOpened?.call();
-        },
-        onClose: () {
-          if (mounted) setState(() {});
-          widget.onClosed?.call();
-        },
-        menuChildren: _dropdownChildren(context, widget.itemBuilder(context), widget.width, _select),
-        builder: (_, controller, _) => Focus(
-          focusNode: _buttonFocus,
-          child: MMCompactToolbarScope.of(context) && context.mmTablet
-              ? MMToolbarButton(
-                  icon: widget.icon,
-                  tooltip: widget.tooltip,
-                  selected: controller.isOpen,
-                  onPressed: !widget.enabled ? null : () => controller.isOpen ? controller.close() : controller.open(),
-                )
-              : MMIconButton(
-                  icon: widget.icon,
-                  tooltip: widget.tooltip,
-                  selected: controller.isOpen,
-                  onPressed: !widget.enabled ? null : () => controller.isOpen ? controller.close() : controller.open(),
-                ),
+  Widget build(BuildContext context) {
+    if (MMInput.of(context).phone) {
+      return MMToolbarButton(
+        icon: widget.icon,
+        tooltip: widget.tooltip,
+        onPressed: !widget.enabled
+            ? null
+            : () async {
+                widget.onOpened?.call();
+                T? value;
+                try {
+                  value = await showMMPhoneDropdown<T>(
+                    context,
+                    title: widget.tooltip,
+                    entries: widget.itemBuilder(context),
+                  );
+                } finally {
+                  widget.onClosed?.call();
+                }
+                if (mounted && value != null) widget.onSelected?.call(value);
+              },
+      );
+    }
+    return _MMDropdownMenuScope<T>(
+      select: _select,
+      child: CallbackShortcuts(
+        bindings: {if (_controller.isOpen) const SingleActivator(LogicalKeyboardKey.escape): _controller.close},
+        child: MenuAnchor(
+          controller: _controller,
+          childFocusNode: _buttonFocus,
+          consumeOutsideTap: true,
+          style: _dropdownMenuStyle(context),
+          onOpen: () {
+            setState(() {});
+            _buttonFocus.requestFocus();
+            widget.onOpened?.call();
+          },
+          onClose: () {
+            if (mounted) setState(() {});
+            widget.onClosed?.call();
+          },
+          menuChildren: _dropdownChildren(context, widget.itemBuilder(context), widget.width, _select),
+          builder: (_, controller, _) => Focus(
+            focusNode: _buttonFocus,
+            child: MMCompactToolbarScope.of(context) && context.mmTablet
+                ? MMToolbarButton(
+                    icon: widget.icon,
+                    tooltip: widget.tooltip,
+                    selected: controller.isOpen,
+                    onPressed: !widget.enabled
+                        ? null
+                        : () => controller.isOpen ? controller.close() : controller.open(),
+                  )
+                : MMIconButton(
+                    icon: widget.icon,
+                    tooltip: widget.tooltip,
+                    selected: controller.isOpen,
+                    onPressed: !widget.enabled
+                        ? null
+                        : () => controller.isOpen ? controller.close() : controller.open(),
+                  ),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _MMDropdownMenuScope<T> extends InheritedWidget {
@@ -517,4 +587,118 @@ class _MMDropdownSubmenuState<T> extends State<MMDropdownSubmenu<T>> {
       ),
     );
   }
+}
+
+/// Phone menus share the dialog frame, including submenus. Rich entry widgets
+/// remain intact; each submenu opens inside this sheet rather than off-screen.
+Future<T?> showMMPhoneDropdown<T>(BuildContext context, {String? title, required List<PopupMenuEntry<T>> entries}) =>
+    showMMBottomSheet<T>(
+      context: context,
+      expand: false,
+      builder: (_) => _PhoneDropdown<T>(title: title, entries: entries),
+    );
+
+class _PhoneDropdown<T> extends StatefulWidget {
+  const _PhoneDropdown({required this.title, required this.entries});
+  final String? title;
+  final List<PopupMenuEntry<T>> entries;
+  @override
+  State<_PhoneDropdown<T>> createState() => _PhoneDropdownState<T>();
+}
+
+class _PhoneDropdownState<T> extends State<_PhoneDropdown<T>> {
+  final _history = <({String? title, List<PopupMenuEntry<T>> entries})>[];
+  late String? _title = widget.title;
+  late List<PopupMenuEntry<T>> _entries = widget.entries;
+  void _back() => setState(() {
+    final previous = _history.removeLast();
+    _title = previous.title;
+    _entries = previous.entries;
+  });
+  Widget _entry(PopupMenuEntry<T> entry) {
+    if (entry is PopupMenuItem<T> && entry.child is PopupMenuEntry<T>) {
+      return _entry(entry.child! as PopupMenuEntry<T>);
+    }
+    if (entry is MMDropdownSubmenu<T>) {
+      return ListTile(
+        key: entry.key,
+        leading: entry.icon == null ? null : Icon(entry.icon),
+        title: Text(entry.label, style: context.mmText.body),
+        trailing: const Icon(MMIcons.chevronRight),
+        enabled: entry.enabled,
+        onTap: () => setState(() {
+          _history.add((title: _title, entries: _entries));
+          _title = entry.label;
+          _entries =
+              entry.itemBuilder?.call(context) ??
+              [
+                for (final row in entry.entries)
+                  MMDropdownItem<T>(
+                    value: row.value,
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(row.label)),
+                        if (row.selected) const Icon(MMIcons.check),
+                      ],
+                    ),
+                  ),
+              ];
+        }),
+      );
+    }
+    return entry;
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: _history.isEmpty,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop && _history.isNotEmpty) _back();
+    },
+    child: Semantics(
+      container: true,
+      explicitChildNodes: true,
+      role: SemanticsRole.menu,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+              child: Row(
+                children: [
+                  if (_history.isNotEmpty)
+                    MMIconButton(
+                      icon: MMIcons.chevronLeft,
+                      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                      onPressed: _back,
+                    ),
+                  Expanded(
+                    child: Text(
+                      _title ?? MaterialLocalizations.of(context).popupMenuLabel,
+                      style: context.mmText.headline,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  MMIconButton(
+                    icon: MMIcons.close,
+                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _entries.map(_entry).toList()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

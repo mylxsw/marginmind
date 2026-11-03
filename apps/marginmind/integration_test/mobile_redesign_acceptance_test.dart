@@ -227,7 +227,11 @@ void main() {
     }
     await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
     await shot('03a-reader-menu');
-    await dismiss();
+    if (MMNativePresentation.available) {
+      await nativeInteraction('ReaderActionsClose');
+    } else {
+      await dismiss();
+    }
     final selection = MMPdfSelection(
       page: 1,
       rects: const [PageRect(72, 160, 340, 18)],

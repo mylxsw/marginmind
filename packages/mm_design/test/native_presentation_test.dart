@@ -74,7 +74,35 @@ void main() {
     );
   });
 
-  testWidgets('iPhone sheet drag respects the live PopScope guard', (tester) async {
+  test('native inline actions refresh content and release callbacks on dismissal', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    String? session;
+    var selected = false;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'available') return true;
+      expect(call.method, 'actions');
+      session = (call.arguments as Map)['id'] as String;
+      expect(await incoming('action', {'id': session!, 'action': 'toggle'}), {'selected': true});
+      expect(await incoming('action', {'id': session!, 'action': 'toggle'}), {'selected': false});
+      return 'outline';
+    });
+    await MMNativePresentation.initialize();
+    expect(
+      await MMNativePresentation.actions(
+        content: {'title': 'Reader'},
+        onAction: (action) async {
+          expect(action, 'toggle');
+          selected = !selected;
+          return {'selected': selected};
+        },
+      ),
+      'outline',
+    );
+    expect(await incoming('action', {'id': session!, 'action': 'toggle'}), isNull);
+    expect(selected, isFalse);
+  });
+
+  testWidgets('phone sheet drag respects the live PopScope guard', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -105,15 +133,15 @@ void main() {
     );
     await tester.pumpAndSettle();
     final frame = find.byType(MMSheet);
-    await tester.flingFrom(tester.getTopLeft(frame) + const Offset(190, 3), const Offset(0, 600), 1600);
+    await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, 600), 1600);
     await tester.pumpAndSettle();
     expect(frame, findsOneWidget);
     canClose.value = true;
     await tester.pumpAndSettle();
-    await tester.flingFrom(tester.getTopLeft(frame) + const Offset(190, 3), const Offset(0, 600), 1600);
+    await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, 600), 1600);
     await tester.pumpAndSettle();
     expect(frame, findsNothing);
     await result;
     expect(tester.takeException(), isNull);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+  }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
 }

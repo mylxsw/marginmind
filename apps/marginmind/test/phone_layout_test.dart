@@ -114,9 +114,9 @@ void main() {
       expect(find.byKey(const ValueKey('workspace-panel-sheet')), findsOneWidget);
       expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
       final full = tester.getRect(sheet);
-      expect(full.bottom, phone.size.height);
-      final room = phone.size.height - phone.safe.top - MMSpacing.s;
-      expect(full.height, moreOrLessEquals(room * MMSizes.bottomSheetMedium, epsilon: 1));
+      expect(full.bottom, phone.size.height - phone.safe.bottom - MMSizes.phoneSheetPadding);
+      final room = phone.size.height - phone.safe.top - MMSpacing.s - phone.safe.bottom - MMSizes.phoneSheetPadding;
+      expect(full.height, moreOrLessEquals(room * MMSizes.phoneSheetMedium, epsilon: 1));
       await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, -80), 1400);
       await tester.pumpAndSettle();
       expect(tester.getSize(sheet).height, moreOrLessEquals(room, epsilon: 1));
@@ -126,8 +126,14 @@ void main() {
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
       final typing = tester.getRect(sheet);
-      expect(typing.bottom, phone.size.height - 300);
-      expect(typing.height, moreOrLessEquals(phone.size.height - 300 - phone.safe.top - MMSpacing.s, epsilon: 1));
+      expect(typing.bottom, phone.size.height - 300 - MMSizes.phoneSheetPadding);
+      expect(
+        typing.height,
+        moreOrLessEquals(
+          phone.size.height - 300 - phone.safe.top - MMSpacing.s - MMSizes.phoneSheetPadding,
+          epsilon: 1,
+        ),
+      );
       // The tabs step aside for the keyboard.
       expect(find.byType(MMTabBar), findsNothing);
       tester.view.resetViewInsets();
@@ -154,6 +160,14 @@ void main() {
       final container = await openStudySet(tester, phone);
       final controller = container.read(workspaceProvider('demo-1').notifier);
       final nav = container.read(navigationProvider.notifier);
+
+      // A contextual selection/highlight popover closes before the page.
+      controller.tapHighlight(controller.content.annotations.first.id, const Rect.fromLTWH(80, 220, 240, 24));
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).pending, isNotNull);
+      await systemBack(tester);
+      expect(container.read(workspaceProvider('demo-1')).pending, isNull);
+      expect(container.read(navigationProvider), isA<WorkspaceRoute>());
 
       // The panel sheet closes first.
       controller.openPanel(RightPanel.assistant);
@@ -300,8 +314,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(MapExportSheet), findsOneWidget);
       final sheet = tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet')));
-      expect(sheet.width, phone.size.width);
-      expect(sheet.bottom, phone.size.height);
+      expect(sheet.width, phone.size.width - MMSizes.phoneSheetPadding * 2);
+      expect(sheet.bottom, phone.size.height - phone.safe.bottom - MMSizes.phoneSheetPadding);
       expect(tester.takeException(), isNull);
       await systemBack(tester);
       expect(find.byType(MapExportSheet), findsNothing);
@@ -309,17 +323,20 @@ void main() {
       await settleHud(tester);
     }, variant: variant);
 
-    testWidgets('${phone.name}: settings use a full screen list and return from details', (tester) async {
+    testWidgets('${phone.name}: settings use the shared floating list and return from details', (tester) async {
       await pumpPhone(tester, phone);
       await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(MMIcons.settings));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsNothing);
+      expect(find.byKey(const ValueKey('mm-bottom-sheet')), findsOneWidget);
       expect(find.byKey(const ValueKey('settings-sidebar')), findsNothing);
       final sections = find.byKey(const ValueKey('phone-settings-sections'));
       expect(sections, findsOneWidget);
-      expect(tester.getRect(find.byKey(const ValueKey('settings-window'))).width, phone.size.width);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('settings-window'))).width,
+        phone.size.width - MMSizes.phoneSheetPadding * 2,
+      );
       for (final label in ['Reading', 'Models', 'Web Search', 'Voice Input', 'General']) {
         final section = find.descendant(of: sections, matching: find.text(label));
         await tester.ensureVisible(section);

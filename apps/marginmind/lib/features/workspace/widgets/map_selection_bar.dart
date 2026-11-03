@@ -38,6 +38,7 @@ class MapSelectionBar extends ConsumerWidget {
     required this.onRelation,
     required this.onDelete,
     required this.onMergeHover,
+    this.onSelectMore,
     required this.onColor,
     this.onAssistant,
     this.color,
@@ -47,6 +48,7 @@ class MapSelectionBar extends ConsumerWidget {
   final MapEditReason? mergeReason, summaryReason;
   final VoidCallback onMerge, onSummary, onRelation, onDelete;
   final ValueChanged<bool> onMergeHover;
+  final VoidCallback? onSelectMore;
   final Future<void> Function(MMAnnotationColor)? onColor;
 
   /// Null means that the selection contains different colors.
@@ -63,6 +65,8 @@ class MapSelectionBar extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (MMInput.of(context).phone && onSelectMore != null)
+            _PhoneNodeAction(id: 'select', label: l.mapSelectionTap, icon: MMIcons.areaSelect, onTap: onSelectMore!),
           MouseRegion(
             onEnter: (_) => onMergeHover(true),
             onExit: (_) => onMergeHover(false),
@@ -125,6 +129,7 @@ class MapNodeBar extends StatelessWidget {
     required this.onRelation,
     required this.onDelete,
     this.onEdit,
+    this.onMore,
     this.onAssistant,
     this.root = false,
   });
@@ -132,6 +137,7 @@ class MapNodeBar extends StatelessWidget {
   final VoidCallback onChild, onSibling, onNote, onImage, onRelation, onDelete;
   final bool root;
   final VoidCallback? onEdit;
+  final VoidCallback? onMore;
 
   /// Opens the assistant's actions for the node, anchored below [anchor].
   final ValueChanged<Rect>? onAssistant;
@@ -139,6 +145,39 @@ class MapNodeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    if (MMInput.of(context).phone) {
+      return MMGlass(
+        key: const ValueKey('phone-map-node-toolbar'),
+        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onEdit != null) _PhoneNodeAction(id: 'edit', label: l.mapPhoneEdit, icon: MMIcons.pen, onTap: onEdit!),
+            _PhoneNodeAction(id: 'child', label: l.mapPhoneChild, nodeIcon: MMNodeAction.child, onTap: onChild),
+            if (!root)
+              _PhoneNodeAction(
+                id: 'sibling',
+                label: l.mapPhoneSibling,
+                nodeIcon: MMNodeAction.sibling,
+                onTap: onSibling,
+              ),
+            if (onAssistant != null)
+              Builder(
+                builder: (context) => _PhoneNodeAction(
+                  id: 'assistant',
+                  label: l.askAssistant,
+                  icon: MMIcons.ai,
+                  onTap: () {
+                    final box = context.findRenderObject()! as RenderBox;
+                    onAssistant!(box.localToGlobal(Offset.zero) & box.size);
+                  },
+                ),
+              ),
+            if (onMore != null) _PhoneNodeAction(id: 'more', label: l.mapPhoneMore, icon: MMIcons.more, onTap: onMore!),
+          ],
+        ),
+      );
+    }
     if (context.mmTablet) {
       return TextFieldTapRegion(
         child: MMFloatingToolbar(
@@ -213,6 +252,41 @@ class MapNodeBar extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PhoneNodeAction extends StatelessWidget {
+  const _PhoneNodeAction({required this.id, required this.label, this.icon, this.nodeIcon, required this.onTap});
+  final String id, label;
+  final IconData? icon;
+  final MMNodeAction? nodeIcon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => MMInteractive(
+    key: ValueKey('node-bar-$id'),
+    semanticLabel: label,
+    onTap: onTap,
+    builder: (context, state) => Container(
+      constraints: const BoxConstraints(minHeight: 52),
+      width: 56,
+      decoration: BoxDecoration(
+        color: state.pressed ? context.mmColors.pressed : null,
+        borderRadius: BorderRadius.circular(MMRadii.row),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: MMSpacing.xs),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (nodeIcon != null)
+            MMNodeActionIcon(nodeIcon!, size: 20, color: context.mmColors.label)
+          else
+            Icon(icon, size: 20, color: context.mmColors.label),
+          const SizedBox(height: 3),
+          Text(label, style: context.mmText.footnote, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Stable entry points for map commands; unavailable actions stay in place.
@@ -339,6 +413,30 @@ class _MapAction extends StatelessWidget {
     final hint = '$label${showShortcut ? '  $shortcut' : ''}${reason == null ? '' : '\n$reason'}';
     void invoke() => reason == null ? onPressed?.call() : MMHud.show(context, reason!, icon: MMIcons.info);
     final key = ValueKey('$keyPrefix-$id');
+    if (MMInput.of(context).phone) {
+      return MMInteractive(
+        key: key,
+        semanticLabel: hint,
+        onTap: onPressed == null ? null : invoke,
+        builder: (context, state) {
+          final color = !state.enabled || reason != null
+              ? context.mmColors.secondaryLabel
+              : tint ?? context.mmColors.label;
+          return Container(
+            width: 44,
+            height: 52,
+            decoration: BoxDecoration(
+              color: state.pressed ? context.mmColors.pressed : null,
+              borderRadius: BorderRadius.circular(MMRadii.row),
+            ),
+            alignment: Alignment.center,
+            child:
+                iconWidget ??
+                (nodeIcon != null ? MMNodeActionIcon(nodeIcon!, color: color) : Icon(icon, color: color, size: 20)),
+          );
+        },
+      );
+    }
     final button = nodeIcon == null
         ? MMToolbarButton(
             key: key,

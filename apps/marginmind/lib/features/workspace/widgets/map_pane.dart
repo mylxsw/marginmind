@@ -42,6 +42,7 @@ import '../../map_generation/widgets/map_generation_bar.dart';
 import 'map_style_popover.dart';
 import 'outline_view.dart';
 import 'map_selection_bar.dart';
+import 'phone_map_selection.dart';
 import 'map_header.dart';
 import 'generate_map_menu.dart';
 import 'workspace_toolbar.dart';
@@ -97,6 +98,33 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
   final _headerGeometry = MapHeaderGeometry();
   bool _touchSelection = false;
+  late final _phoneSelection = ref.read(phoneMapSelectionProvider(widget.studySetId))..addListener(_selectionChanged);
+
+  void _selectionChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _beginPhoneSelection() {
+    _closeStyle();
+    _focus.requestFocus();
+    // Finish the pressed control's focus/semantics update before replacing
+    // the whole dock. This also keeps accessibility activation predictable.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ModalRoute.isCurrentOf(context) == false) return;
+      final state = ref.read(workspaceProvider(widget.studySetId));
+      _phoneSelection.begin({...state.selectedCardIds, if (state.selectedCardId != null) state.selectedCardId!});
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
+  void _toggleTouchSelection() {
+    if (MMInput.of(context).phone) {
+      _beginPhoneSelection();
+    } else {
+      setState(() => _touchSelection = !_touchSelection);
+    }
+  }
+
   bool _toolbarBusy = false;
   Completer<void>? _pendingEditCommit;
 
@@ -303,6 +331,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     for (final transform in _transforms.values) {
       transform.dispose();
     }
+    _phoneSelection.removeListener(_selectionChanged);
     _focus.dispose();
     super.dispose();
   }
@@ -539,6 +568,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     if (card == null && !root) return null;
     return MapNodeBar(
       root: root,
+      onMore: () => _showNodeMenu(card?.id, Offset.zero, () async => remove()),
       onEdit: card == null ? null : () => _runToolbarAction(() => rename(card.id)),
       onChild: () => _runToolbarAction(() => addTopic(asChild: true)),
       onSibling: () => _runToolbarAction(
@@ -615,6 +645,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
       context,
       position: position,
       entries: [
+        if (MMInput.of(context).phone) ...[
+          MMMenuItem(l.mapMultiSelect, _beginPhoneSelection, icon: MMIcons.areaSelect),
+          const MMMenuDivider(),
+        ],
         // Ask the assistant about the node: sent at once, or attached to ask freely.
         if (_assistantEntries(card) case final entries when entries.isNotEmpty) ...[
           MMMenuHeader(l.askAssistant),
@@ -758,6 +792,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(phoneMapSelectionProvider(widget.studySetId));
     final l = context.l10n;
     final c = context.mmColors;
     final t = context.mmText;
@@ -808,6 +843,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
         ),
       ),
     );
+    ref.listen(provider.select((s) => (s.activeMapId, s.mapView, s.panel, s.editingCardId)), (_, _) {
+      _phoneSelection.cancel();
+    });
     ref.listen(provider.select((s) => (s.activeMapId, s.selectedCardIds, s.mapView)), (_, _) {
       if (_mergeHover) setState(() => _mergeHover = false);
     });
@@ -1061,7 +1099,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   label: l.mapMultiSelect,
                   tooltip: l.mapMultiSelect,
                   selected: _touchSelection,
-                  onPressed: () => setState(() => _touchSelection = !_touchSelection),
+                  onPressed: _toggleTouchSelection,
                 ),
               ],
             ],
@@ -1199,10 +1237,18 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       },
                                       toolbarTopInset: toolbarTopInset,
                                       touchSelectionMode: _touchSelection,
-                                      selectionToolbar: state.selectedCardIds.length < 2
+                                      phoneSelection: _phoneSelection.active ? _phoneSelection : null,
+                                      onPhoneSelectionDone: () {
+                                        controller.selectCards(_phoneSelection.selected);
+                                        _phoneSelection.cancel();
+                                      },
+                                      selectionToolbar: _phoneSelection.active
+                                          ? null
+                                          : state.selectedCardIds.length < 2
                                           ? _nodeBar(state.selectedCardId, remove)
                                           : MapSelectionBar(
                                               count: state.selectedCardIds.length,
+                                              onSelectMore: _beginPhoneSelection,
                                               mergeReason: controller.mergeReason,
                                               summaryReason: controller.summaryReason,
                                               onMerge: _merge,
@@ -1231,11 +1277,13 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       content: content,
                                       mapId: canvasMapId,
                                       rootTitle: canvasRootTitle,
-                                      selectedCardId: state.selectedCardId,
-                                      rootSelected: state.rootSelected,
+                                      selectedCardId: _phoneSelection.active ? null : state.selectedCardId,
+                                      rootSelected: !_phoneSelection.active && state.rootSelected,
                                       onSelectRoot: controller.selectMapRoot,
                                       onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
-                                      selectedCardIds: state.selectedCardIds,
+                                      selectedCardIds: _phoneSelection.active
+                                          ? _phoneSelection.selected
+                                          : state.selectedCardIds,
                                       onToggleSelection: controller.toggleCardSelection,
                                       flashCardId: state.flashCardId,
                                       flashCardIds: state.flashCardIds,
@@ -1326,7 +1374,19 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     ),
                     LayoutId(
                       id: MapPaneSlot.header,
-                      child: merged
+                      child:
+                          _phoneSelection.active ||
+                              phone &&
+                                  !outline &&
+                                  expansion == null &&
+                                  mapGen == null &&
+                                  state.connectingFromId == null &&
+                                  state.editingCardId == null &&
+                                  (state.rootSelected ||
+                                      state.selectedCardId != null ||
+                                      state.selectedCardIds.isNotEmpty)
+                          ? const SizedBox.shrink()
+                          : merged
                           ? Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1471,7 +1531,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         ),
                                         if (MMInput.touchInputOf(context))
                                           MMDropdownItem<VoidCallback>(
-                                            value: () => setState(() => _touchSelection = !_touchSelection),
+                                            value: _toggleTouchSelection,
                                             child: menuLabel(l.mapMultiSelect, const Icon(MMIcons.areaSelect)),
                                           ),
                                         if (outline)

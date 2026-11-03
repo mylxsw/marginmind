@@ -126,6 +126,8 @@ void main() {
       expect(find.byType(MapGenerationStructurePreview), findsOneWidget);
       await _save(tester, 'sheet_${dark ? 'dark' : 'light'}');
       await tester.tap(find.byKey(const ValueKey('map-generate-organization-question')));
+      await tester.ensureVisible(find.byKey(const ValueKey('map-generate-more-settings')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('map-generate-more-settings')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('详细'));
@@ -151,6 +153,8 @@ void main() {
       final button = find.byKey(const ValueKey('map-generate-sheet-start-button'));
       expect(tester.getRect(button).bottom, lessThan(size.height));
       await _save(tester, 'compact_${size.width.toInt()}');
+      await tester.ensureVisible(find.byKey(const ValueKey('map-generate-more-settings')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('map-generate-more-settings')));
       await tester.pumpAndSettle();
       tester.view.viewInsets = const FakeViewPadding(bottom: 260);
@@ -160,6 +164,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await harness.key(tester, LogicalKeyboardKey.escape);
+      await tester.ensureVisible(find.byKey(const ValueKey('map-range-toggle-c1')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('map-range-toggle-c1')));
       await tester.pumpAndSettle();
       final checkbox = find.descendant(of: find.byType(MapSourceRange), matching: find.byType(MMCheckbox)).first;

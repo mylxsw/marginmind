@@ -9,6 +9,7 @@ import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'glass.dart';
 import 'control_frame.dart';
+import 'bottom_sheet.dart';
 
 /// Row of the six annotation colors (Finder-tag style). The selected dot
 /// gets a ring of its own color.
@@ -32,39 +33,40 @@ class MMColorPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final ring = c.card;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final color in MMAnnotationColor.values)
-          MMInteractive(
-            onTap: () => onChanged(color),
-            selected: color == selected,
-            tooltip: labelOf(color),
-            semanticLabel: labelOf(color),
-            builder: (context, s) => Container(
-              width: dotSize + 10,
-              height: dotSize + 10,
-              alignment: Alignment.center,
-              child: Container(
-                width: dotSize,
-                height: dotSize,
-                decoration: BoxDecoration(
-                  color: color.color,
-                  shape: BoxShape.circle,
-                  border: c.flat && (color == selected || s.focused)
-                      ? Border.all(color: s.focused ? c.accent : color.color, width: 1.5, strokeAlign: 4)
-                      : null,
-                  boxShadow: c.flat
-                      ? null
-                      : color == selected || s.focused
-                      ? [BoxShadow(color: color.color, spreadRadius: 3.5), BoxShadow(color: ring, spreadRadius: 2)]
-                      : null,
-                ),
+    final phone = MMInput.of(context).phone;
+    final chips = <Widget>[
+      for (final color in MMAnnotationColor.values)
+        MMInteractive(
+          onTap: () => onChanged(color),
+          selected: color == selected,
+          tooltip: labelOf(color),
+          semanticLabel: labelOf(color),
+          builder: (context, s) => Container(
+            width: phone ? MMSizes.touchTarget : dotSize + 10,
+            height: phone ? MMSizes.touchTarget : dotSize + 10,
+            alignment: Alignment.center,
+            child: Container(
+              width: dotSize,
+              height: dotSize,
+              decoration: BoxDecoration(
+                color: color.color,
+                shape: BoxShape.circle,
+                border: c.flat && (color == selected || s.focused)
+                    ? Border.all(color: s.focused ? c.accent : color.color, width: 1.5, strokeAlign: 4)
+                    : null,
+                boxShadow: c.flat
+                    ? null
+                    : color == selected || s.focused
+                    ? [BoxShadow(color: color.color, spreadRadius: 3.5), BoxShadow(color: ring, spreadRadius: 2)]
+                    : null,
               ),
             ),
           ),
-      ],
-    );
+        ),
+    ];
+    return phone
+        ? Wrap(alignment: WrapAlignment.center, children: chips)
+        : Row(mainAxisSize: MainAxisSize.min, children: chips);
   }
 }
 
@@ -88,6 +90,22 @@ class MMColorMenuButton extends StatelessWidget {
   final bool compact;
 
   Future<void> _open(BuildContext context) async {
+    if (MMInput.of(context).phone) {
+      final picked = await showMMBottomSheet<MMAnnotationColor>(
+        context: context,
+        expand: false,
+        builder: (sheetContext) => Padding(
+          padding: const EdgeInsets.all(MMSpacing.m),
+          child: MMColorPicker(
+            selected: selected,
+            labelOf: labelOf,
+            onChanged: (color) => Navigator.of(sheetContext).pop(color),
+          ),
+        ),
+      );
+      if (picked != null) onChanged(picked);
+      return;
+    }
     final box = context.findRenderObject()! as RenderBox;
     final origin = box.localToGlobal(Offset(box.size.width / 2, box.size.height));
     final picked = await showGeneralDialog<MMAnnotationColor>(

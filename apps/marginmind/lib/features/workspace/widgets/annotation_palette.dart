@@ -8,21 +8,37 @@ import '../../../shared/l10n.dart';
 Object annotationTapGroup(String studySetId) => ValueKey('annotation-tools-$studySetId');
 
 class AnnotationPalettePlacement extends SingleChildLayoutDelegate {
-  AnnotationPalettePlacement(this.anchor);
+  AnnotationPalettePlacement(this.anchor, {this.insets = EdgeInsets.zero});
+  factory AnnotationPalettePlacement.of(BuildContext context, Rect anchor) {
+    final safe = MediaQuery.viewPaddingOf(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    return AnnotationPalettePlacement(anchor, insets: safe.copyWith(bottom: math.max(safe.bottom, keyboard)));
+  }
   final Rect anchor;
+  final EdgeInsets insets;
+  Rect _bounds(Size size) => Rect.fromLTRB(
+    insets.left + MMSpacing.s,
+    insets.top + MMSpacing.s,
+    math.max(insets.left + MMSpacing.s, size.width - insets.right - MMSpacing.s),
+    math.max(insets.top + MMSpacing.s, size.height - insets.bottom - MMSpacing.s),
+  );
   @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
-      constraints.loosen().deflate(const EdgeInsets.all(8));
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    final x = (anchor.left - 6).clamp(8.0, math.max(8, size.width - childSize.width - 8));
-    final below = anchor.bottom + 8;
-    final y = below + childSize.height <= size.height - 8 ? below : anchor.top - childSize.height - 8;
-    return Offset(x.toDouble(), y.clamp(8.0, math.max(8, size.height - childSize.height - 8)).toDouble());
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final bounds = _bounds(constraints.biggest);
+    return BoxConstraints(maxWidth: bounds.width, maxHeight: bounds.height);
   }
 
   @override
-  bool shouldRelayout(AnnotationPalettePlacement old) => old.anchor != anchor;
+  Offset getPositionForChild(Size size, Size childSize) {
+    final bounds = _bounds(size);
+    final x = (anchor.left - MMSpacing.xs).clamp(bounds.left, math.max(bounds.left, bounds.right - childSize.width));
+    final below = anchor.bottom + MMSpacing.s;
+    final y = below + childSize.height <= bounds.bottom ? below : anchor.top - childSize.height - MMSpacing.s;
+    return Offset(x.toDouble(), y.clamp(bounds.top, math.max(bounds.top, bounds.bottom - childSize.height)).toDouble());
+  }
+
+  @override
+  bool shouldRelayout(AnnotationPalettePlacement old) => old.anchor != anchor || old.insets != insets;
 }
 
 class AnnotationMoreColorsButton extends StatelessWidget {
