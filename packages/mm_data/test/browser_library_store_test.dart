@@ -28,6 +28,45 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('versioned review replay, pending commits and failed rating retry survive IndexedDB reopen', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final id = (await store.create(const NewStudySet(title: 'Review', colorIndex: 0))).id;
+    await store.update(id, (c) => editor.addNote(c, text: 'Question').$1);
+    final card = (await store.load(id)).cards.single.id;
+    final heads = await ledger.snapshots();
+    final base = heads['reviews/$id']!.commit, set = heads['sets/$id']!.commit;
+    final remoteTimeline = ReviewTimeline.fromJson(base.payload)
+        .append(reviewData(editor.rate(await store.load(id), card, Rating.easy)), deviceId: 'remote');
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: base.scope,
+      deviceId: 'remote',
+      sequence: 1,
+      parents: [base.id],
+      payload: remoteTimeline.toJson(),
+      requires: {set.scope: set.id},
+    );
+    await store.update(id, (c) => editor.rate(c, card, Rating.good));
+    await store.receiveSync([remote]);
+    expect((await store.load(id)).reviewLogs, hasLength(2));
+    final pending = (await ledger.pending()).map((c) => c.id).toList();
+    BrowserFiles.close();
+    await expectLater(store.update(id, (c) => editor.rate(c, card, Rating.good)), throwsStateError);
+    expect((await store.load(id)).reviewLogs, hasLength(2));
+    await store.dispose();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.load(id)).reviewLogs, hasLength(2));
+    final reopened = (await store.syncLedger)!;
+    expect((await reopened.pending()).map((c) => c.id), pending);
+    await store.receiveSync([remote]);
+    expect((await store.load(id)).reviewLogs, hasLength(2));
+    await store.update(id, (c) => editor.rate(c, card, Rating.good));
+    expect((await store.load(id)).reviewLogs, hasLength(3));
+  });
+
   test('saved draft recovery and explicit acknowledgement survive IndexedDB reopen', () async {
     await store.dispose();
     store = FileLibraryStore.browser(

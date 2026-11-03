@@ -6469,4 +6469,13 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count documents', one: '1 document');
     return '$_temp0';
   }
+
+  @override
+  String get reviewSaveFailed => 'The rating could not be saved. Your place is unchanged; try again.';
+
+  @override
+  String get reviewWaitingBaseline => 'Earlier review history has not arrived yet. Wait for sync, then try again.';
+
+  @override
+  String get reviewFinishEditing => 'Finish the current content edit, then rate this card.';
 }

@@ -4,22 +4,24 @@ import 'commit.dart';
 import 'projection.dart';
 
 class SyncConflict {
-  SyncConflict(List<String> path, Object? base, Object? left, Object? right)
+  SyncConflict(List<String> path, Object? base, Object? left, Object? right, {this.version = 2})
     : path = List.unmodifiable(path),
       base = _freeze(base),
       left = _freeze(left),
       right = _freeze(right);
+  final int version;
   final List<String> path;
   final Object? base, left, right;
 
   /// Stable under receiving the two branches in either order.
   String get id {
-    final variants = [syncDigest(_wire(left)), syncDigest(_wire(right))]..sort();
-    return syncDigest({'path': path, 'base': _wire(base), 'variants': variants});
+    final digest = version == 1 ? legacySyncDigest : syncDigest;
+    final variants = [digest(_wire(left)), digest(_wire(right))]..sort();
+    return digest({'path': path, 'base': _wire(base), 'variants': variants});
   }
 
   Map<String, Object?> toJson() => {
-    'version': 1,
+    'version': version,
     'id': id,
     'path': path,
     'base': _wire(base),
@@ -29,7 +31,7 @@ class SyncConflict {
 
   factory SyncConflict.fromJson(Map<String, Object?> json) {
     const fields = {'version', 'id', 'path', 'base', 'left', 'right'};
-    if (json['version'] != 1 || json.keys.any((key) => !fields.contains(key))) {
+    if (!{1, 2}.contains(json['version']) || json.keys.any((key) => !fields.contains(key))) {
       throw const FormatException('Unsupported conflict');
     }
     Object? read(Object? value) {
@@ -45,6 +47,7 @@ class SyncConflict {
         read(json['base']),
         read(json['left']),
         read(json['right']),
+        version: json['version'] as int,
       );
       if (result.id != json['id']) throw const FormatException('Conflict digest mismatch');
       return result;

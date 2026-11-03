@@ -3278,5 +3278,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "reviewSaveFailed": "The rating could not be saved. Your place is unchanged; try again.",
+  "reviewWaitingBaseline": "Earlier review history has not arrived yet. Wait for sync, then try again.",
+  "reviewFinishEditing": "Finish the current content edit, then rate this card."
 }

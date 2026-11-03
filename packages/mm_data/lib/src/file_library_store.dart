@@ -14,6 +14,7 @@ import 'file_sync_ledger.dart';
 import 'content_sync_review.dart';
 
 part 'file_library_sync_status.dart';
+part 'file_library_reviews.dart';
 
 /// Stores the library on disk:
 ///
@@ -225,6 +226,15 @@ class FileLibraryStore
             validateTransaction: (payload) => _validateSyncTransaction(id, payload),
           );
           final expected = {remote.scope: current?.revision};
+          if (plan.state == SyncMergeState.ready &&
+              syncAncestry(known, [remote.id]).values.any((c) => c.requires.isNotEmpty)) {
+            plan = SyncMergePlan(
+              remote: remote.id,
+              local: current?.commit.id,
+              state: SyncMergeState.conflict,
+              reason: 'unsupportedDependencies',
+            );
+          }
           try {
             if (plan.state == SyncMergeState.unchanged) {
               await sync.commit([], expected: expected, resolved: [remote.id]);
@@ -347,6 +357,7 @@ class FileLibraryStore
         }
       });
     }
+    await _reconcileReviews(canApply: canApply);
     return results;
   }
 
@@ -1089,10 +1100,7 @@ class FileLibraryStore
     final local = record.toJson();
     final shared = Map<String, Object?>.of(local)..remove('lastOpenedAt');
     shared['content'] = sharedContent(record.content);
-    final content = record.content.toJson();
-    final reviews = <String, Object?>{
-      for (final key in ['reviews', 'reviewLogs', 'memoryStates']) key: content[key],
-    };
+    final reviews = _prepareReviews(record);
     final reading = <String, Object?>{
       'lastOpenedAt': local['lastOpenedAt'],
       'documents': [
@@ -1116,10 +1124,14 @@ class FileLibraryStore
           deferShared: !finishDraft && _contentTransactions.containsKey(record.id),
           finishDraft: finishDraft,
         ),
-        SyncMutation('reviews/${record.id}', local: reviews, shared: reviews),
+        if (reviews != null)
+          SyncMutation('reviews/${record.id}', local: reviews, shared: reviews, requireScopes: [_scope(record.id)]),
         SyncMutation('reading/${record.id}/${sync.deviceId}', local: reading, shared: reading),
       ],
-      expected: {_scope(record.id): _syncSnapshots[_scope(record.id)]?.revision},
+      expected: {
+        _scope(record.id): _syncSnapshots[_scope(record.id)]?.revision,
+        'reviews/${record.id}': _syncSnapshots['reviews/${record.id}']?.revision,
+      },
       recovered: recovered == null ? {} : {_scope(record.id): recovered},
       tombstoneWhere: (scope) =>
           scope.startsWith('translations/${record.id}/') && !documents.contains(scope.split('/')[2]),

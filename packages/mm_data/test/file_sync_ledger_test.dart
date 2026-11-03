@@ -16,6 +16,37 @@ void main() {
   SyncMutation value(String scope, int n, {int? local}) =>
       SyncMutation(scope, local: {'n': n, 'private': local ?? n}, shared: {'n': n});
 
+  test('domain dependency binds inside the same commit and failed bindings publish nothing', () async {
+    final snapshots = await ledger.commit([
+      value('sets/a', 1),
+      SyncMutation('reviews/a', local: {'n': 1}, shared: {'n': 1}, requireScopes: ['sets/a']),
+    ]);
+    expect(snapshots['reviews/a']!.commit.requires, {'sets/a': snapshots['sets/a']!.commit.id});
+    expect(
+      SyncCommit.fromJson(snapshots['reviews/a']!.commit.toJson()).requires,
+      snapshots['reviews/a']!.commit.requires,
+    );
+    await expectLater(
+      ledger.commit([
+        value('sets/a', 2),
+        SyncMutation('reviews/a', local: {'n': 2}, shared: {'n': 2}, requireScopes: ['missing']),
+      ]),
+      throwsFormatException,
+    );
+    expect((await ledger.snapshots())['sets/a']!.value!['n'], 1);
+    expect(
+      (await (await FileSyncLedger.restore(root))!.snapshots())['reviews/a']!.commit.requires,
+      snapshots['reviews/a']!.commit.requires,
+    );
+    await ledger.commit([SyncMutation('sets/a', local: null, shared: null)]);
+    await expectLater(
+      ledger.commit([
+        SyncMutation('reviews/a', local: {'n': 3}, shared: {'n': 3}, requireScopes: ['sets/a']),
+      ]),
+      throwsFormatException,
+    );
+  });
+
   test('recovery acknowledgement is atomic, private and cannot dismiss a newer notice', () async {
     await ledger.commit([value('set', 1)], recovered: {'set': 'draft-one'});
     await expectLater(ledger.commit([], recovered: {'unknown': 'draft'}), throwsFormatException);
@@ -40,6 +71,27 @@ void main() {
     ]);
   });
 
+  test('legacy v3 journal and v1 commit retain their identities when followed by portable versions', () async {
+    await ledger.commit([
+      SyncMutation('set', local: {'n': 1.0}, shared: {'n': 1.0}),
+    ]);
+    final file = await Directory('${root.path}/.foliarc-sync/local').list().cast<File>().single;
+    final body = jsonDecode(await file.readAsString()) as Map<String, dynamic>..remove('id');
+    body['version'] = 3;
+    final commit = (body['changes'] as List).single['commit'] as Map<String, dynamic>;
+    commit['protocol'] = 1;
+    commit['id'] = legacySyncDigest(Map<String, Object?>.of(commit)..remove('id'));
+    final id = legacySyncDigest(body);
+    await file.delete();
+    await File('${file.parent.path}/$id.json').writeAsString(jsonEncode({'id': id, ...body}));
+    final restored = (await FileSyncLedger.restore(root))!;
+    expect((await restored.snapshots())['set']!.commit.id, commit['id']);
+    final next = (await restored.commit([value('set', 2)]))['set']!;
+    expect(next.commit.protocol, 2);
+    expect(next.commit.parents, [commit['id']]);
+    expect((await (await FileSyncLedger.restore(root))!.history()).length, 2);
+  });
+
   test('version two records migrate without recovery notices', () async {
     await ledger.commit([value('set', 1)]);
     final file = await Directory('${root.path}/.foliarc-sync/local').list().cast<File>().single;
@@ -47,7 +99,7 @@ void main() {
       ..remove('id')
       ..remove('recoveries');
     body['version'] = 2;
-    final id = syncDigest(body);
+    final id = legacySyncDigest(body);
     await file.delete();
     await File('${file.parent.path}/$id.json').writeAsString(jsonEncode({'id': id, ...body}));
     final restored = (await FileSyncLedger.restore(root))!;
@@ -118,7 +170,7 @@ void main() {
       ..remove('issues')
       ..remove('recoveries');
     body['version'] = 1;
-    final id = syncDigest(body);
+    final id = legacySyncDigest(body);
     await file.delete();
     await File('${file.parent.path}/$id.json').writeAsString(jsonEncode({'id': id, ...body}));
     final reopened = (await FileSyncLedger.restore(root))!;

@@ -6214,4 +6214,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String incomingShareFiles(int count) {
     return '$count 个文档';
   }
+
+  @override
+  String get reviewSaveFailed => '评分未能保存，复习进度没有改变，请重试。';
+
+  @override
+  String get reviewWaitingBaseline => '之前的复习记录尚未同步到此设备，请同步完成后重试。';
+
+  @override
+  String get reviewFinishEditing => '请先结束当前内容编辑，再为这张卡片评分。';
 }

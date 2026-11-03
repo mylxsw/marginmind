@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_sync/mm_sync.dart';
 import 'package:test/test.dart';
@@ -27,6 +29,90 @@ void main() {
     deleted: deleted,
   );
 
+  test('portable digest golden treats JSON numbers equally across VM and JavaScript', () {
+    final value = {
+      'numbers': [1, 1.0, -0.0, 1e-7, .1, 9007199254740991],
+      'text': '中文 😀',
+      'array': ['number', '3ff0000000000000'],
+    };
+    expect(syncDigest(value), '6f0bf311ba877f15c3c472367c24f5b75ac02ff0708c390cb104f513177099d1');
+    expect(syncDigest(1), syncDigest(1.0));
+    expect(syncDigest(-0.0), syncDigest(0));
+    expect(syncDigest(1), isNot(syncDigest('3ff0000000000000')));
+    for (final n in [double.nan, double.infinity, 1e20, Object()]) {
+      expect(() => syncDigest(n), throwsFormatException);
+    }
+    expect(
+      contentValueEquals({
+        'n': [1.0, -0.0],
+      }, jsonDecode('{"n":[1,0]}')),
+      isTrue,
+    );
+    expect(contentValueEquals({'n': 1}, {'n': '1'}), isFalse);
+    final old = commit(payload: {'n': 1.5}).toJson()..['protocol'] = 1;
+    old['id'] = legacySyncDigest(Map<String, Object?>.of(old)..remove('id'));
+    final restored = SyncCommit.fromJson(old);
+    expect(restored.protocol, 1);
+    expect(restored.toJson(), old);
+    final next = commit(sequence: 2, parents: [restored.id], payload: {'n': 2.0});
+    expect(next.protocol, 2);
+    expect(SyncGraph([restored, next]).ancestors(next.id), contains(restored.id));
+    final conflict = SyncConflict(['n'], 1.5, 2.5, 3.5, version: 1);
+    expect(SyncConflict.fromJson(conflict.toJson()).toJson(), conflict.toJson());
+  });
+
+  test('domain prerequisites are immutable, hashed and cannot self-reference or accompany deletion', () {
+    final base = commit(), refs = <String, String>{'set': commit().id};
+    final c = SyncCommit.create(
+      libraryId: 'library',
+      scope: 'reviews',
+      deviceId: 'a',
+      sequence: 1,
+      payload: {},
+      requires: refs,
+    );
+    refs.clear();
+    expect(c.requires, {'set': base.id});
+    expect(SyncCommit.fromJson(c.toJson()).requires, c.requires);
+    expect(() => c.requires.clear(), throwsUnsupportedError);
+    for (final invalid in [
+      {'reviews': base.id},
+      {'': base.id},
+      {'set': 'bad'},
+    ]) {
+      expect(
+        () => SyncCommit.create(
+          libraryId: 'library',
+          scope: 'reviews',
+          deviceId: 'a',
+          sequence: 1,
+          payload: {},
+          requires: invalid,
+        ),
+        throwsFormatException,
+      );
+    }
+    expect(
+      () => SyncCommit.create(
+        libraryId: 'library',
+        scope: 'reviews',
+        deviceId: 'a',
+        sequence: 1,
+        payload: {},
+        requires: c.requires,
+        deleted: true,
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => SyncCommit.fromJson({
+        ...c.toJson(),
+        'requires': {'set': '0' * 64},
+      }),
+      throwsFormatException,
+    );
+  });
+
   test('commits canonicalize keys and parents, validate digest, and freeze nested values', () {
     final c = commit(
       payload: {
@@ -50,7 +136,7 @@ void main() {
     expect(SyncCommit.fromJson(c.toJson()).id, c.id);
     expect(() => (c.payload['b'] as List).clear(), throwsUnsupportedError);
     expect(() => SyncCommit.fromJson({...c.toJson(), 'payload': {}}), throwsFormatException);
-    expect(() => SyncCommit.fromJson({...c.toJson(), 'protocol': 2}), throwsFormatException);
+    expect(() => SyncCommit.fromJson({...c.toJson(), 'protocol': 999}), throwsFormatException);
     expect(() => SyncCommit.fromJson({...c.toJson(), 'extra': true}), throwsFormatException);
     expect(() => SyncCommit.fromJson({...c.toJson(), 'sequence': '1'}), throwsFormatException);
     expect(() => commit(sequence: 0), throwsFormatException);
@@ -145,7 +231,7 @@ void main() {
     expect(SyncConflict.fromJson(c.toJson()).right, contentMissing);
     expect(() => (c.base as Map).clear(), throwsUnsupportedError);
     expect(() => SyncConflict.fromJson({...c.toJson(), 'id': 'bad'}), throwsFormatException);
-    expect(() => SyncConflict.fromJson({...c.toJson(), 'version': 2}), throwsFormatException);
+    expect(() => SyncConflict.fromJson({...c.toJson(), 'version': 999}), throwsFormatException);
     expect(() => SyncConflict.fromJson({...c.toJson(), 'extra': true}), throwsFormatException);
     expect(() => SyncConflict.fromJson({...c.toJson(), 'left': null}), throwsFormatException);
     expect(

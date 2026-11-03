@@ -40,16 +40,16 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
     }
     final problems = <ContentSyncProblem>{};
     for (final entry in (await sync.issues()).entries) {
-      if (history[entry.key]?.scope != FileLibraryStore._scope(id)) continue;
+      if (!{FileLibraryStore._scope(id), 'reviews/$id'}.contains(history[entry.key]?.scope)) continue;
       final issue = entry.value;
       problems.add(switch (issue['reason']) {
         'editing' => ContentSyncProblem.editing,
-        'missingParents' => ContentSyncProblem.missingHistory,
+        'missingParents' || 'missingContent' => ContentSyncProblem.missingHistory,
         'noBase' => ContentSyncProblem.unrelatedHistory,
         'multipleBases' => ContentSyncProblem.ambiguousHistory,
         'concurrentResolutions' => ContentSyncProblem.concurrentChoices,
         'deleteEdit' => ContentSyncProblem.deletion,
-        'differentScope' => ContentSyncProblem.unsupported,
+        'differentScope' || 'unsupportedReviews' || 'unsupportedDependencies' => ContentSyncProblem.unsupported,
         _ => ContentSyncProblem.invalidHistory,
       });
     }

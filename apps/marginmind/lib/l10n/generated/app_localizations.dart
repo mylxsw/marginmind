@@ -11335,6 +11335,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 document} other{{count} documents}}'**
   String incomingShareFiles(int count);
+
+  /// No description provided for @reviewSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The rating could not be saved. Your place is unchanged; try again.'**
+  String get reviewSaveFailed;
+
+  /// No description provided for @reviewWaitingBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier review history has not arrived yet. Wait for sync, then try again.'**
+  String get reviewWaitingBaseline;
+
+  /// No description provided for @reviewFinishEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the current content edit, then rate this card.'**
+  String get reviewFinishEditing;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

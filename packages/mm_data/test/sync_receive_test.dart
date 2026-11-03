@@ -388,7 +388,9 @@ void main() {
     await b.rename(id, 'Keep my edit');
     await sendA();
     expect((await b.watchAll().first).single.title, 'Keep my edit');
-    expect((await right.issues()).values.single['reason'], 'deleteEdit');
+    final reasons = (await right.issues()).values.map((i) => i['reason']);
+    expect(reasons, isNotEmpty);
+    expect(reasons, everyElement('deleteEdit'));
   });
 
   test('changed expected revision recomputes the merge and publishes the durable result to watchers', () async {

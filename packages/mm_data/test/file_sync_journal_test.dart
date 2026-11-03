@@ -63,7 +63,7 @@ void main() {
 
   test('failed atomic write remains pending only after successful retry; incomplete temp is ignored', () async {
     final c = commit();
-    final dir = Directory('${root.path}/.foliarc-sync/${syncDigest(['library', 'set'])}');
+    final dir = Directory('${root.path}/.foliarc-sync/${legacySyncDigest(['library', 'set'])}');
     await dir.create(recursive: true);
     final obstruction = Directory('${dir.path}/${c.id}.json.tmp');
     await obstruction.create();
@@ -79,7 +79,7 @@ void main() {
   test('corrupt history fails closed without overwriting bytes; acknowledgements validate version', () async {
     final c = commit();
     await journal.append(c);
-    final dir = Directory('${root.path}/.foliarc-sync/${syncDigest(['library', 'set'])}');
+    final dir = Directory('${root.path}/.foliarc-sync/${legacySyncDigest(['library', 'set'])}');
     final file = File('${dir.path}/${c.id}.json');
     await file.writeAsString(jsonEncode({...c.toJson(), 'protocol': 99}));
     await expectLater(journal.load(), throwsFormatException);

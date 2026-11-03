@@ -21,10 +21,14 @@ class SyncMutation {
     this.deferShared = false,
     this.finishDraft = false,
     this.resolves = const [],
+    this.requireScopes = const [],
   });
   final bool deferShared, finishDraft;
   final List<String>? pending;
   final List<String> resolves;
+
+  /// Bound to heads inside the atomic commit, including preceding mutations.
+  final List<String> requireScopes;
 
   /// Adopt a received version, or create a merge with this additional parent.
   /// Both require the current head to remain an ancestor of the new version.
@@ -121,10 +125,11 @@ class FileSyncLedger {
         if (file is! File || file.path.endsWith('.tmp') || p.basename(file.path) == '.head') continue;
         final record = _map(jsonDecode(await file.readAsString()));
         final body = Map<String, Object?>.of(record)..remove('id');
-        if (record['id'] != syncDigest(body) || p.basename(file.path) != '${record['id']}.json') {
+        if (record['id'] != (record['version'] == 4 ? syncDigest(body) : legacySyncDigest(body)) ||
+            p.basename(file.path) != '${record['id']}.json') {
           throw const FormatException('Local sync ledger digest mismatch');
         }
-        if (!{1, 2, 3}.contains(record['version']) ||
+        if (!{1, 2, 3, 4}.contains(record['version']) ||
             record['sequence'] is! int ||
             record['changes'] is! List ||
             record['libraryId'] != libraryId ||
@@ -139,7 +144,7 @@ class FileSyncLedger {
                 'deviceId',
                 'changes',
                 if (record['version'] != 1) ...['received', 'issues'],
-                if (record['version'] == 3) 'recoveries',
+                if ({3, 4}.contains(record['version'])) 'recoveries',
               }.contains(k),
             )) {
           throw const FormatException('Unsupported local sync record');
@@ -262,6 +267,15 @@ class FileSyncLedger {
         if (previous != null && !ancestry.containsKey(previous.id)) {
           throw const FormatException('Applied version does not descend from the local head');
         }
+        for (final dependency in commit.requires.entries) {
+          final required = commits[dependency.value];
+          if (required == null ||
+              required.scope != dependency.key ||
+              required.libraryId != libraryId ||
+              required.deleted) {
+            throw const FormatException('Unresolved domain dependency');
+          }
+        }
       }
       heads[scope] = LocalSyncSnapshot(
         scope,
@@ -279,7 +293,7 @@ class FileSyncLedger {
         issues[e.key] = _freezeMap(_map(e.value));
       }
     }
-    final notices = record['version'] == 3 ? _map(record['recoveries']) : <String, Object?>{};
+    final notices = {3, 4}.contains(record['version']) ? _map(record['recoveries']) : <String, Object?>{};
     for (final entry in notices.entries) {
       if (!heads.containsKey(entry.key) ||
           entry.value != null && (entry.value is! String || (entry.value as String).isEmpty)) {
@@ -305,7 +319,7 @@ class FileSyncLedger {
     Map<String, String?> recoveries = const {},
   }) async {
     final body = <String, Object?>{
-      'version': 3,
+      'version': 4,
       'libraryId': libraryId,
       'deviceId': deviceId,
       'sequence': _sequence + 1,
@@ -401,6 +415,7 @@ class FileSyncLedger {
           finishDraft: m.finishDraft,
           pending: m.pending == null ? null : List.unmodifiable(m.pending!),
           resolves: List.unmodifiable(m.resolves),
+          requireScopes: List.unmodifiable(m.requireScopes),
         ),
     ];
     final preconditions = Map<String, String?>.of(expected);
@@ -413,6 +428,7 @@ class FileSyncLedger {
       }
       validate?.call(Map.unmodifiable(_heads));
       final changes = <Map<String, Object?>>[];
+      final prepared = <String, SyncCommit>{};
       final scopes = <String>{};
       // Discover dependent scopes only after preceding writers have committed.
       // A caller-side snapshot would miss a child created while this waits.
@@ -479,8 +495,19 @@ class FileSyncLedger {
                         input.pending ??
                         (previous?.commit.pending ?? const []).where((id) => !input.resolves.contains(id)).toList(),
                     resolves: input.resolves,
+                    requires: input.shared == null
+                        ? {}
+                        : {
+                            for (final scope in input.requireScopes)
+                              scope:
+                                  (prepared[scope] ??
+                                          _heads[scope]?.commit ??
+                                          (throw const FormatException('Missing required scope')))
+                                      .id,
+                          },
                   )
                 : null);
+        if (commit != null) prepared[input.scope] = commit;
         changes.add({
           'scope': input.scope,
           'local': input.local,

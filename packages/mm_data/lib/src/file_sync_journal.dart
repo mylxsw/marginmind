@@ -17,7 +17,7 @@ class FileSyncJournal {
   final String libraryId, scope;
   Future<void> _queue = Future.value();
 
-  Directory get _directory => Directory(p.join(root.path, '.foliarc-sync', syncDigest([libraryId, scope])));
+  Directory get _directory => Directory(p.join(root.path, '.foliarc-sync', legacySyncDigest([libraryId, scope])));
   File _commitFile(String id) => File(p.join(_directory.path, '$id.json'));
   File get _acks => File(p.join(_directory.path, 'delivered.json'));
 

@@ -171,6 +171,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               ),
             ),
           ),
+          if (session.saveProblem case final problem?)
+            Padding(
+              key: const ValueKey('review-save-problem'),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+              child: Text(switch (problem) {
+                ReviewSaveProblem.storage => l.reviewSaveFailed,
+                ReviewSaveProblem.awaitingBaseline => l.reviewWaitingBaseline,
+                ReviewSaveProblem.editing => l.reviewFinishEditing,
+              }, textAlign: TextAlign.center),
+            ),
           Padding(
             padding: const EdgeInsets.only(bottom: 28),
             child: session.revealed
@@ -182,7 +192,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       memory: content.memoryOf(card.id),
                       parameters: ref.read(editorProvider).fsrsParameters,
                     ),
-                    onRate: controller.rate,
+                    onRate: session.saving ? null : controller.rate,
                   )
                 : MMButton(label: l.showAnswer, variant: MMButtonVariant.primary, onPressed: controller.reveal),
           ),
@@ -477,7 +487,7 @@ class _RatingBar extends StatelessWidget {
   const _RatingBar({required this.intervals, required this.onRate});
 
   final Map<Rating, Duration> intervals;
-  final ValueChanged<Rating> onRate;
+  final ValueChanged<Rating>? onRate;
 
   @override
   Widget build(BuildContext context) {
@@ -500,7 +510,7 @@ class _RatingBar extends StatelessWidget {
           shortcut: touch ? null : '${i + 1}',
           primary: r == Rating.good,
           touch: touch,
-          onPressed: () => onRate(r),
+          onPressed: onRate == null ? null : () => onRate!(r),
         ),
       ],
     ];
@@ -527,7 +537,7 @@ class _RatingButton extends StatelessWidget {
   final String interval;
   final String? shortcut;
   final bool primary;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   /// Shares the row under touch; phones also keep this layout with a pointer.
   final bool touch;
@@ -542,7 +552,11 @@ class _RatingButton extends StatelessWidget {
       tooltip: shortcut,
       semanticLabel: '$label, $interval',
       builder: (context, s) {
-        final fg = primary ? c.onAccent : c.label;
+        final fg = onPressed == null
+            ? c.secondaryLabel
+            : primary
+            ? c.onAccent
+            : c.label;
         return AnimatedContainer(
           duration: MMMotion.quick,
           width: touch ? null : 104,
@@ -550,7 +564,11 @@ class _RatingButton extends StatelessWidget {
           constraints: phone ? const BoxConstraints(minHeight: MMPhoneNavigation.ratingHeight) : null,
           padding: EdgeInsets.symmetric(vertical: 8, horizontal: touch ? 4 : 0),
           decoration: BoxDecoration(
-            color: primary ? c.accentFill : (s.hovered ? c.hover : c.fill),
+            color: onPressed == null
+                ? c.fill
+                : primary
+                ? c.accentFill
+                : (s.hovered ? c.hover : c.fill),
             borderRadius: BorderRadius.circular(12),
             border: s.focused ? Border.all(color: c.accent, width: 2) : null,
           ),

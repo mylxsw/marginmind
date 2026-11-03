@@ -176,8 +176,19 @@ Object? _canonical(Object? value) {
   return value;
 }
 
-bool contentValueEquals(Object? a, Object? b) =>
-    identical(a, b) || a != contentMissing && b != contentMissing && canonicalContentJson(a) == canonicalContentJson(b);
+bool contentValueEquals(Object? a, Object? b) {
+  if (identical(a, b)) return true;
+  if (a == contentMissing || b == contentMissing) return false;
+  // JSON numbers have one semantic value across native and browser decoders.
+  if (a is num && b is num) return a.isFinite && b.isFinite && a == b;
+  if (a is List && b is List) {
+    return a.length == b.length && Iterable<int>.generate(a.length).every((i) => contentValueEquals(a[i], b[i]));
+  }
+  if (a is Map && b is Map) {
+    return a.length == b.length && a.keys.every((k) => b.containsKey(k) && contentValueEquals(a[k], b[k]));
+  }
+  return a == b;
+}
 
 /// Stable entity identities for the complete current StudySetContent schema.
 /// Unknown collections fail closed so a format addition cannot silently vanish.

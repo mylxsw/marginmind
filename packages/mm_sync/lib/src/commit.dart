@@ -1,10 +1,48 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mm_core/mm_core.dart';
 
-const syncProtocolVersion = 1;
-String syncDigest(Object? value) => sha256.convert(utf8.encode(canonicalContentJson(value))).toString();
+const syncProtocolVersion = 2;
+
+/// Only for reading the unpublished v1 candidate and its local journal. Its
+/// JSON-number encoding was runtime dependent; never use for new wire IDs.
+String legacySyncDigest(Object? value) => sha256.convert(utf8.encode(canonicalContentJson(value))).toString();
+
+/// Tagged canonical tree, with finite JSON numbers encoded as IEEE-754 bytes.
+/// JSON's 1/1.0 and exponent spellings differ between Dart VM and JavaScript.
+/// Explicit tags distinguish numbers from strings and user-authored maps.
+String syncDigest(Object? value) {
+  Object encode(Object? value) {
+    if (value == null) return ['null'];
+    if (value is bool) return ['bool', value];
+    if (value is String) return ['string', value];
+    if (value is num) {
+      if (!value.isFinite || value.abs() > 9007199254740991) {
+        throw const FormatException('Sync numbers must be finite and within the exact JSON integer range');
+      }
+      final bytes = ByteData(8)..setFloat64(0, value == 0 ? 0 : value.toDouble(), Endian.big);
+      return [
+        'number',
+        [for (var i = 0; i < 8; i++) bytes.getUint8(i).toRadixString(16).padLeft(2, '0')].join(),
+      ];
+    }
+    if (value is List) return ['array', value.map(encode).toList()];
+    if (value is Map) {
+      final keys = value.keys.cast<String>().toList()..sort();
+      return [
+        'object',
+        [
+          for (final key in keys) [key, encode(value[key])],
+        ],
+      ];
+    }
+    throw const FormatException('Not a JSON sync value');
+  }
+
+  return sha256.convert(utf8.encode(jsonEncode(encode(value)))).toString();
+}
 
 /// Immutable, content-addressed commit. Account credentials never belong here.
 /// Parent identities establish causality; wall clocks are not ordering keys.
@@ -20,6 +58,8 @@ class SyncCommit {
     this.deleted,
     this.pending,
     this.resolves,
+    this.requires,
+    this.protocol,
   );
 
   factory SyncCommit.create({
@@ -32,7 +72,10 @@ class SyncCommit {
     bool deleted = false,
     List<String> pending = const [],
     List<String> resolves = const [],
+    Map<String, String> requires = const {},
+    int protocol = syncProtocolVersion,
   }) {
+    if (protocol != 1 && protocol != syncProtocolVersion) throw const FormatException('Unsupported sync commit');
     if ([libraryId, scope, deviceId].any((s) => s.isEmpty || s.length > 256) || sequence < 1) {
       throw const FormatException('Invalid sync identity');
     }
@@ -52,6 +95,12 @@ class SyncCommit {
     if (deleted && (pending.isNotEmpty || resolves.isNotEmpty)) {
       throw const FormatException('Resolve pending transactions before deletion');
     }
+    if (requires.entries.any(
+          (e) => e.key.isEmpty || e.key.length > 256 || e.key == scope || !RegExp(r'^[0-9a-f]{64}$').hasMatch(e.value),
+        ) ||
+        deleted && requires.isNotEmpty) {
+      throw const FormatException('Invalid domain dependencies');
+    }
     final frozen = _freeze(payload) as Map<String, Object?>;
     final candidate = SyncCommit._(
       '',
@@ -64,9 +113,11 @@ class SyncCommit {
       deleted,
       references(pending),
       references(resolves),
+      Map.unmodifiable(requires),
+      protocol,
     );
     return SyncCommit._(
-      syncDigest(candidate._body()),
+      protocol == 1 ? legacySyncDigest(candidate._body()) : syncDigest(candidate._body()),
       libraryId,
       scope,
       deviceId,
@@ -76,11 +127,13 @@ class SyncCommit {
       deleted,
       candidate.pending,
       candidate.resolves,
+      candidate.requires,
+      protocol,
     );
   }
 
   final String id, libraryId, scope, deviceId;
-  final int sequence;
+  final int sequence, protocol;
   final List<String> parents;
   final Map<String, Object?> payload;
   final bool deleted;
@@ -89,8 +142,11 @@ class SyncCommit {
   /// their IDs acknowledges receipt, never a choice of their final value.
   final List<String> pending, resolves;
 
+  /// Other domains that must be accepted before applying this version.
+  final Map<String, String> requires;
+
   Map<String, Object?> _body() => {
-    'protocol': syncProtocolVersion,
+    'protocol': protocol,
     'libraryId': libraryId,
     'scope': scope,
     'deviceId': deviceId,
@@ -100,6 +156,7 @@ class SyncCommit {
     'payload': payload,
     if (pending.isNotEmpty) 'pending': pending,
     if (resolves.isNotEmpty) 'resolves': resolves,
+    if (requires.isNotEmpty) 'requires': requires,
   };
   Map<String, Object?> toJson() => {'id': id, ..._body()};
 
@@ -116,12 +173,14 @@ class SyncCommit {
       'payload',
       'pending',
       'resolves',
+      'requires',
     };
-    if (json['protocol'] != syncProtocolVersion || json.keys.any((key) => !fields.contains(key))) {
+    if (!{1, syncProtocolVersion}.contains(json['protocol']) || json.keys.any((key) => !fields.contains(key))) {
       throw const FormatException('Unsupported sync commit');
     }
     try {
       final result = SyncCommit.create(
+        protocol: json['protocol'] as int,
         libraryId: json['libraryId'] as String,
         scope: json['scope'] as String,
         deviceId: json['deviceId'] as String,
@@ -131,6 +190,7 @@ class SyncCommit {
         deleted: json['deleted'] as bool,
         pending: ((json['pending'] ?? const []) as List).cast<String>(),
         resolves: ((json['resolves'] ?? const []) as List).cast<String>(),
+        requires: ((json['requires'] ?? const {}) as Map).cast<String, String>(),
       );
       if (result.id != json['id']) throw const FormatException('Commit digest mismatch');
       return result;
