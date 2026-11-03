@@ -3,6 +3,7 @@ package io.github.mylxsw.marginmind
 import android.content.Intent
 import android.content.ClipData
 import android.net.Uri
+import android.os.Bundle
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -22,6 +23,23 @@ import javax.crypto.spec.GCMParameterSpec
 
 class MainActivity : FlutterActivity() {
     private var statusBarVisible = true
+    private var incomingShares: IncomingShareInbox? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) incomingShares?.capture(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        incomingShares?.capture(intent)
+    }
+
+    override fun onDestroy() {
+        incomingShares?.close()
+        super.onDestroy()
+    }
 
     private fun applyStatusBarVisibility() {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
@@ -38,6 +56,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
         val messenger = engine.dartExecutor.binaryMessenger
+        incomingShares = IncomingShareInbox(this, messenger)
         MethodChannel(messenger, "marginmind/system_ui").setMethodCallHandler { call, result ->
             if (call.method != "setStatusBarVisible") {
                 result.notImplemented(); return@setMethodCallHandler

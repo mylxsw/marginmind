@@ -2495,5 +2495,26 @@
   "mapSelectionBox": "框选",
   "mapSelectionClear": "清空",
   "mapSelectionTapHint": "点节点选择或取消；单指移动画布，双指缩放",
-  "mapSelectionBoxHint": "单指画框，松手后可拖动四角修正；双指移动画布"
+  "mapSelectionBoxHint": "单指画框，松手后可拖动四角修正；双指移动画布",
+  "incomingShareTitle": "导入到 Foliarc",
+  "incomingShareCreate": "创建并导入",
+  "incomingShareImport": "导入",
+  "incomingShareExisting": "已有学习集",
+  "incomingShareSearch": "搜索学习集",
+  "incomingShareNoResults": "没有匹配的学习集",
+  "incomingShareRecent": "最近使用",
+  "incomingShareRetry": "重试",
+  "incomingShareUnsupported": "请分享网页链接或支持的文档（PDF、EPUB、MOBI 或 Markdown）。",
+  "incomingShareLimit": "分享内容超出导入限制，每次最多可分享 20 个文件。",
+  "incomingShareWebHint": "网页将在学习集中打开，可通过“转换”保存为阅读文档、PDF 或 Markdown。",
+  "incomingSharePaste": "粘贴链接",
+  "incomingShareClipboardEmpty": "剪贴板中没有有效的网页链接。",
+  "incomingShareFiles": "{count} 个文档",
+  "@incomingShareFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

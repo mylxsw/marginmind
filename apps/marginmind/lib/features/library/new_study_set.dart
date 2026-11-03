@@ -7,6 +7,7 @@ import '../../shared/l10n.dart';
 import '../../shared/phone_form.dart';
 import '../../shared/pdf_drop.dart';
 import '../../shared/pdf_picker.dart';
+import '../../shared/paste_web_url.dart';
 import '../workspace/widgets/notices.dart';
 import '../workspace/workspace_browser.dart';
 import 'library_controller.dart';
@@ -94,7 +95,7 @@ Future<_Creation?> _nativeCreation(BuildContext context, PdfPicker picker) async
     validate: (values) {
       if (source != 'web') return null;
       try {
-        BrowserPolicy.normalize(values['url']!);
+        normalizeWebInput(values['url']!);
         return null;
       } on BrowserUrlException catch (error) {
         return browserUrlError(context, error.code);
@@ -102,7 +103,7 @@ Future<_Creation?> _nativeCreation(BuildContext context, PdfPicker picker) async
     },
   );
   if (values == null) return null;
-  final url = source == 'web' ? BrowserPolicy.normalize(values['url']!) : null;
+  final url = source == 'web' ? normalizeWebInput(values['url']!) : null;
   final fallback =
       url?.host ?? (files.isEmpty ? l.newStudySetDefaultName : files.first.name.replaceFirst(RegExp(r'\.[^.]+$'), ''));
   return (title: values['title']!.trim().isEmpty ? fallback : values['title']!.trim(), files: files, url: url);
@@ -149,7 +150,7 @@ class _NewStudySetSheetState extends State<_NewStudySetSheet> {
     Uri? url;
     if (_source == _Source.web) {
       try {
-        url = BrowserPolicy.normalize(_url.text);
+        url = normalizeWebInput(_url.text);
       } on BrowserUrlException catch (error) {
         setState(() => _error = error.code);
         return;
@@ -221,6 +222,13 @@ class _NewStudySetSheetState extends State<_NewStudySetSheet> {
             ],
             if (_source == _Source.web) ...[
               const SizedBox(height: MMSpacing.m),
+              PasteWebUrlButton(
+                onPaste: (url) => setState(() {
+                  _url.text = url.toString();
+                  _error = null;
+                }),
+              ),
+              const SizedBox(height: MMSpacing.s),
               MMTextField(
                 controller: _url,
                 semanticLabel: l.webUrlLabel,

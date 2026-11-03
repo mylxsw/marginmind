@@ -112,6 +112,7 @@ abstract final class MMSizes {
   static const double mapExportSheetWidth = 560;
   static const double mapExportPreviewHeight = 180;
   static const double fullTranslationSheetWidth = 560;
+  static const double incomingShareSheetWidth = 500;
   static const double fullTranslationPanelWidth = 372;
 
   /// Keep the excerpt-target hint clear of the map view controls.
