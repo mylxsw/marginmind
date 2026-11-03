@@ -267,7 +267,8 @@ class FileLibraryStore
     final history = await sync.history();
     // Retry every received transaction, not just tips: an incomplete or
     // invalid descendant must not hide a valid preceding transaction.
-    int depth(SyncCommit c) {
+    final depths = <String, int>{};
+    int depth(SyncCommit c) => depths.putIfAbsent(c.id, () {
       try {
         return syncAncestry(history, [c.id]).length;
       } on MissingSyncParents {
@@ -275,7 +276,7 @@ class FileLibraryStore
       } on FormatException {
         return history.length + 1;
       }
-    }
+    });
 
     final tips = history.values.where((c) => c.scope.startsWith('sets/') && c.deviceId != sync.deviceId).toList()
       ..sort((a, b) {

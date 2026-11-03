@@ -281,22 +281,44 @@ class SyncGraph {
         }
       }
     }
+    // Validate parents before children. A single-parent transaction can only
+    // inherit pending references or resolve ones observed on its parent. Once
+    // that parent is valid, another complete ancestry walk proves nothing new.
+    // Merge checkpoints must still prove their selected pending ancestors.
+    final remaining = <String, int>{};
+    final children = <String, List<String>>{};
     for (final c in _commits.values) {
-      final history = ancestors(c.id)..remove(c.id);
-      if (!history.containsAll([...c.pending, ...c.resolves]) ||
+      remaining[c.id] = c.parents.length;
+      for (final parent in c.parents) {
+        children.putIfAbsent(parent, () => []).add(c.id);
+      }
+    }
+    final ready = remaining.keys.where((id) => remaining[id] == 0).toList();
+    var visited = 0;
+    while (ready.isNotEmpty) {
+      final c = _commits[ready.removeLast()]!;
+      visited++;
+      final resolved = c.resolves.toSet();
+      if ((c.parents.isEmpty && c.pending.isNotEmpty) ||
+          (c.parents.length > 1 && c.pending.isNotEmpty && !(ancestors(c.id)..remove(c.id)).containsAll(c.pending)) ||
           c.pending.any((id) => _commits[id]?.parents.length != 1) ||
           (c.deleted && c.parents.any((id) => _commits[id]!.pending.isNotEmpty)) ||
           (c.parents.length == 1 &&
               !contentValueEquals(
-                _commits[c.parents.single]!.pending.where((id) => !c.resolves.contains(id)).toList(),
+                _commits[c.parents.single]!.pending.where((id) => !resolved.contains(id)).toList(),
                 c.pending,
               )) ||
-          c.pending.any(c.resolves.contains) ||
-          (c.resolves.isNotEmpty &&
-              (c.parents.length != 1 || !c.resolves.every(_commits[c.parents.single]!.pending.contains)))) {
+          c.pending.any(resolved.contains) ||
+          (resolved.isNotEmpty &&
+              (c.parents.length != 1 || !resolved.every(_commits[c.parents.single]!.pending.contains)))) {
         throw const FormatException('Invalid unresolved transaction ancestry');
       }
+      for (final child in children[c.id] ?? const <String>[]) {
+        remaining[child] = remaining[child]! - 1;
+        if (remaining[child] == 0) ready.add(child);
+      }
     }
+    if (visited != _commits.length) throw const FormatException('Cyclic sync history');
     final devices = <(String, String, String), List<SyncCommit>>{};
     for (final c in _commits.values) {
       devices.putIfAbsent((c.libraryId, c.scope, c.deviceId), () => []).add(c);
