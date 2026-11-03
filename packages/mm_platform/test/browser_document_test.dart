@@ -103,6 +103,73 @@ void main() {
     expect(capture.resources['resources/image-1.png'], [137, 80, 78, 71]);
   });
 
+  group('printDocument', () {
+    Future<(BrowserSession, List<String>, List<String>)> printing({
+      Object? pdf,
+      String state = '{"ready":true}',
+    }) async {
+      final s = await setup();
+      final scripts = <String>[], methods = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        MethodChannel('marginmind/browser/${s.id}'),
+        (call) async {
+          methods.add(call.method);
+          if (call.method == 'printPdf') return pdf ?? Uint8List.fromList(ascii.encode('%PDF-ok'));
+          final script = (call.arguments as Map)['script'] as String;
+          scripts.add(script);
+          return script.startsWith('JSON.stringify({ready:') ? state : '{}';
+        },
+      );
+      return (s, scripts, methods);
+    }
+
+    test('prints the given article from a hidden host, then removes it', () async {
+      final (s, scripts, methods) = await printing();
+      addTearDown(s.dispose);
+      final pdf = await s.printDocument(
+        navigationId: s.navigationId,
+        html: '<h1>标题</h1><img src="resources/image-1.png">',
+        resources: {
+          'resources/image-1.png': Uint8List.fromList([1, 2]),
+        },
+      );
+      expect(ascii.decode(pdf), '%PDF-ok');
+      expect(scripts.first, contains('标题'));
+      expect(scripts.first, contains('attachShadow'));
+      expect(scripts.first, contains(base64Encode([1, 2])));
+      expect(methods, contains('printPdf'));
+      expect(scripts.last, contains('cleanup()'), reason: 'the page returns to how it was');
+    });
+
+    test('rejects a stale page, a failed layout and bad output, and always cleans up', () async {
+      final (stale, _, _) = await printing();
+      addTearDown(stale.dispose);
+      await expectLater(
+        stale.printDocument(navigationId: stale.navigationId + 1, html: '', resources: const {}),
+        throwsStateError,
+      );
+      await expectLater(
+        stale.printDocument(navigationId: stale.navigationId, html: '', resources: const {}, cancelled: () => true),
+        throwsStateError,
+      );
+      final (failed, scripts, methods) = await printing(state: '{"failed":true}');
+      addTearDown(failed.dispose);
+      await expectLater(
+        failed.printDocument(navigationId: failed.navigationId, html: '', resources: const {}),
+        throwsStateError,
+      );
+      expect(methods, isNot(contains('printPdf')));
+      expect(scripts.last, contains('cleanup()'));
+      final (bad, badScripts, _) = await printing(pdf: Uint8List.fromList(ascii.encode('broken')));
+      addTearDown(bad.dispose);
+      await expectLater(
+        bad.printDocument(navigationId: bad.navigationId, html: '', resources: const {}),
+        throwsStateError,
+      );
+      expect(badScripts.last, contains('cleanup()'));
+    });
+  });
+
   test('live extraction includes resources, original PDF and capture identity', () async {
     final s = await setup();
     addTearDown(s.dispose);

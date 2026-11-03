@@ -174,4 +174,71 @@ extension BrowserDocumentConversion on BrowserSession {
       }
     }
   }
+
+  /// Prints [html], not the page, through the same native pipeline as a capture,
+  /// which needs a live tab on every platform. The displayed page is unchanged.
+  Future<Uint8List> printDocument({
+    required int navigationId,
+    required String html,
+    required Map<String, Uint8List> resources,
+    bool Function()? cancelled,
+  }) async {
+    final token = 'mmPrint_${DateTime.now().microsecondsSinceEpoch}';
+    void check() {
+      if (_disposed || this.navigationId != navigationId || (cancelled?.call() ?? false)) {
+        throw StateError('stale_capture');
+      }
+    }
+
+    check();
+    if (!_hasDocument || phase == BrowserPhase.failed) throw StateError('page_not_ready');
+    if (_capturingDocument) throw StateError('capture_busy');
+    _capturingDocument = true;
+    try {
+      await _channel
+          .invokeMethod<String>('evaluate', {
+            'script': browserPrintDocumentScript(token, html, {
+              for (final entry in resources.entries) entry.key: base64Encode(entry.value),
+            }),
+          })
+          .timeout(const Duration(seconds: 15));
+      final deadline = DateTime.now().add(const Duration(seconds: 15));
+      while (true) {
+        check();
+        final raw = await _channel
+            .invokeMethod<String>('evaluate', {
+              'script':
+                  'JSON.stringify({ready:globalThis[${jsonEncode(token)}]?.printReady,failed:globalThis[${jsonEncode(token)}]?.printFailed})',
+            })
+            .timeout(const Duration(seconds: 15));
+        final state = BrowserSession._decode(raw ?? '{}');
+        if (state['failed'] == true) throw StateError('print_preparation_failed');
+        if (state['ready'] == true) break;
+        if (DateTime.now().isAfter(deadline)) throw TimeoutException('print_preparation_timeout');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      final pdf = await _channel.invokeMethod<Uint8List>('printPdf').timeout(const Duration(seconds: 45));
+      check();
+      if (pdf == null ||
+          pdf.length < 5 ||
+          pdf.length > 128 * 1024 * 1024 ||
+          ascii.decode(pdf.take(5).toList()) != '%PDF-') {
+        throw StateError('invalid_pdf');
+      }
+      return pdf;
+    } finally {
+      _capturingDocument = false;
+      if (!_disposed) {
+        try {
+          await _channel
+              .invokeMethod<String>('evaluate', {
+                'script': 'globalThis[${jsonEncode(token)}]?.cleanup(); delete globalThis[${jsonEncode(token)}]; "{}"',
+              })
+              .timeout(const Duration(seconds: 2));
+        } catch (_) {
+          /* The page may have disappeared. */
+        }
+      }
+    }
+  }
 }

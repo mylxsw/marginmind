@@ -4018,5 +4018,214 @@
   "phoneNavigationReturnToReading": "Back to Reading",
   "phoneNavigationReturnToNote": "Back to Note",
   "phoneNavigationReturnToContent": "Back to Content",
-  "syncConcurrentChoiceHint": "Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept."
+  "syncConcurrentChoiceHint": "Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept.",
+  "aiTaskWebFormat": "Web Page Formatting",
+  "webFormatSectionLabel": "Content",
+  "webFormatTitle": "AI Formatting",
+  "webFormatHint": "Fixes headings, lists and paragraphs and removes page clutter, without rewriting the text.",
+  "webFormatModel": "Model",
+  "webFormatScope": "About {chars} characters in {sections} sections.",
+  "@webFormatScope": {
+    "placeholders": {
+      "chars": {
+        "type": "String"
+      },
+      "sections": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatSendsTo": "The text will be sent to {service}.",
+  "@webFormatSendsTo": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatLocal": "Processed on this device; the text doesn’t leave it.",
+  "webFormatOpenSettings": "Open Settings",
+  "webFormatStart": "Start Formatting",
+  "webFormatStop": "Stop",
+  "webFormatResume": "Continue",
+  "webFormatStopNote": "You can stop anytime. Finished sections are kept.",
+  "webFormatPreparing": "Preparing",
+  "webFormatProgress": "Formatting section {current} of {total}",
+  "@webFormatProgress": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatChecking": "Checking completeness",
+  "webFormatOutputMeta": "{chars} characters · {time}",
+  "@webFormatOutputMeta": {
+    "placeholders": {
+      "chars": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatDoneMeta": "{sections} sections · {chars} characters · {time}",
+  "@webFormatDoneMeta": {
+    "placeholders": {
+      "sections": {
+        "type": "String"
+      },
+      "chars": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatEditedMark": "Edited",
+  "webFormatPartial": "{done} of {total} sections formatted; the rest stay as captured",
+  "@webFormatPartial": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatViewLayout": "Layout",
+  "webFormatTabPreview": "Preview",
+  "webFormatTabEdit": "Edit",
+  "webFormatTabCompare": "Compare",
+  "webFormatTabSettings": "Settings",
+  "webFormatTabContent": "Content",
+  "webFormatBackToLatest": "Back to Latest",
+  "webFormatWriting": "Formatting “{title}”…",
+  "@webFormatWriting": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatSectionFailed": "Couldn’t format section {number}",
+  "@webFormatSectionFailed": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatSectionFailedHint": "Other sections aren’t affected.",
+  "webFormatUseSource": "Use Original",
+  "webFormatSourceTag": "Section {number} · Not formatted, kept as captured",
+  "@webFormatSourceTag": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatStageRead": "Read page text",
+  "webFormatStageSplit": "Split into sections",
+  "webFormatStageFormat": "Format text",
+  "webFormatStageCheck": "Check completeness",
+  "webFormatProgressTitle": "Progress",
+  "webFormatCheckTitle": "Completeness",
+  "webFormatSections": "Sections",
+  "webFormatKept": "Images {images}/{imagesTotal}, links {links}/{linksTotal}, code blocks {code}/{codeTotal}",
+  "@webFormatKept": {
+    "placeholders": {
+      "images": {
+        "type": "String"
+      },
+      "imagesTotal": {
+        "type": "String"
+      },
+      "links": {
+        "type": "String"
+      },
+      "linksTotal": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      },
+      "codeTotal": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatShorter": "{title}: {percent}% shorter than the original",
+  "@webFormatShorter": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatLonger": "{title}: {percent}% longer than the original",
+  "@webFormatLonger": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatShorterHint": "This may be removed promotion, or article text removed by mistake.",
+  "webFormatLongerHint": "Text that isn’t in the original may have been added.",
+  "webFormatViewCompare": "Compare",
+  "webFormatAcknowledge": "Looks Good",
+  "webFormatRerun": "Format Again",
+  "webFormatEditedNoRerun": "Sections can’t be formatted again after manual edits.",
+  "webFormatDiscardAction": "Discard and Use Original",
+  "webFormatRevert": "Revert to AI Result",
+  "webFormatLivePreview": "Live Preview",
+  "webFormatSourceColumn": "Captured",
+  "webFormatResultColumn": "AI Formatted",
+  "webFormatResultColumnEdited": "AI Formatted (Before Edits)",
+  "webFormatNotFormatted": "Not formatted",
+  "webFormatRemovedHint": "This section is {percent}% shorter. Removed text is struck through; please review it.",
+  "@webFormatRemovedHint": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatAddedHint": "This section is {percent}% longer. Please check that nothing was added.",
+  "@webFormatAddedHint": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "webFormatConfirmCloseTitle": "Discard Formatting?",
+  "webFormatConfirmClose": "Formatted text won’t be kept.",
+  "webFormatConfirmCloseEdited": "Formatted text and your edits won’t be kept.",
+  "webFormatDiscard": "Discard",
+  "webFormatBack": "Back",
+  "webFormatConfirmRevertTitle": "Revert to AI Result?",
+  "webFormatConfirmRevert": "Your Markdown edits will be discarded.",
+  "webFormatRevertAction": "Revert",
+  "webFormatConfirmDiscardTitle": "Discard Formatting?",
+  "webFormatConfirmDiscard": "You’ll return to the unformatted text.",
+  "webFormatConfirmDiscardEdited": "You’ll return to the unformatted text, and your edits won’t be kept.",
+  "webFormatInterruptedHint": "Continue formatting, or save what you have; unformatted parts stay as captured.",
+  "webFormatSourceNote": "AI formatted",
+  "webFormatPdfFailed": "Couldn’t create the PDF. Try again or choose another format.",
+  "webFormatImage": "Image"
 }

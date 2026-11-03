@@ -16,7 +16,8 @@ enum TaskType {
   mapGenerate('map_generate', TaskCategory.heavy, ['mindmap.document']),
   research('research', TaskCategory.heavy, ['research.evidence']),
   studyNotes('study_notes', TaskCategory.heavy, ['notes.organize']),
-  reviewCards('review_cards', TaskCategory.heavy, ['review.grounded']);
+  reviewCards('review_cards', TaskCategory.heavy, ['review.grounded']),
+  webFormat('web_format', TaskCategory.heavy, ['document.format']);
 
   const TaskType(this.key, this.category, this.knowledgePacks);
   final String key;

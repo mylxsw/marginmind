@@ -6743,4 +6743,257 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncConcurrentChoiceHint =>
       'Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept.';
+
+  @override
+  String get aiTaskWebFormat => 'Web Page Formatting';
+
+  @override
+  String get webFormatSectionLabel => 'Content';
+
+  @override
+  String get webFormatTitle => 'AI Formatting';
+
+  @override
+  String get webFormatHint =>
+      'Fixes headings, lists and paragraphs and removes page clutter, without rewriting the text.';
+
+  @override
+  String get webFormatModel => 'Model';
+
+  @override
+  String webFormatScope(String chars, String sections) {
+    return 'About $chars characters in $sections sections.';
+  }
+
+  @override
+  String webFormatSendsTo(String service) {
+    return 'The text will be sent to $service.';
+  }
+
+  @override
+  String get webFormatLocal => 'Processed on this device; the text doesn’t leave it.';
+
+  @override
+  String get webFormatOpenSettings => 'Open Settings';
+
+  @override
+  String get webFormatStart => 'Start Formatting';
+
+  @override
+  String get webFormatStop => 'Stop';
+
+  @override
+  String get webFormatResume => 'Continue';
+
+  @override
+  String get webFormatStopNote => 'You can stop anytime. Finished sections are kept.';
+
+  @override
+  String get webFormatPreparing => 'Preparing';
+
+  @override
+  String webFormatProgress(String current, String total) {
+    return 'Formatting section $current of $total';
+  }
+
+  @override
+  String get webFormatChecking => 'Checking completeness';
+
+  @override
+  String webFormatOutputMeta(String chars, String time) {
+    return '$chars characters · $time';
+  }
+
+  @override
+  String webFormatDoneMeta(String sections, String chars, String time) {
+    return '$sections sections · $chars characters · $time';
+  }
+
+  @override
+  String get webFormatEditedMark => 'Edited';
+
+  @override
+  String webFormatPartial(String done, String total) {
+    return '$done of $total sections formatted; the rest stay as captured';
+  }
+
+  @override
+  String get webFormatViewLayout => 'Layout';
+
+  @override
+  String get webFormatTabPreview => 'Preview';
+
+  @override
+  String get webFormatTabEdit => 'Edit';
+
+  @override
+  String get webFormatTabCompare => 'Compare';
+
+  @override
+  String get webFormatTabSettings => 'Settings';
+
+  @override
+  String get webFormatTabContent => 'Content';
+
+  @override
+  String get webFormatBackToLatest => 'Back to Latest';
+
+  @override
+  String webFormatWriting(String title) {
+    return 'Formatting “$title”…';
+  }
+
+  @override
+  String webFormatSectionFailed(String number) {
+    return 'Couldn’t format section $number';
+  }
+
+  @override
+  String get webFormatSectionFailedHint => 'Other sections aren’t affected.';
+
+  @override
+  String get webFormatUseSource => 'Use Original';
+
+  @override
+  String webFormatSourceTag(String number) {
+    return 'Section $number · Not formatted, kept as captured';
+  }
+
+  @override
+  String get webFormatStageRead => 'Read page text';
+
+  @override
+  String get webFormatStageSplit => 'Split into sections';
+
+  @override
+  String get webFormatStageFormat => 'Format text';
+
+  @override
+  String get webFormatStageCheck => 'Check completeness';
+
+  @override
+  String get webFormatProgressTitle => 'Progress';
+
+  @override
+  String get webFormatCheckTitle => 'Completeness';
+
+  @override
+  String get webFormatSections => 'Sections';
+
+  @override
+  String webFormatKept(
+    String images,
+    String imagesTotal,
+    String links,
+    String linksTotal,
+    String code,
+    String codeTotal,
+  ) {
+    return 'Images $images/$imagesTotal, links $links/$linksTotal, code blocks $code/$codeTotal';
+  }
+
+  @override
+  String webFormatShorter(String title, String percent) {
+    return '$title: $percent% shorter than the original';
+  }
+
+  @override
+  String webFormatLonger(String title, String percent) {
+    return '$title: $percent% longer than the original';
+  }
+
+  @override
+  String get webFormatShorterHint => 'This may be removed promotion, or article text removed by mistake.';
+
+  @override
+  String get webFormatLongerHint => 'Text that isn’t in the original may have been added.';
+
+  @override
+  String get webFormatViewCompare => 'Compare';
+
+  @override
+  String get webFormatAcknowledge => 'Looks Good';
+
+  @override
+  String get webFormatRerun => 'Format Again';
+
+  @override
+  String get webFormatEditedNoRerun => 'Sections can’t be formatted again after manual edits.';
+
+  @override
+  String get webFormatDiscardAction => 'Discard and Use Original';
+
+  @override
+  String get webFormatRevert => 'Revert to AI Result';
+
+  @override
+  String get webFormatLivePreview => 'Live Preview';
+
+  @override
+  String get webFormatSourceColumn => 'Captured';
+
+  @override
+  String get webFormatResultColumn => 'AI Formatted';
+
+  @override
+  String get webFormatResultColumnEdited => 'AI Formatted (Before Edits)';
+
+  @override
+  String get webFormatNotFormatted => 'Not formatted';
+
+  @override
+  String webFormatRemovedHint(String percent) {
+    return 'This section is $percent% shorter. Removed text is struck through; please review it.';
+  }
+
+  @override
+  String webFormatAddedHint(String percent) {
+    return 'This section is $percent% longer. Please check that nothing was added.';
+  }
+
+  @override
+  String get webFormatConfirmCloseTitle => 'Discard Formatting?';
+
+  @override
+  String get webFormatConfirmClose => 'Formatted text won’t be kept.';
+
+  @override
+  String get webFormatConfirmCloseEdited => 'Formatted text and your edits won’t be kept.';
+
+  @override
+  String get webFormatDiscard => 'Discard';
+
+  @override
+  String get webFormatBack => 'Back';
+
+  @override
+  String get webFormatConfirmRevertTitle => 'Revert to AI Result?';
+
+  @override
+  String get webFormatConfirmRevert => 'Your Markdown edits will be discarded.';
+
+  @override
+  String get webFormatRevertAction => 'Revert';
+
+  @override
+  String get webFormatConfirmDiscardTitle => 'Discard Formatting?';
+
+  @override
+  String get webFormatConfirmDiscard => 'You’ll return to the unformatted text.';
+
+  @override
+  String get webFormatConfirmDiscardEdited => 'You’ll return to the unformatted text, and your edits won’t be kept.';
+
+  @override
+  String get webFormatInterruptedHint =>
+      'Continue formatting, or save what you have; unformatted parts stay as captured.';
+
+  @override
+  String get webFormatSourceNote => 'AI formatted';
+
+  @override
+  String get webFormatPdfFailed => 'Couldn’t create the PDF. Try again or choose another format.';
+
+  @override
+  String get webFormatImage => 'Image';
 }

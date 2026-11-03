@@ -182,12 +182,12 @@ RoutingConfig _stored(ProviderContainer container) => RoutingConfig(
 void main() {
   final l = AppLocalizationsZh();
 
-  test('all twelve settings routes use production contracts and capability requirements', () async {
+  test('all thirteen settings routes use production contracts and capability requirements', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     final specs = container.read(aiTaskRoutingSpecsProvider);
     expect(specs.keys, unorderedEquals(TaskType.values));
-    expect(specs.length, 12);
+    expect(specs.length, 13);
     expect(specs[TaskType.assistantChat], same(assistantChatSpec));
     expect(specs[TaskType.mapGenerate], same(mapGenerateSpec));
     expect(specs[TaskType.documentTranslate], same(documentTranslationSpec));

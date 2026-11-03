@@ -43,6 +43,7 @@ final aiTaskRoutingSpecsProvider = Provider<Map<TaskType, TaskSpec>>(
       mapExpandSpec,
       mapGenerateSpec,
       studyNotesSpec,
+      webFormatSpec,
     ])
       spec.type: spec,
   }),
