@@ -43,9 +43,11 @@ class FileLibraryStore
         ReadingContinuationRepository,
         TranslationStoreRepository,
         StudySetRepository,
+        StudySetTitleRepository,
         StudySetContentRepository,
         DocumentRepository,
         DocumentResourceRepository,
+        ReferencedResourceRepository,
         ResearchSessionRepository,
         ResearchSnapshotRepository {
   FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator, FileSyncLedger? sync})
@@ -75,6 +77,10 @@ class FileLibraryStore
   @override
   Stream<DocumentResourceAvailability> watchDocumentResources(String studySetId, String documentId) =>
       _watchDocumentResources(studySetId, documentId);
+
+  @override
+  Stream<ReferencedResource> watchReferencedResource(String studySetId, String fileName) =>
+      _watchReferencedResource(studySetId, fileName);
 
   @override
   Future<ReadingContinuations> readingContinuations(String id) => _readingContinuations(id);
@@ -745,6 +751,29 @@ class FileLibraryStore
 
   @override
   Future<void> rename(String id, String title) => _updateMeta(id, (r) => r.copyWith(title: title.trim()));
+
+  StudySetTitle _editableTitle(String id) => StudySetTitle(
+    _require(id).title,
+    syncDigest({'title': _require(id).title, 'head': _syncSnapshots[_scope(id)]?.commit.id}),
+  );
+
+  @override
+  Future<StudySetTitle> titleForEditing(String id) async {
+    await _ensureLoaded();
+    late StudySetTitle result;
+    await _queueWrite(id, () async {
+      result = _editableTitle(id);
+    });
+    return result;
+  }
+
+  @override
+  Future<void> renameObserved(String id, String title, {required String expectedRevision}) => _updateMeta(id, (record) {
+    if (_editableTitle(id).revision != expectedRevision) {
+      throw const ContentSyncActionException(ContentSyncActionFailure.stale);
+    }
+    return record.copyWith(title: title.trim());
+  });
 
   @override
   Future<void> setColor(String id, int colorIndex) => _updateMeta(id, (r) => r.copyWith(colorIndex: colorIndex));

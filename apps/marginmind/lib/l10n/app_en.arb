@@ -3370,5 +3370,6 @@
   "syncDisconnectHint": "Disconnecting removes this connection and its saved credential from this device. Library content, cloud files and delivery history are kept.",
   "syncDeviceStale": "The device name changed while you were editing. Your input is kept. Cancel and reopen Rename to review the new name.",
   "syncDisconnectICloud": "Disconnect iCloud from this library",
-  "syncDisconnectICloudHint": "Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account."
+  "syncDisconnectICloudHint": "Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account.",
+  "syncRenameStale": "This item changed while you were editing. Your input is kept. Cancel and reopen Rename to review the latest version."
 }

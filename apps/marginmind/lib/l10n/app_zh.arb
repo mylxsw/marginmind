@@ -2661,5 +2661,6 @@
   "syncDisconnectHint": "断开会移除本机当前连接及其保存的凭据，保留资料库内容、云端文件和交付历史。",
   "syncDeviceStale": "编辑期间设备名称已变化，输入已保留。请取消并重新打开改名，确认最新名称。",
   "syncDisconnectICloud": "断开此资料库的 iCloud 连接",
-  "syncDisconnectICloudHint": "断开会保留资料库、云端文件和交付历史，不会退出系统 Apple 账号。"
+  "syncDisconnectICloudHint": "断开会保留资料库、云端文件和交付历史，不会退出系统 Apple 账号。",
+  "syncRenameStale": "编辑期间内容已变化，输入已保留。请取消并重新打开改名，确认最新版本。"
 }

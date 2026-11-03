@@ -224,6 +224,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               AssistantScope(
                 studySetId: widget.studySetId,
                 child: CardImageScope(
+                  studySetId: widget.studySetId,
                   resolve: controller.imagePath,
                   child: LayoutBuilder(
                     builder: (context, constraints) {

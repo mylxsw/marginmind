@@ -1751,7 +1751,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     List<PdfOutlineEntry> Function(List<PdfOutlineEntry>) edit,
   ) => _update((c) => _editor.setDocumentOutline(c, documentId, edit(c.outlineOn(documentId)?.items ?? original)));
 
-  Future<void> renameBookmark(String id, String title) => _update((c) => _editor.renameBookmark(c, id, title));
+  Future<void> renameBookmark(String id, String title) => _update((c) {
+    if (!c.bookmarks.any((b) => b.id == id)) throw StateError('Bookmark no longer exists');
+    return _editor.renameBookmark(c, id, title);
+  });
 
   Future<void> removeBookmark(String id) => _update((c) => _editor.removeBookmark(c, id));
 

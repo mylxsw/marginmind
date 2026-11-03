@@ -217,6 +217,38 @@ Future<void> showContentRenameSheet(
   }
 }
 
+/// Metadata uses an observed repository revision, not a content edit path.
+Future<void> showStudySetRenameSheet(BuildContext context, WidgetRef ref, StudySet set) async {
+  final repository = ref.read(studySetRepositoryProvider);
+  try {
+    final observed = repository is StudySetTitleRepository
+        ? await (repository as StudySetTitleRepository).titleForEditing(set.id)
+        : StudySetTitle(set.title, '');
+    if (!context.mounted) return;
+    await showMMSheet<String>(
+      context: context,
+      builder: (_) => _RenameSheet(
+        title: context.l10n.renameStudySet,
+        initial: observed.title,
+        save: (value) async {
+          if (value.isEmpty) throw ArgumentError('Empty title');
+          if (repository is StudySetTitleRepository) {
+            await (repository as StudySetTitleRepository).renameObserved(
+              set.id,
+              value,
+              expectedRevision: observed.revision,
+            );
+          } else {
+            await repository.rename(set.id, value);
+          }
+        },
+      ),
+    );
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);
+  }
+}
+
 /// Two-button confirmation sheet; resolves to true when confirmed.
 Future<bool> showConfirmSheet(
   BuildContext context, {
@@ -301,7 +333,8 @@ class _RenameSheetState extends State<_RenameSheet> {
     super.dispose();
   }
 
-  bool _saving = false, _failed = false;
+  bool _saving = false;
+  Object? _error;
   Future<void> _save() async {
     if (_saving) return;
     final value = _controller.text.trim();
@@ -311,13 +344,13 @@ class _RenameSheetState extends State<_RenameSheet> {
     }
     setState(() {
       _saving = true;
-      _failed = false;
+      _error = null;
     });
     try {
       await widget.save!(value);
       if (mounted) Navigator.of(context).pop(value);
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -339,7 +372,13 @@ class _RenameSheetState extends State<_RenameSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_failed) Text(l.somethingWentWrong),
+          if (_error != null)
+            Text(
+              _error is ContentSyncActionException &&
+                      (_error as ContentSyncActionException).reason == ContentSyncActionFailure.stale
+                  ? l.syncRenameStale
+                  : l.somethingWentWrong,
+            ),
           MMFormRow(
             label: widget.fieldLabel ?? l.sheetName,
             child: MMTextField(

@@ -59,6 +59,48 @@ void main() {
       ])
       .then((_) {});
 
+  test('bookmark input holds its document and bookmark until save or cancel', () async {
+    await repo.update(
+      id,
+      (c) => c.copyWith(
+        bookmarks: [Bookmark(id: 'bookmark', documentId: 'c1', page: 1, createdAt: testNow, title: 'Before')],
+      ),
+    );
+    final input = await ContentInput(
+      repository: repo,
+      studySetId: id,
+      paths: [
+        ['bookmarks', 'bookmark'],
+        ['documents', 'c1'],
+      ],
+      read: (c) => c.bookmarks.where((b) => b.id == 'bookmark').firstOrNull?.title,
+    ).open();
+    final base = await head();
+    await repo.receiveSync([
+      SyncCommit.create(
+        libraryId: 'library',
+        scope: scope,
+        deviceId: 'remote',
+        sequence: 1,
+        parents: [base.id],
+        payload: {
+          ...base.payload,
+          'content': sharedContent(
+            StudySetEditor(
+              newId: () => 'other',
+              now: () => testNow,
+            ).renameBookmark(await repo.load(id), 'bookmark', 'Remote'),
+          ),
+        },
+      ),
+    ]);
+    expect((await repo.load(id)).bookmarks.single.title, 'Before');
+    await input.close();
+    expect((await repo.load(id)).bookmarks.single.title, 'Remote');
+    await controller.removeBookmark('bookmark');
+    await expectLater(controller.renameBookmark('bookmark', 'Stale'), throwsStateError);
+  });
+
   test('independent editor protection holds received candidates until a durable save or cancel', () async {
     final input = ContentInput(
       repository: repo,

@@ -30,6 +30,33 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('standalone image bytes and observed titles retain browser guards', () async {
+    final set = await store.create(const NewStudySet(title: 'Original', colorIndex: 0));
+    final image = await store.importImageBytes(set.id, [137, 80, 78, 71, 13, 10, 26, 10]);
+    await store.update(
+      set.id,
+      (c) => c.copyWith(
+        cards: [
+          Card(id: 'picture', kind: CardKind.note, title: '', imageFileName: image, createdAt: DateTime.utc(2026)),
+        ],
+      ),
+    );
+    final read = await store.watchReferencedResource(set.id, image).first;
+    expect(read.availability, DocumentResourceAvailability.ready);
+    expect(read.bytes, [137, 80, 78, 71, 13, 10, 26, 10]);
+    final title = await store.titleForEditing(set.id);
+    await store.rename(set.id, 'Newer');
+    await expectLater(
+      store.renameObserved(set.id, 'Stale', expectedRevision: title.revision),
+      throwsA(isA<ContentSyncActionException>()),
+    );
+    await store.update(set.id, (c) => c.copyWith(cards: []));
+    expect(
+      (await store.watchReferencedResource(set.id, image).first).availability,
+      DocumentResourceAvailability.missing,
+    );
+  });
+
   test('device names and disconnected bindings recover without clearing delivery history', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');

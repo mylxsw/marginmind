@@ -163,6 +163,7 @@ class _ReferenceContentState extends ConsumerState<ReferenceContent> {
           ownsLeading: false,
           useGeometry: false,
           child: CardImageScope(
+            studySetId: id,
             resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(id, name),
             child: WorkspaceContentHost(
               openSource: (sourceId, anchor) =>

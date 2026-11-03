@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -285,6 +286,91 @@ void main() {
     expect((await b.syncResources()).every((r) => r.availability == SyncResourceAvailability.available), isTrue);
     expect(await File(b.resolveFile(id, image)).readAsBytes(), [137, 80, 78, 71, 13, 10, 26, 10]);
     expect(await b.readResearchSnapshot(id, snapshot), '# Evidence');
+    expect(utf8.decode((await b.watchReferencedResource(id, snapshot).first).bytes!), '# Evidence');
+  });
+
+  test('standalone resources verify exact bytes, refuse private paths and follow removal', () async {
+    final image = await a.importImageBytes(id, [137, 80, 78, 71, 13, 10, 26, 10]);
+    await a.update(
+      id,
+      (c) => c.copyWith(
+        cards: [Card(id: 'picture', kind: CardKind.note, title: 'Picture', imageFileName: image, createdAt: now)],
+      ),
+    );
+    await x.run();
+    await y.run();
+    final states = StreamIterator(b.watchReferencedResource(id, image));
+    expect(await states.moveNext(), isTrue);
+    expect(states.current.availability, DocumentResourceAvailability.missing);
+    await y.download((await b.syncResources()).single);
+    expect(await states.moveNext(), isTrue);
+    expect(states.current.availability, DocumentResourceAvailability.ready);
+    expect(states.current.bytes, [137, 80, 78, 71, 13, 10, 26, 10]);
+    expect(() => states.current.bytes![0] = 0, throwsUnsupportedError);
+    await File(b.resolveFile(id, image)).writeAsBytes([1, 2]);
+    final changed = await b.watchReferencedResource(id, image).first;
+    expect(changed.availability, DocumentResourceAvailability.changed);
+    expect(changed.bytes, isNull);
+    await b.update(id, (c) => c.copyWith(cards: []));
+    expect(await states.moveNext(), isTrue);
+    expect(states.current.availability, DocumentResourceAvailability.missing);
+    expect(states.current.bytes, isNull);
+    expect(await File(b.resolveFile(id, image)).exists(), isTrue);
+    await states.cancel();
+    for (final path in ['../.foliarc-sync/local', '.foliarc-sync/identity.json', 'images/unreferenced.png']) {
+      expect((await b.watchReferencedResource(id, path).first).bytes, isNull);
+    }
+  });
+
+  test('local images validate content-addressed names without enabling sync', () async {
+    final local = FileLibraryStore(Directory('${root.path}/local'));
+    final set = await local.create(const NewStudySet(title: 'Local', colorIndex: 0));
+    final image = await local.importImageBytes(set.id, [137, 80, 78, 71, 13, 10, 26, 10]);
+    await local.update(
+      set.id,
+      (c) => c.copyWith(
+        cards: [Card(id: 'picture', kind: CardKind.note, title: '', imageFileName: image, createdAt: now)],
+      ),
+    );
+    expect((await local.watchReferencedResource(set.id, image).first).availability, DocumentResourceAvailability.ready);
+    expect(await local.syncLedger, isNull);
+    await File(local.resolveFile(set.id, image)).writeAsBytes([4]);
+    expect(
+      (await local.watchReferencedResource(set.id, image).first).availability,
+      DocumentResourceAvailability.changed,
+    );
+    await File(local.resolveFile(set.id, image)).delete();
+    expect(
+      (await local.watchReferencedResource(set.id, image).first).availability,
+      DocumentResourceAvailability.missing,
+    );
+    final outside = File('${root.path}/private-image')..writeAsBytesSync([137, 80, 78, 71, 13, 10, 26, 10]);
+    await Link(local.resolveFile(set.id, image)).create(outside.path);
+    expect(
+      (await local.watchReferencedResource(set.id, image).first).availability,
+      DocumentResourceAvailability.changed,
+    );
+    await local.dispose();
+  });
+
+  test('metadata rename rejects a remote revision even when the visible name returns', () async {
+    await a.importDocumentPackage(id, pdf([1]));
+    await x.run();
+    await y.run();
+    final observed = await b.titleForEditing(id);
+    await a.rename(id, 'Remote');
+    await a.rename(id, observed.title);
+    await x.run();
+    await y.run();
+    await expectLater(
+      b.renameObserved(id, 'Stale', expectedRevision: observed.revision),
+      throwsA(isA<ContentSyncActionException>()),
+    );
+    final latest = await b.titleForEditing(id);
+    await b.renameObserved(id, 'Chosen', expectedRevision: latest.revision);
+    expect((await b.titleForEditing(id)).title, 'Chosen');
+    await b.delete(id);
+    await expectLater(b.renameObserved(id, 'Restore', expectedRevision: latest.revision), throwsStateError);
   });
 
   test('cache validates zero files, tampered chunks, descriptors and private symlinks', () async {

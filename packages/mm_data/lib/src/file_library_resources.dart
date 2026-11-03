@@ -10,6 +10,56 @@ class SyncResourceStatus {
 }
 
 extension FileLibraryResources on FileLibraryStore {
+  String _referencedResourceToken(String id, String path) => syncDigest({
+    'references': [
+      for (final group in _sets[id] == null ? <SyncResourceGroup>[] : syncResourceGroups(_sets[id]!.content))
+        if ((group.key.startsWith('image/') || group.key.startsWith('research/')) && group.roots.contains(path))
+          {'group': group.key, 'file': _sets[id]?.resources?.groups[group.key]?[path]?.toJson()},
+    ],
+    'epoch': _resourceVersions[id] ?? 0,
+  });
+
+  Stream<ReferencedResource> _watchReferencedResource(String id, String path) =>
+      _watch(
+        _contentChanges.stream.where((changed) => changed == id),
+        () => _referencedResourceToken(id, path),
+      ).distinct().asyncMap((token) async {
+        final record = _sets[id];
+        final references = record == null
+            ? <SyncResourceGroup>[]
+            : syncResourceGroups(record.content)
+                  .where((g) => (g.key.startsWith('image/') || g.key.startsWith('research/')) && g.roots.contains(path))
+                  .toList();
+        if (references.isEmpty || !validSyncResourcePath(path)) {
+          return ReferencedResource(DocumentResourceAvailability.missing);
+        }
+        try {
+          final location = _resolvePath(id, path);
+          // Inspect rejects symlinks into private storage as well as invalid
+          // sizes. Verify the returned bytes again, not just the path.
+          final actual = await ResourceCache(root).inspect(location);
+          if (actual == null) return ReferencedResource(DocumentResourceAvailability.missing);
+          for (final reference in references) {
+            final expected = record!.resources?.groups[reference.key]?[path];
+            if (expected != null && !contentValueEquals(expected.toJson(), actual.toJson())) {
+              return ReferencedResource(DocumentResourceAvailability.changed);
+            }
+          }
+          final bytes = await File(location).readAsBytes();
+          final hash = sha256.convert(bytes).toString();
+          final namedHash = RegExp(r'/([a-f0-9]{64})\.[a-z0-9]+$').firstMatch(path)?.group(1);
+          if (bytes.length != actual.length ||
+              hash != actual.hash ||
+              (namedHash != null && namedHash != hash) ||
+              token != _referencedResourceToken(id, path)) {
+            return ReferencedResource(DocumentResourceAvailability.changed);
+          }
+          return ReferencedResource(DocumentResourceAvailability.ready, bytes);
+        } catch (_) {
+          return ReferencedResource(DocumentResourceAvailability.changed);
+        }
+      });
+
   Stream<DocumentResourceAvailability> _watchDocumentResources(String id, String documentId) =>
       _watch(_contentChanges.stream.where((changed) => changed == id), () {
         final record = _sets[id], doc = _sets[id]?.content.document(documentId);

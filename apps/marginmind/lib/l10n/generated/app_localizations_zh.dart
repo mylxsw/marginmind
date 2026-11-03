@@ -6445,4 +6445,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncDisconnectICloudHint => '断开会保留资料库、云端文件和交付历史，不会退出系统 Apple 账号。';
+
+  @override
+  String get syncRenameStale => '编辑期间内容已变化，输入已保留。请取消并重新打开改名，确认最新版本。';
 }

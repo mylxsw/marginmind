@@ -206,6 +206,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       onKeyEvent: _onKey,
       child: widget.embedded
           ? CardImageScope(
+              studySetId: widget.studySetId,
               resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(widget.studySetId, name),
               child: ColoredBox(
                 color: context.mmColors.windowBackground,
@@ -252,6 +253,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 ),
               ),
               body: CardImageScope(
+                studySetId: widget.studySetId,
                 resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(widget.studySetId, name),
                 child: ColoredBox(color: context.mmColors.windowBackground, child: body),
               ),

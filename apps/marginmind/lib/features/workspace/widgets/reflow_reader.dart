@@ -1837,8 +1837,18 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                 () => navigate(p),
                                 onDelete: () => workspace.removeBookmark(b.id),
                                 onRename: () async {
-                                  final name = await showRenameSheet(context, title: l.rename, initial: b.title);
-                                  if (name != null) await workspace.renameBookmark(b.id, name);
+                                  await showContentRenameSheet(
+                                    context,
+                                    ref,
+                                    widget.studySetId,
+                                    title: l.rename,
+                                    paths: [
+                                      ['bookmarks', b.id],
+                                      ['documents', b.documentId],
+                                    ],
+                                    read: (c) => c.bookmarks.where((item) => item.id == b.id).firstOrNull?.title,
+                                    save: (name) => workspace.renameBookmark(b.id, name),
+                                  );
                                 },
                                 subtitle:
                                     '${book.chapter(p.chapterId)?.canonicalText.substring(p.offset.clamp(0, book.chapter(p.chapterId)!.canonicalText.length)).characters.take(24).string ?? ''} · ${(book.progress(p) * 100).round()}%',

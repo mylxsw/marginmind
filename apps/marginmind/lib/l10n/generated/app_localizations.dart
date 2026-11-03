@@ -11761,6 +11761,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account.'**
   String get syncDisconnectICloudHint;
+
+  /// No description provided for @syncRenameStale.
+  ///
+  /// In en, this message translates to:
+  /// **'This item changed while you were editing. Your input is kept. Cancel and reopen Rename to review the latest version.'**
+  String get syncRenameStale;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
