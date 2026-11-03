@@ -5,6 +5,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../shared/l10n.dart';
 import '../../shared/phone_form.dart';
+import '../../shared/paste_web_url.dart';
 import 'workspace_controller.dart';
 import 'web_conversion.dart';
 
@@ -164,14 +165,14 @@ Future<void> showAddWebPage(BuildContext context, WidgetRef ref, String studySet
       fields: [MMNativeField(id: 'url', label: l.addWebTitle, keyboard: 'url', placeholder: 'https://example.com')],
       validate: (values) {
         try {
-          BrowserPolicy.normalize(values['url']!);
+          normalizeWebInput(values['url']!);
           return null;
         } on BrowserUrlException catch (error) {
           return browserUrlError(context, error.code);
         }
       },
     );
-    if (values != null) url = BrowserPolicy.normalize(values['url']!);
+    if (values != null) url = normalizeWebInput(values['url']!);
   } else {
     url = await showMMSheet<Uri>(context: context, width: 540, builder: (_) => const _AddressDialog());
   }
@@ -207,7 +208,7 @@ class _AddressDialogState extends State<_AddressDialog> {
 
   void _open() {
     try {
-      Navigator.of(context).pop(BrowserPolicy.normalize(_text.text));
+      Navigator.of(context).pop(normalizeWebInput(_text.text));
     } on BrowserUrlException catch (error) {
       setState(() => _error = error.code);
     }
@@ -234,6 +235,13 @@ class _AddressDialogState extends State<_AddressDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          PasteWebUrlButton(
+            onPaste: (url) {
+              _text.text = url.toString();
+              setState(() => _error = null);
+            },
+          ),
+          const SizedBox(height: MMSpacing.s),
           ListenableBuilder(
             listenable: _focus,
             builder: (context, _) => GestureDetector(

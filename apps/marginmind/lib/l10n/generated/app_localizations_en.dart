@@ -6296,4 +6296,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapSelectionBoxHint => 'Drag a box; adjust its corners after release. Use two fingers to move the map.';
+
+  @override
+  String get incomingShareTitle => 'Import to Foliarc';
+
+  @override
+  String get incomingShareCreate => 'Create and Import';
+
+  @override
+  String get incomingShareImport => 'Import';
+
+  @override
+  String get incomingShareExisting => 'Existing Study Set';
+
+  @override
+  String get incomingShareSearch => 'Search study sets';
+
+  @override
+  String get incomingShareNoResults => 'No matching study sets';
+
+  @override
+  String get incomingShareRecent => 'Recent';
+
+  @override
+  String get incomingShareRetry => 'Retry';
+
+  @override
+  String get incomingShareUnsupported => 'Share a web link or a supported document (PDF, EPUB, MOBI or Markdown).';
+
+  @override
+  String get incomingShareLimit => 'The shared content exceeds the import limit. Share up to 20 files at a time.';
+
+  @override
+  String get incomingShareWebHint =>
+      'The page opens in your study set. Use Convert to save it as a readable document, PDF or Markdown.';
+
+  @override
+  String get incomingSharePaste => 'Paste Link';
+
+  @override
+  String get incomingShareClipboardEmpty => 'No valid web link on the clipboard.';
+
+  @override
+  String incomingShareFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count documents', one: '1 document');
+    return '$_temp0';
+  }
 }

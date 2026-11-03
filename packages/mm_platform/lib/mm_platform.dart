@@ -30,3 +30,4 @@ export 'src/book_fonts.dart' show MMBookFonts;
 export 'src/speech.dart';
 export 'src/system_notification.dart';
 export 'src/note_files.dart';
+export 'src/incoming_share.dart';

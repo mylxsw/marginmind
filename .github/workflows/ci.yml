@@ -116,6 +116,17 @@ jobs:
       - run: flutter build ios --simulator --no-codesign
         timeout-minutes: 10
         working-directory: apps/marginmind
+      - name: Test iOS share receiver
+        timeout-minutes: 15
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "--json"]))
+          device = next(d for group in devices["devices"].values() for d in group if d["name"].startswith("iPhone"))
+          subprocess.run(["xcodebuild", "test", "-workspace", "apps/marginmind/ios/Runner.xcworkspace",
+                          "-scheme", "Runner", "-destination", "platform=iOS Simulator,id=" + device["udid"],
+                          "-parallel-testing-enabled", "NO", "CODE_SIGNING_ALLOWED=YES", "CODE_SIGN_IDENTITY=-"], check=True)
+          PY
       - name: Run iOS browser integration
         timeout-minutes: 30
         run: python3 tool/ios_browser_integration.py
@@ -145,6 +156,8 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: flutter build apk --debug
         working-directory: apps/marginmind
+      - run: ./gradlew :app:testDebugUnitTest --no-daemon
+        working-directory: apps/marginmind/android
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
