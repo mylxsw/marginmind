@@ -6270,4 +6270,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get readingContinue => '在这里继续';
+
+  @override
+  String get vocabularyKeep => '保留这个词条';
+
+  @override
+  String vocabularySyncField(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'kind': '词条类型',
+      'forms': '词形',
+      'ukPhonetic': '英式发音',
+      'usPhonetic': '美式发音',
+      'senses': '释义',
+      'gloss': '行内释义',
+      'note': '笔记',
+      'status': '学习状态',
+      'alive': '保留或移除',
+      'other': '词条内容',
+    });
+    return '$_temp0';
+  }
 }

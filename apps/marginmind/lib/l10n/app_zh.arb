@@ -2594,5 +2594,14 @@
         "type": "int"
       }
     }
+  },
+  "vocabularyKeep": "保留这个词条",
+  "vocabularySyncField": "{kind, select, kind{词条类型} forms{词形} ukPhonetic{英式发音} usPhonetic{美式发音} senses{释义} gloss{行内释义} note{笔记} status{学习状态} alive{保留或移除} other{词条内容}}",
+  "@vocabularySyncField": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -13,3 +13,5 @@ export 'src/file_vocabulary_store.dart';
 export 'src/file_translation_store.dart';
 
 export 'src/file_run_store.dart';
+
+export 'src/file_sync_receiver.dart';

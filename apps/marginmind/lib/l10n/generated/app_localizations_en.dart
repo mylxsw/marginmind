@@ -6525,4 +6525,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readingContinue => 'Continue here';
+
+  @override
+  String get vocabularyKeep => 'Keep this word';
+
+  @override
+  String vocabularySyncField(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'kind': 'Entry type',
+      'forms': 'Word forms',
+      'ukPhonetic': 'UK pronunciation',
+      'usPhonetic': 'US pronunciation',
+      'senses': 'Meanings',
+      'gloss': 'Inline meaning',
+      'note': 'Notes',
+      'status': 'Learning state',
+      'alive': 'Keep or remove',
+      'other': 'Word content',
+    });
+    return '$_temp0';
+  }
 }

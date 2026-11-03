@@ -11443,6 +11443,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue here'**
   String get readingContinue;
+
+  /// No description provided for @vocabularyKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this word'**
+  String get vocabularyKeep;
+
+  /// No description provided for @vocabularySyncField.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, kind{Entry type} forms{Word forms} ukPhonetic{UK pronunciation} usPhonetic{US pronunciation} senses{Meanings} gloss{Inline meaning} note{Notes} status{Learning state} alive{Keep or remove} other{Word content}}'**
+  String vocabularySyncField(String kind);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

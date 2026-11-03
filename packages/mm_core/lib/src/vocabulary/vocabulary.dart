@@ -10,6 +10,8 @@ enum VocabularyKind { word, phrase }
 /// Canonical spelling used with language as the entry's identity.
 String vocabularyKey(String value) => value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
+String vocabularyLanguage(String value) => value.trim().toLowerCase().replaceAll('_', '-');
+
 /// One dictionary meaning.
 class VocabularySense {
   const VocabularySense({required this.partOfSpeech, required this.meaning});
@@ -113,8 +115,7 @@ class VocabularyEntry {
         forms.toSet().length != forms.length ||
         !forms.contains(key) ||
         senses.length > 6 ||
-        gloss.runes.length > 8 ||
-        contexts.length > 20) {
+        gloss.runes.length > 8) {
       throw ArgumentError('Invalid vocabulary entry');
     }
   }

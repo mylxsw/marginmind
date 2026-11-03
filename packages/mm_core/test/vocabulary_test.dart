@@ -76,7 +76,7 @@ void main() {
     expect(() => original.copyWith(gloss: '123456789'), throwsArgumentError);
     expect(() => context('', sentence: ''), throwsArgumentError);
   });
-  test('edits deduplicate language/key, keep user edits, cap distinct source sentences', () {
+  test('edits deduplicate language/key, keep user edits, retain all source snapshots', () {
     var entries = editor.add([], entry('cat', contexts: [context('a')]));
     entries = editor.updateNote(entries, 'cat', 'mine', now);
     entries = editor.setStatus(entries, 'cat', VocabularyStatus.known, now);
@@ -98,10 +98,10 @@ void main() {
     for (var i = 1; i <= 25; i++) {
       entries = editor.addContext(entries, 'cat', context('c$i', sentence: 'cat $i', day: i), now);
     }
-    expect(entries.first.contexts, hasLength(20));
+    expect(entries.first.contexts, hasLength(27));
     expect(entries.first.contexts.first.id, 'c25');
     entries = editor.addContext(entries, 'cat', context('duplicate', sentence: ' cat   25 ', day: 26), now);
-    expect(entries.first.contexts, hasLength(20));
+    expect(entries.first.contexts, hasLength(28));
     expect(entries.first.contexts.first.id, 'duplicate');
     entries = editor.updateForms(entries, 'cat', [
       ' CAT ',
@@ -117,9 +117,13 @@ void main() {
     expect(entries.first.gloss, '猫');
     expect(entries.first.senses.single.meaning, '猫');
     entries = editor.removeContext(entries, 'cat', 'duplicate', now);
-    expect(entries.first.contexts, hasLength(19));
+    expect(entries.first.contexts, hasLength(27));
     expect(editor.remove(entries, 'cat').single.id, 'fr');
     expect(() => entries.clear(), throwsUnsupportedError);
+  });
+  test('sync language identity normalizes without rewriting legacy local entries', () {
+    expect(vocabularyLanguage(' EN_us '), 'en-us');
+    expect(entry('cat', language: ' EN_us ').language, ' EN_us ');
   });
   test('selection limits and punctuation', () {
     for (final s in ['cat', '“Cat”', "don't", 'l’été']) {
