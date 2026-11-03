@@ -6247,4 +6247,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get folderRepairNeeded => '文件夹索引需要修复，已保存的修改仍保留。';
+
+  @override
+  String get readingContinuationsTitle => '从其他设备继续阅读';
+
+  @override
+  String get readingContinuationsHint => '各设备分别保留阅读位置，选择一项在这里打开。';
+
+  @override
+  String readingOtherDevice(int number) {
+    return '其他设备 $number';
+  }
+
+  @override
+  String get readingTextPosition => '已保存的正文位置';
+
+  @override
+  String get readingVersionChanged => '此位置属于不同或已移除的文档版本。';
+
+  @override
+  String get readingResourceMissing => '这台设备上还没有可用的文档文件。';
+
+  @override
+  String get readingContinue => '在这里继续';
 }

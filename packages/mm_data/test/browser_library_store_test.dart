@@ -28,6 +28,61 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('remote device reading survives browser restart without changing local progress', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final id = (await store.create(const NewStudySet(title: 'Reading', colorIndex: 0))).id;
+    await store.importDocumentPackage(
+      id,
+      DocumentPackage(
+        document: Document(
+          id: 'doc',
+          title: 'Book',
+          fileName: 'documents/book.pdf',
+          pageCount: 20,
+          importedAt: DateTime.utc(2026),
+        ),
+        files: {
+          'documents/book.pdf': [1, 2, 3],
+        },
+      ),
+    );
+    final source = (await ledger.snapshots())['sets/$id']!.commit;
+    final content = editor.setLastPage(await store.load(id), 'doc', 13);
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: 'reading/$id/remote',
+      deviceId: 'remote',
+      sequence: 1,
+      payload: DeviceReading.fromContent(content).toJson(),
+      requires: {source.scope: source.id},
+    );
+    await store.receiveSync([remote]);
+    expect((await store.load(id)).document('doc')!.lastPage, 1);
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    final c = (await store.watchReadingContinuations(id).first).items.single;
+    expect(c.availability, ReadingContinuationAvailability.ready);
+    expect(
+      (await store.prepareReadingContinuation(
+        id,
+        c.deviceId,
+        c.documentId,
+        remoteRevision: c.remoteRevision,
+        localToken: c.localToken,
+      ) as PdfPosition).page,
+      13,
+    );
+    expect((await store.load(id)).document('doc')!.lastPage, 1);
+    await store.update(id, (c) => editor.setLastPage(c, 'doc', 13));
+    final pending = await (await store.syncLedger)!.pending();
+    expect(pending.where((c) => c.scope == remote.scope), isEmpty);
+    expect(pending.where((c) => c.scope == 'reading/$id/browser').last.requires[source.scope], source.id);
+  });
+
   test('folder choices, membership and deletion survive browser restart', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');

@@ -11401,6 +11401,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The folder index needs repair. Your saved changes are retained.'**
   String get folderRepairNeeded;
+
+  /// No description provided for @readingContinuationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue from another device'**
+  String get readingContinuationsTitle;
+
+  /// No description provided for @readingContinuationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Each device keeps its own position. Choose one to open it here.'**
+  String get readingContinuationsHint;
+
+  /// No description provided for @readingOtherDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Other device {number}'**
+  String readingOtherDevice(int number);
+
+  /// No description provided for @readingTextPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved text position'**
+  String get readingTextPosition;
+
+  /// No description provided for @readingVersionChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This position belongs to a different or removed document version.'**
+  String get readingVersionChanged;
+
+  /// No description provided for @readingResourceMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The document is not available on this device yet.'**
+  String get readingResourceMissing;
+
+  /// No description provided for @readingContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue here'**
+  String get readingContinue;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

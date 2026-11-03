@@ -40,7 +40,11 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
     }
     final problems = <ContentSyncProblem>{};
     for (final entry in (await sync.issues()).entries) {
-      if (!{FileLibraryStore._scope(id), 'reviews/$id'}.contains(history[entry.key]?.scope)) continue;
+      final scope = history[entry.key]?.scope;
+      if (!{FileLibraryStore._scope(id), 'reviews/$id'}.contains(scope) &&
+          !(scope?.startsWith('reading/$id/') ?? false)) {
+        continue;
+      }
       final issue = entry.value;
       problems.add(switch (issue['reason']) {
         'editing' => ContentSyncProblem.editing,
@@ -49,7 +53,10 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
         'multipleBases' => ContentSyncProblem.ambiguousHistory,
         'concurrentResolutions' => ContentSyncProblem.concurrentChoices,
         'deleteEdit' => ContentSyncProblem.deletion,
-        'differentScope' || 'unsupportedReviews' || 'unsupportedDependencies' => ContentSyncProblem.unsupported,
+        'differentScope' ||
+        'unsupportedReviews' ||
+        'unsupportedReading' ||
+        'unsupportedDependencies' => ContentSyncProblem.unsupported,
         _ => ContentSyncProblem.invalidHistory,
       });
     }

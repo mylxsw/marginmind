@@ -107,6 +107,7 @@ class FileSyncLedger {
   }
 
   Future<void> _load() async {
+    if (deviceId.contains('/')) throw const FormatException('Sync device identity cannot contain a scope separator');
     final identity = {'version': 1, 'libraryId': libraryId, 'deviceId': deviceId};
     // Reuse the wire validator for bounded non-empty identities.
     SyncCommit.create(libraryId: libraryId, scope: 'identity', deviceId: deviceId, sequence: 1, payload: {});

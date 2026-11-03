@@ -2580,5 +2580,19 @@
   "deleteFolderMessage": "学习集会保留，并显示在“未分类”中。",
   "moveToFolder": "移动到文件夹",
   "folderUnavailable": "待恢复的文件夹",
-  "folderRepairNeeded": "文件夹索引需要修复，已保存的修改仍保留。"
+  "folderRepairNeeded": "文件夹索引需要修复，已保存的修改仍保留。",
+  "readingContinuationsTitle": "从其他设备继续阅读",
+  "readingContinuationsHint": "各设备分别保留阅读位置，选择一项在这里打开。",
+  "readingOtherDevice": "其他设备 {number}",
+  "readingTextPosition": "已保存的正文位置",
+  "readingVersionChanged": "此位置属于不同或已移除的文档版本。",
+  "readingResourceMissing": "这台设备上还没有可用的文档文件。",
+  "readingContinue": "在这里继续",
+  "@readingOtherDevice": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  }
 }

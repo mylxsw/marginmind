@@ -3289,5 +3289,19 @@
   "deleteFolderMessage": "Study sets are kept and shown under Unfiled.",
   "moveToFolder": "Move to folder",
   "folderUnavailable": "Folder awaiting recovery",
-  "folderRepairNeeded": "The folder index needs repair. Your saved changes are retained."
+  "folderRepairNeeded": "The folder index needs repair. Your saved changes are retained.",
+  "readingContinuationsTitle": "Continue from another device",
+  "readingContinuationsHint": "Each device keeps its own position. Choose one to open it here.",
+  "readingOtherDevice": "Other device {number}",
+  "readingTextPosition": "Saved text position",
+  "readingVersionChanged": "This position belongs to a different or removed document version.",
+  "readingResourceMissing": "The document is not available on this device yet.",
+  "readingContinue": "Continue here",
+  "@readingOtherDevice": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  }
 }

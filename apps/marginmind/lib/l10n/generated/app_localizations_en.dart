@@ -6502,4 +6502,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get folderRepairNeeded => 'The folder index needs repair. Your saved changes are retained.';
+
+  @override
+  String get readingContinuationsTitle => 'Continue from another device';
+
+  @override
+  String get readingContinuationsHint => 'Each device keeps its own position. Choose one to open it here.';
+
+  @override
+  String readingOtherDevice(int number) {
+    return 'Other device $number';
+  }
+
+  @override
+  String get readingTextPosition => 'Saved text position';
+
+  @override
+  String get readingVersionChanged => 'This position belongs to a different or removed document version.';
+
+  @override
+  String get readingResourceMissing => 'The document is not available on this device yet.';
+
+  @override
+  String get readingContinue => 'Continue here';
 }

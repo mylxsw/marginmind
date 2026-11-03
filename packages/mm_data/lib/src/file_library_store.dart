@@ -16,6 +16,7 @@ import 'content_sync_review.dart';
 part 'file_library_sync_status.dart';
 part 'file_library_reviews.dart';
 part 'file_library_folders.dart';
+part 'file_library_reading.dart';
 
 /// Stores the library on disk:
 ///
@@ -34,6 +35,7 @@ class FileLibraryStore
         ContentEditRepository,
         ContentSyncRepository,
         LibraryOrganizationRepository,
+        ReadingContinuationRepository,
         TranslationStoreRepository,
         StudySetRepository,
         StudySetContentRepository,
@@ -63,6 +65,20 @@ class FileLibraryStore
   static String _scope(String id) => 'sets/$id';
 
   final _syncStatusChanges = StreamController<void>.broadcast();
+
+  @override
+  Future<ReadingContinuations> readingContinuations(String id) => _readingContinuations(id);
+  @override
+  Stream<ReadingContinuations> watchReadingContinuations(String id) =>
+      _watchContentSync(id).asyncMap((_) => _readingContinuations(id));
+  @override
+  Future<ReadingPosition> prepareReadingContinuation(
+    String id,
+    String deviceId,
+    String documentId, {
+    required String remoteRevision,
+    required String localToken,
+  }) => _prepareReadingContinuation(id, deviceId, documentId, remoteRevision: remoteRevision, localToken: localToken);
 
   @override
   Stream<LibraryOrganization> watchOrganization() => _watchOrganization();
@@ -341,7 +357,7 @@ class FileLibraryStore
               resolved: accepted,
               tombstoneWhere: (scope) =>
                   (scope.startsWith('translations/$id/') && !documents.contains(scope.split('/')[2])) ||
-                  (plan.deleted && (scope.startsWith('reading/$id/') || scope == 'reviews/$id')),
+                  (plan.deleted && (scope == 'reading/$id/${sync.deviceId}' || scope == 'reviews/$id')),
             );
             // The durable decision precedes projections, live caches and watch
             // notifications. A projection failure must not invite a second edit.
@@ -384,6 +400,7 @@ class FileLibraryStore
     }
     await _reconcileFolders();
     await _reconcileReviews(canApply: canApply);
+    await _reconcileReading();
     return results;
   }
 
@@ -724,7 +741,9 @@ class FileLibraryStore
           [SyncMutation(_scope(id), local: null, shared: null)],
           expected: {_scope(id): _syncSnapshots[_scope(id)]?.revision},
           tombstoneWhere: (scope) =>
-              scope.startsWith('translations/$id/') || scope.startsWith('reading/$id/') || scope == 'reviews/$id',
+              scope.startsWith('translations/$id/') ||
+              scope == 'reading/$id/${sync.deviceId}' ||
+              scope == 'reviews/$id',
         );
         // Retain immutable assets for deleted branches and later recovery.
         await sync.project(dir.path, () async {
@@ -1145,19 +1164,7 @@ class FileLibraryStore
     final shared = Map<String, Object?>.of(local)..remove('lastOpenedAt');
     shared['content'] = sharedContent(record.content);
     final reviews = _prepareReviews(record);
-    final reading = <String, Object?>{
-      'lastOpenedAt': local['lastOpenedAt'],
-      'documents': [
-        for (final doc in record.content.documents)
-          {
-            'id': doc.id,
-            'revision': doc.revision,
-            'lastPage': doc.lastPage,
-            if (doc.lastReadAt != null) 'lastReadAt': doc.lastReadAt!.toIso8601String(),
-            if (doc.readingPosition != null) 'readingPosition': doc.readingPosition!.toJson(),
-          },
-      ],
-    };
+    final reading = DeviceReading.fromContent(record.content).toJson();
     final documents = record.content.documents.map((d) => d.id).toSet();
     _syncSnapshots = await sync.commit(
       [
@@ -1170,7 +1177,15 @@ class FileLibraryStore
         ),
         if (reviews != null)
           SyncMutation('reviews/${record.id}', local: reviews, shared: reviews, requireScopes: [_scope(record.id)]),
-        SyncMutation('reading/${record.id}/${sync.deviceId}', local: reading, shared: reading),
+        // The private set snapshot already includes saved reading progress.
+        // Publish only after the content draft has a real shared dependency.
+        if (finishDraft || !_contentTransactions.containsKey(record.id))
+          SyncMutation(
+            'reading/${record.id}/${sync.deviceId}',
+            local: reading,
+            shared: reading,
+            requireScopes: [_scope(record.id)],
+          ),
       ],
       expected: {
         _scope(record.id): _syncSnapshots[_scope(record.id)]?.revision,

@@ -6,6 +6,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../content_sync.dart';
+import 'reading_continuations.dart';
 
 Future<void> showContentSyncSheet(BuildContext context, String studySetId) => showMMSheet<void>(
   context: context,
@@ -127,6 +128,7 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
                 Text(l.syncConflictCount(status.conflicts.length), style: context.mmText.headline),
               for (final conflict in status.conflicts) _conflict(status, conflict),
               if (status.enabled && !status.needsAttention) Text(l.syncNoConflicts),
+              ReadingContinuationsSection(studySetId: widget.studySetId),
             ],
           ),
         ),

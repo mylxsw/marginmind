@@ -591,10 +591,21 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       }
     });
     final reveal = state.reveal;
-    if (reveal?.documentId == widget.document.id && reveal!.textAnchors.isNotEmpty && reveal.nonce != _handledReveal) {
+    if (reveal?.documentId == widget.document.id &&
+        reveal != null &&
+        (reveal.textAnchors.isNotEmpty || reveal.textPosition != null) &&
+        reveal.nonce != _handledReveal) {
       _handledReveal = reveal.nonce;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _reveal(reveal.textAnchors);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        if (reveal.textPosition case final position?) {
+          await session.initialize();
+          if (mounted && ref.read(workspaceProvider(widget.studySetId)).reveal?.nonce == reveal.nonce) {
+            await _jump(position);
+          }
+        } else {
+          _reveal(reveal.textAnchors);
+        }
       });
     }
     ref.listen(workspaceProvider(widget.studySetId).select((s) => s.pending), (_, pending) {

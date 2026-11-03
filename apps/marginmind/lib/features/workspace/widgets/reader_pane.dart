@@ -247,7 +247,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final rootTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
     final reveal = state.reveal;
-    if (reveal != null && reveal.textAnchors.isEmpty && reveal.nonce != _vocabularyRevealNonce) {
+    if (reveal != null &&
+        reveal.textPosition == null &&
+        reveal.textAnchors.isEmpty &&
+        reveal.nonce != _vocabularyRevealNonce) {
       _vocabularyRevealNonce = reveal.nonce;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;

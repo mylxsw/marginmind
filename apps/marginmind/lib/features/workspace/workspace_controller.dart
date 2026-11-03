@@ -8,6 +8,7 @@ import 'source_selection.dart';
 export 'source_selection.dart';
 import '../../app/app_commands.dart' show ReaderSelectionCommand;
 import 'document_import.dart';
+import 'reflow_document.dart';
 import '../study_notes/note_identity.dart';
 
 import 'dart:async';
@@ -96,8 +97,19 @@ class ResearchNoteSavedNotice extends WorkspaceNotice {
 
 /// Ask the source pane to scroll to a highlight.
 class RevealRequest {
-  const RevealRequest(this.documentId, int page, this.rects, this.nonce) : _page = page, textAnchors = const [];
-  const RevealRequest.text(this.documentId, this.textAnchors, this.nonce) : _page = null, rects = const [];
+  const RevealRequest(this.documentId, int page, this.rects, this.nonce)
+    : _page = page,
+      textAnchors = const [],
+      textPosition = null;
+  const RevealRequest.text(this.documentId, this.textAnchors, this.nonce)
+    : _page = null,
+      rects = const [],
+      textPosition = null;
+  const RevealRequest.reading(this.documentId, this.textPosition, this.nonce)
+    : _page = null,
+      rects = const [],
+      textAnchors = const [];
+  final TextReadingPosition? textPosition;
   final List<TextAnchor> textAnchors;
 
   final String documentId;
@@ -522,6 +534,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   int _revealNonce = 0;
+  int _readingActivity = 0;
 
   @override
   WorkspaceState build() {
@@ -1618,10 +1631,61 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void recordPage(String documentId, int page) {
     final pages = readingPagesProvider(studySetId);
     if (ref.read(pages)[documentId] == page) return;
+    _readingActivity++;
     ref.read(pages.notifier).record(documentId, page);
     _pageTimers.remove(documentId)?.cancel();
     _pageTimers[documentId] = Timer(const Duration(milliseconds: 800), () {
       _update((c) => _editor.setLastPage(c, documentId, page), undoable: false);
+    });
+  }
+
+  Future<void> continueReading(ReadingContinuation choice, {bool Function()? cancelled}) async {
+    final activeDocument = state.activeDocumentId;
+    final revealNonce = _revealNonce;
+    final activity = _readingActivity;
+    final timer = _pageTimers.remove(choice.documentId);
+    if (timer?.isActive == true) {
+      timer!.cancel();
+      final page = ref.read(readingPagesProvider(studySetId))[choice.documentId];
+      if (page != null) await _update((c) => _editor.setLastPage(c, choice.documentId, page), undoable: false);
+    }
+    await _enqueue(() async {
+      if (!ref.mounted || cancelled?.call() == true) return;
+      final observedPage = ref.read(readingPagesProvider(studySetId))[choice.documentId];
+      final repository = _repo;
+      if (repository is! ReadingContinuationRepository) return;
+      if (choice.position case final TextReadingPosition position) {
+        final doc = (await repository.load(studySetId)).document(choice.documentId);
+        if (doc == null || repository is! DocumentRepository) {
+          throw const ContentSyncActionException(ContentSyncActionFailure.invalidCandidate);
+        }
+        final book = await ReflowDocument.load(repository as DocumentRepository, studySetId, doc);
+        final chapter = book.chapter(position.chapterId);
+        if (position.revision != book.revision || chapter == null || position.offset > chapter.canonicalText.length) {
+          throw const ContentSyncActionException(ContentSyncActionFailure.invalidCandidate);
+        }
+      }
+      final position = await (repository as ReadingContinuationRepository).prepareReadingContinuation(
+        studySetId,
+        choice.deviceId,
+        choice.documentId,
+        remoteRevision: choice.remoteRevision,
+        localToken: choice.localToken,
+      );
+      if (!ref.mounted || cancelled?.call() == true) return;
+      if (state.activeDocumentId != activeDocument ||
+          _revealNonce != revealNonce ||
+          _readingActivity != activity ||
+          ref.read(readingPagesProvider(studySetId))[choice.documentId] != observedPage) {
+        throw const ContentSyncActionException(ContentSyncActionFailure.stale);
+      }
+      openDocument(choice.documentId, followMap: false);
+      state = state.copyWith(
+        reveal: switch (position) {
+          PdfPosition(:final page) => RevealRequest(choice.documentId, page, const [], ++_revealNonce),
+          TextReadingPosition() => RevealRequest.reading(choice.documentId, position, ++_revealNonce),
+        },
+      );
     });
   }
 
@@ -1663,11 +1727,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     );
   }
 
-  Future<void> setReadingPosition(String documentId, ReadingPosition position) => _update((c) {
-    final revision = c.document(documentId)?.revision;
-    if (position is TextReadingPosition && revision != null && position.revision != revision) return c;
-    return _editor.setReadingPosition(c, documentId, position);
-  }, undoable: false);
+  Future<void> setReadingPosition(String documentId, ReadingPosition position) {
+    _readingActivity++;
+    return _update((c) {
+      final revision = c.document(documentId)?.revision;
+      if (position is TextReadingPosition && revision != null && position.revision != revision) return c;
+      return _editor.setReadingPosition(c, documentId, position);
+    }, undoable: false);
+  }
 
   Future<void> addBookmark(String documentId, int page, String title) =>
       _update((c) => _editor.addBookmark(c, documentId, page, title: title));

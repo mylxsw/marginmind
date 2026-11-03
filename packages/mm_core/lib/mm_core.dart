@@ -5,6 +5,8 @@
 /// layers and implement the ports defined here.
 library;
 
+export 'src/content/reading_continuation_repository.dart';
+
 export 'src/content/editor.dart';
 export 'src/content/content_change.dart';
 export 'src/content/excerpt_lines.dart';
