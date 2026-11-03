@@ -255,7 +255,7 @@ protocol, id, libraryId, scope, deviceId, sequence, parents, deleted, payload, p
 ## 第五批验证：工作区事务与输入协调
 
 - 数据包原生全量 122 项、Chrome 存储 15 项通过；工作区原五组、新增真实仓库编辑会话及
-  `relations_summaries_test` 共 55 项通过。新增端口为可选能力，普通内存仓库行为不变。
+  `relations_summaries_test` 共 56 项通过。新增端口为可选能力，普通内存仓库行为不变。
 - 覆盖多次输入只发布一个内容提交、取消无内容提交、嵌套边界、原生/IndexedDB 草稿恢复、
   半成品不进入待发列表、远端暂缓与释放后重算、开始输入前的在途写入屏障、提交点再次检查租约、
   重试错误可查询、取消反向修改成功但最终发布失败后的幂等重试。

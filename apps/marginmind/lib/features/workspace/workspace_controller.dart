@@ -3410,7 +3410,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     if (created == null || !ref.mounted) return;
     state = state.copyWith(selectRoot: true, selectedMarkId: created!.id);
-    if (!existing) beginMarkEditing(created!.id);
+    if (!existing) await beginMarkEditing(created!.id);
   }
 
   Future<void> adjustSummaryRange(String id, String from, String to) =>

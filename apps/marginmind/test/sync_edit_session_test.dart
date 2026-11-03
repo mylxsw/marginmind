@@ -120,6 +120,14 @@ void main() {
     expect((await ledger.snapshots())[scope]!.draft, isFalse);
   });
 
+  test('relation creation waits until its protected label input is ready', () async {
+    controller.selectCards(['c3', 'c4']);
+    await controller.addRelation();
+    expect(container.read(workspaceProvider(id)).editingMarkId, controller.content.relations.single.id);
+    await controller.finishMarkEditing('Ready immediately');
+    expect((await repo.load(id)).relations.single.label, 'Ready immediately');
+  });
+
   test('a failed inverse keeps the draft until cancellation can be retried', () async {
     await controller.beginTransaction();
     await controller.rename('c3', 'Draft');
