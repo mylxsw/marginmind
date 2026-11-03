@@ -100,6 +100,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = workspaceProvider(widget.studySetId);
+    ref.listen(provider.select((s) => s.historyConflictVersion), (previous, next) {
+      if (previous != null && next > previous) {
+        MMHud.show(context, context.l10n.undoContentChanged, icon: MMIcons.warning);
+      }
+    });
     final touchPlatform = MMInput.of(context).touchPlatform;
     _phoneCompact = usePhoneReaderControls(context);
     // On touch the sidebar commands (and the drawer's own hide button) move

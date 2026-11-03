@@ -7,11 +7,17 @@ import 'translation_journal_io.dart' if (dart.library.js_interop) 'translation_j
 import 'package:mm_core/mm_core.dart';
 import 'package:path/path.dart' as p;
 
+import 'file_sync_ledger.dart';
+
 /// A study-set-scoped journal under `<set>.mmset/translations`.
 /// Operations serialize by absolute document directory across store instances,
 /// so deleting a document also waits for all of its languages' queued writes.
 class FileTranslationStore implements TranslationStore {
-  FileTranslationStore(this.packageRoot, {this.documentExists});
+  FileTranslationStore(this.packageRoot, {this.documentExists, this.sync, this.studySetId}) {
+    if (sync != null && studySetId == null) throw ArgumentError('Synced translations need a study set');
+  }
+  final FileSyncLedger? sync;
+  final String? studySetId;
 
   /// Optional lifecycle guard; the library supplies this to reject late writes
   /// after a document or study set has been deleted.
@@ -35,6 +41,8 @@ class FileTranslationStore implements TranslationStore {
   Directory _document(String id) => Directory(p.join(_root.path, _component(id)));
   Directory _pair(String id, String lang) => Directory(p.join(_document(id).path, _component(lang)));
   File _file(String id, String lang, String name) => File(p.join(_pair(id, lang).path, name));
+  String _scope(String id, String lang) =>
+      'translations/${_component(studySetId!)}/${_component(id)}/${_component(lang)}';
 
   Future<T> _serial<T>(String id, Future<T> Function() action) {
     final key = p.normalize(p.absolute(_document(id).path));
@@ -52,6 +60,20 @@ class FileTranslationStore implements TranslationStore {
       _serial(documentId, () => _read(documentId, targetLang));
 
   Future<TranslationSnapshot> _read(String id, String lang) async {
+    if (sync case final ledger?) {
+      final snapshot = (await ledger.snapshots())[_scope(id, lang)];
+      if (snapshot != null) {
+        if (snapshot.deleted) return TranslationSnapshot();
+        final segments = (snapshot.value!['segments'] as Map).cast<String, Object?>();
+        return TranslationSnapshot(
+          segments: {for (final e in segments.entries) e.key: TranslationSegment.fromJson((e.value as Map).cast())},
+        );
+      }
+    }
+    return _readFile(id, lang);
+  }
+
+  Future<TranslationSnapshot> _readFile(String id, String lang) async {
     final file = _file(id, lang, 'segments.jsonl');
     if (!await file.exists()) return TranslationSnapshot();
     final bytes = await file.readAsBytes();
@@ -109,14 +131,83 @@ class FileTranslationStore implements TranslationStore {
 
   Future<void> _append(String id, String lang, TranslationSegment segment) async {
     _requireDocument(id);
+    if (sync case final ledger?) {
+      final scope = _scope(id, lang);
+      final head = (await ledger.snapshots())[scope];
+      final known = Map<String, TranslationSegment>.of((await _read(id, lang)).segments)..[segment.key] = segment;
+      final value = <String, Object?>{
+        'segments': {for (final e in known.entries) e.key: e.value.toJson()},
+      };
+      await ledger.commit(
+        [SyncMutation(scope, local: value, shared: value)],
+        expected: {scope: head?.revision},
+        validate: (heads) => _requireLiveParent(heads, id),
+      );
+      await ledger.project(scope, () => _writeSegments(id, lang, known.values));
+      return;
+    }
     final file = _file(id, lang, 'segments.jsonl');
     await file.parent.create(recursive: true);
     await appendTranslationLine(file, utf8.encode('${jsonEncode(segment.toJson())}\n'));
   }
 
+  void _requireLiveParent(Map<String, LocalSyncSnapshot> heads, String id) {
+    final parent = heads['sets/$studySetId'];
+    final documents = ((parent?.value?['content'] as Map?)?['documents'] as List?) ?? const [];
+    if (parent == null || parent.deleted || !documents.any((d) => (d as Map)['id'] == id)) {
+      throw StateError('Translation document no longer exists in sync ledger');
+    }
+  }
+
+  Future<void> _writeSegments(String id, String lang, Iterable<TranslationSegment> values) =>
+      _atomic(_file(id, lang, 'segments.jsonl'), utf8.encode(values.map((s) => '${jsonEncode(s.toJson())}\n').join()));
+
+  /// Seed completed segments on enabling sync, without publishing task state.
+  /// Existing ledger snapshots (including deletions) always beat stale files.
+  Future<void> seedExisting(Set<String> documents) async {
+    final ledger = sync;
+    if (ledger == null || !await _root.exists()) return;
+    for (final id in documents) {
+      final dir = _document(id);
+      if (!await dir.exists()) continue;
+      await for (final pair in dir.list(followLinks: false)) {
+        if (pair is! Directory) continue;
+        final lang = p.basename(pair.path);
+        await _serial(id, () async {
+          final scope = _scope(id, lang);
+          final heads = await ledger.snapshots();
+          if (heads.containsKey(scope)) return;
+          if (await _legacyTombstone(id, lang).exists()) return;
+          final segments = (await _readFile(id, lang)).segments;
+          final value = <String, Object?>{
+            'segments': {for (final e in segments.entries) e.key: e.value.toJson()},
+          };
+          await ledger.commit(
+            [SyncMutation(scope, local: value, shared: value)],
+            expected: {scope: null},
+            validate: (heads) => _requireLiveParent(heads, id),
+          );
+        });
+      }
+    }
+  }
+
   @override
   Future<void> compact(String documentId, String targetLang) => _serial(documentId, () async {
     final snapshot = await _read(documentId, targetLang);
+    if (sync case final ledger?) {
+      final scope = _scope(documentId, targetLang);
+      final head = (await ledger.snapshots())[scope];
+      if (head != null) {
+        await ledger.project(
+          scope,
+          () => head.deleted
+              ? _removePair(documentId, targetLang)
+              : _writeSegments(documentId, targetLang, snapshot.segments.values),
+        );
+        return;
+      }
+    }
     if (!snapshot.needsCompaction) return;
     final contents = snapshot.segments.values.map((s) => '${jsonEncode(s.toJson())}\n').join();
     await _atomic(_file(documentId, targetLang, 'segments.jsonl'), utf8.encode(contents));
@@ -169,12 +260,28 @@ class FileTranslationStore implements TranslationStore {
 
   @override
   Future<void> remove(String documentId, String targetLang) => _serial(documentId, () async {
+    if (sync case final ledger?) {
+      _requireDocument(documentId);
+      final scope = _scope(documentId, targetLang);
+      final head = (await ledger.snapshots())[scope];
+      await ledger.commit(
+        [SyncMutation(scope, local: null, shared: null)],
+        expected: {scope: head?.revision},
+        validate: (heads) => _requireLiveParent(heads, documentId),
+      );
+      await ledger.project(scope, () => _removePair(documentId, targetLang));
+      return;
+    }
+    await _removePair(documentId, targetLang);
+  });
+
+  Future<void> _removePair(String documentId, String targetLang) async {
     // Persist first: a crash between this marker and directory deletion cannot
     // resurrect read-only studyset.json caches on the next open.
     await _atomic(_legacyTombstone(documentId, targetLang), utf8.encode('1'));
     final dir = _pair(documentId, targetLang);
     if (await dir.exists()) await dir.delete(recursive: true);
-  });
+  }
 
   /// Deletes every language when a document is removed from its study set.
   Future<void> removeDocument(String documentId) => _serial(documentId, () async {
@@ -205,6 +312,9 @@ class FileTranslationStore implements TranslationStore {
   }) {
     final inputs = paragraphs.toList(), legacy = caches.toList();
     return _serial(documentId, () async {
+      if (sync != null && (await sync!.snapshots())[_scope(documentId, targetLang)]?.deleted == true) {
+        return TranslationSnapshot();
+      }
       if (await _legacyTombstone(documentId, targetLang).exists()) return _read(documentId, targetLang);
       final known = Map<String, TranslationSegment>.of((await _read(documentId, targetLang)).segments);
       for (final cache in legacy) {

@@ -6,6 +6,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 
 import 'helpers.dart';
+import 'workspace_test.dart' show openFirstSet;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -70,5 +71,36 @@ void main() {
     await repo.update('demo-1', (c) => remote.addTopic(c, title: 'remote child', parentId: parent.id).$1);
     expect((await controller.undo())!.conflict, isTrue);
     expect((await repo.load('demo-1')).card(parent.id), isNotNull);
+  });
+
+  test('a conflicting cancellation retains the edit and releases the transaction for further work', () async {
+    await controller.beginTransaction();
+    final parent = await controller.addTopic('local parent');
+    await repo.update('demo-1', (c) => remote.addTopic(c, title: 'remote child', parentId: parent.id).$1);
+    await controller.abortTransaction();
+    final state = container.read(workspaceProvider('demo-1'));
+    expect(state.historyConflictVersion, 1);
+    expect(state.canUndo, isTrue);
+    expect(controller.content.card(parent.id), isNotNull);
+    await controller.rename('c3', 'independent edit');
+    expect((await controller.undo())!.conflict, isFalse);
+    expect(controller.content.card('c3')!.title, '遗忘的规律');
+    expect(controller.content.card(parent.id), isNotNull);
+  });
+
+  testWidgets('ignored undo notices still display the conflict in the workspace', (tester) async {
+    final repository = InMemoryStudySetContentRepository({'demo-1': demoContent()});
+    final app = await openFirstSet(tester, content: repository);
+    final owner = app.read(workspaceProvider('demo-1').notifier);
+    await owner.rename('c3', 'local');
+    await repository.update('demo-1', (c) => remote.rename(c, 'c3', 'external'));
+    await owner.undo(); // The HUD/native shortcut need not inspect the result.
+    await tester.pump();
+    expect(
+      find.text('This step can’t be applied because related content has changed. The current content has been kept.'),
+      findsOneWidget,
+    );
+    expect((await repository.load('demo-1')).card('c3')!.title, 'external');
+    await settleHud(tester);
   });
 }

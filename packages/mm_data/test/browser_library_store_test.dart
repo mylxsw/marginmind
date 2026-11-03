@@ -205,4 +205,54 @@ void main() {
     await File('/Library/sets/${set.id}.mmset/$name').writeAsBytes([1]);
     await expectLater(store.readResearchSnapshot(set.id, name), throwsFormatException);
   });
+
+  test('sync commit and outbox recover together after IndexedDB reopen', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Synced', colorIndex: 0));
+    await store.update(set.id, (c) => editor.addTopic(c, title: 'Durable').$1);
+    final pending = (await ledger.pending()).map((c) => c.id).toList();
+    BrowserFiles.close();
+    await expectLater(store.update(set.id, (c) => editor.addTopic(c, title: 'Not committed').$1), throwsStateError);
+    expect((await store.load(set.id)).cards, hasLength(1));
+    await store.dispose();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.load(set.id)).cards.single.title, 'Durable');
+    expect((await (await store.syncLedger)!.pending()).map((c) => c.id), pending);
+  });
+
+  test('sync record and head compare-and-swap prevent stale tabs from creating forks', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Synced', colorIndex: 0));
+    final pending = (await ledger.pending()).length;
+    final opened = Completer<web.IDBDatabase>();
+    final request = web.window.indexedDB.open(database);
+    request.onsuccess = ((web.Event _) => opened.complete(request.result as web.IDBDatabase)).toJS;
+    final other = await opened.future;
+    final tx = other.transaction('files'.toJS, 'readwrite');
+    final done = Completer<void>();
+    tx.oncomplete = ((web.Event _) => done.complete()).toJS;
+    tx
+        .objectStore('files')
+        .put(Uint8List.fromList(utf8.encode('another head')).toJS, '/Library/.foliarc-sync/local/.head'.toJS);
+    await done.future;
+    other.close();
+    await expectLater(
+      store.update(set.id, (c) => editor.addTopic(c, title: 'Stale').$1),
+      throwsA(isA<FileSystemException>()),
+    );
+    expect((await store.load(set.id)).cards, isEmpty);
+    expect(await ledger.pending(), hasLength(pending));
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    final records = await Directory('/Library/.foliarc-sync/local')
+        .list()
+        .where((f) => f is File && f.path.endsWith('.json'))
+        .toList();
+    expect(records, hasLength(2)); // library baseline, then study-set transaction
+  });
 }

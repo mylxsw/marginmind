@@ -171,6 +171,7 @@ class WorkspaceEditHistory extends ChangeNotifier {
   Future<void> _pendingEdits = Future.value();
   ContentChange? _transactionChange;
   int _transactionDepth = 0;
+  int _conflictVersion = 0;
   bool _disposed = false;
   void sync() {
     if (!_disposed) notifyListeners();
@@ -247,6 +248,7 @@ class WorkspaceState {
     this.reveal,
     this.canUndo = false,
     this.canRedo = false,
+    this.historyConflictVersion = 0,
     this.sidebarAutoCollapsed = false,
     this.readerPanelVisible = false,
     this.readerPanelMode = ReaderPanelMode.thumbnails,
@@ -323,6 +325,9 @@ class WorkspaceState {
 
   final bool canUndo;
   final bool canRedo;
+
+  /// Advances even when a caller ignores the returned undo/redo notice.
+  final int historyConflictVersion;
 
   /// The window is too narrow for the sidebar beside the map, so it is not on
   /// screen although [sidebarVisible] is set. Reported by the screen, not saved.
@@ -403,6 +408,7 @@ class WorkspaceState {
     bool clearReveal = false,
     bool? canUndo,
     bool? canRedo,
+    int? historyConflictVersion,
     bool? sidebarAutoCollapsed,
     bool? readerPanelVisible,
     ReaderPanelMode? readerPanelMode,
@@ -468,6 +474,7 @@ class WorkspaceState {
       reveal: clearReveal ? null : reveal ?? this.reveal,
       canUndo: canUndo ?? this.canUndo,
       canRedo: canRedo ?? this.canRedo,
+      historyConflictVersion: historyConflictVersion ?? this.historyConflictVersion,
       sidebarAutoCollapsed: sidebarAutoCollapsed ?? this.sidebarAutoCollapsed,
       readerPanelVisible: readerPanelVisible ?? this.readerPanelVisible,
       readerPanelMode: readerPanelMode ?? this.readerPanelMode,
@@ -547,6 +554,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final initialState = WorkspaceState(
       canUndo: _transactionDepth == 0 && _undo.isNotEmpty,
       canRedo: _transactionDepth == 0 && _redo.isNotEmpty,
+      historyConflictVersion: _history._conflictVersion,
       tool: ref.read(settingsProvider).annotationTool,
       color: ref.read(highlightPaletteProvider).current,
       underlineColor: ref.read(settingsProvider).underlineColor,
@@ -653,8 +661,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (_transactionDepth == 0) return;
     final change = _transactionChange;
     if (change != null) {
-      await _write(change.reversed.apply);
-      if (ref.mounted) state = state.copyWith(clearPending: true);
+      try {
+        await _write(change.reversed.apply);
+        if (ref.mounted) state = state.copyWith(clearPending: true);
+      } on ContentChangeConflict {
+        // Another writer now depends on this edit. Keep it as a conditional
+        // undo step, finish the editing session, and surface the conflict.
+        // Leaving the transaction open would disable all subsequent undo.
+        _record(change);
+        _history._conflictVersion++;
+      }
     }
     _transactionChange = null;
     _transactionDepth = 0;
@@ -740,8 +756,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (!ref.mounted) return;
     final canUndo = _transactionDepth == 0 && _undo.isNotEmpty;
     final canRedo = _transactionDepth == 0 && _redo.isNotEmpty;
-    if (state.canUndo == canUndo && state.canRedo == canRedo) return;
-    state = state.copyWith(canUndo: canUndo, canRedo: canRedo);
+    if (state.canUndo == canUndo &&
+        state.canRedo == canRedo &&
+        state.historyConflictVersion == _history._conflictVersion) {
+      return;
+    }
+    state = state.copyWith(canUndo: canUndo, canRedo: canRedo, historyConflictVersion: _history._conflictVersion);
   }
 
   Future<UndoneNotice?> undo() => _travel(_undo, _redo, redo: false);
@@ -756,6 +776,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         try {
           await _write(redo ? change.apply : change.reversed.apply);
         } on ContentChangeConflict {
+          _history._conflictVersion++;
+          _syncHistory();
           return UndoneNotice(redo: redo, conflict: true);
         }
         from.removeLast();

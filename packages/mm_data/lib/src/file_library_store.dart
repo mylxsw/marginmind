@@ -5,10 +5,12 @@ import 'library_io.dart' if (dart.library.js_interop) 'library_browser_io.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_sync/mm_sync.dart';
 import 'package:path/path.dart' as p;
 
 import 'format_migration.dart';
 import 'file_translation_store.dart';
+import 'file_sync_ledger.dart';
 
 /// Stores the library on disk:
 ///
@@ -30,15 +32,27 @@ class FileLibraryStore
         DocumentRepository,
         ResearchSessionRepository,
         ResearchSnapshotRepository {
-  FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator})
+  FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator, FileSyncLedger? sync})
     : _clock = clock ?? DateTime.now,
+      // Public option for a private field that may be restored lazily.
+      // ignore: prefer_initializing_formals
+      _sync = sync,
       _newId = idGenerator ?? newId;
 
-  FileLibraryStore.browser() : this(browserRoot());
+  FileLibraryStore.browser({FileSyncLedger? sync}) : this(browserRoot(), sync: sync);
 
   final Directory root;
   final DateTime Function() _clock;
   final String Function() _newId;
+  FileSyncLedger? _sync;
+  Map<String, LocalSyncSnapshot> _syncSnapshots = {};
+  Future<FileSyncLedger?> get syncLedger async {
+    await _ensureLoaded();
+    return _sync;
+  }
+
+  Map<String, Object> get syncProjectionErrors => _sync?.projectionErrors ?? const {};
+  static String _scope(String id) => 'sets/$id';
 
   final Map<String, _SetRecord> _sets = {};
   List<Folder> _folders = [];
@@ -84,27 +98,68 @@ class FileLibraryStore
   });
 
   Future<void> _load() async {
+    _sync ??= await FileSyncLedger.restore(root);
+    if (_sync != null) {
+      if (p.normalize(p.absolute(_sync!.root.path)) != p.normalize(p.absolute(root.path))) {
+        throw ArgumentError('Sync ledger must belong to this library');
+      }
+      _syncSnapshots = await _sync!.snapshots();
+    }
     final sets = <String, _SetRecord>{};
     var folders = <Folder>[];
     _packageLoadErrors.clear();
     await _setsDir.create(recursive: true);
-    if (await _libraryFile.exists()) {
-      final json = jsonDecode(await _libraryFile.readAsString()) as Map<String, Object?>;
+    final librarySnapshot = _syncSnapshots['library'];
+    if (librarySnapshot != null || await _libraryFile.exists()) {
+      final json = librarySnapshot?.value ?? jsonDecode(await _libraryFile.readAsString()) as Map<String, Object?>;
       folders = [
         for (final f in (json['folders'] as List?) ?? const [])
           Folder(id: (f as Map)['id'] as String, name: f['name'] as String),
       ];
     }
-    await for (final entry in _setsDir.list()) {
-      if (entry is! Directory || !entry.path.endsWith('.mmset')) continue;
+    if (_sync != null && librarySnapshot == null) {
+      final value = <String, Object?>{
+        'folders': [
+          for (final f in folders) {'id': f.id, 'name': f.name},
+        ],
+      };
+      _syncSnapshots = await _sync!.commit([SyncMutation('library', local: value, shared: value)]);
+    }
+    if (_sync case final sync?) {
+      await sync.project(
+        _libraryFile.path,
+        () => _atomicWrite(_libraryFile, utf8.encode(jsonEncode(_syncSnapshots['library']!.value))),
+      );
+    }
+    final paths = <String>{};
+    await for (final entry in _setsDir.list(followLinks: false)) {
+      if (entry is Directory && entry.path.endsWith('.mmset')) paths.add(entry.path);
+    }
+    for (final scope in _syncSnapshots.keys.where((s) => s.startsWith('sets/'))) {
+      final id = scope.substring(5);
+      if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(id)) throw const FormatException('Invalid sync study set id');
+      paths.add(_packagePath(id));
+    }
+    for (final path in paths) {
+      final entry = Directory(path);
       final file = File(p.join(entry.path, 'studyset.json'));
+      final snapshot = _syncSnapshots[_scope(p.basenameWithoutExtension(path))];
+      if (snapshot?.deleted == true) {
+        await _sync!.project(path, () async {
+          if (await file.exists()) await file.delete();
+        });
+        continue;
+      }
       try {
-        if (!await file.exists()) continue;
-        final original = await file.readAsBytes();
-        final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
+        if (snapshot == null && !await file.exists()) continue;
+        final original = snapshot == null ? await file.readAsBytes() : utf8.encode(jsonEncode(snapshot.value));
+        final json = snapshot?.value ?? jsonDecode(utf8.decode(original)) as Map<String, Object?>;
         final migrated = migrateStudySet(json);
         // Decode before touching disk so invalid input cannot replace the source.
         final record = _SetRecord.fromJson(migrated);
+        if (_sync != null && record.id != p.basenameWithoutExtension(path)) {
+          throw const FormatException('Study set path/identity mismatch');
+        }
         if (json['format'] != currentStudySetFormat) {
           final backup = File('${file.path}.format-${json['format']}.bak');
           if (!await backup.exists()) {
@@ -114,9 +169,23 @@ class FileLibraryStore
           }
           await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(migrated)));
         }
+        if (_sync != null) {
+          if (snapshot == null) {
+            await _saveRecord(record);
+          } else {
+            await _sync!.project(path, () => _writeRecordFile(record));
+          }
+        }
+        final translations = FileTranslationStore(entry, sync: _sync, studySetId: record.id);
+        if (_sync case final sync?) {
+          await sync.project(
+            'translation-seed/${record.id}',
+            () => translations.seedExisting(record.content.documents.map((d) => d.id).toSet()),
+          );
+        }
         await _cleanTranslations(
           entry.path,
-          () => FileTranslationStore(entry).cleanOrphans(record.content.documents.map((d) => d.id).toSet()),
+          () => translations.cleanOrphans(record.content.documents.map((d) => d.id).toSet()),
         );
         sets[record.id] = record;
       } on FormatException catch (error) {
@@ -162,10 +231,13 @@ class FileLibraryStore
       lastOpenedAt: now,
       content: StudySetContent.empty,
     );
-    _sets[record.id] = record;
-    await Directory(p.join(_packagePath(record.id), 'documents')).create(recursive: true);
-    await _persist(record.id);
-    _libraryChanges.add(null);
+    await _queueWrite(record.id, () async {
+      if (_sets.containsKey(record.id)) throw StateError('Study set already exists');
+      await Directory(p.join(_packagePath(record.id), 'documents')).create(recursive: true);
+      await _saveRecord(record);
+      _sets[record.id] = record;
+      _libraryChanges.add(null);
+    });
     return record.summary(now);
   }
 
@@ -184,22 +256,38 @@ class FileLibraryStore
   @override
   Future<void> delete(String id) async {
     await _ensureLoaded();
-    _require(id);
-    _sets.remove(id);
-    _libraryChanges.add(null);
-    _contentChanges.add(id);
-    // Let a pending write finish first so it cannot recreate the folder.
-    await (_writeQueue.remove(id) ?? Future<void>.value());
-    final dir = Directory(_packagePath(id));
-    if (await dir.exists()) await dir.delete(recursive: true);
+    await _queueWrite(id, () async {
+      _require(id);
+      final dir = Directory(_packagePath(id));
+      if (_sync case final sync?) {
+        _syncSnapshots = await sync.commit(
+          [SyncMutation(_scope(id), local: null, shared: null)],
+          expected: {_scope(id): _syncSnapshots[_scope(id)]?.revision},
+          tombstoneWhere: (scope) =>
+              scope.startsWith('translations/$id/') || scope.startsWith('reading/$id/') || scope == 'reviews/$id',
+        );
+        // Retain immutable assets for deleted branches and later recovery.
+        await sync.project(dir.path, () async {
+          final file = File(p.join(dir.path, 'studyset.json'));
+          if (await file.exists()) await file.delete();
+        });
+      } else if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+      _sets.remove(id);
+      _libraryChanges.add(null);
+      _contentChanges.add(id);
+    });
   }
 
   Future<void> _updateMeta(String id, _SetRecord Function(_SetRecord) change) async {
     await _ensureLoaded();
-    final record = _require(id);
-    _sets[id] = change(record);
-    await _persist(id);
-    _libraryChanges.add(null);
+    await _queueWrite(id, () async {
+      final record = change(_require(id));
+      await _saveRecord(record);
+      _sets[id] = record;
+      _libraryChanges.add(null);
+    });
   }
 
   /// Translation storage is separate from content snapshots and undo/redo.
@@ -209,6 +297,8 @@ class FileLibraryStore
     _require(studySetId);
     return FileTranslationStore(
       Directory(_packagePath(studySetId)),
+      sync: _sync,
+      studySetId: studySetId,
       documentExists: (id) => _sets[studySetId]?.content.document(id) != null,
     );
   }
@@ -236,10 +326,7 @@ class FileLibraryStore
       next = change(record.content);
       final dir = Directory(_packagePath(studySetId));
       await dir.create(recursive: true);
-      await _atomicWrite(
-        File(p.join(dir.path, 'studyset.json')),
-        utf8.encode(const JsonEncoder.withIndent('  ').convert(record.copyWith(content: next).toJson())),
-      );
+      await _saveRecord(record.copyWith(content: next));
       // Publish only after durable commit. A failed write leaves no receipt,
       // graph mutation or misleading successful retry in memory.
       _sets[studySetId] = _require(studySetId).copyWith(content: next);
@@ -275,6 +362,7 @@ class FileLibraryStore
     final fileName = 'documents/$digest$ext';
     final target = File(_resolvePath(studySetId, fileName));
     await _queueWrite(studySetId, () async {
+      _require(studySetId);
       if (!await target.exists()) await _atomicWrite(target, bytes);
     });
     return fileName;
@@ -326,10 +414,7 @@ class FileLibraryStore
         );
         next = package.reconcile?.call(next) ?? next;
         checkCancelled();
-        await _atomicWrite(
-          File(p.join(_packagePath(studySetId), 'studyset.json')),
-          utf8.encode(const JsonEncoder.withIndent('  ').convert(record.copyWith(content: next).toJson())),
-        );
+        await _saveRecord(record.copyWith(content: next));
       } catch (_) {
         for (final file in created.reversed) {
           for (final candidate in [file, File('${file.path}.tmp')]) {
@@ -385,6 +470,7 @@ class FileLibraryStore
     final target = File(p.join(_packagePath(studySetId), name));
     // Use the same per-set queue as JSON writes, including concurrent imports.
     await _queueWrite(studySetId, () async {
+      _require(studySetId);
       if (!await target.exists()) await _atomicWrite(target, bytes);
     });
     return name;
@@ -570,17 +656,48 @@ class FileLibraryStore
     return out.stream;
   }
 
-  /// Serializes writes per set; each write stores the latest in-memory state.
-  Future<void> _persist(String id, {bool syncSessions = false}) {
-    return _queueWrite(id, () async {
-      final record = _sets[id];
-      if (record == null) return;
-      final dir = Directory(_packagePath(id));
-      await dir.create(recursive: true);
-      final file = File(p.join(dir.path, 'studyset.json'));
-      await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(record.toJson())));
-      if (syncSessions) await _syncResearchSessions(id, record.content);
-    });
+  Future<void> _writeRecordFile(_SetRecord record) => _atomicWrite(
+    File(p.join(_packagePath(record.id), 'studyset.json')),
+    utf8.encode(const JsonEncoder.withIndent('  ').convert(record.toJson())),
+  );
+
+  /// Called only inside the set's write queue (or initial load). The ledger is
+  /// the commit point; .mmset materialization may be retried without new edits.
+  Future<void> _saveRecord(_SetRecord record) async {
+    final sync = _sync;
+    if (sync == null) return _writeRecordFile(record);
+    final local = record.toJson();
+    final shared = Map<String, Object?>.of(local)..remove('lastOpenedAt');
+    shared['content'] = sharedContent(record.content);
+    final content = record.content.toJson();
+    final reviews = <String, Object?>{
+      for (final key in ['reviews', 'reviewLogs', 'memoryStates']) key: content[key],
+    };
+    final reading = <String, Object?>{
+      'lastOpenedAt': local['lastOpenedAt'],
+      'documents': [
+        for (final doc in record.content.documents)
+          {
+            'id': doc.id,
+            'revision': doc.revision,
+            'lastPage': doc.lastPage,
+            if (doc.lastReadAt != null) 'lastReadAt': doc.lastReadAt!.toIso8601String(),
+            if (doc.readingPosition != null) 'readingPosition': doc.readingPosition!.toJson(),
+          },
+      ],
+    };
+    final documents = record.content.documents.map((d) => d.id).toSet();
+    _syncSnapshots = await sync.commit(
+      [
+        SyncMutation(_scope(record.id), local: local, shared: shared),
+        SyncMutation('reviews/${record.id}', local: reviews, shared: reviews),
+        SyncMutation('reading/${record.id}/${sync.deviceId}', local: reading, shared: reading),
+      ],
+      expected: {_scope(record.id): _syncSnapshots[_scope(record.id)]?.revision},
+      tombstoneWhere: (scope) =>
+          scope.startsWith('translations/${record.id}/') && !documents.contains(scope.split('/')[2]),
+    );
+    await sync.project(_packagePath(record.id), () => _writeRecordFile(record));
   }
 
   /// Waits for pending writes (used by tests and on shutdown).
