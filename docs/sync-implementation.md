@@ -429,15 +429,32 @@ iCloud 适配器有明确容器与账号的 `ICloudDrivePort`，检查操作前�
 本机 create/read 成功只返回 staged；资料库声明与提交均确认后才可 acknowledge。uploaded 必须在同一协调读取中
 校验刚读回的确切字节、无未决文件版本/上传错误，并检查 [ubiquitousItemIsUploaded](https://developer.apple.com/documentation/foundation/urlresourcekey/ubiquitousitemisuploadedkey)。
 原生端口应使用 [NSFileCoordinator](https://developer.apple.com/documentation/foundation/nsfilecoordinator)。
-**本批只有适配器与可模拟端口契约，尚未实现 Apple 原生桥接、签名容器或真机上传确认。**
-不能把缺少真实环境当作已完成原生实现；下一批继续桥接，保持 macOS12/iOS17 部署目标。
+第十四批提供共享 Swift `ICloudDriveStore` / `ICloudDriveChannel`，已注册到 iOS/macOS Runner，
+以及 `mm_platform` 的 `MMICloudDrive`。调用在串行工作队列执行；读取、创建及交付确认使用文件协调，
+协调访问内部再次核对账号，拒绝符号链接、协调后改名、路径穿越及超限对象。新对象通过同目录临时文件、
+同步刷盘和 `renamex_np(RENAME_EXCL)` 原子发布，已有对象绝不覆盖，再由 Dart 校验规范内容。
+文件仍待下载或存在未决系统版本时保留待发状态；evicted placeholder 请求下载后返回暂不可用，
+不能把缺少本机字节当成可以覆盖的空对象。仅 `.current`、确切字节相同、无版本冲突和上传错误且
+系统报告 uploaded 的版本允许确认。目录枚举仍受本机 iCloud 元数据可见性影响，不宣称已枚举完整云端历史。
+
+账号使用 [ubiquityIdentityToken 的 isEqual 比较](https://developer.apple.com/documentation/foundation/filemanager/ubiquityidentitytoken)，
+归档在本机 UserDefaults 并映射为稳定本机 UUID；不哈希归档充当跨设备用户 ID，不上传令牌或本机账号映射。
+系统令牌变化在每次原生操作检查，设置层后续仍须接账号变化通知与暂停提示。
+
+部署保持 macOS12/iOS17。原生桥接仅接受构建时 `FOLIARC_ICLOUD_CONTAINER_IDENTIFIER` 对应的 Info.plist 配置，
+不能由 Dart 任意指定容器。该构建变量默认未设置，`configured()` 返回 null，不尝试访问用户 iCloud。
+要做真实验收，需在两个 Runner 的 Xcode Signing & Capabilities 中启用 iCloud Documents，
+选择开发团队实际拥有的同一容器，让 Xcode 生成匹配的签名 entitlement/provisioning，并将构建变量设为该容器 ID。
+本 PR 没有添加虚构容器、修改开发者账号、启用 Share Extension 的 iCloud 权限或配置真实用户账号。
+**原生代码与本机文件协调可以测试，签名容器、系统上传确认、跨设备真实 iCloud 流程尚未验收。**
 
 当前每个对象最多 16 MiB、目录最多 100000 个提交；仍全量枚举/重放历史，收件批次尚无增量游标和规模验收。
 资源未传输、设置/同步状态 UI 未接入这些新端口，因此默认产品仍不能开启完整后台云同步。
 
 ## 下一批必须完成
 
-1. 优先接 Apple 原生 iCloud 文件协调桥接、同步设置/账号凭据及状态界面；继续真实 WebDAV 联调与资源传输门禁；
+1. 优先完成同步设置/账号凭据及状态界面，连接已有资料库与新建资料库明确分开；继续真实 WebDAV 联调、
+   Apple 签名容器验收及资源传输门禁；
    补齐早期 `library` 候选迁移与文件夹异常分支整理；
    继续补齐剩余编辑入口、并发冲突选择协调和资料库级恢复中心，不能把当前学习集面板当作完整产品验收。
 2. 设备身份与资料库绑定；新建/连接已有库分开，账号变化暂停队列，旧客户端拒绝未知写入版本。
@@ -673,3 +690,28 @@ iCloud 适配器有明确容器与账号的 `ICloudDrivePort`，检查操作前�
 - WebDAV 通过注入 HTTP 客户端模拟，未连接真实服务。iCloud 当前只有 Dart 适配与严格原生端口契约，
   **Apple 原生桥接仍未实现**，不能把它说成仅缺签名或已经云端实测。账号/凭证设置、用户状态界面、
   资源 manifest/下载和批量增量调度仍待完成；没有配置用户账号或上传用户数据。
+
+## 第十四批验证：Apple 原生文件协调桥接
+
+- 新增 `apps/marginmind/apple/` 共享存储、通道与 XCTest；iOS/macOS Runner 均注册原生通道并编入测试。
+  `MMICloudDrive` 提供类型化 Dart 端口，严格校验路径、响应类型、大小及错误映射。启动仅注册通道，
+  未配置容器时端口不可用，不触发 iCloud 访问；账号与凭据设置仍未接入产品。
+- 在已连接的 Mac worker 独立临时目录执行真实 Apple Foundation/NSFileCoordinator 文件测试，
+  覆盖不可变创建、暂存/确认、错字节、未决版本、evicted placeholder、旧下载、符号链接、超限、
+  协调前账号变化、令牌往返及损坏注册表、空/非法构建配置。没有使用真实云账号或容器。
+- 使用 worker 已安装的真实 FlutterMacOS framework 执行 **2 项原生 XCTest**，验证通道分派、
+  参数检查、字节往返、错误去敏、工作线程处理与主线程回复。独立运行器最初缺少 XCTest Swift 搜索路径、
+  使用了 corelibs 的入口，以及测试中错误的 Swift codec 方法名，均已修正后通过。
+- 最终共享原生源通过 **macOS 12** 和 **iOS 17 simulator** 部署目标类型检查；iOS 检查也包含通道测试源。
+  两个 `.pbxproj` 通过 Apple `plutil` 检查。没有执行完整 Runner 构建、iOS 模拟器运行或签名真机测试，
+  类型检查不能替代这些验收。
+- Linux 平台 Dart 全量 **77 项**通过；Python **28 项中 26 项通过、2 项按环境跳过**，
+  Apple 存储测试另已在上述 Mac 上实际执行。新增原生存储测试加入 macOS CI 步骤。
+- 独立覆盖率：Dart `mm_platform/coverage/icloud-platform-final` 桥接 **48/49 = 97.96%**；
+  Mac LLVM 原生存储 **256/286 = 89.51%**，通道 **75/79 = 94.94%** 行覆盖率。
+  原生资料来自隔离的 `delivery.profraw` / `channel-final.profraw`，未与之前的测试输出混合。
+- workspace analyze 无问题，format **1115 文件无变化**，diff 检查通过。运行记录为 workdir `sync-icloud-*`。
+  现有完整 CI/应用基线失败与 browser smoke 边界仍保留，没有等待或轮询 CI。
+- 后续优先连接账号/凭据设置、明确新建/加入资料库、设备名称与账号变化暂停提示，再接资源 manifest/按需下载。
+  原生方法调用目前没有产品层取消/超时界面，文件协调仍可能等待系统下载；需在设置/调度接入时处理。
+  签名容器、云端 uploaded 状态及两设备实际 iCloud 同步仍待验收，issue 保持进行中。
