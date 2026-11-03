@@ -14,6 +14,29 @@ void main() {
   Future<MMICloudDrive> port() async => (await MMICloudDrive.configured(channel: channel, supported: true))!;
   Matcher problem(SyncTransportProblem kind) => isA<SyncTransportException>().having((e) => e.problem, 'problem', kind);
 
+  test('account events subscribe without tokens and detach on cancellation', () async {
+    const event = EventChannel('test/icloud-events');
+    final methods = <String>[];
+    messenger.setMockMethodCallHandler(channel, (_) async => container);
+    messenger.setMockMethodCallHandler(const MethodChannel('test/icloud-events'), (call) async {
+      methods.add(call.method);
+      return null;
+    });
+    final drive = (await MMICloudDrive.configured(channel: channel, events: event, supported: true))!;
+    var changes = 0;
+    final sub = drive.accountChanges.listen((_) => changes++);
+    await Future<void>.delayed(Duration.zero);
+    await messenger.handlePlatformMessage(
+      'test/icloud-events',
+      const StandardMethodCodec().encodeSuccessEnvelope(true),
+      (_) {},
+    );
+    expect(changes, 1);
+    await sub.cancel();
+    expect(methods, ['listen', 'cancel']);
+    messenger.setMockMethodCallHandler(const MethodChannel('test/icloud-events'), null);
+  });
+
   test('configured Apple bridge routes bytes and retains cloud confirmation distinction', () async {
     final calls = <MethodCall>[];
     var confirmed = false;

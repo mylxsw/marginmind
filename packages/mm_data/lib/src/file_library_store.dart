@@ -1,3 +1,5 @@
+import 'file_sync_devices.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -409,6 +411,7 @@ class FileLibraryStore
     }
     await _reconcileFolders();
     await _reconcileReviews(canApply: canApply);
+    await FileSyncDevices(sync).reconcile();
     await _reconcileReading();
     await _reconcileTranslations(canApply: canApply);
     return results;

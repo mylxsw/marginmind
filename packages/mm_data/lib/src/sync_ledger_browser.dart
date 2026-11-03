@@ -17,6 +17,15 @@ Future<void> writeSyncLedgerRecord(String path, List<int> bytes) => BrowserFiles
 
 Future<List<int>?> readSyncConnection(String path) => BrowserFiles.readCurrent(path);
 
+/// Revoking an observed target cannot disconnect a newer tab's connection.
+Future<void> replaceSyncConnection(String path, List<int> bytes, String expectedRevision) async {
+  final current = await BrowserFiles.readCurrent(path);
+  if (current == null || (jsonDecode(utf8.decode(current)) as Map)['revision'] != expectedRevision) {
+    throw const SyncTransportException(SyncTransportProblem.accountChanged);
+  }
+  await BrowserFiles.commit({path: Uint8List.fromList(bytes)}, [], guards: {path: current});
+}
+
 /// Confirmation and the connection guard share the very same IDB transaction.
 Future<void> writeSyncDelivery(String path, List<int> bytes, {String? connectionPath, String? expectedRevision}) async {
   final guards = <String, Uint8List?>{};

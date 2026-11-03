@@ -21,3 +21,5 @@ export 'src/webdav_transport.dart';
 export 'src/icloud_transport.dart';
 
 export 'src/resources.dart';
+
+export 'src/device_profile.dart';

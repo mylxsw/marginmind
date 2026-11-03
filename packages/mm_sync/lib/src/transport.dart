@@ -92,7 +92,7 @@ void validateSyncLibrary(List<int> bytes, String id) {
 
 /// Legacy aggregate scopes remain local migration inputs. Do not export them.
 bool isSyncWireScope(String scope) =>
-    {'sets', 'reviews', 'folders', 'reading', 'words', 'translated'}.contains(scope.split('/').first);
+    {'sets', 'reviews', 'folders', 'reading', 'devices', 'words', 'translated'}.contains(scope.split('/').first);
 
 void checkSyncObjectData(String key, List<int> bytes) {
   checkSyncObjectKey(key);

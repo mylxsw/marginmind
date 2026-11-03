@@ -4,14 +4,22 @@ import 'package:mm_sync/mm_sync.dart';
 
 /// Only the container configured in the signed Apple app can be opened.
 /// Account IDs are opaque, device-local bindings, never cross-device user IDs.
-class MMICloudDrive implements ICloudDrivePort {
-  MMICloudDrive._(this.containerIdentifier, this._channel);
+class MMICloudDrive implements ICloudDrivePort, ICloudAccountEvents {
+  MMICloudDrive._(this.containerIdentifier, this._channel, this._events);
   static const _defaultChannel = MethodChannel('marginmind/icloud_drive');
+  static const _defaultEvents = EventChannel('marginmind/icloud_account');
   final MethodChannel _channel;
+  final EventChannel _events;
+  @override
+  late final Stream<void> accountChanges = _events.receiveBroadcastStream().map<void>((_) {});
   @override
   final String containerIdentifier;
 
-  static Future<MMICloudDrive?> configured({MethodChannel channel = _defaultChannel, bool? supported}) async {
+  static Future<MMICloudDrive?> configured({
+    MethodChannel channel = _defaultChannel,
+    EventChannel events = _defaultEvents,
+    bool? supported,
+  }) async {
     if (!(supported ?? (!kIsWeb && {TargetPlatform.iOS, TargetPlatform.macOS}.contains(defaultTargetPlatform)))) {
       return null;
     }
@@ -21,7 +29,7 @@ class MMICloudDrive implements ICloudDrivePort {
       if (value is! String || !RegExp(r'^iCloud\.[A-Za-z0-9.-]{1,200}$').hasMatch(value)) {
         throw const SyncTransportException(SyncTransportProblem.invalidResponse);
       }
-      return MMICloudDrive._(value, channel);
+      return MMICloudDrive._(value, channel, events);
     } on MissingPluginException {
       return null;
     } on PlatformException {

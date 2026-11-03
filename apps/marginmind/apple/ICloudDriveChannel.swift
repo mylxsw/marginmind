@@ -9,7 +9,12 @@ import Flutter
 final class ICloudDriveChannel {
   private static let worker = DispatchQueue(label: "io.github.mylxsw.marginmind.icloud")
   private let channel: FlutterMethodChannel
+  private let events: FlutterEventChannel
+  private let accountEvents: ICloudAccountEvents
   init(messenger: FlutterBinaryMessenger, store: ICloudDriveStore? = nil) {
+    accountEvents = ICloudAccountEvents()
+    events = FlutterEventChannel(name: "marginmind/icloud_account", binaryMessenger: messenger)
+    events.setStreamHandler(accountEvents)
     channel = FlutterMethodChannel(name: "marginmind/icloud_drive", binaryMessenger: messenger)
     channel.setMethodCallHandler { call, result in
       // Capture only serializable arguments, never a live file coordinator.
@@ -64,4 +69,21 @@ final class ICloudDriveChannel {
     default: return FlutterMethodNotImplemented
     }
   }
+}
+
+/// Main-queue invalidation bypasses the file worker, which may be waiting for
+/// iCloud downloads. No token or account identifier is sent to the UI.
+final class ICloudAccountEvents: NSObject, FlutterStreamHandler {
+  private let center: NotificationCenter
+  private var observer: NSObjectProtocol?
+  init(center: NotificationCenter = .default) { self.center = center; super.init() }
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    stop()
+    observer = center.addObserver(forName: NSNotification.Name.NSUbiquityIdentityDidChange,
+      object: nil, queue: .main) { _ in events(true) }
+    return nil
+  }
+  func onCancel(withArguments arguments: Any?) -> FlutterError? { stop(); return nil }
+  private func stop() { if let observer { center.removeObserver(observer) }; observer = nil }
+  deinit { stop() }
 }

@@ -6693,4 +6693,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncResourceDownload => 'Download files';
+
+  @override
+  String get syncDeviceRename => 'Rename this device';
+
+  @override
+  String get syncDeviceNameHint =>
+      'This name is shared with devices in this library. It does not identify your service account.';
+
+  @override
+  String get syncDeviceHistoryProblem =>
+      'Some device names could not be accepted. Their histories are retained; other devices can continue syncing.';
+
+  @override
+  String get syncDisconnect => 'Disconnect and remove saved credential';
+
+  @override
+  String get syncDisconnectHint =>
+      'Disconnecting removes this connection and its saved credential from this device. Library content, cloud files and delivery history are kept.';
+
+  @override
+  String get syncDeviceStale =>
+      'The device name changed while you were editing. Your input is kept. Cancel and reopen Rename to review the new name.';
+
+  @override
+  String get syncDisconnectICloud => 'Disconnect iCloud from this library';
+
+  @override
+  String get syncDisconnectICloudHint =>
+      'Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account.';
 }

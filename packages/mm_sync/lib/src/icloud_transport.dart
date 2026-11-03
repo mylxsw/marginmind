@@ -1,6 +1,11 @@
 import 'commit.dart';
 import 'transport.dart';
 
+/// Optional invalidation signal. It carries no account token or personal data.
+abstract interface class ICloudAccountEvents {
+  Stream<void> get accountChanges;
+}
+
 /// Native bridge contract: coordinate ubiquitous files, atomically create only
 /// if absent, and validate expectedAccount INSIDE each coordinated operation.
 /// A downloaded local file is not proof that its latest bytes were uploaded.

@@ -13,6 +13,24 @@ import Flutter
 #endif
 
 final class ICloudDriveChannelTests: XCTestCase {
+  func testIdentityEventsContainNoTokenAndCancelObserver() {
+    let center = NotificationCenter()
+    let stream = ICloudAccountEvents(center: center)
+    var values: [Bool] = []
+    XCTAssertNil(stream.onListen(withArguments: nil) { value in
+      XCTAssertTrue(Thread.isMainThread)
+      values.append(value as! Bool)
+    })
+    center.post(name: NSNotification.Name.NSUbiquityIdentityDidChange, object: "private-token")
+    XCTAssertEqual(values, [true])
+    XCTAssertNil(stream.onListen(withArguments: nil) { value in values.append(value as! Bool) })
+    center.post(name: NSNotification.Name.NSUbiquityIdentityDidChange, object: nil)
+    XCTAssertEqual(values, [true, true])
+    XCTAssertNil(stream.onCancel(withArguments: nil))
+    center.post(name: NSNotification.Name.NSUbiquityIdentityDidChange, object: nil)
+    XCTAssertEqual(values, [true, true])
+  }
+
   func testWorkerRepliesOnMainThreadAndRedactsNativeErrors() throws {
     let messenger = DriveTestMessenger()
     let store = ICloudDriveStore(container: "iCloud.test", root: {

@@ -6418,4 +6418,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncResourceDownload => '下载文件';
+
+  @override
+  String get syncDeviceRename => '修改本机名称';
+
+  @override
+  String get syncDeviceNameHint => '此名称会与同一资料库的设备共享，不代表服务账号身份。';
+
+  @override
+  String get syncDeviceHistoryProblem => '部分设备名称历史无法接收，已保留原始分支，其他设备可继续同步。';
+
+  @override
+  String get syncDisconnect => '断开并移除保存的凭据';
+
+  @override
+  String get syncDisconnectHint => '断开会移除本机当前连接及其保存的凭据，保留资料库内容、云端文件和交付历史。';
+
+  @override
+  String get syncDeviceStale => '编辑期间设备名称已变化，输入已保留。请取消并重新打开改名，确认最新名称。';
+
+  @override
+  String get syncDisconnectICloud => '断开此资料库的 iCloud 连接';
+
+  @override
+  String get syncDisconnectICloudHint => '断开会保留资料库、云端文件和交付历史，不会退出系统 Apple 账号。';
 }

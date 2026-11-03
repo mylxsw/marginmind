@@ -11707,6 +11707,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download files'**
   String get syncResourceDownload;
+
+  /// No description provided for @syncDeviceRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename this device'**
+  String get syncDeviceRename;
+
+  /// No description provided for @syncDeviceNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This name is shared with devices in this library. It does not identify your service account.'**
+  String get syncDeviceNameHint;
+
+  /// No description provided for @syncDeviceHistoryProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Some device names could not be accepted. Their histories are retained; other devices can continue syncing.'**
+  String get syncDeviceHistoryProblem;
+
+  /// No description provided for @syncDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect and remove saved credential'**
+  String get syncDisconnect;
+
+  /// No description provided for @syncDisconnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnecting removes this connection and its saved credential from this device. Library content, cloud files and delivery history are kept.'**
+  String get syncDisconnectHint;
+
+  /// No description provided for @syncDeviceStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The device name changed while you were editing. Your input is kept. Cancel and reopen Rename to review the new name.'**
+  String get syncDeviceStale;
+
+  /// No description provided for @syncDisconnectICloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect iCloud from this library'**
+  String get syncDisconnectICloud;
+
+  /// No description provided for @syncDisconnectICloudHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account.'**
+  String get syncDisconnectICloudHint;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

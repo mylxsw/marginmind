@@ -18,3 +18,5 @@ export 'src/file_sync_receiver.dart';
 
 export 'src/file_sync_engine.dart';
 export 'src/file_sync_setup.dart';
+
+export 'src/file_sync_devices.dart';

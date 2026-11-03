@@ -10,6 +10,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_data/src/library_browser_io.dart';
 import 'package:mm_data/src/resource_cache.dart';
+import 'package:mm_data/src/sync_ledger_browser.dart' as ledger_io;
 import 'package:mm_sync/mm_sync.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
@@ -27,6 +28,39 @@ void main() {
     await store.dispose();
     BrowserFiles.close();
     web.window.indexedDB.deleteDatabase(database);
+  });
+
+  test('device names and disconnected bindings recover without clearing delivery history', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    await FileSyncDevices(ledger).rename('Browser', expectedRevision: null);
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: 'devices/phone',
+      deviceId: 'phone',
+      sequence: 1,
+      payload: SyncDeviceProfile('Phone').toJson(),
+    );
+    await store.receiveSync([remote]);
+    final target = SyncTarget(service: 'webdav', account: 'alice', location: 'https://dav/', libraryId: 'library');
+    await ledger.bindTransport(target);
+    await ledger.resumeTransport(target.key);
+    final connection = (await ledger.transportConnection())!;
+    final outgoing = await ledger.pending(target: target.key);
+    await ledger.disconnectTransport(target.key);
+    await expectLater(
+      ledger.acknowledge(outgoing.map((c) => c.id), target: target.key, connectionRevision: connection.revision),
+      throwsA(isA<SyncTransportException>()),
+    );
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    final restored = (await store.syncLedger)!;
+    expect(await restored.transportConnection(), isNull);
+    expect((await FileSyncDevices(restored).list()).map((d) => d.name), ['Browser', 'Phone']);
+    expect((await restored.pending()).where((c) => c.scope == 'devices/phone'), isEmpty);
   });
 
   test('resource manifest and chunk cache survive IndexedDB restart and restore on demand', () async {
@@ -556,6 +590,11 @@ void main() {
     await done.future;
     other.close();
     expect((await ledger.transportConnection())!.paused, isTrue);
+    await expectLater(
+      ledger_io.replaceSyncConnection('/Library/.foliarc-sync/connection.json', [123, 125], connection.revision),
+      throwsA(isA<SyncTransportException>()),
+    );
+    expect((await ledger.transportConnection())!.revision, 'another-tab');
     final oldBinding = Uint8List.fromList(
       utf8.encode(
         jsonEncode({

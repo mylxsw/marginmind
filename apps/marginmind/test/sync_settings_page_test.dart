@@ -66,6 +66,10 @@ class _Settings extends SyncSettingsController {
   Future<void> connectWebDav({required String directory, required String username, required String password}) =>
       action((directory, username, password));
   @override
+  Future<void> renameDevice(String name, {required String? expectedRevision}) => action((name, expectedRevision));
+  @override
+  Future<void> disconnect() => action('disconnect');
+  @override
   Future<void> connectICloud() => action('icloud');
   @override
   Future<void> syncOnce() => action('sync');
@@ -125,6 +129,43 @@ void main() {
       libraryId: 'library-code',
     );
   }
+
+  testWidgets('rename keeps observed version and input on failure; disconnect is explicit', (tester) async {
+    active();
+    service.devices = [const SyncDeviceInfo('private-device', 'My Mac', 'first', local: true)];
+    service.deviceProblems = 1;
+    await pump(tester, width: 375);
+    await tap(tester, 'sync-rename');
+    await tester.enterText(find.byKey(const ValueKey('sync-rename-input')), 'New Mac');
+    service.devices = [const SyncDeviceInfo('private-device', 'Remote', 'second', local: true)];
+    service.nextFailure = SyncSettingsFailure.staleDevice;
+    service.publish();
+    await tester.pumpAndSettle();
+    await tap(tester, 'sync-rename-save');
+    expect(service.actions.last, ('New Mac', 'first'));
+    expect(find.text('New Mac'), findsOneWidget);
+    service.nextFailure = null;
+    await tap(tester, 'sync-rename-save');
+    expect(find.byKey(const ValueKey('sync-rename-input')), findsNothing);
+    await tap(tester, 'sync-disconnect');
+    expect(service.actions.last, 'disconnect');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('iCloud disconnect does not promise to remove the system Apple account', (tester) async {
+    active();
+    service.target = SyncTarget(
+      service: 'icloud',
+      account: 'opaque-apple',
+      location: 'iCloud.test',
+      libraryId: 'library-code',
+    );
+    await pump(tester, width: 375);
+    expect(find.textContaining('does not sign you out'), findsOneWidget);
+    expect(find.textContaining('opaque-apple'), findsNothing);
+    await tap(tester, 'sync-disconnect');
+    expect(service.actions.last, 'disconnect');
+  });
 
   testWidgets('prepare and cancel clearly retain local mode until restart', (tester) async {
     await pump(tester);

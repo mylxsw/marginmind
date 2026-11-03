@@ -13,6 +13,7 @@ final syncSettingsControllerProvider = Provider<SyncSettingsController?>((ref) =
 
 enum SyncSettingsFailure {
   storage,
+  staleDevice,
   invalidInput,
   incompleteLibrary,
   resources,
@@ -49,7 +50,12 @@ class SyncSettingsController extends ChangeNotifier {
   FileSyncLedger? _ledger;
   FileSyncEngine? _engine;
   http.Client? _client;
-  StreamSubscription<void>? _changes;
+  StreamSubscription<void>? _changes, _accountChanges;
+  ICloudDrivePort? _observedCloud;
+  bool _accountNeedsReconnect = false;
+  List<SyncDeviceInfo> devices = const [];
+  int deviceProblems = 0;
+  String? get deviceName => devices.where((d) => d.local).firstOrNull?.name ?? setup?.deviceName;
   SyncSetup? setup;
   SyncTarget? target;
   String? libraryId;
@@ -78,14 +84,19 @@ class SyncSettingsController extends ChangeNotifier {
     try {
       await body(generation);
     } on SyncTransportException catch (error) {
-      failure = switch (error.problem) {
-        SyncTransportProblem.authentication || SyncTransportProblem.permission => SyncSettingsFailure.authentication,
-        SyncTransportProblem.accountChanged => SyncSettingsFailure.accountChanged,
-        SyncTransportProblem.legacyProtocol => SyncSettingsFailure.legacyProtocol,
-        SyncTransportProblem.missingHistory => SyncSettingsFailure.missingHistory,
-        SyncTransportProblem.paused => SyncSettingsFailure.paused,
-        _ => SyncSettingsFailure.service,
-      };
+      failure = failure == SyncSettingsFailure.accountChanged
+          ? failure
+          : switch (error.problem) {
+              SyncTransportProblem.authentication ||
+              SyncTransportProblem.permission => SyncSettingsFailure.authentication,
+              SyncTransportProblem.accountChanged => SyncSettingsFailure.accountChanged,
+              SyncTransportProblem.legacyProtocol => SyncSettingsFailure.legacyProtocol,
+              SyncTransportProblem.missingHistory => SyncSettingsFailure.missingHistory,
+              SyncTransportProblem.paused => SyncSettingsFailure.paused,
+              _ => SyncSettingsFailure.service,
+            };
+    } on SyncRevisionChanged {
+      failure = SyncSettingsFailure.staleDevice;
     } on FormatException {
       failure ??= SyncSettingsFailure.invalidInput;
     } on ArgumentError {
@@ -111,6 +122,11 @@ class SyncSettingsController extends ChangeNotifier {
       // A restarted process never resumes a previous process's consent to run.
       await _engine!.pause();
       target = (await ledger.transportConnection())?.target;
+      final registry = FileSyncDevices(ledger);
+      if (!(await registry.list()).any((d) => d.local) && setup != null) {
+        await registry.rename(setup!.deviceName, expectedRevision: null);
+      }
+      if (target?.service == 'icloud') await _observeCloud(await _cloud());
       await _refresh();
       resources = await library.syncResources();
     }
@@ -195,7 +211,10 @@ class SyncSettingsController extends ChangeNotifier {
         if (password.isNotEmpty) await secrets.writeVerified(key, authorization);
         _check(generation);
         await _engine!.bind(adapter);
+        _check(generation);
         target = selected;
+        _accountNeedsReconnect = false;
+        await _stopObservingCloud();
         await _refresh();
       });
 
@@ -204,6 +223,7 @@ class SyncSettingsController extends ChangeNotifier {
     await _engine!.pause();
     paused = true;
     final port = await _cloud();
+    await _observeCloud(port);
     final account = await port?.accountIdentity();
     if (port == null || account == null) {
       failure = SyncSettingsFailure.unsupported;
@@ -218,7 +238,9 @@ class SyncSettingsController extends ChangeNotifier {
     );
     await _probe(adapter, generation);
     await _engine!.bind(adapter);
+    _check(generation);
     target = adapter.target;
+    _accountNeedsReconnect = false;
     await _refresh();
   });
 
@@ -234,6 +256,12 @@ class SyncSettingsController extends ChangeNotifier {
   }
 
   Future<SyncObjectTransport> _adapter(SyncTarget selected, String? authorization) async {
+    if (selected.service == 'webdav' && (authorization == null || authorization.isEmpty)) {
+      throw const SyncTransportException(SyncTransportProblem.authentication);
+    }
+    if (_accountNeedsReconnect && selected.service == 'icloud') {
+      throw const SyncTransportException(SyncTransportProblem.accountChanged);
+    }
     if (_transportFactory != null) return _transportFactory(selected, authorization);
     if (selected.service == 'webdav') {
       if (!canStoreSecrets || authorization == null) {
@@ -249,7 +277,8 @@ class SyncSettingsController extends ChangeNotifier {
         authorization: authorization,
       );
     }
-    final port = await _cloud();
+    final port = _observedCloud ?? await _cloud();
+    await _observeCloud(port);
     if (selected.service != 'icloud' ||
         port == null ||
         port.containerIdentifier != selected.location ||
@@ -324,6 +353,64 @@ class SyncSettingsController extends ChangeNotifier {
     }
   });
 
+  Future<void> renameDevice(String name, {required String? expectedRevision}) => _action((generation) async {
+    if (_ledger == null) throw StateError('Library is not initialized');
+    await FileSyncDevices(_ledger!).rename(name, expectedRevision: expectedRevision);
+    await _refresh();
+  });
+
+  /// Remove only the selected target's saved credential. Old queues and cloud
+  /// objects remain; a failed secure-store deletion leaves a paused retryable target.
+  Future<void> disconnect() => _action((generation) async {
+    final selected = target;
+    if (selected == null) return;
+    await _engine!.pause();
+    paused = true;
+    if (selected.service == 'webdav') {
+      final key = 'sync-${selected.key}';
+      await secrets.delete(key);
+      if (await secrets.read(key) != null) throw StateError('Credential removal failed');
+    }
+    _check(generation);
+    await _engine!.disconnect(selected.key);
+    target = null;
+    await _stopObservingCloud();
+    _accountNeedsReconnect = false;
+    _client?.close();
+    _client = null;
+    await _refresh();
+  });
+
+  Future<void> _stopObservingCloud() async {
+    _observedCloud = null;
+    await _accountChanges?.cancel();
+    _accountChanges = null;
+  }
+
+  Future<void> _observeCloud(ICloudDrivePort? port) async {
+    if (identical(port, _observedCloud)) return;
+    await _stopObservingCloud();
+    _observedCloud = port;
+    if (port is ICloudAccountEvents) {
+      _accountChanges = (port as ICloudAccountEvents).accountChanges.listen(
+        (_) {
+          if (identical(_observedCloud, port)) unawaited(_accountInvalidated());
+        },
+        onError: (Object _, StackTrace _) {
+          if (identical(_observedCloud, port)) unawaited(_accountInvalidated());
+        },
+      );
+    }
+  }
+
+  Future<void> _accountInvalidated() async {
+    if (_disposed) return;
+    _accountNeedsReconnect = true;
+    failure = SyncSettingsFailure.accountChanged;
+    result = null;
+    await pause();
+  }
+
   Future<void> pause() async {
     _generation++;
     try {
@@ -336,6 +423,11 @@ class SyncSettingsController extends ChangeNotifier {
   }
 
   Future<void> _refresh() async {
+    devices = await FileSyncDevices(_ledger!).list();
+    final history = await _ledger!.history();
+    deviceProblems = (await _ledger!.issues()).keys
+        .where((id) => history[id]?.scope.startsWith('devices/') == true)
+        .length;
     pending = (await _ledger!.pending(target: target?.key)).where((c) => isSyncWireScope(c.scope)).length;
   }
 
@@ -344,6 +436,7 @@ class SyncSettingsController extends ChangeNotifier {
     _disposed = true;
     _generation++;
     unawaited(_changes?.cancel());
+    unawaited(_accountChanges?.cancel());
     _client?.close();
     super.dispose();
   }

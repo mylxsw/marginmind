@@ -49,10 +49,12 @@ class ReadingRepository extends InMemoryStudySetContentRepository implements Rea
 
 ReadingContinuation choice({
   String document = 'c1',
+  String? deviceName,
   ReadingPosition? position,
   ReadingContinuationAvailability availability = ReadingContinuationAvailability.ready,
 }) => ReadingContinuation(
   deviceId: 'private-device-id',
+  deviceName: deviceName,
   documentId: document,
   title: 'Reading book',
   remoteRevision: 'observed-remote',
@@ -225,6 +227,13 @@ void main() {
   }
 
   final button = find.byKey(const ValueKey('reading-continue-private-device-id-c1'));
+
+  testWidgets('accepted device names are shown instead of an opaque identity', (tester) async {
+    repo.status = ReadingContinuations(enabled: true, items: [choice(deviceName: 'Study Mac')]);
+    await pump(tester);
+    expect(find.textContaining('Study Mac'), findsOneWidget);
+    expect(find.textContaining('private-device-id'), findsNothing);
+  });
 
   testWidgets('human reading summary exposes no identities and successful choice closes the sheet', (tester) async {
     await pump(tester);

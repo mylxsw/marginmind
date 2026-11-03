@@ -36,6 +36,12 @@ class FileSyncEngine {
     await ledger.pauseTransport();
   }
 
+  Future<void> disconnect(String expectedTarget) async {
+    _generation++;
+    _transport = null;
+    await ledger.disconnectTransport(expectedTarget);
+  }
+
   Future<void> resume() async {
     final target = _transport?.target;
     if (target == null) throw const SyncTransportException(SyncTransportProblem.paused);

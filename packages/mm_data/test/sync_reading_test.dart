@@ -51,10 +51,12 @@ void main() {
 
   test('received progress is separate from local reading, resource gated, explicit and restart safe', () async {
     await a.update(id, (c) => editor.setLastPage(c, 'doc', 12));
+    await FileSyncDevices(left).rename('Study Mac', expectedRevision: null);
     await send();
     expect((await b.load(id)).document('doc')!.lastPage, 1);
     var c = (await b.readingContinuations(id)).items.single;
     expect(c.title, 'Book');
+    expect(c.deviceName, 'Study Mac');
     expect(c.position, isA<PdfPosition>().having((p) => p.page, 'page', 12));
     expect(c.availability, ReadingContinuationAvailability.unavailable);
     await expectLater(prepare(c), throwsA(isA<ContentSyncActionException>()));

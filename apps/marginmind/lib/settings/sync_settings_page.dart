@@ -16,7 +16,8 @@ class SyncSettingsPage extends ConsumerStatefulWidget {
 class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   final _code = TextEditingController(), _name = TextEditingController();
   final _directory = TextEditingController(), _account = TextEditingController(), _password = TextEditingController();
-  bool _joining = false, _adopted = false;
+  bool _joining = false, _adopted = false, _renaming = false;
+  String? _nameRevision;
   @override
   void dispose() {
     for (final input in [_code, _name, _directory, _account, _password]) {
@@ -53,7 +54,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
       builder: (context, _) {
         if (!_adopted && service.initialized) {
           _adopted = true;
-          _name.text = service.setup?.deviceName ?? '';
+          _name.text = service.deviceName ?? '';
           if (service.target?.service == 'webdav') {
             _directory.text = service.target!.location;
             _account.text = service.target!.account;
@@ -108,7 +109,40 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
             ] else ...[
               Text(l.syncSettingsLibraryId, style: context.mmText.headline),
               SelectableText(service.libraryId!),
-              if (service.setup != null) Text('${l.syncSettingsDeviceName}: ${service.setup!.deviceName}'),
+              if (service.deviceName != null) Text('${l.syncSettingsDeviceName}: ${service.deviceName}'),
+              Text(l.syncDeviceNameHint, style: context.mmText.callout),
+              if (_renaming) ...[
+                _input('sync-rename-input', l.syncSettingsDeviceName, _name, enabled),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    MMButton(
+                      key: const ValueKey('sync-rename-save'),
+                      label: l.save,
+                      onPressed: enabled
+                          ? () async {
+                              await service.renameDevice(_name.text, expectedRevision: _nameRevision);
+                              if (mounted && service.failure == null) setState(() => _renaming = false);
+                            }
+                          : null,
+                    ),
+                    MMButton(label: l.cancel, onPressed: enabled ? () => setState(() => _renaming = false) : null),
+                  ],
+                ),
+              ] else
+                MMButton(
+                  key: const ValueKey('sync-rename'),
+                  label: l.syncDeviceRename,
+                  onPressed: enabled
+                      ? () {
+                          _name.text = service.deviceName ?? '';
+                          _nameRevision = service.devices.where((d) => d.local).firstOrNull?.revision;
+                          setState(() => _renaming = true);
+                        }
+                      : null,
+                ),
+              for (final device in service.devices.where((d) => !d.local)) Text(device.name),
+              if (service.deviceProblems > 0) Text(l.syncDeviceHistoryProblem),
               const SizedBox(height: 12),
               Text(service.busy ? l.syncSettingsRunning : l.syncSettingsPaused),
               if (service.target case final target?) ...[
@@ -116,11 +150,25 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
                 // iCloud's account identifier is local and opaque, not a human name.
                 if (target.service == 'webdav') Text(target.account),
                 Text('${l.syncSettingsPending}: ${service.pending}'),
+                Text(
+                  target.service == 'icloud' ? l.syncDisconnectICloudHint : l.syncDisconnectHint,
+                  style: context.mmText.callout,
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
+                    MMButton(
+                      key: const ValueKey('sync-disconnect'),
+                      label: target.service == 'icloud' ? l.syncDisconnectICloud : l.syncDisconnect,
+                      onPressed: enabled
+                          ? () async {
+                              await service.disconnect();
+                              if (mounted && service.failure == null) _password.clear();
+                            }
+                          : null,
+                    ),
                     MMButton(
                       key: const ValueKey('sync-once'),
                       label: l.syncSettingsOnce,
@@ -196,6 +244,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   }
 
   String _failure(AppLocalizations l, SyncSettingsFailure failure) => switch (failure) {
+    SyncSettingsFailure.staleDevice => l.syncDeviceStale,
     SyncSettingsFailure.resources => l.syncResourceChanged,
     SyncSettingsFailure.invalidInput => l.syncSettingsInvalid,
     SyncSettingsFailure.incompleteLibrary => l.syncSettingsRepair,

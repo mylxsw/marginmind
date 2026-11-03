@@ -6,6 +6,7 @@ extension _FileLibraryReading on FileLibraryStore {
     final sync = _sync;
     if (sync == null) return ReadingContinuations();
     final heads = await sync.snapshots(), history = await sync.history();
+    final names = {for (final device in await FileSyncDevices(sync).list()) device.id: device.name};
     final content = _sets[id]?.content;
     final items = <ReadingContinuation>[];
     final scopes = heads.keys.where((s) => s.startsWith('reading/$id/') && s != 'reading/$id/${sync.deviceId}').toList()
@@ -24,6 +25,7 @@ extension _FileLibraryReading on FileLibraryStore {
           items.add(
             ReadingContinuation(
               deviceId: scope.substring('reading/$id/'.length),
+              deviceName: names[scope.substring('reading/$id/'.length)],
               documentId: location.documentId,
               title: doc?.title ?? original?.document(location.documentId)?.title ?? '',
               remoteRevision: head.revision,

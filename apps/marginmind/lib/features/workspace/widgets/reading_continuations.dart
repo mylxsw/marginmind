@@ -86,7 +86,7 @@ class _ReadingContinuationsSectionState extends ConsumerState<ReadingContinuatio
                       children: [
                         Text(choice.title, style: context.mmText.headline),
                         Text(
-                          '${l.readingOtherDevice(devices.indexOf(choice.deviceId) + 1)} · ${material.formatShortDate(choice.readAt.toLocal())} ${material.formatTimeOfDay(TimeOfDay.fromDateTime(choice.readAt.toLocal()))}',
+                          '${choice.deviceName ?? l.readingOtherDevice(devices.indexOf(choice.deviceId) + 1)} · ${material.formatShortDate(choice.readAt.toLocal())} ${material.formatTimeOfDay(TimeOfDay.fromDateTime(choice.readAt.toLocal()))}',
                         ),
                         Text(
                           choice.position is PdfPosition

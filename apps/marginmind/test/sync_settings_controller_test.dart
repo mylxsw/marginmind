@@ -9,9 +9,12 @@ import 'package:mm_sync/mm_sync.dart';
 
 class Secrets implements SecretStore {
   final values = <String, String>{};
-  bool fail = false;
+  bool fail = false, failDelete = false;
   @override
-  Future<void> delete(String account) async => values.remove(account);
+  Future<void> delete(String account) async {
+    if (!failDelete) values.remove(account);
+  }
+
   @override
   Future<String?> read(String account) async => values[account];
   @override
@@ -51,7 +54,11 @@ class TestRemote implements SyncObjectTransport {
   }
 }
 
-class TestCloud implements ICloudDrivePort {
+class TestCloud implements ICloudDrivePort, ICloudAccountEvents {
+  final changes = StreamController<void>.broadcast();
+  Completer<void>? gate, entered;
+  @override
+  Stream<void> get accountChanges => changes.stream;
   String? account = 'apple-local-id';
   @override
   String get containerIdentifier => 'iCloud.test';
@@ -63,7 +70,12 @@ class TestCloud implements ICloudDrivePort {
   @override
   Future<List<String>> list(String directory, String expectedAccount) async => [];
   @override
-  Future<List<int>?> read(String path, String expectedAccount) async => objects[path];
+  Future<List<int>?> read(String path, String expectedAccount) async {
+    if (entered != null && !entered!.isCompleted) entered!.complete();
+    if (gate != null) await gate!.future;
+    return objects[path];
+  }
+
   @override
   Future<void> create(String path, List<int> bytes, String expectedAccount) async {
     objects[path] = bytes;
@@ -71,6 +83,18 @@ class TestCloud implements ICloudDrivePort {
 
   @override
   Future<bool> uploaded(String path, List<int> bytes, String expectedAccount) async => false;
+}
+
+class BindingLedger extends FileSyncLedger {
+  BindingLedger(super.root) : super(libraryId: 'library', deviceId: 'device');
+  Future<void> Function()? afterBind;
+  @override
+  Future<void> bindTransport(SyncTarget target) async {
+    await super.bindTransport(target);
+    final action = afterBind;
+    afterBind = null;
+    await action?.call();
+  }
 }
 
 void main() {
@@ -84,7 +108,7 @@ void main() {
   late Map<String, List<int>> objects;
   setUp(() async {
     root = await Directory.systemTemp.createTemp('sync-settings-');
-    ledger = FileSyncLedger(root, libraryId: 'library', deviceId: 'device');
+    ledger = BindingLedger(root);
     library = FileLibraryStore(root, sync: ledger);
     vocabulary = FileVocabularyStore(root, sync: ledger);
     await library.create(const NewStudySet(title: 'Private title', colorIndex: 0));
@@ -114,6 +138,146 @@ void main() {
     String password = 'private-password',
     String url = 'https://dav.test/folder',
   }) => controller.connectWebDav(directory: url, username: account, password: password);
+
+  test('device setup registers once; explicit rename persists and rejects stale forms', () async {
+    controller.setup = SyncSetup(libraryId: 'library', deviceId: 'device', deviceName: 'Initial', joining: false);
+    await controller.renameDevice('My Mac', expectedRevision: null);
+    expect(controller.failure, isNull);
+    expect(controller.deviceName, 'My Mac');
+    final observed = controller.devices.single.revision;
+    await controller.renameDevice('Laptop', expectedRevision: observed);
+    await controller.renameDevice('Stale', expectedRevision: observed);
+    expect(controller.failure, SyncSettingsFailure.staleDevice);
+    expect(controller.deviceName, 'Laptop');
+    await controller.initialize();
+    expect(controller.deviceName, 'Laptop');
+  });
+
+  test('disconnect verifies secret removal, retains histories, and survives restart', () async {
+    await connect();
+    await controller.syncOnce();
+    final selected = controller.target!, before = (await ledger.history()).keys.toSet();
+    secrets.failDelete = true;
+    await controller.disconnect();
+    expect(controller.failure, SyncSettingsFailure.storage);
+    expect(controller.target!.key, selected.key);
+    expect((await ledger.transportConnection())!.paused, true);
+    secrets.failDelete = false;
+    await controller.disconnect();
+    expect(controller.failure, isNull);
+    expect(controller.target, isNull);
+    expect(secrets.values, isEmpty);
+    expect(await ledger.transportConnection(), isNull);
+    expect((await ledger.history()).keys.toSet(), before);
+    expect((await ledger.pending(target: selected.key)).where((c) => isSyncWireScope(c.scope)), isEmpty);
+    await controller.initialize();
+    expect(controller.target, isNull);
+    await connect(password: '');
+    expect(controller.failure, SyncSettingsFailure.authentication);
+    await connect();
+    expect(controller.failure, isNull);
+    expect(controller.pending, 0);
+    await connect(account: 'bob');
+    expect(controller.pending, greaterThan(0));
+  });
+
+  test('account notification invalidates waiting work and requires explicit reconnect', () async {
+    final cloud = TestCloud();
+    controller.dispose();
+    controller = SyncSettingsController(
+      library,
+      vocabulary,
+      secrets: secrets,
+      canActivate: true,
+      canStoreSecrets: true,
+      cloud: () async => cloud,
+    );
+    await controller.initialize();
+    await controller.connectICloud();
+    cloud.gate = Completer<void>();
+    cloud.entered = Completer<void>();
+    final operation = controller.syncOnce();
+    await cloud.entered!.future;
+    cloud.changes.add(null);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(controller.failure, SyncSettingsFailure.accountChanged);
+    expect(controller.paused, true);
+    expect((await ledger.transportConnection())!.paused, true);
+    cloud.gate!.complete();
+    await operation;
+    expect(controller.result, isNull);
+    expect(controller.failure, SyncSettingsFailure.accountChanged);
+    expect(cloud.objects, isEmpty);
+    await controller.syncOnce();
+    expect(controller.failure, SyncSettingsFailure.accountChanged);
+    await controller.connectICloud();
+    expect(controller.failure, isNull);
+    await controller.syncOnce();
+    expect(controller.result!.staged, greaterThan(0));
+    await controller.disconnect();
+    expect(cloud.changes.hasListener, false);
+    expect(controller.target, isNull);
+    await cloud.changes.close();
+  });
+
+  test('notification while binding cannot restore a revoked connection result', () async {
+    final cloud = TestCloud();
+    controller.dispose();
+    controller = SyncSettingsController(
+      library,
+      vocabulary,
+      secrets: secrets,
+      canActivate: true,
+      canStoreSecrets: true,
+      cloud: () async => cloud,
+    );
+    await controller.initialize();
+    (ledger as BindingLedger).afterBind = () async {
+      cloud.changes.add(null);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    };
+    await controller.connectICloud();
+    expect(controller.failure, SyncSettingsFailure.accountChanged);
+    expect(controller.target, isNull);
+    expect((await ledger.transportConnection())!.paused, true);
+    expect(cloud.objects, isEmpty);
+    await cloud.changes.close();
+  });
+
+  test('notification during initial iCloud probe prevents binding and stream errors pause', () async {
+    final cloud = TestCloud()
+      ..gate = Completer<void>()
+      ..entered = Completer<void>();
+    controller.dispose();
+    controller = SyncSettingsController(
+      library,
+      vocabulary,
+      secrets: secrets,
+      canActivate: true,
+      canStoreSecrets: true,
+      cloud: () async => cloud,
+    );
+    await controller.initialize();
+    final connect = controller.connectICloud();
+    await cloud.entered!.future;
+    cloud.changes.addError(StateError('notification unavailable'));
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    cloud.gate!.complete();
+    await connect;
+    expect(controller.target, isNull);
+    expect(controller.failure, SyncSettingsFailure.accountChanged);
+    controller.dispose();
+    expect(cloud.changes.hasListener, false);
+    // Tear down owns a fresh controller rather than disposing the old one twice.
+    controller = SyncSettingsController(
+      library,
+      vocabulary,
+      secrets: secrets,
+      canActivate: true,
+      canStoreSecrets: true,
+    );
+    await cloud.changes.close();
+  });
 
   test('connecting is read-only, manual cycle uploads metadata and persists paused', () async {
     expect(controller.initialized, isTrue);
@@ -460,6 +624,7 @@ void main() {
     );
     try {
       await second.initialize();
+      expect(second.deviceName, 'Phone');
       await second.connectWebDav(directory: 'https://dav.test/folder', username: 'alice', password: 'secret');
       expect(second.failure, isNull);
       await second.syncOnce();
@@ -470,6 +635,7 @@ void main() {
       );
       await controller.syncOnce();
       expect(controller.failure, isNull);
+      expect(controller.devices.single.name, 'Phone');
       expect(
         (await library.watchAll().first).map((s) => s.title),
         unorderedEquals(['Private title', 'Phone local content']),

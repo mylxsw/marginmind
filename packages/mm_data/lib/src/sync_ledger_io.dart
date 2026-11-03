@@ -24,5 +24,9 @@ Future<List<int>?> readSyncConnection(String path) async {
   return await file.exists() ? file.readAsBytes() : null;
 }
 
+// The owning ledger queue already checked this revision on native platforms.
+Future<void> replaceSyncConnection(String path, List<int> bytes, String expectedRevision) =>
+    writeSyncLedgerRecord(path, bytes);
+
 Future<void> writeSyncDelivery(String path, List<int> bytes, {String? connectionPath, String? expectedRevision}) =>
     writeSyncLedgerRecord(path, bytes);

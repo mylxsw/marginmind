@@ -3361,5 +3361,13 @@
   "syncResourceMissing": "Not fully downloaded",
   "syncResourceChanged": "Local file differs or cannot be verified. It will not be overwritten.",
   "syncResourceUnverified": "No verified file list yet. Sync from the device that owns the original files.",
-  "syncResourceDownload": "Download files"
+  "syncResourceDownload": "Download files",
+  "syncDeviceRename": "Rename this device",
+  "syncDeviceNameHint": "This name is shared with devices in this library. It does not identify your service account.",
+  "syncDeviceHistoryProblem": "Some device names could not be accepted. Their histories are retained; other devices can continue syncing.",
+  "syncDisconnect": "Disconnect and remove saved credential",
+  "syncDisconnectHint": "Disconnecting removes this connection and its saved credential from this device. Library content, cloud files and delivery history are kept.",
+  "syncDeviceStale": "The device name changed while you were editing. Your input is kept. Cancel and reopen Rename to review the new name.",
+  "syncDisconnectICloud": "Disconnect iCloud from this library",
+  "syncDisconnectICloudHint": "Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account."
 }

@@ -2652,5 +2652,13 @@
   "syncResourceMissing": "尚未完整下载",
   "syncResourceChanged": "本机文件不符或无法校验，不会覆盖。",
   "syncResourceUnverified": "尚无已校验的文件清单，请从持有原文件的设备同步。",
-  "syncResourceDownload": "下载文件"
+  "syncResourceDownload": "下载文件",
+  "syncDeviceRename": "修改本机名称",
+  "syncDeviceNameHint": "此名称会与同一资料库的设备共享，不代表服务账号身份。",
+  "syncDeviceHistoryProblem": "部分设备名称历史无法接收，已保留原始分支，其他设备可继续同步。",
+  "syncDisconnect": "断开并移除保存的凭据",
+  "syncDisconnectHint": "断开会移除本机当前连接及其保存的凭据，保留资料库内容、云端文件和交付历史。",
+  "syncDeviceStale": "编辑期间设备名称已变化，输入已保留。请取消并重新打开改名，确认最新名称。",
+  "syncDisconnectICloud": "断开此资料库的 iCloud 连接",
+  "syncDisconnectICloudHint": "断开会保留资料库、云端文件和交付历史，不会退出系统 Apple 账号。"
 }

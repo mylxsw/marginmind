@@ -6,6 +6,7 @@ enum ReadingContinuationAvailability { ready, documentChanged, unavailable }
 class ReadingContinuation {
   const ReadingContinuation({
     required this.deviceId,
+    this.deviceName,
     required this.documentId,
     required this.title,
     required this.remoteRevision,
@@ -15,6 +16,7 @@ class ReadingContinuation {
     required this.availability,
   });
   final String deviceId, documentId, title, remoteRevision, localToken;
+  final String? deviceName;
   final ReadingPosition position;
   final DateTime readAt;
   final ReadingContinuationAvailability availability;

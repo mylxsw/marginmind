@@ -97,11 +97,14 @@ class FileSyncLedger {
     final bytes = await readSyncConnection(_connection.path);
     if (bytes == null) return null;
     final json = _map(jsonDecode(utf8.decode(bytes)));
-    if (json['version'] != 1 ||
+    if (![1, 2].contains(json['version']) ||
         json['deviceId'] != deviceId ||
         json['revision'] is! String ||
         json['paused'] is! bool) {
       throw const FormatException('Invalid sync connection');
+    }
+    if (json['version'] == 2 && json.containsKey('target') && json['target'] == null && json['paused'] == true) {
+      return null;
     }
     final target = SyncTarget.fromJson(_map(json['target']));
     if (target.libraryId != libraryId) throw const FormatException('Wrong sync connection library');
@@ -112,14 +115,19 @@ class FileSyncLedger {
     await _load();
     return _readConnection();
   });
-  Future<void> _writeConnection(SyncTarget target, bool paused) async {
-    await _atomic(_connection, {
-      'version': 1,
+  Future<void> _writeConnection(SyncTarget? target, bool paused, {String? expectedRevision}) async {
+    final value = {
+      'version': 2,
       'deviceId': deviceId,
-      'target': target.toJson(),
+      'target': target?.toJson(),
       'revision': newId(),
       'paused': paused,
-    });
+    };
+    if (expectedRevision == null) {
+      await _atomic(_connection, value);
+    } else {
+      await replaceSyncConnection(_connection.path, utf8.encode(jsonEncode(value)), expectedRevision);
+    }
     _changes.add(null);
   }
 
@@ -132,6 +140,17 @@ class FileSyncLedger {
     await _load();
     final current = await _readConnection();
     if (current != null) await _writeConnection(current.target, true);
+  });
+
+  /// Keep delivery histories and shared versions; only revoke the connection.
+  Future<void> disconnectTransport(String expectedTarget) => _serial(() async {
+    await _load();
+    final current = await _readConnection();
+    if (current == null) return;
+    if (current.target.key != expectedTarget) {
+      throw const SyncTransportException(SyncTransportProblem.accountChanged);
+    }
+    await _writeConnection(null, true, expectedRevision: current.revision);
   });
   Future<void> resumeTransport(String target) => _serial(() async {
     await _load();
