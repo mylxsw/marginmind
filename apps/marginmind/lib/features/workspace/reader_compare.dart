@@ -559,7 +559,7 @@ final compareDocumentInfoProvider = FutureProvider.family<({String? language, bo
   final fallback = compareLanguage(doc.title);
   if (doc.contentManifest != null) return (language: fallback, hasText: doc.features.text);
   final path = workspace.filePath(doc);
-  final recognized = ref.watch(readerOcrProvider(path).select((s) => s.document));
+  final recognized = ref.watch(readerOcrProvider(documentOcrSource(key.$1, doc, path)).select((s) => s.document));
   if (!ref.read(pdfRenderingEnabledProvider)) return (language: fallback, hasText: null);
   try {
     final availability = await ref.watch(documentResourcesProvider(documentResourceKey(key.$1, doc)).future);

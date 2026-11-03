@@ -720,7 +720,15 @@ class _DocumentTranslationTrailing extends ConsumerWidget {
     final hasOcr =
         !document.capabilities().readingSettings &&
         ref
-                .watch(readerOcrProvider(ref.read(workspaceProvider(studySetId).notifier).filePath(document)))
+                .watch(
+                  readerOcrProvider(
+                    documentOcrSource(
+                      studySetId,
+                      document,
+                      ref.read(workspaceProvider(studySetId).notifier).filePath(document),
+                    ),
+                  ),
+                )
                 .document
                 ?.hasCopy ==
             true;

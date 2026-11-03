@@ -112,7 +112,7 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
     final document = workspace.content.document(_documentId());
     if (document == null || document.format != DocumentFormat.pdf) return false;
-    final source = workspace.filePath(document);
+    final source = documentOcrSource(widget.studySetId, document, workspace.filePath(document));
     if (listen) ref.watch(readerOcrInspectionProvider(source));
     final ocr = listen ? ref.watch(readerOcrProvider(source)) : ref.read(readerOcrProvider(source));
     return ocr.document?.textPages.isEmpty == true;

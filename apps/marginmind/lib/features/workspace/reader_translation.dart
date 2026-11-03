@@ -27,7 +27,7 @@ final translationParagraphsProvider = FutureProvider.autoDispose.family<List<Tra
     final doc = workspace.content.document(key.$2);
     if (doc == null) return <TranslationParagraph>[];
     final path = workspace.filePath(doc);
-    final ocr = ref.watch(readerOcrProvider(path));
+    final ocr = ref.watch(readerOcrProvider(documentOcrSource(key.$1, doc, path)));
     final availability = await ref.watch(documentResourcesProvider(documentResourceKey(key.$1, doc)).future);
     if (!ref.mounted) throw StateError('Document changed while checking resources');
     if (availability != DocumentResourceAvailability.ready) throw DocumentResourcesUnavailable(availability);

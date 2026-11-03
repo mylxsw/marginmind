@@ -61,10 +61,11 @@ class FakeOcr implements PdfOcrService {
 void main() {
   late FakeOcr service;
   late ProviderContainer container;
-  final provider = readerOcrProvider('/a.pdf');
+  final provider = readerOcrProvider(('/a.pdf', null));
   setUp(() {
     service = FakeOcr();
     container = ProviderContainer(overrides: [pdfOcrServiceProvider.overrideWithValue(service)]);
+    container.listen(provider, (_, _) {});
   });
   tearDown(() => container.dispose());
 
@@ -79,7 +80,7 @@ void main() {
     expect(service.inspections, 2);
     expect(container.read(provider).document, service.document);
     service.supported = false;
-    await container.read(readerOcrProvider('/unsupported.pdf').notifier).inspect();
+    await container.read(readerOcrProvider(('/unsupported.pdf', null)).notifier).inspect();
     expect(service.inspections, 2);
   });
 
@@ -205,7 +206,13 @@ void main() {
       const MMPdfSelection(page: 1, rects: [PageRect(1, 2, 30, 10)], text: 'Selected'),
     );
     final source = workspace.filePath(workspace.content.document('c1')!);
-    final job = app.read(readerOcrProvider(source).notifier).recognize(1, 1, PdfOcrLanguage.english);
+    final job = app
+        .read(
+          readerOcrProvider(
+            documentOcrSource('demo-1', app.read(workspaceProvider('demo-1').notifier).content.document('c1')!, source),
+          ).notifier,
+        )
+        .recognize(1, 1, PdfOcrLanguage.english);
     service.result.complete((
       document: const PdfOcrDocument(path: '/a.ocr.pdf', pageCount: 164, textPages: {1, 2}, hasCopy: true),
       cancelled: false,

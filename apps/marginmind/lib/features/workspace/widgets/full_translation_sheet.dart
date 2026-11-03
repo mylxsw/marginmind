@@ -216,7 +216,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     final info = ref.watch(compareDocumentInfoProvider((widget.studySetId, widget.documentId))).value;
     _sourceLang = info?.language;
     final docPath = ref.read(workspaceProvider(widget.studySetId).notifier).filePath(doc);
-    final ocr = ref.watch(readerOcrProvider(docPath));
+    final ocr = ref.watch(readerOcrProvider(documentOcrSource(widget.studySetId, doc, docPath)));
     final paragraphsAsync = ref.watch(translationParagraphsProvider((widget.studySetId, widget.documentId)));
     final paragraphs = paragraphsAsync.value ?? const <TranslationParagraph>[];
     if (isText && paragraphs.isNotEmpty) {
