@@ -1,0 +1,27 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_surface_polish_test.dart
+00:00 +0: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:00 +1: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:00 +2: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/dropdown_submenu_test.dart: tablet menus fit content and keep contiguous 44 point targets with a trackpad
+00:00 +3: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:00 +4: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:00 +5: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:00 +6: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:00 +7: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:00 +8: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +9: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +10: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +11: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +12: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +13: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +14: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +15: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +16: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: navigation grows for accessibility text and keeps actions usable
+00:01 +17: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: accent hue remains legible with custom system colors
+00:01 +18: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: phone glass, lens contrast and reduced transparency dark=false
+00:01 +19: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: phone glass, lens contrast and reduced transparency dark=true
+00:01 +20: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: tablet compact, desktop and landscape phone retain the legacy material
+00:02 +21: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: spring lens moves, safe bottom is a maximum and reduced motion is immediate
+00:02 +22: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: full-height drawer opens from edge, follows a drag, cancels and dismisses
+00:02 +23: /private/tmp/marginmind-phone-ui-submit-20261103/packages/mm_design/test/phone_navigation_test.dart: rows, counts, selection and large review queues fit narrow spaces
+00:02 +24: All tests passed!
