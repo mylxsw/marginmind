@@ -4256,5 +4256,32 @@
         "type": "String"
       }
     }
-  }
+  },
+  "syncCacheHint": "Only unused sync chunks can be removed. Original files, recovery history and chunks referenced by any version are kept.",
+  "syncCacheInspect": "Check sync cache",
+  "syncCacheUsage": "Cache: {bytes} bytes · Unused: {unused} bytes",
+  "syncCacheStaging": "Resources are being prepared. Check again when the operation finishes.",
+  "syncCacheReclaimed": "Released {bytes} bytes of unused cache.",
+  "syncCacheReclaim": "Remove unused chunks",
+  "@syncCacheUsage": {
+    "placeholders": {
+      "bytes": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "unused": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "@syncCacheReclaimed": {
+    "placeholders": {
+      "bytes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "syncCacheIncomplete": "History is still incomplete. Sync missing versions before checking again."
 }

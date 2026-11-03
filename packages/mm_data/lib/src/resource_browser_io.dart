@@ -2,6 +2,9 @@ import 'dart:typed_data';
 
 import 'library_browser_io.dart';
 
+// A hydrated tab cannot prove another tab has no staged, uncommitted chunks.
+const supportsCacheReclamation = false;
+
 // IndexedDB has no symbolic links. The caller enforces package-relative paths.
 Future<void> checkResourceLocation(String root, String path) async {}
 Stream<List<int>> readResource(String path) async* {

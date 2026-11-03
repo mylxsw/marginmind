@@ -3,6 +3,8 @@ import 'dart:async';
 
 import 'library_io.dart' if (dart.library.js_interop) 'library_browser_io.dart';
 import 'sync_ledger_io.dart' if (dart.library.js_interop) 'sync_ledger_browser.dart';
+import 'resource_cache.dart';
+import 'sync_cache_usage.dart';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_sync/mm_sync.dart';
@@ -85,6 +87,7 @@ class FileSyncLedger {
   Future<void> _queue = Future.value();
   bool _loaded = false;
   int _sequence = 0;
+  int _resourceStages = 0;
   String? _last;
 
   Directory get _directory => Directory(p.join(root.path, '.foliarc-sync', 'local'));
@@ -452,6 +455,51 @@ class FileSyncLedger {
   Future<Map<String, SyncCommit>> history() => _serial(() async {
     await _load();
     return Map.unmodifiable(_commits);
+  });
+
+  /// Enters through the same queue as collection, then holds a staging lease
+  /// until chunks and their referencing manifest have committed (or failed).
+  Future<T> stageResources<T>(Future<T> Function() action) async {
+    await _serial(() async {
+      _resourceStages++;
+    });
+    try {
+      return await action();
+    } finally {
+      _resourceStages--;
+    }
+  }
+
+  Future<SyncCacheUsage> resourceCacheUsage({bool reclaim = false}) => _serial(() async {
+    await _load();
+    final retained = <String>{};
+    void retain(Map<String, Object?>? value) {
+      if (value == null || !value.containsKey('resources')) return;
+      final resources = SyncResources.fromJson((value['resources'] as Map).cast<String, Object?>());
+      for (final files in resources.groups.values) {
+        for (final file in files.values) {
+          retained.addAll(file.chunks);
+        }
+      }
+    }
+
+    // Include every version and receipt, not only the visible heads or pending
+    // outbox. Deleted/conflicting/remote histories may hold the only copy.
+    for (final commit in _commits.values) {
+      if (commit.scope.startsWith('sets/')) retain(commit.payload);
+    }
+    for (final head in _heads.values) {
+      if (head.scope.startsWith('sets/')) retain(head.value);
+    }
+    final incomplete = _commits.values.any(
+      (c) => [...c.parents, ...c.requires.values].any((id) => !_commits.containsKey(id)),
+    );
+    return ResourceCache(root).usage(
+      retained,
+      reclaim: reclaim && _resourceStages == 0 && !incomplete,
+      staging: _resourceStages > 0,
+      incompleteHistory: incomplete,
+    );
   });
   Future<Map<String, Map<String, Object?>>> issues() => _serial(() async {
     await _load();

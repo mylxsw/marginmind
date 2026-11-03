@@ -6752,4 +6752,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String recoveryDefaultTitle(String title) {
     return '$title（恢复副本）';
   }
+
+  @override
+  String get syncCacheHint => '仅清理无引用的同步缓存块。原文件、恢复历史及任何版本仍引用的块均保留。';
+
+  @override
+  String get syncCacheInspect => '检查同步缓存';
+
+  @override
+  String syncCacheUsage(int bytes, int unused) {
+    final intl.NumberFormat bytesNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String bytesString = bytesNumberFormat.format(bytes);
+    final intl.NumberFormat unusedNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String unusedString = unusedNumberFormat.format(unused);
+
+    return '缓存：$bytesString 字节 · 可回收：$unusedString 字节';
+  }
+
+  @override
+  String get syncCacheStaging => '正在准备资源，请在操作结束后重新检查。';
+
+  @override
+  String syncCacheReclaimed(int bytes) {
+    final intl.NumberFormat bytesNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String bytesString = bytesNumberFormat.format(bytes);
+
+    return '已释放 $bytesString 字节无引用缓存。';
+  }
+
+  @override
+  String get syncCacheReclaim => '清理无引用缓存';
+
+  @override
+  String get syncCacheIncomplete => '历史版本尚未收齐，请同步缺失版本后重新检查。';
 }

@@ -8,12 +8,60 @@ import 'package:path/path.dart' as p;
 
 import 'library_io.dart' if (dart.library.js_interop) 'library_browser_io.dart';
 import 'resource_io.dart' if (dart.library.js_interop) 'resource_browser_io.dart' as io;
+import 'sync_cache_usage.dart';
 
 /// Only explicit content references enter this cache. Chunks are immutable and
 /// durable before the ledger can publish a manifest referring to them.
 class ResourceCache {
   ResourceCache(this.root);
   final Directory root;
+
+  /// Called with the owning ledger queue held and new manifest staging excluded.
+  /// Only fixed chunk names are considered; no package/private tree traversal.
+  Future<SyncCacheUsage> usage(
+    Set<String> retained, {
+    bool reclaim = false,
+    bool staging = false,
+    bool incompleteHistory = false,
+  }) async {
+    if (reclaim && (!io.supportsCacheReclamation || staging || incompleteHistory)) {
+      throw StateError('Cache reclamation is unavailable while resources are staged');
+    }
+    final directory = Directory(p.join(root.path, '.foliarc-sync', 'blobs'));
+    await io.checkResourceLocation(root.path, directory.path);
+    if (await File(directory.path).exists()) throw const FormatException('Invalid resource cache directory');
+    var bytes = 0, chunks = 0, unusedBytes = 0, unusedChunks = 0, reclaimed = 0;
+    if (await directory.exists()) {
+      await for (final entity in directory.list(followLinks: false)) {
+        if (entity is! File || !RegExp(r'^[a-f0-9]{64}$').hasMatch(p.basename(entity.path))) continue;
+        await io.checkResourceLocation(root.path, entity.path);
+        final length = await io.resourceLength(entity.path);
+        if (!retained.contains(p.basename(entity.path))) {
+          if (reclaim) {
+            await io.checkResourceLocation(root.path, entity.path);
+            await entity.delete();
+            reclaimed += length;
+            continue;
+          }
+          unusedBytes += length;
+          unusedChunks++;
+        }
+        bytes += length;
+        chunks++;
+      }
+    }
+    return SyncCacheUsage(
+      bytes: bytes,
+      chunks: chunks,
+      reclaimableBytes: staging || incompleteHistory ? 0 : unusedBytes,
+      reclaimableChunks: staging || incompleteHistory ? 0 : unusedChunks,
+      canReclaim: io.supportsCacheReclamation && !staging && !incompleteHistory,
+      staging: staging,
+      incompleteHistory: incompleteHistory,
+      reclaimedBytes: reclaimed,
+    );
+  }
+
   String _chunk(String hash) {
     if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(hash)) throw const FormatException('Invalid chunk');
     return p.join(root.path, '.foliarc-sync', 'blobs', hash);

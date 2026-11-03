@@ -78,6 +78,10 @@ class _Settings extends SyncSettingsController {
   @override
   Future<void> refreshResources() => action('resources');
   @override
+  Future<void> inspectCache() => action('cache-inspect');
+  @override
+  Future<void> reclaimCache() => action('cache-reclaim');
+  @override
   Future<void> pause() => action('pause');
   @override
   Future<void> initialize() => action('initialize');
@@ -270,6 +274,64 @@ void main() {
     await tester.pumpAndSettle();
     await tap(tester, 'sync-resources-refresh');
     expect(service.actions.last, 'resources');
+  });
+
+  testWidgets('cache action preserves history and handles busy and empty results on narrow screens', (tester) async {
+    active();
+    service.cacheUsage = const SyncCacheUsage(
+      bytes: 4096,
+      chunks: 2,
+      reclaimableBytes: 2048,
+      reclaimableChunks: 1,
+      canReclaim: true,
+    );
+    await pump(tester, locale: 'zh', width: 390);
+    expect(find.textContaining('任何版本仍引用的块均保留'), findsOneWidget);
+    await tap(tester, 'sync-cache-inspect');
+    expect(service.actions.last, 'cache-inspect');
+    await tap(tester, 'sync-cache-reclaim');
+    expect(service.actions.last, 'cache-reclaim');
+    service.busy = true;
+    service.publish();
+    await tester.pumpAndSettle();
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('sync-cache-reclaim'))).onPressed, isNull);
+    service.busy = false;
+    service.cacheUsage = const SyncCacheUsage(
+      bytes: 2048,
+      chunks: 1,
+      reclaimableBytes: 0,
+      reclaimableChunks: 0,
+      canReclaim: true,
+      reclaimedBytes: 2048,
+    );
+    service.publish();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('已释放 2,048 字节'), findsOneWidget);
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('sync-cache-reclaim'))).onPressed, isNull);
+    service.cacheUsage = const SyncCacheUsage(
+      bytes: 2048,
+      chunks: 1,
+      reclaimableBytes: 2048,
+      reclaimableChunks: 1,
+      canReclaim: false,
+      staging: true,
+    );
+    service.publish();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('正在准备资源'), findsOneWidget);
+    expect(find.byKey(const ValueKey('sync-cache-reclaim')), findsNothing);
+    service.cacheUsage = const SyncCacheUsage(
+      bytes: 2048,
+      chunks: 1,
+      reclaimableBytes: 0,
+      reclaimableChunks: 0,
+      canReclaim: false,
+      incompleteHistory: true,
+    );
+    service.publish();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('历史版本尚未收齐'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('unavailable providers and platforms do not offer activation', (tester) async {

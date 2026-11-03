@@ -32,6 +32,17 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('browser cache reporting never reclaims potentially staged chunks from another tab', () async {
+    final ledger = FileSyncLedger.browser(libraryId: 'cache', deviceId: 'browser');
+    final path = '${browserRoot().path}/.foliarc-sync/blobs/${syncDigest('orphan')}';
+    await File(path).writeAsBytes([1, 2, 3]);
+    final usage = await ledger.resourceCacheUsage();
+    expect(usage.bytes, 3);
+    expect(usage.canReclaim, false);
+    await expectLater(ledger.resourceCacheUsage(reclaim: true), throwsStateError);
+    expect(await File(path).readAsBytes(), [1, 2, 3]);
+  });
+
   test('VM legacy graph keeps original identities through browser receive, edit and restart', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'portable', deviceId: 'browser');

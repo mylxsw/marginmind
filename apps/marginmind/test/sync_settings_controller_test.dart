@@ -177,6 +177,45 @@ void main() {
     expect(controller.deviceName, 'Laptop');
   });
 
+  test('cache inspection and explicit cleanup work offline and staging prevents removal', () async {
+    final file = File('${root.path}/.foliarc-sync/blobs/${syncDigest('orphan')}');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes([1, 2, 3]);
+    expect(controller.cacheUsage, isNull);
+    await controller.inspectCache();
+    expect(controller.cacheUsage!.reclaimableBytes, 3);
+    final entered = Completer<void>(), finish = Completer<void>();
+    final staging = ledger.stageResources(() async {
+      entered.complete();
+      await finish.future;
+    });
+    await entered.future;
+    try {
+      await controller.reclaimCache();
+      expect(controller.cacheUsage!.staging, true);
+      expect(await file.exists(), true);
+    } finally {
+      finish.complete();
+      await staging;
+    }
+    await controller.reclaimCache();
+    expect(controller.failure, isNull);
+    expect(controller.cacheUsage!.reclaimedBytes, 3);
+    expect(await file.exists(), false);
+    expect(controller.target, isNull);
+    expect(objects, isEmpty);
+    await Directory(file.parent.path).rename('${file.parent.path}.saved');
+    await File(file.parent.path).writeAsBytes([9]);
+    await controller.inspectCache();
+    expect(controller.failure, SyncSettingsFailure.storage);
+    expect(controller.cacheUsage, isNull);
+    await File(file.parent.path).delete();
+    await Directory('${file.parent.path}.saved').rename(file.parent.path);
+    await controller.inspectCache();
+    expect(controller.failure, isNull);
+    expect(controller.cacheUsage!.bytes, 0);
+  });
+
   test('disconnect verifies secret removal, retains histories, and survives restart', () async {
     await connect();
     await controller.syncOnce();

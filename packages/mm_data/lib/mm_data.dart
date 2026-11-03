@@ -20,3 +20,4 @@ export 'src/file_sync_engine.dart';
 export 'src/file_sync_setup.dart';
 
 export 'src/file_sync_devices.dart';
+export 'src/sync_cache_usage.dart';

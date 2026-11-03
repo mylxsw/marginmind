@@ -3009,5 +3009,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "syncCacheHint": "仅清理无引用的同步缓存块。原文件、恢复历史及任何版本仍引用的块均保留。",
+  "syncCacheInspect": "检查同步缓存",
+  "syncCacheUsage": "缓存：{bytes} 字节 · 可回收：{unused} 字节",
+  "syncCacheStaging": "正在准备资源，请在操作结束后重新检查。",
+  "syncCacheReclaimed": "已释放 {bytes} 字节无引用缓存。",
+  "syncCacheReclaim": "清理无引用缓存",
+  "syncCacheIncomplete": "历史版本尚未收齐，请同步缺失版本后重新检查。"
 }

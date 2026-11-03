@@ -7040,4 +7040,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String recoveryDefaultTitle(String title) {
     return '$title (recovered)';
   }
+
+  @override
+  String get syncCacheHint =>
+      'Only unused sync chunks can be removed. Original files, recovery history and chunks referenced by any version are kept.';
+
+  @override
+  String get syncCacheInspect => 'Check sync cache';
+
+  @override
+  String syncCacheUsage(int bytes, int unused) {
+    final intl.NumberFormat bytesNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String bytesString = bytesNumberFormat.format(bytes);
+    final intl.NumberFormat unusedNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String unusedString = unusedNumberFormat.format(unused);
+
+    return 'Cache: $bytesString bytes · Unused: $unusedString bytes';
+  }
+
+  @override
+  String get syncCacheStaging => 'Resources are being prepared. Check again when the operation finishes.';
+
+  @override
+  String syncCacheReclaimed(int bytes) {
+    final intl.NumberFormat bytesNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String bytesString = bytesNumberFormat.format(bytes);
+
+    return 'Released $bytesString bytes of unused cache.';
+  }
+
+  @override
+  String get syncCacheReclaim => 'Remove unused chunks';
+
+  @override
+  String get syncCacheIncomplete => 'History is still incomplete. Sync missing versions before checking again.';
 }

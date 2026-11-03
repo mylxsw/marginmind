@@ -12302,6 +12302,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title} (recovered)'**
   String recoveryDefaultTitle(String title);
+
+  /// No description provided for @syncCacheHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only unused sync chunks can be removed. Original files, recovery history and chunks referenced by any version are kept.'**
+  String get syncCacheHint;
+
+  /// No description provided for @syncCacheInspect.
+  ///
+  /// In en, this message translates to:
+  /// **'Check sync cache'**
+  String get syncCacheInspect;
+
+  /// No description provided for @syncCacheUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache: {bytes} bytes · Unused: {unused} bytes'**
+  String syncCacheUsage(int bytes, int unused);
+
+  /// No description provided for @syncCacheStaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Resources are being prepared. Check again when the operation finishes.'**
+  String get syncCacheStaging;
+
+  /// No description provided for @syncCacheReclaimed.
+  ///
+  /// In en, this message translates to:
+  /// **'Released {bytes} bytes of unused cache.'**
+  String syncCacheReclaimed(int bytes);
+
+  /// No description provided for @syncCacheReclaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove unused chunks'**
+  String get syncCacheReclaim;
+
+  /// No description provided for @syncCacheIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'History is still incomplete. Sync missing versions before checking again.'**
+  String get syncCacheIncomplete;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -187,6 +187,25 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
               const SizedBox(height: 20),
               Text(l.syncResourcesTitle, style: context.mmText.headline),
               Text(l.syncResourcesHint, style: context.mmText.callout),
+              const SizedBox(height: 10),
+              Text(l.syncCacheHint, style: context.mmText.callout),
+              MMButton(
+                key: const ValueKey('sync-cache-inspect'),
+                label: l.syncCacheInspect,
+                onPressed: enabled ? service.inspectCache : null,
+              ),
+              if (service.cacheUsage case final cache?) ...[
+                Text(l.syncCacheUsage(cache.bytes, cache.reclaimableBytes)),
+                if (cache.staging) Text(l.syncCacheStaging),
+                if (cache.incompleteHistory) Text(l.syncCacheIncomplete),
+                if (cache.reclaimedBytes > 0) Text(l.syncCacheReclaimed(cache.reclaimedBytes)),
+                if (cache.canReclaim)
+                  MMButton(
+                    key: const ValueKey('sync-cache-reclaim'),
+                    label: l.syncCacheReclaim,
+                    onPressed: enabled && cache.reclaimableChunks > 0 ? service.reclaimCache : null,
+                  ),
+              ],
               MMButton(
                 key: const ValueKey('sync-resources-refresh'),
                 label: l.syncSettingsRetry,

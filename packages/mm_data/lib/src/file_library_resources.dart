@@ -101,83 +101,85 @@ extension FileLibraryResources on FileLibraryStore {
   Future<void> prepareSyncResources() async {
     await _ensureLoaded();
     if (_sync == null) return;
-    final cache = ResourceCache(root);
-    for (final id in _sets.keys.toList()) {
-      await _queueWrite(id, () async {
-        if (!_sets.containsKey(id) || _contentTransactions.containsKey(id)) return;
-        final record = _require(id);
-        final groups = <String, Map<String, SyncResourceFile>>{...?record.resources?.retain(record.content).groups};
-        for (final capability in syncResourceGroups(record.content)) {
-          final existing = groups[capability.key];
-          final paths = Set<String>.of(capability.roots);
-          final files = <String, SyncResourceFile>{};
-          final expected = <String, String>{};
-          var missing = false;
-          // The package's two manifests describe the dependency closure. They
-          // cannot grant access outside the content-derived package capability.
-          for (final manifest in [
-            if (capability.bookBase != null) '${capability.bookBase}/manifest.json',
-            if (capability.webBase != null) '${capability.webBase}/resources.json',
-          ]) {
-            if (!capability.permits(manifest)) throw const FormatException('Invalid resource manifest path');
-            final descriptor = await cache.inspect(_resolvePath(id, manifest), cache: true);
-            if (descriptor == null) {
-              missing = true;
-              break;
+    await _sync!.stageResources(() async {
+      final cache = ResourceCache(root);
+      for (final id in _sets.keys.toList()) {
+        await _queueWrite(id, () async {
+          if (!_sets.containsKey(id) || _contentTransactions.containsKey(id)) return;
+          final record = _require(id);
+          final groups = <String, Map<String, SyncResourceFile>>{...?record.resources?.retain(record.content).groups};
+          for (final capability in syncResourceGroups(record.content)) {
+            final existing = groups[capability.key];
+            final paths = Set<String>.of(capability.roots);
+            final files = <String, SyncResourceFile>{};
+            final expected = <String, String>{};
+            var missing = false;
+            // The package's two manifests describe the dependency closure. They
+            // cannot grant access outside the content-derived package capability.
+            for (final manifest in [
+              if (capability.bookBase != null) '${capability.bookBase}/manifest.json',
+              if (capability.webBase != null) '${capability.webBase}/resources.json',
+            ]) {
+              if (!capability.permits(manifest)) throw const FormatException('Invalid resource manifest path');
+              final descriptor = await cache.inspect(_resolvePath(id, manifest), cache: true);
+              if (descriptor == null) {
+                missing = true;
+                break;
+              }
+              if (descriptor.length > syncObjectLimit) throw const FormatException('Resource manifest too large');
+              if (existing != null && !contentValueEquals(existing[manifest]?.toJson(), descriptor.toJson())) {
+                throw const FormatException('Local resource manifest changed');
+              }
+              final bytes = await File(_resolvePath(id, manifest)).readAsBytes();
+              if (sha256.convert(bytes).toString() != descriptor.hash) {
+                throw const FormatException('Resource manifest changed');
+              }
+              final data = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
+              final dependencies = syncResourceDependencies(capability, manifest, data);
+              paths.addAll(dependencies.keys);
+              expected.addAll(dependencies);
+              // Preserve the very bytes whose references were followed below.
+              files[manifest] = descriptor;
             }
-            if (descriptor.length > syncObjectLimit) throw const FormatException('Resource manifest too large');
-            if (existing != null && !contentValueEquals(existing[manifest]?.toJson(), descriptor.toJson())) {
-              throw const FormatException('Local resource manifest changed');
+            if (missing) continue;
+            for (final path in paths) {
+              if (!capability.permits(path)) throw const FormatException('Resource outside referenced package');
+              final descriptor = await cache.inspect(_resolvePath(id, path), cache: true);
+              if (descriptor == null) {
+                missing = true;
+                break;
+              }
+              if (existing != null && !contentValueEquals(existing[path]?.toJson(), descriptor.toJson())) {
+                throw const FormatException('Local resource changed');
+              }
+              if (files[path] != null && !contentValueEquals(files[path]!.toJson(), descriptor.toJson())) {
+                throw const FormatException('Resource manifest changed');
+              }
+              files[path] = descriptor;
             }
-            final bytes = await File(_resolvePath(id, manifest)).readAsBytes();
-            if (sha256.convert(bytes).toString() != descriptor.hash) {
-              throw const FormatException('Resource manifest changed');
+            if (!missing) {
+              if (expected.entries.any((e) => files[e.key]?.hash != e.value)) {
+                throw const FormatException('Resource dependency changed');
+              }
+              if (existing != null &&
+                  (existing.length != files.length || !existing.keys.toSet().containsAll(files.keys))) {
+                throw const FormatException('Resource list exceeds package references');
+              }
+              groups[capability.key] = files;
             }
-            final data = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
-            final dependencies = syncResourceDependencies(capability, manifest, data);
-            paths.addAll(dependencies.keys);
-            expected.addAll(dependencies);
-            // Preserve the very bytes whose references were followed below.
-            files[manifest] = descriptor;
           }
-          if (missing) continue;
-          for (final path in paths) {
-            if (!capability.permits(path)) throw const FormatException('Resource outside referenced package');
-            final descriptor = await cache.inspect(_resolvePath(id, path), cache: true);
-            if (descriptor == null) {
-              missing = true;
-              break;
-            }
-            if (existing != null && !contentValueEquals(existing[path]?.toJson(), descriptor.toJson())) {
-              throw const FormatException('Local resource changed');
-            }
-            if (files[path] != null && !contentValueEquals(files[path]!.toJson(), descriptor.toJson())) {
-              throw const FormatException('Resource manifest changed');
-            }
-            files[path] = descriptor;
+          final resources = SyncResources(groups)..validate(record.content);
+          if (groups.isEmpty && record.resources == null ||
+              contentValueEquals(resources.toJson(), record.resources?.toJson())) {
+            return;
           }
-          if (!missing) {
-            if (expected.entries.any((e) => files[e.key]?.hash != e.value)) {
-              throw const FormatException('Resource dependency changed');
-            }
-            if (existing != null &&
-                (existing.length != files.length || !existing.keys.toSet().containsAll(files.keys))) {
-              throw const FormatException('Resource list exceeds package references');
-            }
-            groups[capability.key] = files;
-          }
-        }
-        final resources = SyncResources(groups)..validate(record.content);
-        if (groups.isEmpty && record.resources == null ||
-            contentValueEquals(resources.toJson(), record.resources?.toJson())) {
-          return;
-        }
-        final next = record.copyWith(resources: resources);
-        await _saveRecord(next);
-        _sets[id] = next;
-        _contentChanges.add(id);
-      });
-    }
+          final next = record.copyWith(resources: resources);
+          await _saveRecord(next);
+          _sets[id] = next;
+          _contentChanges.add(id);
+        });
+      }
+    });
   }
 
   Future<List<SyncResourceStatus>> syncResources() async {

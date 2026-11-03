@@ -66,6 +66,7 @@ class SyncSettingsController extends ChangeNotifier {
   SyncSettingsFailure? failure;
   SyncRunResult? result;
   List<SyncResourceStatus> resources = const [];
+  SyncCacheUsage? cacheUsage;
 
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -337,6 +338,24 @@ class SyncSettingsController extends ChangeNotifier {
     final latest = await library.syncResources();
     _check(generation);
     resources = latest;
+  });
+
+  Future<void> inspectCache() => _cache(false);
+  Future<void> reclaimCache() => _cache(true);
+  Future<void> _cache(bool reclaim) => _action((generation) async {
+    // Recompute against the entire current history in the commit queue. Never
+    // trust the displayed (possibly stale) byte count as deletion authority.
+    cacheUsage = null;
+    _check(generation);
+    final SyncCacheUsage? usage;
+    try {
+      usage = await _ledger?.resourceCacheUsage(reclaim: reclaim);
+    } catch (_) {
+      failure = SyncSettingsFailure.storage;
+      rethrow;
+    }
+    _check(generation);
+    cacheUsage = usage;
   });
 
   Future<void> downloadResource(SyncResourceStatus resource) => _action((generation) async {

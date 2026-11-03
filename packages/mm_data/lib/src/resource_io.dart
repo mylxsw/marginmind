@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+const supportsCacheReclamation = true;
+
 /// Repository roots are trusted; resource references cannot traverse a link
 /// inside them, even when that link points back into the same package.
 Future<void> checkResourceLocation(String root, String path) async {
