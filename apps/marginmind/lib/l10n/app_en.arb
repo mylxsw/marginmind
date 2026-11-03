@@ -3226,6 +3226,9 @@
       }
     }
   },
+  "phoneNavigationReturnToReading": "Back to Reading",
+  "phoneNavigationReturnToNote": "Back to Note",
+  "phoneNavigationReturnToContent": "Back to Content",
   "aiTaskWebFormat": "Web Page Formatting",
   "webFormatSectionLabel": "Content",
   "webFormatTitle": "AI Formatting",

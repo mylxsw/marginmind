@@ -109,9 +109,9 @@ class _PhoneReaderNavigationFrameState extends State<PhoneReaderNavigationFrame>
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      MMIconButton(
+                      MMModalCloseButton(
                         key: const ValueKey('phone-document-navigation-close'),
-                        icon: MMIcons.close,
+
                         tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                         onPressed: widget.onClose,
                       ),

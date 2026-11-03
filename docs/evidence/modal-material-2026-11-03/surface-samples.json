@@ -1,0 +1,90 @@
+{
+  "light-share-import": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      255,
+      255,
+      255
+    ]
+  },
+  "light-settings": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      255,
+      255,
+      255
+    ]
+  },
+  "light-native-form": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      255,
+      255,
+      255
+    ]
+  },
+  "light-native-confirmation": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      255,
+      255,
+      255
+    ]
+  },
+  "dark-share-import": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      50,
+      50,
+      53
+    ]
+  },
+  "dark-settings": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      50,
+      50,
+      53
+    ]
+  },
+  "dark-native-form": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      50,
+      50,
+      53
+    ]
+  },
+  "dark-native-confirmation": {
+    "point": [
+      60,
+      2202
+    ],
+    "rgb": [
+      50,
+      50,
+      53
+    ]
+  }
+}

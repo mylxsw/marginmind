@@ -355,12 +355,12 @@ void runModalAcceptance({
       await settings.setAppearance(theme);
       await idle(tester);
       unawaited(showSettings(context()));
-      await shot('$prefix-01-settings-medium');
+      await shot('$prefix-01-settings-expanded');
       safeFrame();
-      final mediumTop = tester.getTopLeft(find.byKey(const ValueKey('mm-bottom-sheet'))).dy;
-      await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, -300), 1200);
-      await tester.pumpAndSettle();
-      expect(tester.getTopLeft(find.byKey(const ValueKey('mm-bottom-sheet'))).dy, lessThan(mediumTop - 80));
+      expect(
+        tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet'))).height,
+        greaterThan(tester.view.physicalSize.height / tester.view.devicePixelRatio * .8),
+      );
       await tester.ensureVisible(find.byKey(const ValueKey('settings-tab-models')));
       await tester.tap(find.byKey(const ValueKey('settings-tab-models')));
       await shot('$prefix-02-settings-expanded-models');

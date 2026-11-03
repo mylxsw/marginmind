@@ -11186,6 +11186,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 document} other{{count} documents}}'**
   String incomingShareFiles(int count);
 
+  /// No description provided for @phoneNavigationReturnToReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Reading'**
+  String get phoneNavigationReturnToReading;
+
+  /// No description provided for @phoneNavigationReturnToNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Note'**
+  String get phoneNavigationReturnToNote;
+
+  /// No description provided for @phoneNavigationReturnToContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Content'**
+  String get phoneNavigationReturnToContent;
+
   /// No description provided for @aiTaskWebFormat.
   ///
   /// In en, this message translates to:

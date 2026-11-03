@@ -41,6 +41,7 @@ class WorkspaceToolbar extends StatelessWidget {
     this.menuIcon,
     this.overflowLabel,
     this.leadingPadding,
+    this.compactPhone = false,
   });
   final List<MMToolbarItem> items;
   final List<MMToolbarItem> trailingItems;
@@ -50,6 +51,7 @@ class WorkspaceToolbar extends StatelessWidget {
   final Widget? menuIcon;
   final String? overflowLabel;
   final double? leadingPadding;
+  final bool compactPhone;
 
   @override
   Widget build(BuildContext context) {
@@ -155,19 +157,33 @@ class WorkspaceToolbar extends StatelessWidget {
         ),
       ),
     );
-    return WorkspaceChromeBar(
+    final frame = WorkspaceChromeBar(
       bottom: phone,
       child: phone
           ? MMThumbDockScope(
               child: Container(
                 foregroundDecoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(MMRadii.phoneNodeToolbar),
                   border: Border.all(color: context.mmColors.border, width: MMSizes.hairline),
                 ),
-                child: ClipRRect(borderRadius: BorderRadius.circular(28), child: toolbar),
+                child: ClipRRect(borderRadius: BorderRadius.circular(MMRadii.phoneNodeToolbar), child: toolbar),
               ),
             )
           : toolbar,
     );
+    if (phone && compactPhone) {
+      return Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: SizedBox(
+          width:
+              MMSizes.thumbDockButton.width * (toolbarItems.length + 1) +
+              MMSpacing.m +
+              MMSpacing.xs * toolbarItems.length,
+          child: frame,
+        ),
+      );
+    }
+    return frame;
   }
 }

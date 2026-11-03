@@ -75,6 +75,19 @@ final class IntegrationNativePresentationTests: XCTestCase {
     cancel.tap()
     XCTAssertTrue(cancel.waitForNonExistence(timeout: 5))
   }
+  func testModalConfirmDark() { testModalConfirm() }
+  func testModalRenameDark() { testModalRename() }
+  func testModalRenameSave() {
+    let field = app.textFields["native-field-title"]
+    XCTAssertTrue(field.waitForExistence(timeout: 8), app.debugDescription)
+    let save = app.buttons["native-form-submit"]
+    XCTAssertTrue(save.isHittable)
+    capture("modal-save-visible")
+    field.tap()
+    field.typeText(" QA")
+    save.tap()
+    XCTAssertTrue(field.waitForNonExistence(timeout: 5))
+  }
   func testModalRename() {
     let field = app.textFields["native-field-title"]
     XCTAssertTrue(field.waitForExistence(timeout: 8), app.debugDescription)
@@ -86,6 +99,11 @@ final class IntegrationNativePresentationTests: XCTestCase {
     let discard = app.buttons["放弃更改"]
     XCTAssertTrue(discard.waitForExistence(timeout: 5), app.debugDescription)
     capture("modal-system-form-discard")
+    app.buttons["继续编辑"].tap()
+    XCTAssertTrue(field.waitForExistence(timeout: 5))
+    XCTAssertTrue((field.value as? String)?.contains("QA") == true)
+    app.navigationBars.buttons["取消"].tap()
+    XCTAssertTrue(discard.waitForExistence(timeout: 5))
     discard.tap()
     XCTAssertTrue(field.waitForNonExistence(timeout: 5))
   }

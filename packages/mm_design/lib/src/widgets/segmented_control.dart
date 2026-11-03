@@ -44,7 +44,10 @@ class MMSegmentedControl<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.iOS && segments.length > 1) {
+    if (MMInput.of(context).phone &&
+        defaultTargetPlatform == TargetPlatform.iOS &&
+        !MMFlatSurface.of(context) &&
+        segments.length > 1) {
       return ConstrainedBox(
         constraints: const BoxConstraints(minHeight: MMSizes.touchTarget),
         child: CupertinoSlidingSegmentedControl<int>(

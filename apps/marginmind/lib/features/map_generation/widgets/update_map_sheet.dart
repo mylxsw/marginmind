@@ -148,9 +148,9 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
                             ],
                           ),
                         ),
-                        MMIconButton(
+                        MMModalCloseButton(
                           key: const ValueKey('map-update-close'),
-                          icon: MMIcons.close,
+
                           tooltip: l.closePanel,
                           onPressed: close,
                         ),

@@ -1,0 +1,13 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/modal_no_close_acceptance_test.dart
+Running Xcode build...
+Xcode build done.                                           28.6s
+00:00 +0: share import, settings and native forms share the modal material
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/9128F1D9-4F20-4A67-9E30-96FCD1A8EA58/data/Containers/Data/Application/3F237FB9-BDA4-40B1-91E2-CB90B91276B0/Library/Application Support/Library/sets/ba0b5e67b42731bed50c01b8db46c15b.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (124 ms)
+PHONE_SHOT:light-share-import:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/9128F1D9-4F20-4A67-9E30-96FCD1A8EA58/data/Containers/Data/Application/3F237FB9-BDA4-40B1-91E2-CB90B91276B0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-settings:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/9128F1D9-4F20-4A67-9E30-96FCD1A8EA58/data/Containers/Data/Application/3F237FB9-BDA4-40B1-91E2-CB90B91276B0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:light-settings-general:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/9128F1D9-4F20-4A67-9E30-96FCD1A8EA58/data/Containers/Data/Application/3F237FB9-BDA4-40B1-91E2-CB90B91276B0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-share-import:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/9128F1D9-4F20-4A67-9E30-96FCD1A8EA58/data/Containers/Data/Application/3F237FB9-BDA4-40B1-91E2-CB90B91276B0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-settings:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/9128F1D9-4F20-4A67-9E30-96FCD1A8EA58/data/Containers/Data/Application/3F237FB9-BDA4-40B1-91E2-CB90B91276B0/Library/Caches/mobile-redesign-shot
+PHONE_SHOT:dark-settings-general:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/9128F1D9-4F20-4A67-9E30-96FCD1A8EA58/data/Containers/Data/Application/3F237FB9-BDA4-40B1-91E2-CB90B91276B0/Library/Caches/mobile-redesign-shot
+01:10 +1: (tearDownAll)
+01:11 +1: All tests passed!

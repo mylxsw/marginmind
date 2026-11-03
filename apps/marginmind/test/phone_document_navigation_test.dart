@@ -44,7 +44,8 @@ void main() {
     expect(frame, findsNothing);
     owner.showReaderPanel(ReaderPanelMode.bookmarks);
     await drain(tester);
-    await tester.tap(find.byKey(const ValueKey('phone-document-navigation-close')));
+    expect(find.descendant(of: frame, matching: find.byIcon(MMIcons.close)), findsNothing);
+    await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, 400), 1200);
     await drain(tester);
     expect(container.read(workspaceProvider('demo-1')).readerPanelVisible, false);
     expect(tester.takeException(), isNull);

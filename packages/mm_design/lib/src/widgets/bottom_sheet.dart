@@ -7,21 +7,30 @@ import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
-import 'glass.dart';
+import 'modal_surface.dart';
 
 /// A sheet rising from the bottom of a compact window. Its handle drags it:
 /// down far enough dismisses it. With [expand] it has a medium and a full
 /// height to drag between; otherwise it fits its content. While the soft
 /// keyboard is up the sheet sits on it, and an [expand] sheet takes the
 /// full height. Fills its parent, which should cover the window. On a
-/// phone it floats inside the safe area: UIKit glass on iPhone and an opaque
-/// Material surface on Android. Tablet and desktop retain their existing frame.
+/// phone it floats inside the safe area on a solid, outlined surface. Glass
+/// belongs to floating controls, not the reading and editing surface of a sheet.
+/// Tablet and desktop retain their existing frame.
 class MMBottomSheet extends StatefulWidget {
-  const MMBottomSheet({super.key, required this.child, this.onDismiss, this.expand = false, this.scrim = false});
+  const MMBottomSheet({
+    super.key,
+    required this.child,
+    this.onDismiss,
+    this.expand = false,
+    this.scrim = false,
+    this.initialFraction = MMSizes.phoneSheetMedium,
+  }) : assert(initialFraction > 0 && initialFraction <= 1);
 
   final Widget child;
   final VoidCallback? onDismiss;
   final bool expand;
+  final double initialFraction;
 
   /// Draws its own tap-to-dismiss scrim (in-tree panels; routes bring one).
   final bool scrim;
@@ -46,7 +55,11 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
 
   void _update(DragUpdateDetails d, double medium, double max) => setState(() {
     if (widget.expand) {
-      _height = ((_height ?? medium) - d.delta.dy).clamp(0.0, max);
+      final next = (_height ?? medium) - _offset - d.delta.dy;
+      // Below the medium detent, move the entire sheet instead of squeezing
+      // its header and composer into an ever smaller body while dismissing.
+      _height = next <= medium ? null : next.clamp(medium, max);
+      _offset = next < medium ? medium - next : 0;
     } else {
       _offset = (_offset + d.delta.dy).clamp(0.0, double.infinity);
     }
@@ -64,9 +77,10 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
       return;
     }
     final height = _height ?? medium;
-    final dismiss = height < medium * 0.6 || (velocity > 700 && height <= medium);
+    final dismiss = _offset > MMSizes.actionSheetRow * 1.5 || (velocity > 700 && height <= medium);
     setState(() {
       _dragging = false;
+      _offset = 0;
       _height = dismiss || velocity > 700
           ? null
           : velocity < -700 || (height - medium).abs() > (height - max).abs()
@@ -95,7 +109,7 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
         // keep the document visible until the user expands the panel.
         final medium = phone && constraints.maxHeight < constraints.maxWidth
             ? max
-            : max * (phone ? MMSizes.phoneSheetMedium : MMSizes.bottomSheetMedium);
+            : max * (phone ? widget.initialFraction : MMSizes.bottomSheetMedium);
         final handle = GestureDetector(
           key: const ValueKey('mm-bottom-sheet-handle'),
           behavior: HitTestBehavior.opaque,
@@ -168,19 +182,21 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
                 defaultTargetPlatform == TargetPlatform.iOS ? MMRadii.phoneSheet : MMRadii.androidSheet,
               )
             : const BorderRadius.vertical(top: Radius.circular(MMRadii.sheet));
-        final sheet = DecoratedBox(
-          key: const ValueKey('mm-bottom-sheet'),
-          decoration: BoxDecoration(
-            color: phone ? null : c.windowBackground,
-            borderRadius: radius,
-            border: phone ? null : Border(top: BorderSide(color: c.hairline, width: 0.5)),
-            boxShadow: c.sheetShadow,
-          ),
-          child: ClipRRect(
-            borderRadius: radius,
-            child: phone ? MMGlass(borderRadius: radius, opaqueColor: c.windowBackground, child: frame) : frame,
-          ),
-        );
+        final content = Semantics(onDismiss: widget.onDismiss, child: frame);
+        final sheet = phone
+            ? MMModalSurface(key: const ValueKey('mm-bottom-sheet'), borderRadius: radius, child: content)
+            : DecoratedBox(
+                key: const ValueKey('mm-bottom-sheet'),
+                decoration: BoxDecoration(
+                  color: c.windowBackground,
+                  borderRadius: radius,
+                  border: Border(
+                    top: BorderSide(color: c.hairline, width: MMSizes.hairline),
+                  ),
+                  boxShadow: c.sheetShadow,
+                ),
+                child: ClipRRect(borderRadius: radius, child: content),
+              );
         return Stack(
           children: [
             if (widget.scrim)
@@ -217,7 +233,12 @@ class _SheetScope extends InheritedWidget {
 /// Presents phone dialogs and panels in the same floating medium/large frame.
 /// Short contextual menus can opt into a fitted height with [expand] false.
 /// Drag, Escape and system Back all respect the route's PopScope guard.
-Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetBuilder builder, bool expand = true}) {
+Future<T?> showMMBottomSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool expand = true,
+  double initialFraction = MMSizes.phoneSheetMedium,
+}) {
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
     context: context,
@@ -232,6 +253,7 @@ Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetB
           autofocus: true,
           child: MMBottomSheet(
             expand: expand && MMInput.of(context).phone,
+            initialFraction: initialFraction,
             scrim: true,
             onDismiss: () => Navigator.of(context).maybePop(),
             child: Builder(builder: builder),

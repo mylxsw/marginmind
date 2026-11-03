@@ -1,0 +1,7 @@
+{
+  "parent_commit": "bf8480bcd50d7deb3121c4744014e7f841d79c11",
+  "isolated_dart_source_sha256": "70359c13754d7e0f044d86bbcda40cdcf4cb8769057ee853951cc20a738f0671",
+  "app_tests_passed": 65,
+  "design_tests_passed": 24,
+  "analyze": "passed"
+}

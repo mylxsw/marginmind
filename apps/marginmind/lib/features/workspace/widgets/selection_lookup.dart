@@ -454,11 +454,7 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                       Positioned(
                         top: MMSpacing.s,
                         right: MMSpacing.s,
-                        child: MMIconButton(
-                          icon: MMIcons.close,
-                          tooltip: l.closePanel,
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
+                        child: MMModalCloseButton(tooltip: l.closePanel, onPressed: () => Navigator.of(context).pop()),
                       ),
                     ],
                   ),

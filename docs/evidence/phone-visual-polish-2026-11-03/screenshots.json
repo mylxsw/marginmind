@@ -1,0 +1,232 @@
+{
+  "verified_dart_source_sha256": "c71c079c1c1775dea8e9170ead465ddc2a7e2867b1f1f597671f2270fe95dfaf",
+  "captured_native_swift_sha256": "68e886988cacc5a0fceb801bcaf1786071e716a9e2e0b162f808a066e6d72049",
+  "current_native_swift_sha256": "53aa86a5f0b62e0baeeff076278ae25a3536bc86f85cc36b921d348cf8022f79",
+  "native_source_matches": false,
+  "screenshots": {
+    "final-iphone/dark-01-library.png": {
+      "title": "资料库",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "722f3259b9da8dde3becce5d986273f190ed704c706bd48012f5fc8144a8a293"
+    },
+    "final-iphone/light-01-library.png": {
+      "title": "资料库",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "e12bafa58a34e3716711d35a0d8336a484bee780998ec5c07d7fa103759cfb3a"
+    },
+    "final-iphone/dark-02-resources-add.png": {
+      "title": "资料目录 · 添加",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "bbb67dd35fd51cfe402de1c19bfe7f9c0804402e7733acb36be4252e8511dfbb"
+    },
+    "final-iphone/light-02-resources-add.png": {
+      "title": "资料目录 · 添加",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "08710852f64d0d92f3ec768fe9b02bc4a19c3b7ced98ed5452bdc06400681f11"
+    },
+    "final-iphone/dark-03-assistant.png": {
+      "title": "AI 助手",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "a1ed7c2200224a595bb1add0bc89639cd116f4ef9db800f6b3a51b3b02a6dc4f"
+    },
+    "final-iphone/light-03-assistant.png": {
+      "title": "AI 助手",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "cd8b4204059052ab6f9f0963eabc787d11b3f271b557bfa488b7147eff42e62d"
+    },
+    "final-iphone/dark-04-map-selection.png": {
+      "title": "脑图 · 选中节点",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "eb14d91b984bd612a015cc7fcd1f81151ee51d7e4ca0c64c7cc3176c51161d93"
+    },
+    "final-iphone/light-04-map-selection.png": {
+      "title": "脑图 · 选中节点",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "b0a011cc1ce7c160c2b366c4611f1f25b6bbaabb50a211b266b337a34186f5eb"
+    },
+    "final-iphone/dark-05-assistant-actions.png": {
+      "title": "AI 快捷操作",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "cf3b61dfd512cca3e746bf3f6633817e501c0f363b386a54173d43157a8b10a7"
+    },
+    "final-iphone/light-05-assistant-actions.png": {
+      "title": "AI 快捷操作",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "c8d9bf72982976da694ad32efc2777eb8df22a5ca82fcf03b1b41fdde67d87b2"
+    },
+    "final-iphone/dark-06-outline-more.png": {
+      "title": "脑图列表 · 更多",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "dabc097518ca2808b85683b61d933006e1217740272e7bb47bb1dfb0164021a1"
+    },
+    "final-iphone/light-06-outline-more.png": {
+      "title": "脑图列表 · 更多",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "1c5d6fce201ca1535262b087a0a79e6afe97deb5a7950308cdd89ec72097c2f8"
+    },
+    "final-iphone/dark-07-outline.png": {
+      "title": "脑图列表",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "89f19f561cc1c73872e80b24a3758d4e4bb567d5fe757ce5816a8d909b632b11"
+    },
+    "final-iphone/light-07-outline.png": {
+      "title": "脑图列表",
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "04a2c6845600c2e3861e77c9208277ca7a366109e134636fced519e0f7f3e997"
+    },
+    "final-iphone/dark-02a-resources.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "d8c9fd661874c9492a98c63541793c47aef2fc9ac1faff667867cb3daa80bf12"
+    },
+    "final-iphone/dark-02b-resources-reading.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "9faed98fc4accc16994195b2124857ee818451fd88897ebf455dca2f8297ecf9"
+    },
+    "final-iphone/dark-03a-assistant-medium.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "63da6e5d6e850770f492fd6f04339cc5cc9ae558f23e94137f214777c9a96aa7"
+    },
+    "final-iphone/dark-03b-assistant-keyboard.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "d549889900107ccf7c168d3d8e9e481beb5676c1b3f15e0ad8b9fbfe2fcc58bb"
+    },
+    "final-iphone/dark-05a-assistant-actions-expanded.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "5c0e807338e305f53ea138e58a58bb36311bd55825ee764d52042a54f50f3150"
+    },
+    "final-iphone/dark-05b-assistant-actions-keyboard.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "ba5638d4af3471fbd1f72e01938a645f3bf58b8d49a41cec835bd84681d332f3"
+    },
+    "final-iphone/dark-06a-map-submenu.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "8d723574633202f664ce1cae4b0fae19895804b0d0e4a21e42371d35a1dea119"
+    },
+    "final-iphone/dark-07a-outline-bottom.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "3f0f2e4c7a6c5014901ecda4085048eeeb38e7a8d7f2bb8390cb22e56de310cd"
+    },
+    "final-iphone/light-02a-resources.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "e77e9f2443181a5d2861b5758b0a07b3ce04ad57be08d60670f7a1c7564dc8ed"
+    },
+    "final-iphone/light-02b-resources-reading.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "e91ed7fd542235a3646633804dc3c10b014ad20a2e245c5d7d670c43cfc36674"
+    },
+    "final-iphone/light-03a-assistant-medium.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "4c65699d552b20a715eb57641ef5cc0864ffc50155e19c3074cc87f334c9dbf6"
+    },
+    "final-iphone/light-03b-assistant-keyboard.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "e54f3b6ad8d2461ce2e446da60954eb2e34eb3030d78904815fc1da8feac557d"
+    },
+    "final-iphone/light-05a-assistant-actions-expanded.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "e381e94425fc4a18f66f48eb639baa363bb1a179e9bda43c1d12bc155db470c3"
+    },
+    "final-iphone/light-05b-assistant-actions-keyboard.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "2fec1c793e28437654d61ec7e02152775eeb695e85735e22fc416cbb00058da6"
+    },
+    "final-iphone/light-06a-map-submenu.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "16458efdd7ebeca5d7ab97c0a7e2775a0b770a9e5c1e6aeed048058801a8a018"
+    },
+    "final-iphone/light-07a-outline-bottom.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "7b8edc9be21605a5713a42f74c3c11cbc805f6aab896b53a9431384145b83f0e"
+    }
+  }
+}

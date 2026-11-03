@@ -61,9 +61,7 @@ void main() {
     expect(rect.height, greaterThanOrEqualTo(44));
     expect(rect.bottom, lessThanOrEqualTo(screen.height - keyboard + 1), reason: 'Send must stay above the keyboard');
     expect(send.hitTestable(), findsOneWidget);
-    final close = find.byKey(const ValueKey('assistant-close'));
-    expect(tester.getRect(close).bottom, lessThanOrEqualTo(screen.height - keyboard + 1));
-    expect(close.hitTestable(), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-close')), findsNothing);
     expect(find.text('横屏草稿'), findsOneWidget);
     FocusManager.instance.primaryFocus?.unfocus();
     await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');

@@ -13,6 +13,7 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
     required this.title,
     required this.mapId,
     required this.onDismiss,
+    this.returnLabel,
     required this.documents,
     required this.maps,
     required this.notes,
@@ -30,6 +31,7 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
   });
 
   final String title;
+  final String? returnLabel;
   final ValueChanged<String>? onSearch;
   final String? mapId;
   final VoidCallback onDismiss, onAddDocument, onAddMap, onAddNote;
@@ -195,6 +197,7 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
                     label: l.librarySection,
                     icon: MMIcons.chevronLeft,
                     color: c.accent,
+                    maxLines: null,
                     onPressed: () {
                       FocusManager.instance.primaryFocus?.unfocus();
                       ref.read(navigationProvider.notifier).showLibrary();
@@ -202,14 +205,20 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
                   ),
                 ),
               ),
-              MMIconButton(
-                key: const ValueKey('phone-resources-close'),
-                icon: MMIcons.close,
-                tooltip: l.closePanel,
-                onPressed: () {
-                  FocusManager.instance.primaryFocus?.unfocus();
-                  widget.onDismiss();
-                },
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: MMPhoneNavigationAction(
+                    key: const ValueKey('phone-resources-return'),
+                    label: widget.returnLabel ?? l.phoneNavigationReturnToContent,
+                    color: c.accent,
+                    maxLines: null,
+                    onPressed: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      widget.onDismiss();
+                    },
+                  ),
+                ),
               ),
             ],
           ),

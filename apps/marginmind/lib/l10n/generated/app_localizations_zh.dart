@@ -6098,6 +6098,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get phoneNavigationReturnToReading => '返回阅读';
+
+  @override
+  String get phoneNavigationReturnToNote => '返回笔记';
+
+  @override
+  String get phoneNavigationReturnToContent => '返回内容';
+
+  @override
   String get aiTaskWebFormat => '网页内容整理';
 
   @override

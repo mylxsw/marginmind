@@ -61,6 +61,9 @@ final class MMAnnotationColor {
   /// Excerpt block inside a card.
   Color get cardTint => color.withValues(alpha: 0.14);
 
+  /// A quieter tint for phone cards, where nested color blocks dominate sooner.
+  Color get phoneCardTint => color.withValues(alpha: 0.08);
+
   /// Library cover tint.
   Color coverTint(Brightness brightness) => color.withValues(alpha: brightness == Brightness.dark ? 0.24 : 0.18);
 }

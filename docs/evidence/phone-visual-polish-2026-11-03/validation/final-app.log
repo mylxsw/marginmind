@@ -1,0 +1,75 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_touch_test.dart: tablet icons expose every action and long press only explains (dark: false)
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_node_bar_touch_test.dart: tablet icons expose every action and long press only explains (dark: false)
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_assistant_draft_test.dart: phone assistant closes without losing its unsent draft
+00:01 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:02 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:02 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (3 ms)
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:03 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:03 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows phone across rotation and narrow windows
+00:03 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:03 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:03 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:03 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:03 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:03 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:03 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:03 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:04 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:04 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:04 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:04 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+00:04 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:04 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows tablet across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:04 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:04 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows desktop across rotation and narrow windows
+Setting PdfrxEntryFunctions instance: Instance of '_Engine'
+00:04 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_view_test.dart: node actions excerpt destination hint remains without a corner add button
+00:05 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: PDF inertia follows desktop across rotation and narrow windows
+PdfDocument initial load: PdfDocumentRefKey(a.pdf) (0 ms)
+00:05 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_view_test.dart: node actions excerpt destination hint remains without a corner add button
+00:05 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_view_test.dart: node actions excerpt destination hint remains without a corner add button
+00:05 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_view_test.dart: node actions excerpt destination hint remains without a corner add button
+00:05 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: phone ratings stay usable with a pointer and accessibility text
+00:05 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.iOS)
+00:05 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.iOS)
+00:05 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.iOS)
+00:05 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.iOS)
+00:06 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: 393x852 library, drawer, review and actions dark=false
+00:06 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: settings use the shared floating list and return from details (variant: TargetPlatform.iOS)
+00:06 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: 393x852 library, drawer, review and actions dark=true
+00:06 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: review grades with thumb-sized buttons and a tap turns the card (variant: TargetPlatform.iOS)
+00:06 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: phone library navigation fills the screen and selecting the current filter closes it
+00:06 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: navigation stays scoped to the current study set (variant: TargetPlatform.android)
+00:07 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: drawer search, settings and return to library
+00:07 +44: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.android)
+00:07 +45: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.android)
+00:07 +46: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_navigation_redesign_test.dart: navigation follows device phone=false touch=false size=Size(1280.0, 820.0)
+00:07 +47: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: system back closes menus, sheets and editing before going up (variant: TargetPlatform.android)
+00:07 +48: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: system back closes menus, sheets and editing before going up (variant: TargetPlatform.android)
+00:08 +49: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: long press opens an action sheet that back and Cancel close (variant: TargetPlatform.android)
+00:08 +50: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: an excerpt stays on the source and offers View once (variant: TargetPlatform.android)
+00:08 +51: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.android)
+00:08 +52: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: settings use the shared floating list and return from details (variant: TargetPlatform.android)
+00:08 +53: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: review grades with thumb-sized buttons and a tap turns the card (variant: TargetPlatform.android)
+00:08 +54: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a compact iPad keeps tablet headers without phone controls
+00:09 +55: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a phone on its side is not compact: no tabs, as before
+00:09 +56: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: desktop windows have no tabs and keep their menus
+00:09 +57: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: system bars contrast with the theme
+00:09 +58: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: tabs follow the route
+00:09 +59: All tests passed!

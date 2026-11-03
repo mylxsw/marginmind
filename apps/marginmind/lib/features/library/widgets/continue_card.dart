@@ -47,12 +47,13 @@ class ContinueCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(set.title, style: t.headline, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          set.title,
+                          style: t.headline,
+                          maxLines: phone ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      if (phone && set.dueCount > 0) ...[
-                        const SizedBox(width: 6),
-                        MMBadge(l.dueBadge(set.dueCount), prominent: true),
-                      ],
                     ],
                   ),
                   ...[
@@ -71,6 +72,10 @@ class ContinueCard extends StatelessWidget {
                   const SizedBox(height: 9),
                   Row(
                     children: [
+                      if (phone && set.dueCount > 0) ...[
+                        MMBadge(l.dueBadge(set.dueCount)),
+                        const SizedBox(width: MMSpacing.s),
+                      ],
                       Expanded(child: MMProgressBar(value: set.progress)),
                       const SizedBox(width: 8),
                       Text('${(set.progress * 100).round()}%', style: t.footnote),

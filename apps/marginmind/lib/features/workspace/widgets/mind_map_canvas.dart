@@ -740,6 +740,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// The card with its source label, which hangs beside it on the outer side.
   Rect _withSourceLabel(String id, LayoutRect rect) {
     final card = Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height);
+    if (MMInput.of(context).phone) return card;
     final meta = _cache._specs[id]?.meta;
     if (meta == null || _cache._specs[id]!.segments.isNotEmpty) return card;
     final painter = TextPainter(
@@ -1035,6 +1036,26 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   void _centerOn(String id, double scale) {
     final rect = _layout?.rects[id];
     if (rect == null || _viewport.isEmpty) return;
+    if (MMInput.of(context).phone) {
+      var bounds = _rect(rect);
+      for (final child in widget.content.childrenOf(id == rootNodeId ? null : id, mapId: widget.mapId)) {
+        final childRect = _layout?.rects[child.cardId];
+        if (childRect != null) bounds = bounds.expandToInclude(_rect(childRect));
+      }
+      final area = EdgeInsets.fromLTRB(
+        MMSpacing.l,
+        _topClearance,
+        MMSpacing.l,
+        MMSizes.thumbDock + MMPhoneReaderLayout.bottom + MMSpacing.l,
+      ).deflateRect(Offset.zero & _viewport);
+      final fit = math.min(scale, math.min(area.width / bounds.width, area.height / bounds.height));
+      if (fit >= MMSizes.phoneMapFocusMinScale) {
+        widget.transformation.value = Matrix4.identity()
+          ..translateByDouble(area.center.dx - bounds.center.dx * fit, area.center.dy - bounds.center.dy * fit, 0, 1)
+          ..scaleByDouble(fit, fit, 1, 1);
+        return;
+      }
+    }
     widget.transformation.value = Matrix4.identity()
       ..translateByDouble(
         _viewport.width / 2 - (rect.left + rect.width / 2) * scale,
@@ -2755,7 +2776,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                           ),
                                         ),
                                       ),
-                                  if (_dragging == null)
+                                  if (_dragging == null && !MMInput.of(context).phone)
                                     Positioned.fill(
                                       child: IgnorePointer(
                                         child: ValueListenableBuilder<String?>(
@@ -3250,7 +3271,7 @@ class _NodeView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
-                color: spec.color!.cardTint,
+                color: MMInput.of(context).phone ? spec.color!.phoneCardTint : spec.color!.cardTint,
                 borderRadius: BorderRadius.circular(MMRadii.excerpt),
               ),
               child: spec.segments.isNotEmpty

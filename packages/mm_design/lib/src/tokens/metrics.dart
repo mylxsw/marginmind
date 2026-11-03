@@ -42,7 +42,9 @@ abstract final class MMToolbarSpacing {
 abstract final class MMRadii {
   static const double phoneReaderToolbar = 28;
   static const double phoneTabBar = 32;
-  static const double phoneSheet = 38;
+  static const double phoneSheet = 28;
+  static const double phoneComposer = 16;
+  static const double phoneNodeToolbar = 24;
   static const double androidSheet = 28;
   static const double vocabularyCard = 10;
   static const double vocabularyPos = 4;
@@ -80,7 +82,12 @@ abstract final class MMSizes {
   static const double phoneToolBarHeight = 56;
   static const double phonePageCapsuleHeight = 36;
   static const double phoneDrawerWidth = 328;
-  static const double phoneSheetPadding = 8;
+  static const double phoneSheetPadding = 12;
+  static const double phoneSheetHeader = 52;
+  static const double phoneMenuIcon = 20;
+  static const double phoneOutlineIndent = 16;
+  static const int phoneOutlineMaxDepth = 3;
+  static const double phoneMapFocusMinScale = .6;
   static const double hairline = .5;
   static const double nodeStroke = 1;
   static const double paneHeaderHeight = 44;
@@ -203,6 +210,8 @@ abstract final class MMSizes {
   /// the space below the safe area top, and the drag handle strip.
   static const double bottomSheetMedium = 0.62;
   static const double phoneSheetMedium = 0.5;
+  static const double phoneSheetExpanded = 1;
+  static const double phoneQuickSheetMedium = 0.7;
   static const double bottomSheetHandle = 20;
 
   /// Review rating button under touch.

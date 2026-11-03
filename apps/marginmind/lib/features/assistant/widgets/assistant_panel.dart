@@ -276,6 +276,33 @@ class AssistantHeader extends ConsumerWidget {
     final history = ref.watch(assistantUiProvider(studySetId).select((s) => s.history));
     final thinking = ref.watch(assistantControllerProvider.select((conversation) => conversation.running));
     final ui = ref.read(assistantUiProvider(studySetId).notifier);
+    if (MMInput.of(context).phone) {
+      return MMPhoneSheetHeader(
+        title: l.aiAssistant,
+        showClose: false,
+        leading: AssistantIcon(size: MMSizes.phoneMenuIcon, thinking: thinking),
+        closeKey: const ValueKey('assistant-close'),
+        closeLabel: l.closePanel,
+        onClose: () => ref.read(workspaceProvider(studySetId).notifier).closePanel(),
+        actions: [
+          MMIconButton(
+            key: const ValueKey('assistant-new'),
+            icon: MMIcons.newConversation,
+            tooltip: l.assistantNewConversation,
+            onPressed: () => startNewConversation(ref, studySetId),
+          ),
+          MMIconButton(
+            key: const ValueKey('assistant-history-button'),
+            icon: MMIcons.conversationHistory,
+            tooltip: l.assistantHistory,
+            onPressed: () {
+              ref.read(researchPanelProvider(studySetId).notifier).closeNote();
+              ui.showHistory(!history);
+            },
+          ),
+        ],
+      );
+    }
     return Container(
       height: context.mmTouchPlatform ? MMSizes.tabletPaneHeaderHeight : MMSizes.desktopWindowTitlebarHeight,
       padding: EdgeInsets.only(
@@ -412,7 +439,9 @@ class AssistantSuggestions extends ConsumerWidget {
     ];
     return ListView(
       key: const ValueKey('assistant-suggestions'),
-      padding: const EdgeInsets.fromLTRB(MMSpacing.l, MMSpacing.m, MMSpacing.l, MMSpacing.l),
+      padding: MMInput.of(context).phone
+          ? const EdgeInsets.all(MMSpacing.s)
+          : const EdgeInsets.fromLTRB(MMSpacing.l, MMSpacing.m, MMSpacing.l, MMSpacing.l),
       children: [
         for (final (icon, text, skill, contexts) in suggestions.take(5))
           Padding(
@@ -452,8 +481,15 @@ class _Suggestion extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: MMSpacing.s),
         decoration: BoxDecoration(
           color: s.hovered ? c.researchTint : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: s.hovered ? c.research.withValues(alpha: .16) : c.separator),
+          borderRadius: BorderRadius.circular(MMInput.of(context).phone ? MMRadii.phoneComposer : 10),
+          border: Border.all(
+            color: s.hovered
+                ? c.research.withValues(alpha: .16)
+                : MMInput.of(context).phone
+                ? c.border
+                : c.separator,
+            width: MMInput.of(context).phone ? MMSizes.hairline : 1,
+          ),
         ),
         child: Row(
           children: [

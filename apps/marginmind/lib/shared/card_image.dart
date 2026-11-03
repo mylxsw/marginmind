@@ -93,8 +93,7 @@ Future<void> showCardImagePreview(BuildContext context, String fileName) {
               child: Row(
                 children: [
                   Expanded(child: Text(context.l10n.previewImage, style: context.mmText.headline)),
-                  MMIconButton(
-                    icon: MMIcons.close,
+                  MMModalCloseButton(
                     tooltip: context.l10n.closePanel,
                     onPressed: () => Navigator.of(sheetContext).maybePop(),
                   ),
@@ -130,8 +129,7 @@ Future<void> showCardImagePreview(BuildContext context, String fileName) {
               children: [
                 Align(
                   alignment: Alignment.centerRight,
-                  child: MMIconButton(
-                    icon: MMIcons.close,
+                  child: MMModalCloseButton(
                     tooltip: context.l10n.closePanel,
                     onPressed: () => Navigator.of(context).pop(),
                   ),

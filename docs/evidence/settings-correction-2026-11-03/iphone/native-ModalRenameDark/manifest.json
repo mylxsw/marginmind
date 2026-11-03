@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1276896C-3960-46EB-814D-785921CCE8EC",
+        "deviceName" : "Foliarc Settings Correction",
+        "exportedFileName" : "AD36AC58-D903-4F49-BD58-89B91F79E1BD.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-system-form-discard_0_1B2F277C-D60D-4B43-B3C8-C329B2ECA8D4.png",
+        "timestamp" : 1793717484.023
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1276896C-3960-46EB-814D-785921CCE8EC",
+        "deviceName" : "Foliarc Settings Correction",
+        "exportedFileName" : "F2541D6A-3025-4D8C-97AD-52C1EFCABF57.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-system-form-keyboard_0_E833F8DE-328A-46E1-B3B9-FC21A3087A7F.png",
+        "timestamp" : 1793717481.822
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "1276896C-3960-46EB-814D-785921CCE8EC",
+        "deviceName" : "Foliarc Settings Correction",
+        "exportedFileName" : "6C554B22-B5E9-407C-85DA-E177816B3083.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "modal-system-form-medium_0_72443791-9BE0-43D8-8463-0247720662DB.png",
+        "timestamp" : 1793717480.754
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testModalRenameDark()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testModalRenameDark"
+  }
+]

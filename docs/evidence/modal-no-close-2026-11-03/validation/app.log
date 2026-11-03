@@ -1,0 +1,89 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 en: all sections and large text stay usable
+00:01 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 en: all sections and large text stay usable
+00:01 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 en: all sections and large text stay usable
+00:01 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_layout_test.dart: phone settings 320.0 en: all sections and large text stay usable
+00:01 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:01 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:02 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_drafts_test.dart: phone model draft survives category navigation, and discard never writes it
+00:02 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_settings_drafts_test.dart: phone model draft survives category navigation, and discard never writes it
+00:02 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:02 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:02 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:02 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:03 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: long press opens an action sheet that back and Cancel close (variant: TargetPlatform.iOS)
+00:05 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: an excerpt stays on the source and offers View once (variant: TargetPlatform.iOS)
+00:05 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.iOS)
+00:05 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: settings use the shared floating list and return from details (variant: TargetPlatform.iOS)
+00:07 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: review grades with thumb-sized buttons and a tap turns the card (variant: TargetPlatform.iOS)
+00:07 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: navigation stays scoped to the current study set (variant: TargetPlatform.android)
+00:07 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.android)
+00:08 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: system back closes menus, sheets and editing before going up (variant: TargetPlatform.android)
+00:10 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: long press opens an action sheet that back and Cancel close (variant: TargetPlatform.android)
+00:10 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: an excerpt stays on the source and offers View once (variant: TargetPlatform.android)
+00:10 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.android)
+00:10 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: settings use the shared floating list and return from details (variant: TargetPlatform.android)
+00:11 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: review grades with thumb-sized buttons and a tap turns the card (variant: TargetPlatform.android)
+00:11 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a compact iPad keeps tablet headers without phone controls
+00:13 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a phone on its side is not compact: no tabs, as before
+00:16 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: desktop windows have no tabs and keep their menus
+00:16 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: system bars contrast with the theme
+00:16 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: tabs follow the route
+00:38 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:41 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:41 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:41 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:42 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:42 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:42 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:42 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:43 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:43 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: palette, translation and preserved selection in light
+00:43 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: palette, translation and preserved selection in light
+00:43 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: palette, translation and preserved selection in light
+00:43 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: leaving an invalid range restores the last usable selection
+00:43 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: leaving an invalid range restores the last usable selection
+00:44 +44: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: lookup skeleton, sentence, add, undo and screenshot in light
+00:44 +45: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: lookup skeleton, sentence, add, undo and screenshot in light
+00:44 +46: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: palette, translation and preserved selection in dark
+00:44 +47: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:44 +48: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:44 +49: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:44 +50: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:44 +51: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:45 +52: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:45 +53: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:45 +54: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading preview, persistence, keyboard and preference menus (variant: TargetPlatform.macOS)
+00:45 +55: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: fixed direction is used and a failed request can retry
+00:45 +56: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: fixed direction is used and a failed request can retry
+00:45 +57: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: compact sheet at Size(590.0, 620.0) keeps footer visible with a keyboard
+00:45 +58: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reading_settings_design_test.dart: reading layout zh dark (variant: TargetPlatform.macOS)
+00:45 +59: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: problem allows bare add: offline=true
+00:46 +60: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: unconfigured model offers setup and settings persist direction
+00:46 +61: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: unconfigured model offers setup and settings persist direction
+00:46 +62: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: compact sheet at Size(390.0, 844.0) keeps footer visible with a keyboard
+00:46 +63: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: compact sheet at Size(390.0, 844.0) keeps footer visible with a keyboard
+00:46 +64: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: saved menu, new example, speech, status, removal and undo (variant: TargetPlatform.macOS)
+00:46 +65: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: saved menu, new example, speech, status, removal and undo (variant: TargetPlatform.macOS)
+00:46 +66: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: offline runtime rejection offers settings and no result
+00:46 +67: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: failure and late result after dismissal
+00:47 +68: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: failure and late result after dismissal
+00:47 +69: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: inline language changes cancel older requests and discard late results
+00:47 +70: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: long sentence disables add; phrase translates and adds
+00:47 +71: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: swap uses the previous translation as source in light (variant: TargetPlatform.macOS)
+00:47 +72: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: swap uses the previous translation as source in light (variant: TargetPlatform.macOS)
+00:47 +73: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: lookup opens sentence translation with the complete source sentence
+00:47 +74: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: swap uses the previous translation as source in dark (variant: TargetPlatform.macOS)
+00:47 +75: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: saved sentence works without a model and does not issue another request
+00:48 +76: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: same explicit languages show a correction prompt without a model call
+00:48 +77: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: failed persistence keeps the entry absent and a retry succeeds
+00:48 +78: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: a superseded credential lookup closes its connection without starting a stale translation
+00:48 +79: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: settings retry, speech failure and assistant handoff keep the card usable (variant: TargetPlatform.macOS)
+00:48 +80: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: settings retry, speech failure and assistant handoff keep the card usable (variant: TargetPlatform.macOS)
+00:48 +81: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_translation_test.dart: copy footer matches approved layout and stays reachable in light (variant: TargetPlatform.macOS)
+00:48 +82: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: native Add to vocabulary menu dispatches to the focused lookup card (variant: TargetPlatform.macOS)
+00:48 +83: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: native Add to vocabulary menu dispatches to the focused lookup card (variant: TargetPlatform.macOS)
+00:49 +84: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: T obeys disabled document text capabilities even with a stale selection
+00:49 +85: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: empty offline fields are enriched; populated user data survives duplicate add
+00:49 +86: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/selection_lookup_test.dart: (tearDownAll)
+00:49 +86: All tests passed!

@@ -2517,6 +2517,9 @@
       }
     }
   },
+  "phoneNavigationReturnToReading": "返回阅读",
+  "phoneNavigationReturnToNote": "返回笔记",
+  "phoneNavigationReturnToContent": "返回内容",
   "aiTaskWebFormat": "网页内容整理",
   "webFormatSectionLabel": "内容处理",
   "webFormatTitle": "AI 整理",

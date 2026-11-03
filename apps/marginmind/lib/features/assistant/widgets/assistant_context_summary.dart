@@ -25,6 +25,7 @@ class _AssistantContextSummaryState extends State<AssistantContextSummary> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
+    final phone = MMInput.of(context).phone;
     final outgoing = widget.outgoing;
     final count = l.assistantContextCount(outgoing.length);
     final preview = outgoing
@@ -52,10 +53,14 @@ class _AssistantContextSummaryState extends State<AssistantContextSummary> {
               semanticLabel: '$count, $labels',
               tooltip: labels.isEmpty ? l.assistantManageContexts : '${l.assistantManageContexts}\n$labels',
               builder: (context, s) => Container(
-                height: MMSizes.field,
+                height: phone ? MMSizes.touchTarget : MMSizes.field,
                 padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
                 decoration: BoxDecoration(
-                  color: s.hovered || s.focused ? c.hover : c.quaternaryFill,
+                  color: s.hovered || s.focused
+                      ? c.hover
+                      : phone
+                      ? Colors.transparent
+                      : c.quaternaryFill,
                   borderRadius: BorderRadius.circular(MMRadii.row),
                 ),
                 child: Row(

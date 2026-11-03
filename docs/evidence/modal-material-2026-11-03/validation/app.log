@@ -1,0 +1,47 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/share_import_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/share_import_test.dart: (setUpAll)
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/share_import_test.dart: destinations pin the recent set, sort consistently and search without case
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/share_import_test.dart: cold inbox serializes shares and deduplicates notifications while choosing
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/share_import_test.dart: URL creates a named study set and retains its browser across navigation
+00:01 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:02 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:03 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:03 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: navigation stays scoped to the current study set (variant: TargetPlatform.iOS)
+00:03 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:03 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:04 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:04 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:04 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:05 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:05 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:05 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:05 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: source drafts cannot generate and Escape preserves the applied source and instructions
+00:05 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/share_import_test.dart: share picker fits phone dark
+00:05 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:05 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:06 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:06 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:06 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: native light typography and progressively disclosed controls
+00:06 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: long press opens an action sheet that back and Cancel close (variant: TargetPlatform.iOS)
+00:07 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: native dark typography and progressively disclosed controls
+00:07 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: an excerpt stays on the source and offers View once (variant: TargetPlatform.iOS)
+00:07 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: compact sheet at Size(590.0, 620.0) keeps footer visible with a keyboard
+00:08 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: compact sheet at Size(590.0, 620.0) keeps footer visible with a keyboard
+00:08 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: settings use the shared floating list and return from details (variant: TargetPlatform.iOS)
+00:08 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: compact sheet at Size(390.0, 844.0) keeps footer visible with a keyboard
+00:09 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_generation_sheet_layout_test.dart: compact sheet at Size(390.0, 844.0) keeps footer visible with a keyboard
+00:09 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: navigation stays scoped to the current study set (variant: TargetPlatform.android)
+00:09 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.android)
+00:10 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: system back closes menus, sheets and editing before going up (variant: TargetPlatform.android)
+00:10 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: long press opens an action sheet that back and Cancel close (variant: TargetPlatform.android)
+00:10 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: an excerpt stays on the source and offers View once (variant: TargetPlatform.android)
+00:11 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: map export opens as a bottom sheet that fits the width (variant: TargetPlatform.android)
+00:11 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: settings use the shared floating list and return from details (variant: TargetPlatform.android)
+00:11 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: review grades with thumb-sized buttons and a tap turns the card (variant: TargetPlatform.android)
+00:11 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a compact iPad keeps tablet headers without phone controls
+00:12 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: a phone on its side is not compact: no tabs, as before
+00:12 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: desktop windows have no tabs and keep their menus
+00:12 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: system bars contrast with the theme
+00:12 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: tabs follow the route
+00:12 +43: All tests passed!
