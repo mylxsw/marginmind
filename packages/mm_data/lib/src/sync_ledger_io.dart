@@ -18,3 +18,11 @@ Future<void> writeSyncLedgerRecord(String path, List<int> bytes) async {
     rethrow;
   }
 }
+
+Future<List<int>?> readSyncConnection(String path) async {
+  final file = File(path);
+  return await file.exists() ? file.readAsBytes() : null;
+}
+
+Future<void> writeSyncDelivery(String path, List<int> bytes, {String? connectionPath, String? expectedRevision}) =>
+    writeSyncLedgerRecord(path, bytes);

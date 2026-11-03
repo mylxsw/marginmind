@@ -8,6 +8,13 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_sync/mm_sync.dart';
 import 'package:path/path.dart' as p;
 
+class SyncTransportConnection {
+  const SyncTransportConnection(this.target, this.revision, {required this.paused});
+  final SyncTarget target;
+  final String revision;
+  final bool paused;
+}
+
 /// One aggregate mutation. [local] is recovery data and never uploaded;
 /// [shared] is the cloud projection. Null is an explicit deletion in both.
 class SyncMutation {
@@ -82,7 +89,58 @@ class FileSyncLedger {
 
   Directory get _directory => Directory(p.join(root.path, '.foliarc-sync', 'local'));
   File get _identity => File(p.join(root.path, '.foliarc-sync', 'identity.json'));
-  File get _delivered => File(p.join(root.path, '.foliarc-sync', 'delivered.json'));
+  File _deliveryFile(String? target) => File(
+    p.join(root.path, '.foliarc-sync', target == null ? 'delivered.json' : 'delivery-${syncDigest(target)}.json'),
+  );
+  File get _connection => File(p.join(root.path, '.foliarc-sync', 'connection.json'));
+  Future<SyncTransportConnection?> _readConnection() async {
+    final bytes = await readSyncConnection(_connection.path);
+    if (bytes == null) return null;
+    final json = _map(jsonDecode(utf8.decode(bytes)));
+    if (json['version'] != 1 ||
+        json['deviceId'] != deviceId ||
+        json['revision'] is! String ||
+        json['paused'] is! bool) {
+      throw const FormatException('Invalid sync connection');
+    }
+    final target = SyncTarget.fromJson(_map(json['target']));
+    if (target.libraryId != libraryId) throw const FormatException('Wrong sync connection library');
+    return SyncTransportConnection(target, json['revision'] as String, paused: json['paused'] as bool);
+  }
+
+  Future<SyncTransportConnection?> transportConnection() => _serial(() async {
+    await _load();
+    return _readConnection();
+  });
+  Future<void> _writeConnection(SyncTarget target, bool paused) async {
+    await _atomic(_connection, {
+      'version': 1,
+      'deviceId': deviceId,
+      'target': target.toJson(),
+      'revision': newId(),
+      'paused': paused,
+    });
+    _changes.add(null);
+  }
+
+  Future<void> bindTransport(SyncTarget target) => _serial(() async {
+    await _load();
+    if (target.libraryId != libraryId) throw const SyncTransportException(SyncTransportProblem.wrongLibrary);
+    await _writeConnection(target, true);
+  });
+  Future<void> pauseTransport() => _serial(() async {
+    await _load();
+    final current = await _readConnection();
+    if (current != null) await _writeConnection(current.target, true);
+  });
+  Future<void> resumeTransport(String target) => _serial(() async {
+    await _load();
+    final current = await _readConnection();
+    if (current == null || current.target.key != target) {
+      throw const SyncTransportException(SyncTransportProblem.accountChanged);
+    }
+    await _writeConnection(current.target, false);
+  });
 
   /// Reopening never invents a new library or device identity.
   static Future<FileSyncLedger?> restore(Directory root) async {
@@ -550,9 +608,9 @@ class FileSyncLedger {
     if (hadError || _projectionErrors.containsKey(key)) _changes.add(null);
   }
 
-  Future<List<SyncCommit>> pending() => _serial(() async {
+  Future<List<SyncCommit>> pending({String? target, bool includeDelivered = false}) => _serial(() async {
     await _load();
-    final delivered = await _readDelivered();
+    final delivered = includeDelivered ? <String>{} : await _readDelivered(target);
     final drafts = _heads.values
         .where((s) => s.draft && s.scope.startsWith('sets/'))
         .map((s) => s.scope.substring(5))
@@ -569,21 +627,36 @@ class FileSyncLedger {
     );
   });
 
-  Future<void> acknowledge(Iterable<String> ids) {
+  Future<void> acknowledge(Iterable<String> ids, {String? target, String? connectionRevision}) {
     final requested = ids.toSet();
     return _serial(() async {
       await _load();
+      if (target != null) {
+        final current = await _readConnection();
+        if (current == null ||
+            current.paused ||
+            current.target.key != target ||
+            current.revision != connectionRevision) {
+          throw const SyncTransportException(SyncTransportProblem.paused);
+        }
+      }
       if (!requested.every(_outgoing.contains)) throw const FormatException('Unknown delivered commit');
-      final delivered = await _readDelivered()
+      final delivered = await _readDelivered(target)
         ..addAll(requested);
-      await _atomic(_delivered, {'version': 1, 'ids': delivered.toList()..sort()});
+      await writeSyncDelivery(
+        _deliveryFile(target).path,
+        utf8.encode(jsonEncode({'version': 1, 'ids': delivered.toList()..sort()})),
+        connectionPath: target == null ? null : _connection.path,
+        expectedRevision: connectionRevision,
+      );
       _changes.add(null);
     });
   }
 
-  Future<Set<String>> _readDelivered() async {
-    if (!await _delivered.exists()) return {};
-    final json = _map(jsonDecode(await _delivered.readAsString()));
+  Future<Set<String>> _readDelivered(String? target) async {
+    final deliveredFile = _deliveryFile(target);
+    if (!await deliveredFile.exists()) return {};
+    final json = _map(jsonDecode(await deliveredFile.readAsString()));
     if (json['version'] != 1 || json['ids'] is! List || (json['ids'] as List).any((id) => !_outgoing.contains(id))) {
       throw const FormatException('Invalid sync delivery state');
     }

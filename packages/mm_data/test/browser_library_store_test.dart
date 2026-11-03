@@ -473,6 +473,85 @@ void main() {
     expect((await restored.history()).values.where((c) => c.scope == 'sets/${set.id}'), hasLength(before + 1));
   });
 
+  test('transport bindings persist per target and another tab pause is read from IndexedDB', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Synced', colorIndex: 0));
+    final target = SyncTarget(
+      service: 'webdav',
+      account: 'alice',
+      location: 'https://dav.example/',
+      libraryId: 'library',
+    );
+    await ledger.bindTransport(target);
+    expect((await ledger.transportConnection())!.paused, isTrue);
+    await ledger.resumeTransport(target.key);
+    final connection = (await ledger.transportConnection())!;
+    final commit = (await ledger.pending()).firstWhere((c) => c.scope == 'sets/${set.id}');
+    await ledger.acknowledge([commit.id], target: target.key, connectionRevision: connection.revision);
+    expect((await ledger.pending(target: target.key)).any((c) => c.id == commit.id), isFalse);
+    expect((await ledger.pending(target: 'another-target')).any((c) => c.id == commit.id), isTrue);
+    final opened = Completer<web.IDBDatabase>();
+    final request = web.window.indexedDB.open(database);
+    request.onsuccess = ((web.Event _) => opened.complete(request.result as web.IDBDatabase)).toJS;
+    final other = await opened.future;
+    final tx = other.transaction('files'.toJS, 'readwrite');
+    final done = Completer<void>();
+    tx.oncomplete = ((web.Event _) => done.complete()).toJS;
+    tx
+        .objectStore('files')
+        .put(
+          Uint8List.fromList(
+            utf8.encode(
+              jsonEncode({
+                'version': 1,
+                'deviceId': 'browser-device',
+                'target': target.toJson(),
+                'revision': 'another-tab',
+                'paused': true,
+              }),
+            ),
+          ).toJS,
+          '/Library/.foliarc-sync/connection.json'.toJS,
+        );
+    await done.future;
+    other.close();
+    expect((await ledger.transportConnection())!.paused, isTrue);
+    final oldBinding = Uint8List.fromList(
+      utf8.encode(
+        jsonEncode({
+          'version': 1,
+          'deviceId': 'browser-device',
+          'target': target.toJson(),
+          'revision': connection.revision,
+          'paused': false,
+        }),
+      ),
+    );
+    await expectLater(
+      BrowserFiles.commit(
+        {
+          '/should-not-confirm': Uint8List.fromList([1]),
+        },
+        [],
+        guards: {'/Library/.foliarc-sync/connection.json': oldBinding},
+      ),
+      throwsA(isA<FileSystemException>()),
+    );
+    expect(await File('/should-not-confirm').exists(), isFalse);
+    await expectLater(
+      ledger.acknowledge([commit.id], target: target.key, connectionRevision: connection.revision),
+      throwsA(isA<SyncTransportException>()),
+    );
+    await expectLater(ledger.resumeTransport(target.key), throwsA(isA<FileSystemException>()));
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await (await store.syncLedger)!.transportConnection())!.revision, 'another-tab');
+  });
+
   test('sync record and head compare-and-swap prevent stale tabs from creating forks', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser-device');

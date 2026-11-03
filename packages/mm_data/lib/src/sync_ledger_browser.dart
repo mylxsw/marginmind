@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 
 import 'library_browser_io.dart';
 
+import 'package:mm_sync/mm_sync.dart';
+
 /// The head guard and the record share one IndexedDB transaction. Comparing
 /// the guard with this tab's hydrated value prevents two tabs from committing
 /// different immutable records on top of the same local revision.
@@ -12,3 +14,19 @@ Future<void> writeSyncLedgerRecord(String path, List<int> bytes) => BrowserFiles
   path: Uint8List.fromList(bytes),
   p.join(p.dirname(path), '.head'): Uint8List.fromList(utf8.encode(p.basename(path))),
 }, []);
+
+Future<List<int>?> readSyncConnection(String path) => BrowserFiles.readCurrent(path);
+
+/// Confirmation and the connection guard share the very same IDB transaction.
+Future<void> writeSyncDelivery(String path, List<int> bytes, {String? connectionPath, String? expectedRevision}) async {
+  final guards = <String, Uint8List?>{};
+  if (connectionPath != null) {
+    final current = await BrowserFiles.readCurrent(connectionPath);
+    final value = current == null ? null : jsonDecode(utf8.decode(current)) as Map;
+    if (value == null || value['paused'] != false || value['revision'] != expectedRevision) {
+      throw const SyncTransportException(SyncTransportProblem.paused);
+    }
+    guards[connectionPath] = current;
+  }
+  await BrowserFiles.commit({path: Uint8List.fromList(bytes)}, [], guards: guards);
+}
