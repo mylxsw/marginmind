@@ -30,6 +30,25 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('deleted browser content restores as a new identity once across restart', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final set = await store.create(const NewStudySet(title: 'Deleted', colorIndex: 0));
+    await store.update(set.id, (c) => editor.addNote(c, text: 'Kept').$1);
+    await store.delete(set.id);
+    final selected = (await store.libraryRecovery()).entries.single;
+    final copy = await store.recoverLibraryCopy(selected, title: 'Recovered');
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect(await store.recoverLibraryCopy(selected, title: 'Do not duplicate'), copy);
+    expect((await store.watchAll().first).single.id, copy);
+    expect((await store.load(copy)).cards.single.title, 'Kept');
+    expect((await (await store.syncLedger)!.snapshots())['sets/${set.id}']!.deleted, true);
+  });
+
   test('standalone image bytes and observed titles retain browser guards', () async {
     final set = await store.create(const NewStudySet(title: 'Original', colorIndex: 0));
     final image = await store.importImageBytes(set.id, [137, 80, 78, 71, 13, 10, 26, 10]);

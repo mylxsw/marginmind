@@ -12230,6 +12230,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Image'**
   String get webFormatImage;
+
+  /// No description provided for @libraryRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted content'**
+  String get libraryRecovery;
+
+  /// No description provided for @recoveryExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover a saved content version as a new study set. Original deletion and conflicts remain unchanged. Review scores, reading progress and separate translations are not copied. Only files with a verified historical manifest are copied; missing files may need downloading in Sync settings. Books and web documents require their retained resource manifest before recovery.'**
+  String get recoveryExplanation;
+
+  /// No description provided for @recoveryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery could not finish. The original history is safe. Check storage and retained resource manifests, then retry; retrying will not create a second copy.'**
+  String get recoveryFailed;
+
+  /// No description provided for @recoveryCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'A recovery copy was created. Later edits or deletion of that copy are kept.'**
+  String get recoveryCreated;
+
+  /// No description provided for @recoveryPending.
+  ///
+  /// In en, this message translates to:
+  /// **'This version had unresolved choices. Only its displayed content is copied; original candidates remain in the source history.'**
+  String get recoveryPending;
+
+  /// No description provided for @recoveryCopyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New study set name'**
+  String get recoveryCopyTitle;
+
+  /// No description provided for @recoverCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover as a copy'**
+  String get recoverCopy;
+
+  /// No description provided for @recoveryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No recoverable deleted content in retained sync history. Local-only deletions and history not received on this device are not listed.'**
+  String get recoveryEmpty;
+
+  /// No description provided for @recoveryDeletedSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted study set'**
+  String get recoveryDeletedSet;
+
+  /// No description provided for @recoveryDeletedDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Version containing deleted documents'**
+  String get recoveryDeletedDocuments;
+
+  /// No description provided for @recoveryContents.
+  ///
+  /// In en, this message translates to:
+  /// **'{cards} cards · {documents} documents'**
+  String recoveryContents(int cards, int documents);
+
+  /// No description provided for @recoveryDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} (recovered)'**
+  String recoveryDefaultTitle(String title);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

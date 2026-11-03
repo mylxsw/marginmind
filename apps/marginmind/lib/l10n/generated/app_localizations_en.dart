@@ -6996,4 +6996,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webFormatImage => 'Image';
+
+  @override
+  String get libraryRecovery => 'Deleted content';
+
+  @override
+  String get recoveryExplanation =>
+      'Recover a saved content version as a new study set. Original deletion and conflicts remain unchanged. Review scores, reading progress and separate translations are not copied. Only files with a verified historical manifest are copied; missing files may need downloading in Sync settings. Books and web documents require their retained resource manifest before recovery.';
+
+  @override
+  String get recoveryFailed =>
+      'Recovery could not finish. The original history is safe. Check storage and retained resource manifests, then retry; retrying will not create a second copy.';
+
+  @override
+  String get recoveryCreated => 'A recovery copy was created. Later edits or deletion of that copy are kept.';
+
+  @override
+  String get recoveryPending =>
+      'This version had unresolved choices. Only its displayed content is copied; original candidates remain in the source history.';
+
+  @override
+  String get recoveryCopyTitle => 'New study set name';
+
+  @override
+  String get recoverCopy => 'Recover as a copy';
+
+  @override
+  String get recoveryEmpty =>
+      'No recoverable deleted content in retained sync history. Local-only deletions and history not received on this device are not listed.';
+
+  @override
+  String get recoveryDeletedSet => 'Deleted study set';
+
+  @override
+  String get recoveryDeletedDocuments => 'Version containing deleted documents';
+
+  @override
+  String recoveryContents(int cards, int documents) {
+    return '$cards cards · $documents documents';
+  }
+
+  @override
+  String recoveryDefaultTitle(String title) {
+    return '$title (recovered)';
+  }
 }

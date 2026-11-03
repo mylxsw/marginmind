@@ -4227,5 +4227,34 @@
   "webFormatInterruptedHint": "Continue formatting, or save what you have; unformatted parts stay as captured.",
   "webFormatSourceNote": "AI formatted",
   "webFormatPdfFailed": "Couldn’t create the PDF. Try again or choose another format.",
-  "webFormatImage": "Image"
+  "webFormatImage": "Image",
+  "libraryRecovery": "Deleted content",
+  "recoveryExplanation": "Recover a saved content version as a new study set. Original deletion and conflicts remain unchanged. Review scores, reading progress and separate translations are not copied. Only files with a verified historical manifest are copied; missing files may need downloading in Sync settings. Books and web documents require their retained resource manifest before recovery.",
+  "recoveryFailed": "Recovery could not finish. The original history is safe. Check storage and retained resource manifests, then retry; retrying will not create a second copy.",
+  "recoveryCreated": "A recovery copy was created. Later edits or deletion of that copy are kept.",
+  "recoveryPending": "This version had unresolved choices. Only its displayed content is copied; original candidates remain in the source history.",
+  "recoveryCopyTitle": "New study set name",
+  "recoverCopy": "Recover as a copy",
+  "recoveryEmpty": "No recoverable deleted content in retained sync history. Local-only deletions and history not received on this device are not listed.",
+  "recoveryDeletedSet": "Deleted study set",
+  "recoveryDeletedDocuments": "Version containing deleted documents",
+  "recoveryContents": "{cards} cards · {documents} documents",
+  "recoveryDefaultTitle": "{title} (recovered)",
+  "@recoveryContents": {
+    "placeholders": {
+      "cards": {
+        "type": "int"
+      },
+      "documents": {
+        "type": "int"
+      }
+    }
+  },
+  "@recoveryDefaultTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  }
 }

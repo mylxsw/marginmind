@@ -116,8 +116,10 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
     );
   }
 
-  Stream<ContentSyncStatus> _watchContentSync(String id) {
-    late StreamController<ContentSyncStatus> out;
+  Stream<ContentSyncStatus> _watchContentSync(String id) => _watchSyncState(() => _contentSyncStatus(id));
+
+  Stream<T> _watchSyncState<T>(Future<T> Function() snapshot) {
+    late StreamController<T> out;
     final subscriptions = <StreamSubscription<void>>[];
     var cancelled = false;
     Future<void> refresh = Future.value();
@@ -125,7 +127,7 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
       refresh = refresh.then((_) async {
         if (cancelled) return;
         try {
-          final status = await _contentSyncStatus(id);
+          final status = await snapshot();
           if (!cancelled) out.add(status);
         } catch (error, stack) {
           if (!cancelled) out.addError(error, stack);
@@ -133,7 +135,7 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
       });
     }
 
-    out = StreamController<ContentSyncStatus>(
+    out = StreamController<T>(
       onListen: () async {
         try {
           await _ensureLoaded();

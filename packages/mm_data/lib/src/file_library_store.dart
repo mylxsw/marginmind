@@ -22,6 +22,7 @@ part 'file_library_folders.dart';
 part 'file_library_reading.dart';
 part 'file_library_translations.dart';
 part 'file_library_resources.dart';
+part 'file_library_recovery.dart';
 
 /// Stores the library on disk:
 ///
@@ -40,6 +41,7 @@ class FileLibraryStore
         ContentEditRepository,
         ContentSyncRepository,
         LibraryOrganizationRepository,
+        LibraryRecoveryRepository,
         ReadingContinuationRepository,
         TranslationStoreRepository,
         StudySetRepository,
@@ -68,6 +70,20 @@ class FileLibraryStore
     await _ensureLoaded();
     return _sync;
   }
+
+  @override
+  Future<bool> get libraryRecoveryEnabled async {
+    await _ensureLoaded();
+    return _sync != null;
+  }
+
+  @override
+  Future<LibraryRecovery> libraryRecovery() => _libraryRecovery();
+  @override
+  Stream<LibraryRecovery> watchLibraryRecovery() => _watchSyncState(_libraryRecovery);
+  @override
+  Future<String> recoverLibraryCopy(LibraryRecoveryEntry selection, {required String title}) =>
+      _recoverLibraryCopy(selection, title: title);
 
   Map<String, Object> get syncProjectionErrors => _sync?.projectionErrors ?? const {};
   static String _scope(String id) => 'sets/$id';
@@ -1215,7 +1231,14 @@ class FileLibraryStore
 
   /// Called only inside the set's write queue (or initial load). The ledger is
   /// the commit point; .mmset materialization may be retried without new edits.
-  Future<void> _saveRecord(_SetRecord record, {bool finishDraft = false, String? recovered}) async {
+  Future<void> _saveRecord(
+    _SetRecord record, {
+    bool finishDraft = false,
+    String? recovered,
+    List<SyncMutation> additional = const [],
+    Map<String, String?> observed = const {},
+    void Function(Map<String, LocalSyncSnapshot>)? validate,
+  }) async {
     final sync = _sync;
     if (sync == null) return _writeRecordFile(record);
     final local = record.toJson();
@@ -1226,6 +1249,7 @@ class FileLibraryStore
     final documents = record.content.documents.map((d) => d.id).toSet();
     _syncSnapshots = await sync.commit(
       [
+        ...additional,
         SyncMutation(
           _scope(record.id),
           local: local,
@@ -1248,7 +1272,9 @@ class FileLibraryStore
       expected: {
         _scope(record.id): _syncSnapshots[_scope(record.id)]?.revision,
         'reviews/${record.id}': _syncSnapshots['reviews/${record.id}']?.revision,
+        ...observed,
       },
+      validate: validate,
       recovered: recovered == null ? {} : {_scope(record.id): recovered},
       tombstoneWhere: (scope) =>
           (finishDraft || !_contentTransactions.containsKey(record.id)) &&

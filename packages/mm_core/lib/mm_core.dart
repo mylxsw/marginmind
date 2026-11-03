@@ -80,3 +80,5 @@ export 'src/agent/contracts.dart';
 export 'src/study_set/library_organization_repository.dart';
 
 export 'src/vocabulary/sync_repository.dart';
+
+export 'src/study_set/library_recovery_repository.dart';

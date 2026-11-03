@@ -6711,4 +6711,45 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get webFormatImage => '图片';
+
+  @override
+  String get libraryRecovery => '已删除内容';
+
+  @override
+  String get recoveryExplanation =>
+      '将已保存的内容版本恢复为新学习集，原删除记录和冲突保持不变。复习评分、阅读进度和独立译文不复制。仅复制有历史校验清单的文件，缺失文件可能需要在同步设置中下载；书籍和网页须先具备保留的资源清单才能恢复。';
+
+  @override
+  String get recoveryFailed => '恢复未完成，原历史仍保留。请检查存储和保留的资源清单后重试，重试不会重复创建副本。';
+
+  @override
+  String get recoveryCreated => '已创建过恢复副本，对副本的后续修改或删除会保留。';
+
+  @override
+  String get recoveryPending => '此版本仍有未决选择，仅复制其显示内容，所有原候选仍保留在来源历史中。';
+
+  @override
+  String get recoveryCopyTitle => '新学习集名称';
+
+  @override
+  String get recoverCopy => '恢复为副本';
+
+  @override
+  String get recoveryEmpty => '保留的同步历史中没有可恢复的已删除内容。本地模式删除及此设备尚未收到的历史不在此列。';
+
+  @override
+  String get recoveryDeletedSet => '已删除学习集';
+
+  @override
+  String get recoveryDeletedDocuments => '包含已删除文档的版本';
+
+  @override
+  String recoveryContents(int cards, int documents) {
+    return '$cards 张卡片 · $documents 个文档';
+  }
+
+  @override
+  String recoveryDefaultTitle(String title) {
+    return '$title（恢复副本）';
+  }
 }
