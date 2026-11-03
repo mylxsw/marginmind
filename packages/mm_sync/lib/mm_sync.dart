@@ -7,3 +7,5 @@ export 'src/projection.dart';
 export 'src/reconciliation.dart';
 export 'src/transaction_replay.dart';
 export 'src/review_timeline.dart';
+
+export 'src/folder_sync.dart';

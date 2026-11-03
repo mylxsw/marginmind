@@ -28,6 +28,43 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('folder choices, membership and deletion survive browser restart', () async {
+    await store.dispose();
+    final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');
+    store = FileLibraryStore.browser(sync: ledger);
+    final folder = await store.createFolder('Initial');
+    final base = (await ledger.snapshots())['folders/${folder.id}']!;
+    final id = (await store.create(const NewStudySet(title: 'Study', colorIndex: 0))).id;
+    await store.moveStudySet(id, folder.id, expectedFolderId: null);
+    await store.renameFolder(folder.id, 'Local', expectedRevision: base.revision);
+    final remote = SyncCommit.create(
+      libraryId: 'library',
+      scope: base.scope,
+      deviceId: 'remote',
+      sequence: 1,
+      parents: [base.commit.id],
+      payload: {'id': folder.id, 'name': 'Remote'},
+    );
+    await store.receiveSync([remote]);
+    expect((await store.watchOrganization().first).entries.single.choices, hasLength(1));
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    var entry = (await store.watchOrganization().first).entries.single;
+    await store.chooseFolderName(
+      folder.id,
+      entry.choices.single.transaction,
+      expectedRevision: entry.revision,
+      useCandidate: true,
+    );
+    entry = (await store.watchOrganization().first).entries.single;
+    expect(entry.choices, isEmpty);
+    await store.deleteFolder(folder.id, expectedRevision: entry.revision);
+    expect((await store.watchAll().first).single.folderId, isNull);
+    expect((await (await store.syncLedger)!.snapshots())['sets/$id']!.value!['folderId'], folder.id);
+  });
+
   test('versioned review replay, pending commits and failed rating retry survive IndexedDB reopen', () async {
     await store.dispose();
     final ledger = FileSyncLedger.browser(libraryId: 'library', deviceId: 'browser');

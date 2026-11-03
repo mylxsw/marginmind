@@ -74,3 +74,5 @@ export 'src/content/translation_state.dart';
 export 'src/content/translation_store.dart';
 
 export 'src/agent/contracts.dart';
+
+export 'src/study_set/library_organization_repository.dart';

@@ -6478,4 +6478,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewFinishEditing => 'Finish the current content edit, then rate this card.';
+
+  @override
+  String get manageFolders => 'Manage folders';
+
+  @override
+  String get folderName => 'Folder name';
+
+  @override
+  String get folderNameInvalid => 'Enter a folder name with 1–256 characters.';
+
+  @override
+  String get deleteFolder => 'Delete folder?';
+
+  @override
+  String get deleteFolderMessage => 'Study sets are kept and shown under Unfiled.';
+
+  @override
+  String get moveToFolder => 'Move to folder';
+
+  @override
+  String get folderUnavailable => 'Folder awaiting recovery';
+
+  @override
+  String get folderRepairNeeded => 'The folder index needs repair. Your saved changes are retained.';
 }

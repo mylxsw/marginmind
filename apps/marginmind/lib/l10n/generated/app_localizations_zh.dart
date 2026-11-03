@@ -6223,4 +6223,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reviewFinishEditing => '请先结束当前内容编辑，再为这张卡片评分。';
+
+  @override
+  String get manageFolders => '管理文件夹';
+
+  @override
+  String get folderName => '文件夹名称';
+
+  @override
+  String get folderNameInvalid => '请输入 1–256 个字符的文件夹名称。';
+
+  @override
+  String get deleteFolder => '删除文件夹？';
+
+  @override
+  String get deleteFolderMessage => '学习集会保留，并显示在“未分类”中。';
+
+  @override
+  String get moveToFolder => '移动到文件夹';
+
+  @override
+  String get folderUnavailable => '待恢复的文件夹';
+
+  @override
+  String get folderRepairNeeded => '文件夹索引需要修复，已保存的修改仍保留。';
 }

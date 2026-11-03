@@ -15,6 +15,7 @@ import '../../shared/pdf_drop.dart';
 import '../workspace/widgets/notices.dart';
 import '../vocabulary/vocabulary_controller.dart';
 import 'library_controller.dart';
+import 'folder_sheet.dart';
 import 'new_study_set.dart';
 import 'sample_study_set.dart';
 import 'widgets/continue_card.dart';
@@ -387,10 +388,20 @@ class _LibrarySidebar extends ConsumerWidget {
               ),
             ],
           ),
-        if (folders.isNotEmpty || hasUnfiled)
+        if (folders.isNotEmpty || hasUnfiled || ref.watch(studySetRepositoryProvider) is LibraryOrganizationRepository)
           MMSidebarSection(
             title: l.libraryFolders,
             children: [
+              if (ref.watch(studySetRepositoryProvider) is LibraryOrganizationRepository)
+                MMSidebarItem(
+                  key: const ValueKey('manage-folders'),
+                  icon: MMIcons.folder,
+                  label: l.manageFolders,
+                  onTap: () {
+                    onDismiss?.call();
+                    showFolderSheet(context);
+                  },
+                ),
               for (final f in folders)
                 item(
                   MMIcons.folder,
@@ -533,6 +544,8 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
             if (title != null && title.isNotEmpty) await repo.rename(id, title);
           }, icon: MMIcons.editNote),
           MMMenuItem(s.starred ? l.unstar : l.star, () => repo.setStarred(id, starred: !s.starred), icon: MMIcons.star),
+          if (repo is LibraryOrganizationRepository)
+            MMMenuItem(l.moveToFolder, () => showFolderSheet(context, move: s), icon: MMIcons.folder),
           const MMMenuDivider(),
           MMMenuItem(l.deleteEllipsis, () => confirmDelete(s), destructive: true, icon: MMIcons.trash),
         ],

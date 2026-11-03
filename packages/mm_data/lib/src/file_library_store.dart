@@ -15,6 +15,7 @@ import 'content_sync_review.dart';
 
 part 'file_library_sync_status.dart';
 part 'file_library_reviews.dart';
+part 'file_library_folders.dart';
 
 /// Stores the library on disk:
 ///
@@ -32,6 +33,7 @@ class FileLibraryStore
     implements
         ContentEditRepository,
         ContentSyncRepository,
+        LibraryOrganizationRepository,
         TranslationStoreRepository,
         StudySetRepository,
         StudySetContentRepository,
@@ -61,6 +63,29 @@ class FileLibraryStore
   static String _scope(String id) => 'sets/$id';
 
   final _syncStatusChanges = StreamController<void>.broadcast();
+
+  @override
+  Stream<LibraryOrganization> watchOrganization() => _watchOrganization();
+  @override
+  Future<Folder> createFolder(String name) => _createFolder(name);
+  @override
+  Future<void> renameFolder(String id, String name, {required String expectedRevision}) =>
+      _changeFolder(id, name, expectedRevision: expectedRevision);
+  @override
+  Future<void> deleteFolder(String id, {required String expectedRevision}) =>
+      _changeFolder(id, null, expectedRevision: expectedRevision);
+  @override
+  Future<void> moveStudySet(String id, String? folderId, {required String? expectedFolderId}) =>
+      _moveStudySet(id, folderId, expectedFolderId: expectedFolderId);
+  @override
+  Future<void> chooseFolderName(
+    String id,
+    String transaction, {
+    required String expectedRevision,
+    required bool useCandidate,
+  }) => _chooseFolderName(id, transaction, expectedRevision: expectedRevision, useCandidate: useCandidate);
+  @override
+  Future<void> retryOrganization() => _retryOrganization();
 
   @override
   Stream<ContentSyncStatus> watchContentSync(String id) => _watchContentSync(id);
@@ -357,6 +382,7 @@ class FileLibraryStore
         }
       });
     }
+    await _reconcileFolders();
     await _reconcileReviews(canApply: canApply);
     return results;
   }
@@ -531,6 +557,17 @@ class FileLibraryStore
       _syncSnapshots = await _sync!.commit([SyncMutation('library', local: value, shared: value)]);
     }
     if (_sync case final sync?) {
+      // Upgrade legacy folder indexes once. Each folder has its own history;
+      // empty libraries on joining devices must not invent competing roots.
+      final seeds = <SyncMutation>[];
+      for (final folder in folders) {
+        final value = sharedFolder(folder);
+        folderFromSync(folder.id, value);
+        if (!_syncSnapshots.containsKey('folders/${folder.id}')) {
+          seeds.add(SyncMutation('folders/${folder.id}', local: value, shared: value));
+        }
+      }
+      if (seeds.isNotEmpty) _syncSnapshots = await sync.commit(seeds);
       await sync.project(
         _libraryFile.path,
         () => _atomicWrite(_libraryFile, utf8.encode(jsonEncode(_syncSnapshots['library']!.value))),
@@ -630,7 +667,14 @@ class FileLibraryStore
   @override
   Stream<List<Folder>> watchFolders() => _watch(_libraryChanges.stream, () => List.unmodifiable(_folders));
 
-  List<StudySet> _summaries() => [for (final r in _sets.values) r.summary(_clock())];
+  List<StudySet> _summaries() => [for (final r in _sets.values) _summary(r)];
+
+  StudySet _summary(_SetRecord record) {
+    final summary = record.summary(_clock());
+    return record.folderId != null && !_folders.any((f) => f.id == record.folderId)
+        ? summary.copyWith(clearFolder: true)
+        : summary;
+  }
 
   @override
   Future<StudySet> create(NewStudySet input) async {
@@ -653,7 +697,7 @@ class FileLibraryStore
       _sets[record.id] = record;
       _libraryChanges.add(null);
     });
-    return record.summary(now);
+    return _summary(record);
   }
 
   @override
@@ -1178,6 +1222,8 @@ class _SetRecord {
 
   _SetRecord copyWith({
     String? title,
+    String? folderId,
+    bool clearFolder = false,
     int? colorIndex,
     bool? starred,
     DateTime? lastOpenedAt,
@@ -1186,7 +1232,7 @@ class _SetRecord {
     id: id,
     title: title ?? this.title,
     colorIndex: colorIndex ?? this.colorIndex,
-    folderId: folderId,
+    folderId: clearFolder ? null : folderId ?? this.folderId,
     starred: starred ?? this.starred,
     createdAt: createdAt,
     lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,

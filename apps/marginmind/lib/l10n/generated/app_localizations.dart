@@ -11353,6 +11353,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finish the current content edit, then rate this card.'**
   String get reviewFinishEditing;
+
+  /// No description provided for @manageFolders.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage folders'**
+  String get manageFolders;
+
+  /// No description provided for @folderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get folderName;
+
+  /// No description provided for @folderNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a folder name with 1–256 characters.'**
+  String get folderNameInvalid;
+
+  /// No description provided for @deleteFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder?'**
+  String get deleteFolder;
+
+  /// No description provided for @deleteFolderMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Study sets are kept and shown under Unfiled.'**
+  String get deleteFolderMessage;
+
+  /// No description provided for @moveToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get moveToFolder;
+
+  /// No description provided for @folderUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder awaiting recovery'**
+  String get folderUnavailable;
+
+  /// No description provided for @folderRepairNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'The folder index needs repair. Your saved changes are retained.'**
+  String get folderRepairNeeded;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

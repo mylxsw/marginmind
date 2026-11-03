@@ -3281,5 +3281,13 @@
   },
   "reviewSaveFailed": "The rating could not be saved. Your place is unchanged; try again.",
   "reviewWaitingBaseline": "Earlier review history has not arrived yet. Wait for sync, then try again.",
-  "reviewFinishEditing": "Finish the current content edit, then rate this card."
+  "reviewFinishEditing": "Finish the current content edit, then rate this card.",
+  "manageFolders": "Manage folders",
+  "folderName": "Folder name",
+  "folderNameInvalid": "Enter a folder name with 1–256 characters.",
+  "deleteFolder": "Delete folder?",
+  "deleteFolderMessage": "Study sets are kept and shown under Unfiled.",
+  "moveToFolder": "Move to folder",
+  "folderUnavailable": "Folder awaiting recovery",
+  "folderRepairNeeded": "The folder index needs repair. Your saved changes are retained."
 }
