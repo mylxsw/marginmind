@@ -343,6 +343,19 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     _focus.requestFocus();
   }
 
+  Future<void> _phoneOptions(BuildContext button) async {
+    final online = ref.read(assistantControllerProvider).online;
+    await showMMMenu(
+      button,
+      position: boundsOf(button).topLeft,
+      anchor: boundsOf(button),
+      entries: [
+        MMMenuItem(_l.assistantMention, () => unawaited(_mention()), icon: MMIcons.mention),
+        MMMenuItem(_l.assistantOnline, () => unawaited(_setOnline(!online)), icon: MMIcons.web, checked: online),
+      ],
+    );
+  }
+
   /// The toggle is remembered for the study set's next conversations.
   Future<void> _setOnline(bool online) async {
     await ref.read(sharedPreferencesProvider).setBool(assistantOnlineKey(widget.studySetId), online);
@@ -354,6 +367,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
+    final phone = MMInput.of(context).phone;
     final ui = ref.watch(assistantUiProvider(widget.studySetId));
     final auto = ref.watch(assistantAutoContextsProvider(widget.studySetId));
     final conversation = ref.watch(assistantControllerProvider);
@@ -425,12 +439,13 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                   onSend: () => _send(),
                   onStop: () => unawaited(ref.read(assistantControllerProvider.notifier).stop()),
                 ),
-                MMIconButton(
-                  key: const ValueKey('assistant-close'),
-                  icon: MMIcons.close,
-                  tooltip: l.closePanel,
-                  onPressed: () => ref.read(workspaceProvider(widget.studySetId).notifier).closePanel(),
-                ),
+                if (!phone)
+                  MMIconButton(
+                    key: const ValueKey('assistant-close'),
+                    icon: MMIcons.close,
+                    tooltip: l.closePanel,
+                    onPressed: () => ref.read(workspaceProvider(widget.studySetId).notifier).closePanel(),
+                  ),
               ],
             ),
           )
@@ -466,13 +481,16 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, MMSpacing.s, 10, 10),
+                  padding: phone
+                      ? const EdgeInsets.all(MMSpacing.s)
+                      : const EdgeInsets.fromLTRB(10, MMSpacing.s, 10, 10),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (configured &&
                           quick &&
+                          !(phone && conversation.messages.isEmpty) &&
                           _text.text.trim().isEmpty &&
                           !(context.mmTouchPlatform && MediaQuery.viewInsetsOf(context).bottom > 0))
                         Padding(
@@ -525,9 +543,16 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                         duration: MMMotion.quick,
                         curve: MMMotion.quickCurve,
                         decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: _focus.hasFocus ? c.research : c.separator),
+                          color: phone ? c.quaternaryFill : Colors.transparent,
+                          borderRadius: BorderRadius.circular(phone ? MMRadii.phoneComposer : 14),
+                          border: Border.all(
+                            color: _focus.hasFocus
+                                ? c.research
+                                : phone
+                                ? c.border
+                                : c.separator,
+                            width: phone ? MMSizes.hairline : 1,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -565,6 +590,8 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                                         readOnly: _voice.active,
                                         minLines: MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500
                                             ? 1
+                                            : phone
+                                            ? 2
                                             : configured && chips.isNotEmpty
                                             ? 2
                                             : 3,
@@ -596,12 +623,25 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                                     children: [
                                       Row(
                                         children: [
-                                          _BarButton(
-                                            key: _mentionButton,
-                                            icon: MMIcons.mention,
-                                            tooltip: '${l.assistantMention}（@）',
-                                            onPressed: configured && !_voice.active ? _mention : null,
-                                          ),
+                                          if (phone)
+                                            Builder(
+                                              key: const ValueKey('assistant-phone-options'),
+                                              builder: (button) => _BarButton(
+                                                key: _mentionButton,
+                                                icon: MMIcons.add,
+                                                tooltip: l.assistantMoreActions,
+                                                onPressed: configured && !_voice.active
+                                                    ? () => _phoneOptions(button)
+                                                    : null,
+                                              ),
+                                            )
+                                          else
+                                            _BarButton(
+                                              key: _mentionButton,
+                                              icon: MMIcons.mention,
+                                              tooltip: '${l.assistantMention}（@）',
+                                              onPressed: configured && !_voice.active ? _mention : null,
+                                            ),
                                           if (!context.mmTouchPlatform)
                                             _BarButton(
                                               key: const ValueKey('assistant-slash'),
@@ -617,23 +657,24 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                                                     }
                                                   : null,
                                             ),
-                                          _BarButton(
-                                            key: const ValueKey('assistant-online'),
-                                            icon: MMIcons.web,
-                                            label: constraints.maxWidth < 400
-                                                ? null
-                                                : (conversation.online ? l.assistantOnline : l.assistantOffline),
-                                            color: conversation.online ? c.research : c.secondaryLabel,
-                                            tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
-                                            selected: conversation.online,
-                                            onPressed: configured
-                                                ? () => unawaited(_setOnline(!conversation.online))
-                                                : null,
-                                          ),
+                                          if (!phone)
+                                            _BarButton(
+                                              key: const ValueKey('assistant-online'),
+                                              icon: MMIcons.web,
+                                              label: constraints.maxWidth < 400
+                                                  ? null
+                                                  : (conversation.online ? l.assistantOnline : l.assistantOffline),
+                                              color: conversation.online ? c.research : c.secondaryLabel,
+                                              tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
+                                              selected: conversation.online,
+                                              onPressed: configured
+                                                  ? () => unawaited(_setOnline(!conversation.online))
+                                                  : null,
+                                            ),
                                           Expanded(
                                             child: Align(
                                               key: const ValueKey('assistant-model'),
-                                              alignment: Alignment.centerRight,
+                                              alignment: phone ? Alignment.centerLeft : Alignment.centerRight,
                                               child: picker,
                                             ),
                                           ),
@@ -928,7 +969,7 @@ class _BarButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (icon != null) Icon(icon, size: 14, color: fg),
+              if (icon != null) Icon(icon, size: MMInput.of(context).phone ? MMSizes.phoneMenuIcon : 14, color: fg),
               if (icon != null && label != null) const SizedBox(width: MMSpacing.xs),
               if (label != null)
                 _tabletFlexible(

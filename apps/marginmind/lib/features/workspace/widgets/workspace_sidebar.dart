@@ -56,6 +56,7 @@ class WorkspaceSidebar extends ConsumerWidget {
           s.activeDocumentId,
           s.tagFilter,
           s.selectedCardId,
+          s.layout,
         ),
       ),
     );
@@ -386,6 +387,12 @@ class WorkspaceSidebar extends ConsumerWidget {
         key: ValueKey(studySetId),
         title: studyTitle ?? '',
         mapId: state.activeMapId,
+        returnLabel: switch (state.tabs.active?.kind) {
+          WorkspaceTabKind.documentMap =>
+            state.layout == MMSplitMode.secondary ? l.backToMap : l.phoneNavigationReturnToReading,
+          WorkspaceTabKind.note => l.phoneNavigationReturnToNote,
+          _ => l.phoneNavigationReturnToContent,
+        },
         onDismiss: onDismiss ?? controller.toggleSidebar,
         documents: [for (final row in docs) phoneRow(row, mapDestination: false)],
         maps: [for (final row in maps) phoneRow(row, mapDestination: true)],

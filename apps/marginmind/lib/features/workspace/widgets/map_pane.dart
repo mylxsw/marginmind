@@ -1338,34 +1338,44 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       onResize: controller.setCardWidth,
                                       previewStyle: _styleOpen ? _stylePreview : null,
                                     )
-                                  : OutlineView(
-                                      contentPadding: EdgeInsets.fromLTRB(
-                                        16,
-                                        toolbarTopInset + MMSpacing.s,
-                                        16,
-                                        chrome.bottom + 72,
+                                  : Padding(
+                                      padding: EdgeInsets.only(
+                                        top: phone ? toolbarTopInset : 0,
+                                        bottom: phone
+                                            ? MMSizes.thumbDock + MMPhoneReaderLayout.bottom + MMSpacing.s
+                                            : 0,
                                       ),
-                                      key: ValueKey(state.activeMapId),
-                                      content: content,
-                                      mapId: canvasMapId,
-                                      rootTitle: canvasRootTitle,
-                                      selectedCardId: state.selectedCardId,
-                                      rootSelected: state.rootSelected,
-                                      onSelectRoot: controller.selectMapRoot,
-                                      onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
-                                      selectedCardIds: state.selectedCardIds,
-                                      onToggleSelection: controller.toggleCardSelection,
-                                      focusNode: _focus,
-                                      onSelect: controller.selectCard,
-                                      onReveal: controller.revealCard,
-                                      onRename: rename,
-                                      onDelete: remove,
-                                      onAddChild: () => addTopic(asChild: true),
-                                      onShift: controller.shiftSelected,
-                                      onCommand: _command,
-                                      editingCardId: state.editingCardId,
-                                      onEditDone: controller.finishEditing,
-                                      onEditCancel: controller.cancelEditing,
+                                      child: OutlineView(
+                                        contentPadding: EdgeInsets.fromLTRB(
+                                          16,
+                                          phone ? MMSpacing.s : toolbarTopInset + MMSpacing.s,
+                                          16,
+                                          phone ? MMSpacing.l : chrome.bottom + 72,
+                                        ),
+                                        key: ValueKey(state.activeMapId),
+                                        content: content,
+                                        mapId: canvasMapId,
+                                        rootTitle: canvasRootTitle,
+                                        selectedCardId: state.selectedCardId,
+                                        rootSelected: state.rootSelected,
+                                        onSelectRoot: controller.selectMapRoot,
+                                        onAssistant: MMPlatformCapabilities.current.assistant
+                                            ? _openNodeAssistant
+                                            : null,
+                                        selectedCardIds: state.selectedCardIds,
+                                        onToggleSelection: controller.toggleCardSelection,
+                                        focusNode: _focus,
+                                        onSelect: controller.selectCard,
+                                        onReveal: controller.revealCard,
+                                        onRename: rename,
+                                        onDelete: remove,
+                                        onAddChild: () => addTopic(asChild: true),
+                                        onShift: controller.shiftSelected,
+                                        onCommand: _command,
+                                        editingCardId: state.editingCardId,
+                                        onEditDone: controller.finishEditing,
+                                        onEditCancel: controller.cancelEditing,
+                                      ),
                                     ),
                             ),
                           );
@@ -1394,6 +1404,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                   TapRegion(
                                     groupId: _styleRegion,
                                     child: WorkspaceToolbar(
+                                      compactPhone: phone && outline,
                                       leadingPadding: phone ? null : MMSpacing.l,
                                       label: l.moreTools,
                                       items: [
@@ -1429,7 +1440,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                             ),
                                           ),
                                         ),
-                                        if (phone) ...[
+                                        if (phone && !outline) ...[
                                           MMToolbarItem(
                                             id: 'actual-size',
                                             priority: 70,
@@ -1524,21 +1535,21 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                           key: const ValueKey('map-style-menu'),
                                           value: _toggleStyle,
                                           enabled: map != null,
-                                          child: TapRegion(
-                                            groupId: _styleRegion,
-                                            child: menuLabel(l.mapStyle, const Icon(MMIcons.mapStyle)),
-                                          ),
+                                          icon: MMIcons.mapStyle,
+                                          child: Text(l.mapStyle),
                                         ),
                                         if (MMInput.touchInputOf(context))
                                           MMDropdownItem<VoidCallback>(
                                             value: _toggleTouchSelection,
-                                            child: menuLabel(l.mapMultiSelect, const Icon(MMIcons.areaSelect)),
+                                            icon: MMIcons.areaSelect,
+                                            child: Text(l.mapMultiSelect),
                                           ),
                                         if (outline)
                                           MMDropdownItem<VoidCallback>(
                                             value: remove,
                                             enabled: state.selectedCardId != null,
-                                            child: menuLabel(l.removeFromMap, const Icon(MMIcons.trash)),
+                                            icon: MMIcons.trash,
+                                            child: Text(l.removeFromMap),
                                           ),
                                       ],
                                       trailingMenuEntries: [

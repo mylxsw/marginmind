@@ -3225,5 +3225,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "phoneNavigationReturnToReading": "Back to Reading",
+  "phoneNavigationReturnToNote": "Back to Note",
+  "phoneNavigationReturnToContent": "Back to Content"
 }

@@ -6096,4 +6096,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String incomingShareFiles(int count) {
     return '$count 个文档';
   }
+
+  @override
+  String get phoneNavigationReturnToReading => '返回阅读';
+
+  @override
+  String get phoneNavigationReturnToNote => '返回笔记';
+
+  @override
+  String get phoneNavigationReturnToContent => '返回内容';
 }

@@ -60,13 +60,22 @@ class StudySetCard extends StatelessWidget {
                   Positioned(
                     left: 8,
                     bottom: 8,
-                    child: MMGlass(
-                      // Glass stays off content on touch platforms: a card's badge only tints.
-                      blurSigma: MMInput.of(context).touchPlatform ? 0 : 24,
-                      borderRadius: BorderRadius.circular(10),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      child: Text(l.dueBadge(set.dueCount), style: t.subheadline.copyWith(color: c.label)),
-                    ),
+                    child: MMInput.of(context).phone
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              borderRadius: BorderRadius.circular(MMRadii.row),
+                              border: Border.all(color: c.border, width: MMSizes.hairline),
+                            ),
+                            child: Text(l.dueBadge(set.dueCount), style: t.footnote.copyWith(color: c.label)),
+                          )
+                        : MMGlass(
+                            blurSigma: touch ? 0 : 24,
+                            borderRadius: BorderRadius.circular(10),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            child: Text(l.dueBadge(set.dueCount), style: t.subheadline.copyWith(color: c.label)),
+                          ),
                   ),
                 if (s.hovered || set.starred)
                   Positioned(
@@ -87,7 +96,8 @@ class StudySetCard extends StatelessWidget {
               ),
               child: Text(
                 set.title,
-                maxLines: 1,
+                maxLines: MMInput.of(context).phone ? 2 : 1,
+                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: t.headline.copyWith(color: selected ? c.onAccent : c.label),
               ),

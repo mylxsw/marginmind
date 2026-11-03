@@ -44,7 +44,9 @@ class _RightPanelViewState extends ConsumerState<RightPanelView> {
       child: FocusTraversalGroup(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: MMInput.of(context).phone
+            color: MMInput.of(context).phone && MMBottomSheet.contains(context)
+                ? Colors.transparent
+                : MMInput.of(context).phone
                 ? c.windowBackground
                 : context.mmTouchPlatform
                 ? c.sidebarOpaque

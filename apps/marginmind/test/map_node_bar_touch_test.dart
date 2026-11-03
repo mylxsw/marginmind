@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
+import 'package:marginmind/shared/assistant_icon.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
@@ -55,6 +56,9 @@ void main() {
     final invoked = <String>[];
     await _pumpBar(tester, invoked: invoked, phone: true);
     final toolbar = find.byKey(const ValueKey('phone-map-node-toolbar'));
+    final assistant = find.byKey(const ValueKey('node-bar-assistant'));
+    expect(find.descendant(of: assistant, matching: find.byType(AssistantIcon)), findsOneWidget);
+    expect(find.descendant(of: assistant, matching: find.byIcon(MMIcons.ai)), findsNothing);
     expect(tester.getSize(toolbar).width, lessThanOrEqualTo(304));
     for (final id in ['edit', 'child', 'sibling', 'assistant', 'more']) {
       final button = find.byKey(ValueKey('node-bar-$id'));

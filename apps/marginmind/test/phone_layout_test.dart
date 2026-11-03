@@ -150,7 +150,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(sheet, findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'assistant sheet');
-      await tester.tap(find.byKey(const ValueKey('assistant-close')));
+      expect(find.byKey(const ValueKey('assistant-close')), findsNothing);
+      await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, 500), 1400);
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).panel, isNull);
       await settleHud(tester);

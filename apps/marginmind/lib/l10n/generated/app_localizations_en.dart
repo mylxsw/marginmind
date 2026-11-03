@@ -6342,4 +6342,13 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count documents', one: '1 document');
     return '$_temp0';
   }
+
+  @override
+  String get phoneNavigationReturnToReading => 'Back to Reading';
+
+  @override
+  String get phoneNavigationReturnToNote => 'Back to Note';
+
+  @override
+  String get phoneNavigationReturnToContent => 'Back to Content';
 }

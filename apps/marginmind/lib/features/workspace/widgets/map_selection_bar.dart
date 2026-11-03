@@ -58,61 +58,64 @@ class MapSelectionBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final palette = ref.watch(highlightPaletteProvider);
-    return MMGlass(
-      toolbar: true,
-      borderRadius: BorderRadius.circular(24),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (MMInput.of(context).phone && onSelectMore != null)
-            _PhoneNodeAction(id: 'select', label: l.mapSelectionTap, icon: MMIcons.areaSelect, onTap: onSelectMore!),
-          MouseRegion(
-            onEnter: (_) => onMergeHover(true),
-            onExit: (_) => onMergeHover(false),
-            child: _MapAction(
-              id: 'merge',
-              label: l.selectionMerge,
-              shortcut: _shortcut(MindMapCommand.merge),
-              nodeIcon: MMNodeAction.merge,
-              onPressed: onMerge,
-              reason: mergeReason == null ? null : mapEditReasonText(context, mergeReason!),
+    return MMFlatSurface(
+      enabled: MMInput.of(context).phone || MMFlatSurface.of(context),
+      child: MMGlass(
+        toolbar: true,
+        borderRadius: BorderRadius.circular(24),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (MMInput.of(context).phone && onSelectMore != null)
+              _PhoneNodeAction(id: 'select', label: l.mapSelectionTap, icon: MMIcons.areaSelect, onTap: onSelectMore!),
+            MouseRegion(
+              onEnter: (_) => onMergeHover(true),
+              onExit: (_) => onMergeHover(false),
+              child: _MapAction(
+                id: 'merge',
+                label: l.selectionMerge,
+                shortcut: _shortcut(MindMapCommand.merge),
+                nodeIcon: MMNodeAction.merge,
+                onPressed: onMerge,
+                reason: mergeReason == null ? null : mapEditReasonText(context, mergeReason!),
+              ),
             ),
-          ),
-          _MapAction(
-            id: 'summary',
-            label: l.selectionSummary,
-            shortcut: describeShortcut(
-              mindMapShortcuts.entries.firstWhere((e) => e.value == MindMapCommand.summary).key,
+            _MapAction(
+              id: 'summary',
+              label: l.selectionSummary,
+              shortcut: describeShortcut(
+                mindMapShortcuts.entries.firstWhere((e) => e.value == MindMapCommand.summary).key,
+              ),
+              nodeIcon: MMNodeAction.summary,
+              onPressed: onSummary,
+              reason: summaryReason == null ? null : mapEditReasonText(context, summaryReason!),
             ),
-            nodeIcon: MMNodeAction.summary,
-            onPressed: onSummary,
-            reason: summaryReason == null ? null : mapEditReasonText(context, summaryReason!),
-          ),
-          _MapAction(
-            id: 'relation',
-            label: l.addRelation,
-            shortcut: _shortcut(MindMapCommand.relation),
-            nodeIcon: MMNodeAction.relation,
-            onPressed: onRelation,
-            reason: count == 2 ? null : l.relationNeedsTwo,
-          ),
-          if (onColor != null)
-            HighlightColorButton(
-              key: const ValueKey('node-bar-color'),
-              color: color ?? palette.current,
-              mixed: color == null,
-              colors: {
-                ...MMAnnotationColor.values,
-                ...palette.recent().where((c) => c.isCustom),
-                if (color?.isCustom == true) color!,
-              }.toList(),
-              onChanged: onColor!,
+            _MapAction(
+              id: 'relation',
+              label: l.addRelation,
+              shortcut: _shortcut(MindMapCommand.relation),
+              nodeIcon: MMNodeAction.relation,
+              onPressed: onRelation,
+              reason: count == 2 ? null : l.relationNeedsTwo,
             ),
-          if (onAssistant != null) ...[const MMToolbarDivider(), _AssistantAction(onAssistant: onAssistant!)],
-          const MMToolbarDivider(),
-          _MapAction(id: 'delete', label: l.removeFromMap, shortcut: '⌫', icon: MMIcons.trash, onPressed: onDelete),
-        ],
+            if (onColor != null)
+              HighlightColorButton(
+                key: const ValueKey('node-bar-color'),
+                color: color ?? palette.current,
+                mixed: color == null,
+                colors: {
+                  ...MMAnnotationColor.values,
+                  ...palette.recent().where((c) => c.isCustom),
+                  if (color?.isCustom == true) color!,
+                }.toList(),
+                onChanged: onColor!,
+              ),
+            if (onAssistant != null) ...[const MMToolbarDivider(), _AssistantAction(onAssistant: onAssistant!)],
+            const MMToolbarDivider(),
+            _MapAction(id: 'delete', label: l.removeFromMap, shortcut: '⌫', icon: MMIcons.trash, onPressed: onDelete),
+          ],
+        ),
       ),
     );
   }
@@ -146,35 +149,40 @@ class MapNodeBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     if (MMInput.of(context).phone) {
-      return MMGlass(
-        key: const ValueKey('phone-map-node-toolbar'),
-        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onEdit != null) _PhoneNodeAction(id: 'edit', label: l.mapPhoneEdit, icon: MMIcons.pen, onTap: onEdit!),
-            _PhoneNodeAction(id: 'child', label: l.mapPhoneChild, nodeIcon: MMNodeAction.child, onTap: onChild),
-            if (!root)
-              _PhoneNodeAction(
-                id: 'sibling',
-                label: l.mapPhoneSibling,
-                nodeIcon: MMNodeAction.sibling,
-                onTap: onSibling,
-              ),
-            if (onAssistant != null)
-              Builder(
-                builder: (context) => _PhoneNodeAction(
-                  id: 'assistant',
-                  label: l.askAssistant,
-                  icon: MMIcons.ai,
-                  onTap: () {
-                    final box = context.findRenderObject()! as RenderBox;
-                    onAssistant!(box.localToGlobal(Offset.zero) & box.size);
-                  },
+      return MMFlatSurface(
+        child: MMGlass(
+          key: const ValueKey('phone-map-node-toolbar'),
+          borderRadius: BorderRadius.circular(MMRadii.phoneNodeToolbar),
+          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onEdit != null)
+                _PhoneNodeAction(id: 'edit', label: l.mapPhoneEdit, icon: MMIcons.pen, onTap: onEdit!),
+              _PhoneNodeAction(id: 'child', label: l.mapPhoneChild, nodeIcon: MMNodeAction.child, onTap: onChild),
+              if (!root)
+                _PhoneNodeAction(
+                  id: 'sibling',
+                  label: l.mapPhoneSibling,
+                  nodeIcon: MMNodeAction.sibling,
+                  onTap: onSibling,
                 ),
-              ),
-            if (onMore != null) _PhoneNodeAction(id: 'more', label: l.mapPhoneMore, icon: MMIcons.more, onTap: onMore!),
-          ],
+              if (onAssistant != null)
+                Builder(
+                  builder: (context) => _PhoneNodeAction(
+                    id: 'assistant',
+                    label: l.askAssistant,
+                    iconWidget: const AssistantIcon(size: MMSizes.phoneMenuIcon),
+                    onTap: () {
+                      final box = context.findRenderObject()! as RenderBox;
+                      onAssistant!(box.localToGlobal(Offset.zero) & box.size);
+                    },
+                  ),
+                ),
+              if (onMore != null)
+                _PhoneNodeAction(id: 'more', label: l.mapPhoneMore, icon: MMIcons.more, onTap: onMore!),
+            ],
+          ),
         ),
       );
     }
@@ -255,9 +263,17 @@ class MapNodeBar extends StatelessWidget {
 }
 
 class _PhoneNodeAction extends StatelessWidget {
-  const _PhoneNodeAction({required this.id, required this.label, this.icon, this.nodeIcon, required this.onTap});
+  const _PhoneNodeAction({
+    required this.id,
+    required this.label,
+    this.icon,
+    this.iconWidget,
+    this.nodeIcon,
+    required this.onTap,
+  });
   final String id, label;
   final IconData? icon;
+  final Widget? iconWidget;
   final MMNodeAction? nodeIcon;
   final VoidCallback onTap;
 
@@ -277,7 +293,9 @@ class _PhoneNodeAction extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (nodeIcon != null)
+          if (iconWidget != null)
+            iconWidget!
+          else if (nodeIcon != null)
             MMNodeActionIcon(nodeIcon!, size: 20, color: context.mmColors.label)
           else
             Icon(icon, size: 20, color: context.mmColors.label),

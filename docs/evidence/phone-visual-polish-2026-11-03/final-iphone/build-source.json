@@ -1,0 +1,7 @@
+{
+  "device": "F7498667-CBDD-44E8-984B-173FF027868F",
+  "test": "phone_visual_polish_acceptance_test.dart",
+  "commit": "bf8480bcd50d7deb3121c4744014e7f841d79c11",
+  "dart_source_sha256": "c71c079c1c1775dea8e9170ead465ddc2a7e2867b1f1f597671f2270fe95dfaf",
+  "native_swift_sha256": "68e886988cacc5a0fceb801bcaf1786071e716a9e2e0b162f808a066e6d72049"
+}

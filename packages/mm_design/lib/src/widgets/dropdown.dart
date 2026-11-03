@@ -12,6 +12,7 @@ import 'flat_surface.dart';
 import 'control_frame.dart';
 import 'toolbar.dart';
 import 'bottom_sheet.dart';
+import 'phone_sheet_header.dart';
 
 /// Reports menu lifetime to a host that must keep its anchors stationary.
 class MMPopupActivity extends InheritedWidget {
@@ -620,11 +621,10 @@ class _PhoneDropdownState<T> extends State<_PhoneDropdown<T>> {
       return _entry(entry.child! as PopupMenuEntry<T>);
     }
     if (entry is MMDropdownSubmenu<T>) {
-      return ListTile(
+      return _PhoneMenuRow(
         key: entry.key,
-        leading: entry.icon == null ? null : Icon(entry.icon),
-        title: Text(entry.label, style: context.mmText.body),
-        trailing: const Icon(MMIcons.chevronRight),
+        icon: entry.icon,
+        submenu: true,
         enabled: entry.enabled,
         onTap: () => setState(() {
           _history.add((title: _title, entries: _entries));
@@ -644,6 +644,19 @@ class _PhoneDropdownState<T> extends State<_PhoneDropdown<T>> {
                   ),
               ];
         }),
+        child: Text(entry.label),
+      );
+    }
+    if (entry is PopupMenuItem<T>) {
+      return _PhoneMenuRow(
+        key: entry.key,
+        icon: entry is MMDropdownItem<T> ? entry.icon : null,
+        enabled: entry.enabled,
+        onTap: () {
+          Navigator.of(context).pop(entry.value);
+          entry.onTap?.call();
+        },
+        child: entry.child ?? const SizedBox.shrink(),
       );
     }
     return entry;
@@ -659,40 +672,29 @@ class _PhoneDropdownState<T> extends State<_PhoneDropdown<T>> {
       container: true,
       explicitChildNodes: true,
       role: SemanticsRole.menu,
+      label: _history.isEmpty ? widget.title : null,
       child: Material(
         type: MaterialType.transparency,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
-              child: Row(
-                children: [
-                  if (_history.isNotEmpty)
-                    MMIconButton(
-                      icon: MMIcons.chevronLeft,
-                      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                      onPressed: _back,
-                    ),
-                  Expanded(
-                    child: Text(
-                      _title ?? MaterialLocalizations.of(context).popupMenuLabel,
-                      style: context.mmText.headline,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  MMIconButton(
-                    icon: MMIcons.close,
-                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
+            if (_history.isNotEmpty)
+              MMPhoneSheetHeader(
+                showClose: false,
+                title: _title ?? MaterialLocalizations.of(context).popupMenuLabel,
+                onClose: () => Navigator.of(context).pop(),
+                leading: _history.isNotEmpty
+                    ? MMIconButton(
+                        icon: MMIcons.chevronLeft,
+                        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                        onPressed: _back,
+                      )
+                    : null,
               ),
-            ),
             Flexible(
               child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.s),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _entries.map(_entry).toList()),
               ),
             ),
@@ -701,4 +703,57 @@ class _PhoneDropdownState<T> extends State<_PhoneDropdown<T>> {
       ),
     ),
   );
+}
+
+/// PopupMenuItem and ListTile have different built-in typography and heights.
+/// Phone leaf items and submenu items deliberately share this one row instead.
+class _PhoneMenuRow extends StatelessWidget {
+  const _PhoneMenuRow({
+    super.key,
+    required this.child,
+    required this.enabled,
+    required this.onTap,
+    this.icon,
+    this.submenu = false,
+  });
+
+  final Widget child;
+  final bool enabled, submenu;
+  final IconData? icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final color = enabled ? c.label : c.secondaryLabel;
+    return Opacity(
+      opacity: enabled ? 1 : .5,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(MMRadii.row),
+        onTap: enabled ? onTap : null,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: MMSizes.actionSheetRow),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.m),
+            child: IconTheme(
+              data: IconThemeData(size: MMSizes.phoneMenuIcon, color: color),
+              child: DefaultTextStyle(
+                style: context.mmText.body.copyWith(color: color),
+                child: Row(
+                  children: [
+                    if (icon != null) ...[Icon(icon), const SizedBox(width: MMSpacing.m)],
+                    Expanded(child: child),
+                    if (submenu) ...[
+                      const SizedBox(width: MMSpacing.s),
+                      Icon(MMIcons.chevronRight, size: MMSpacing.m, color: c.secondaryLabel),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

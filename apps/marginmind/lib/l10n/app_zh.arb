@@ -2516,5 +2516,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "phoneNavigationReturnToReading": "返回阅读",
+  "phoneNavigationReturnToNote": "返回笔记",
+  "phoneNavigationReturnToContent": "返回内容"
 }
