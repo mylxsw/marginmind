@@ -236,6 +236,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   final _title = TextEditingController();
   final _prepared = <WebCaptureMode, Future<PreparedWebDocument>>{};
   final _reveal = ValueNotifier<int?>(null);
+  final _cardKey = GlobalKey();
   late WebCaptureMode _mode = widget.initialMode;
   late bool _edited = widget.initialTitle != null;
   late bool _aiOn = widget.initialFormatting;
@@ -593,6 +594,18 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
                   enabled: _aiOn,
                   onEnabled: (value) {
                     setState(() => _aiOn = value);
+                    // Where the text will be sent must be seen before starting.
+                    if (value) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final card = _cardKey.currentContext;
+                        if (card == null || !card.mounted) return;
+                        Scrollable.ensureVisible(
+                          card,
+                          duration: MMMotion.standard,
+                          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+                        );
+                      });
+                    }
                     if (value) unawaited(_loadSource().then<void>((_) {}, onError: (Object _) {}));
                   },
                   scope: _pageSource == null
@@ -661,7 +674,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
                         ),
                       ] else if (card != null) ...[
                         const SizedBox(height: MMSpacing.xxl),
-                        section(l.webFormatSectionLabel, card),
+                        section(l.webFormatSectionLabel, KeyedSubtree(key: _cardKey, child: card)),
                       ],
                     ],
                   );

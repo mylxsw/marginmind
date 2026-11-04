@@ -117,6 +117,7 @@ class Harness {
                   showMMSheet<PreparedWebDocument>(
                     context: context,
                     width: MMSizes.webConversionSheetWidth,
+                    initialFraction: MMSizes.phoneSheetExpanded,
                     builder: (_) => WebConversionSheet(
                       prepare: (mode) {
                         plain.add(mode);
@@ -435,16 +436,27 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('turning it on brings the destination into view on a phone', (tester) async {
+    final h = Harness();
+    await h.pump(tester, size: const Size(390, 700), phone: true);
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('web-format-disclosure')).hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a single column keeps the main action on top and one level of tabs', (tester) async {
     final h = Harness();
     await h.pump(tester, size: const Size(390, 844), phone: true);
     final sheetTitle = tester.getRect(find.text('保存到资料库'));
     expect((tester.getCenter(find.widgetWithText(MMButton, '保存文档')).dy - sheetTitle.center.dy).abs(), lessThan(24));
-    expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
     final sheetScroll = tester.state<ScrollableState>(
       find.ancestor(of: find.byType(MMSegmentedControl<bool>), matching: find.byType(Scrollable)).first,
     );
     expect(sheetScroll.position.maxScrollExtent, 0, reason: 'tabs stay pinned: only the pane below them scrolls');
+    expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
     await tester.tap(find.text('预览'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);
@@ -453,7 +465,7 @@ void main() {
     await startFormattingKeepingGate(tester, h);
     expect(find.text('整理进度'), findsWidgets);
     await tester.tap(find.text('整理进度').first);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('文档名称'), findsNothing, reason: 'the progress tab is about progress');
     h.gate!.complete();
     await finish(tester);
@@ -470,10 +482,6 @@ void main() {
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
-    final sheetScroll = tester.state<ScrollableState>(
-      find.ancestor(of: find.byType(MMSegmentedControl<bool>), matching: find.byType(Scrollable)).first,
-    );
-    expect(sheetScroll.position.maxScrollExtent, 0, reason: 'tabs stay pinned: only the pane below them scrolls');
     await tester.tap(find.text('预览'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);
