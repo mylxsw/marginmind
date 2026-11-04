@@ -8,6 +8,7 @@ import 'source_selection.dart';
 export 'source_selection.dart';
 import '../../app/app_commands.dart' show ReaderSelectionCommand;
 import 'document_import.dart';
+import 'reflow_document.dart';
 import '../study_notes/note_identity.dart';
 
 import 'dart:async';
@@ -96,8 +97,19 @@ class ResearchNoteSavedNotice extends WorkspaceNotice {
 
 /// Ask the source pane to scroll to a highlight.
 class RevealRequest {
-  const RevealRequest(this.documentId, int page, this.rects, this.nonce) : _page = page, textAnchors = const [];
-  const RevealRequest.text(this.documentId, this.textAnchors, this.nonce) : _page = null, rects = const [];
+  const RevealRequest(this.documentId, int page, this.rects, this.nonce)
+    : _page = page,
+      textAnchors = const [],
+      textPosition = null;
+  const RevealRequest.text(this.documentId, this.textAnchors, this.nonce)
+    : _page = null,
+      rects = const [],
+      textPosition = null;
+  const RevealRequest.reading(this.documentId, this.textPosition, this.nonce)
+    : _page = null,
+      rects = const [],
+      textAnchors = const [];
+  final TextReadingPosition? textPosition;
   final List<TextAnchor> textAnchors;
 
   final String documentId;
@@ -145,9 +157,10 @@ class HighlightDeletedNotice extends WorkspaceNotice {
 }
 
 class UndoneNotice extends WorkspaceNotice {
-  const UndoneNotice({required this.redo});
+  const UndoneNotice({required this.redo, this.conflict = false});
 
   final bool redo;
+  final bool conflict;
 }
 
 class DocumentRemovedNotice extends WorkspaceNotice {
@@ -165,11 +178,12 @@ class ImportedNotice extends WorkspaceNotice {
 /// Model edits belong to the study set. Reference scopes isolate presentation,
 /// while writes, transactions and undo keep one chronological history.
 class WorkspaceEditHistory extends ChangeNotifier {
-  final List<StudySetContent> _undo = [];
-  final List<StudySetContent> _redo = [];
+  final List<ContentChange> _undo = [];
+  final List<ContentChange> _redo = [];
   Future<void> _pendingEdits = Future.value();
-  StudySetContent? _transactionBefore;
+  ContentChange? _transactionChange;
   int _transactionDepth = 0;
+  int _conflictVersion = 0;
   bool _disposed = false;
   void sync() {
     if (!_disposed) notifyListeners();
@@ -246,6 +260,7 @@ class WorkspaceState {
     this.reveal,
     this.canUndo = false,
     this.canRedo = false,
+    this.historyConflictVersion = 0,
     this.sidebarAutoCollapsed = false,
     this.readerPanelVisible = false,
     this.readerPanelMode = ReaderPanelMode.thumbnails,
@@ -322,6 +337,9 @@ class WorkspaceState {
 
   final bool canUndo;
   final bool canRedo;
+
+  /// Advances even when a caller ignores the returned undo/redo notice.
+  final int historyConflictVersion;
 
   /// The window is too narrow for the sidebar beside the map, so it is not on
   /// screen although [sidebarVisible] is set. Reported by the screen, not saved.
@@ -402,6 +420,7 @@ class WorkspaceState {
     bool clearReveal = false,
     bool? canUndo,
     bool? canRedo,
+    int? historyConflictVersion,
     bool? sidebarAutoCollapsed,
     bool? readerPanelVisible,
     ReaderPanelMode? readerPanelMode,
@@ -467,6 +486,7 @@ class WorkspaceState {
       reveal: clearReveal ? null : reveal ?? this.reveal,
       canUndo: canUndo ?? this.canUndo,
       canRedo: canRedo ?? this.canRedo,
+      historyConflictVersion: historyConflictVersion ?? this.historyConflictVersion,
       sidebarAutoCollapsed: sidebarAutoCollapsed ?? this.sidebarAutoCollapsed,
       readerPanelVisible: readerPanelVisible ?? this.readerPanelVisible,
       readerPanelMode: readerPanelMode ?? this.readerPanelMode,
@@ -514,6 +534,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   int _revealNonce = 0;
+  int _readingActivity = 0;
 
   @override
   WorkspaceState build() {
@@ -522,6 +543,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ref.onDispose(() => _history.removeListener(_historyChanged));
     ref.watch(translationSchedulersProvider(studySetId));
     ref.onDispose(() {
+      unawaited(_takeContentLease()?.release());
       _flashTimer?.cancel();
       for (final timer in _pageTimers.values) {
         timer.cancel();
@@ -546,6 +568,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final initialState = WorkspaceState(
       canUndo: _transactionDepth == 0 && _undo.isNotEmpty,
       canRedo: _transactionDepth == 0 && _redo.isNotEmpty,
+      historyConflictVersion: _history._conflictVersion,
       tool: ref.read(settingsProvider).annotationTool,
       color: ref.read(highlightPaletteProvider).current,
       underlineColor: ref.read(settingsProvider).underlineColor,
@@ -594,17 +617,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   StudySetContentRepository get _repo => ref.read(contentRepositoryProvider);
 
-  /// Content before each undoable edit, newest last; redo holds what undo
-  /// replaced.
+  /// Conditional local transactions, newest last. External repository changes
+  /// never become part of an operation merely because they arrived meanwhile.
   late WorkspaceEditHistory _history;
-  List<StudySetContent> get _undo => _history._undo;
-  List<StudySetContent> get _redo => _history._redo;
+  List<ContentChange> get _undo => _history._undo;
+  List<ContentChange> get _redo => _history._redo;
   static const _historyLimit = 100;
 
   Future<void> get _pendingEdits => _history._pendingEdits;
   set _pendingEdits(Future<void> value) => _history._pendingEdits = value;
-  StudySetContent? get _transactionBefore => _history._transactionBefore;
-  set _transactionBefore(StudySetContent? value) => _history._transactionBefore = value;
+  ContentChange? get _transactionChange => _history._transactionChange;
+  set _transactionChange(ContentChange? value) => _history._transactionChange = value;
   int get _transactionDepth => _history._transactionDepth;
   set _transactionDepth(int value) => _history._transactionDepth = value;
 
@@ -633,17 +656,24 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Nested begins join the outer transaction; only the outer commit records
   /// history. Await this before editing. Repeated commit/abort are harmless.
   Future<void> beginTransaction() => _enqueue(() async {
+    if (_transactionDepth == 0) {
+      if (_repo case final ContentEditRepository editing) await editing.beginContentTransaction(studySetId);
+    }
     _transactionDepth++;
     _syncHistory();
   });
 
   Future<void> commitTransaction() => _enqueue(() async {
     if (!ref.mounted || _transactionDepth == 0) return;
-    if (--_transactionDepth != 0) return;
-    final before = _transactionBefore;
-    _transactionBefore = null;
-    final current = await _repo.load(studySetId);
-    if (before != null && !_sameEdits(before, current)) _record(before);
+    if (_transactionDepth > 1) {
+      _transactionDepth--;
+      return;
+    }
+    if (_repo case final ContentEditRepository editing) await editing.endContentTransaction(studySetId);
+    _transactionDepth = 0;
+    final change = _transactionChange;
+    _transactionChange = null;
+    if (change != null && !change.isEmpty) _record(change);
     _syncHistory();
   });
 
@@ -651,12 +681,21 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// restore policy as undo so reading position and reviews are preserved.
   Future<void> abortTransaction() => _enqueue(() async {
     if (_transactionDepth == 0) return;
-    final before = _transactionBefore;
-    if (before != null) {
-      await _write((c) => StudySetEditor.restore(before, c));
-      if (ref.mounted) state = state.copyWith(clearPending: true);
+    final change = _transactionChange;
+    if (change != null) {
+      try {
+        await _write(change.reversed.apply);
+        if (ref.mounted) state = state.copyWith(clearPending: true);
+      } on ContentChangeConflict {
+        // Another writer now depends on this edit. Keep it as a conditional
+        // undo step, finish the editing session, and surface the conflict.
+        // Leaving the transaction open would disable all subsequent undo.
+        _record(change);
+        _history._conflictVersion++;
+      }
     }
-    _transactionBefore = null;
+    _transactionChange = null;
+    if (_repo case final ContentEditRepository editing) await editing.endContentTransaction(studySetId);
     _transactionDepth = 0;
     _syncHistory();
   });
@@ -665,8 +704,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       identical(before, after) ||
       jsonEncode(StudySetEditor.restore(before, after).toJson()) == jsonEncode(after.toJson());
 
-  void _record(StudySetContent before) {
-    _undo.add(before);
+  void _record(ContentChange change) {
+    if (change.isEmpty) return;
+    _undo.add(change);
     if (_undo.length > _historyLimit) _undo.removeAt(0);
     _redo.clear();
   }
@@ -693,9 +733,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     if (undoable && before != null && !_sameEdits(before!, next)) {
       if (_transactionDepth > 0) {
-        _transactionBefore ??= before;
+        final change = ContentChange.between(before!, next);
+        _transactionChange = _transactionChange?.followedBy(change) ?? change;
       } else {
-        _record(before!);
+        _record(ContentChange.between(before!, next));
       }
       _syncHistory();
     }
@@ -738,28 +779,32 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (!ref.mounted) return;
     final canUndo = _transactionDepth == 0 && _undo.isNotEmpty;
     final canRedo = _transactionDepth == 0 && _redo.isNotEmpty;
-    if (state.canUndo == canUndo && state.canRedo == canRedo) return;
-    state = state.copyWith(canUndo: canUndo, canRedo: canRedo);
+    if (state.canUndo == canUndo &&
+        state.canRedo == canRedo &&
+        state.historyConflictVersion == _history._conflictVersion) {
+      return;
+    }
+    state = state.copyWith(canUndo: canUndo, canRedo: canRedo, historyConflictVersion: _history._conflictVersion);
   }
 
   Future<UndoneNotice?> undo() => _travel(_undo, _redo, redo: false);
 
   Future<UndoneNotice?> redo() => _travel(_redo, _undo, redo: true);
 
-  Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) =>
+  Future<UndoneNotice?> _travel(List<ContentChange> from, List<ContentChange> to, {required bool redo}) =>
       _enqueue(() async {
         if (_blockExpansionEdit()) return null;
         if (_transactionDepth > 0 || _clipboardBusy || from.isEmpty) return null;
-        final snapshot = from.last;
-        StudySetContent? current;
-        await _write((c) {
-          current = c;
-          // An undone assistant change loses its receipt, so its proposal can
-          // be applied again; redo brings the receipt back.
-          return StudySetEditor.restore(snapshot, c).copyWith(assistantReceipts: snapshot.assistantReceipts);
-        });
+        final change = from.last;
+        try {
+          await _write(redo ? change.apply : change.reversed.apply);
+        } on ContentChangeConflict {
+          _history._conflictVersion++;
+          _syncHistory();
+          return UndoneNotice(redo: redo, conflict: true);
+        }
         from.removeLast();
-        to.add(current!);
+        to.add(change);
         if (ref.mounted) state = state.copyWith(clearPending: true);
         _syncHistory();
         return UndoneNotice(redo: redo);
@@ -1586,10 +1631,61 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void recordPage(String documentId, int page) {
     final pages = readingPagesProvider(studySetId);
     if (ref.read(pages)[documentId] == page) return;
+    _readingActivity++;
     ref.read(pages.notifier).record(documentId, page);
     _pageTimers.remove(documentId)?.cancel();
     _pageTimers[documentId] = Timer(const Duration(milliseconds: 800), () {
       _update((c) => _editor.setLastPage(c, documentId, page), undoable: false);
+    });
+  }
+
+  Future<void> continueReading(ReadingContinuation choice, {bool Function()? cancelled}) async {
+    final activeDocument = state.activeDocumentId;
+    final revealNonce = _revealNonce;
+    final activity = _readingActivity;
+    final timer = _pageTimers.remove(choice.documentId);
+    if (timer?.isActive == true) {
+      timer!.cancel();
+      final page = ref.read(readingPagesProvider(studySetId))[choice.documentId];
+      if (page != null) await _update((c) => _editor.setLastPage(c, choice.documentId, page), undoable: false);
+    }
+    await _enqueue(() async {
+      if (!ref.mounted || cancelled?.call() == true) return;
+      final observedPage = ref.read(readingPagesProvider(studySetId))[choice.documentId];
+      final repository = _repo;
+      if (repository is! ReadingContinuationRepository) return;
+      if (choice.position case final TextReadingPosition position) {
+        final doc = (await repository.load(studySetId)).document(choice.documentId);
+        if (doc == null || repository is! DocumentRepository) {
+          throw const ContentSyncActionException(ContentSyncActionFailure.invalidCandidate);
+        }
+        final book = await ReflowDocument.load(repository as DocumentRepository, studySetId, doc);
+        final chapter = book.chapter(position.chapterId);
+        if (position.revision != book.revision || chapter == null || position.offset > chapter.canonicalText.length) {
+          throw const ContentSyncActionException(ContentSyncActionFailure.invalidCandidate);
+        }
+      }
+      final position = await (repository as ReadingContinuationRepository).prepareReadingContinuation(
+        studySetId,
+        choice.deviceId,
+        choice.documentId,
+        remoteRevision: choice.remoteRevision,
+        localToken: choice.localToken,
+      );
+      if (!ref.mounted || cancelled?.call() == true) return;
+      if (state.activeDocumentId != activeDocument ||
+          _revealNonce != revealNonce ||
+          _readingActivity != activity ||
+          ref.read(readingPagesProvider(studySetId))[choice.documentId] != observedPage) {
+        throw const ContentSyncActionException(ContentSyncActionFailure.stale);
+      }
+      openDocument(choice.documentId, followMap: false);
+      state = state.copyWith(
+        reveal: switch (position) {
+          PdfPosition(:final page) => RevealRequest(choice.documentId, page, const [], ++_revealNonce),
+          TextReadingPosition() => RevealRequest.reading(choice.documentId, position, ++_revealNonce),
+        },
+      );
     });
   }
 
@@ -1631,11 +1727,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     );
   }
 
-  Future<void> setReadingPosition(String documentId, ReadingPosition position) => _update((c) {
-    final revision = c.document(documentId)?.revision;
-    if (position is TextReadingPosition && revision != null && position.revision != revision) return c;
-    return _editor.setReadingPosition(c, documentId, position);
-  }, undoable: false);
+  Future<void> setReadingPosition(String documentId, ReadingPosition position) {
+    _readingActivity++;
+    return _update((c) {
+      final revision = c.document(documentId)?.revision;
+      if (position is TextReadingPosition && revision != null && position.revision != revision) return c;
+      return _editor.setReadingPosition(c, documentId, position);
+    }, undoable: false);
+  }
 
   Future<void> addBookmark(String documentId, int page, String title) =>
       _update((c) => _editor.addBookmark(c, documentId, page, title: title));
@@ -1652,7 +1751,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     List<PdfOutlineEntry> Function(List<PdfOutlineEntry>) edit,
   ) => _update((c) => _editor.setDocumentOutline(c, documentId, edit(c.outlineOn(documentId)?.items ?? original)));
 
-  Future<void> renameBookmark(String id, String title) => _update((c) => _editor.renameBookmark(c, id, title));
+  Future<void> renameBookmark(String id, String title) => _update((c) {
+    if (!c.bookmarks.any((b) => b.id == id)) throw StateError('Bookmark no longer exists');
+    return _editor.renameBookmark(c, id, title);
+  });
 
   Future<void> removeBookmark(String id) => _update((c) => _editor.removeBookmark(c, id));
 
@@ -2286,6 +2388,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     );
   });
 
+  Future<void> recolorMarginNote(String id, int colorIndex) => _update((c) {
+    final current = c.marginNotes.where((n) => n.id == id).firstOrNull;
+    return current == null ? c : _editor.upsertMarginNote(c, current.copyWith(colorIndex: colorIndex));
+  });
+
   Future<void> deleteMarginNote(String id) => _update((c) => _editor.removeMarginNote(c, id));
 
   Future<String?> attachMarginNote(String id) async {
@@ -2688,7 +2795,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       if (!ref.mounted || names.isEmpty) return false;
       late StudySetContent before;
       Card? last;
-      await _write((c) {
+      final next = await _write((c) {
         if (c.map(editor.mapId) == null || (parent != null && c.node(parent, mapId: editor.mapId) == null)) {
           throw StateError('Image destination no longer exists');
         }
@@ -2706,9 +2813,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         return c;
       });
       if (_transactionDepth > 0) {
-        _transactionBefore ??= before;
+        final change = ContentChange.between(before, next);
+        _transactionChange = _transactionChange?.followedBy(change) ?? change;
       } else {
-        _record(before);
+        _record(ContentChange.between(before, next));
       }
       _syncHistory();
       if (ref.mounted && last != null) {
@@ -2999,17 +3107,61 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   // ---- in-place editing -------------------------------------------------------
 
   _EditSession? _editing;
+  ContentEditLease? _contentLease;
+  ContentEditLease? _takeContentLease() {
+    final lease = _contentLease;
+    _contentLease = null;
+    return lease;
+  }
+
+  List<List<String>> _cardEditPaths(String id) => [
+    ['cards', id],
+    for (final summary in content.summaries.where((s) => s.cardId == id)) ['summaries', summary.id],
+    for (final note in content.marginNotes.where((n) => n.nodeId == id)) ['marginNotes', note.id],
+    if (content.card(id)?.annotationId case final annotation?) ['annotations', annotation],
+  ];
+
+  List<List<String>> _markEditPaths(String id) => [
+    ['summaries', id],
+    ['relations', id],
+    for (final summary in content.summaries.where((s) => s.id == id))
+      if (summary.cardId case final card?) ..._cardEditPaths(card),
+  ];
+
+  void _protectContent(List<List<String>> paths) {
+    if (_repo case final ContentEditRepository editing) {
+      _contentLease = editing.protectContent(studySetId, paths);
+    }
+  }
 
   /// A card is being created for editing; no other edit may start yet.
   bool _creating = false;
 
   /// Starts editing a card's title (a note's text) in place. Nothing is
   /// written until [finishEditing], so the whole edit is one undo step.
-  void beginEditing(String cardId) {
+  Future<void> beginEditing(String cardId) async {
     if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || content.card(cardId) == null) return;
     // A research card shows its note: the note is edited in the details.
     if (content.card(cardId)!.kind == CardKind.research) return showDetails(cardId);
+    _creating = true;
+    try {
+      _protectContent(_cardEditPaths(cardId));
+      if (_contentLease case final lease?) {
+        await lease.ready;
+        if (!ref.mounted) return;
+        await _refreshContent();
+      }
+      if (!ref.mounted || content.card(cardId) == null) {
+        await _takeContentLease()?.release();
+        return;
+      }
+    } catch (_) {
+      await _takeContentLease()?.release();
+      rethrow;
+    } finally {
+      _creating = false;
+    }
     _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
     state = state.copyWith(selectedCardId: cardId, editingCardId: cardId, layout: _layoutShowingMap);
   }
@@ -3106,6 +3258,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     } finally {
       _creating = false;
     }
+    _protectContent(_cardEditPaths(card.id));
     _editing = _EditSession(
       card.id,
       created: true,
@@ -3121,6 +3274,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> finishEditing(String text, [TextFormat? format]) async {
     final session = _editing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _editing = null;
     final title = text.trim();
     try {
@@ -3143,6 +3297,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       }
     } finally {
       _closeEditor();
+      await lease?.release();
     }
   }
 
@@ -3150,11 +3305,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> cancelEditing() async {
     final session = _editing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _editing = null;
     try {
       if (session.created) await _dropCreated(session);
     } finally {
       _closeEditor();
+      await lease?.release();
     }
   }
 
@@ -3328,7 +3485,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     if (created == null || !ref.mounted) return;
     state = state.copyWith(selectRoot: true, selectedMarkId: created!.id);
-    if (!existing) beginMarkEditing(created!.id);
+    if (!existing) await beginMarkEditing(created!.id);
   }
 
   Future<void> adjustSummaryRange(String id, String from, String to) =>
@@ -3375,13 +3532,32 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       _creating = false;
     }
     if (!ref.mounted) return;
+    _protectContent(_markEditPaths(created!.id));
     _markEditing = _MarkEditSession(created!.id, created: true);
     state = state.copyWith(selectRoot: true, selectedMarkId: created!.id, editingMarkId: created!.id);
   }
 
-  void beginMarkEditing(String id) {
+  Future<void> beginMarkEditing(String id) async {
     if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || !_markExists(content, state.activeMapId, id)) return;
+    _creating = true;
+    try {
+      _protectContent(_markEditPaths(id));
+      if (_contentLease case final lease?) {
+        await lease.ready;
+        if (!ref.mounted) return;
+        await _refreshContent();
+      }
+      if (!ref.mounted || !_markExists(content, state.activeMapId, id)) {
+        await _takeContentLease()?.release();
+        return;
+      }
+    } catch (_) {
+      await _takeContentLease()?.release();
+      rethrow;
+    } finally {
+      _creating = false;
+    }
     _markEditing = _MarkEditSession(id, created: false);
     state = state.copyWith(selectRoot: true, selectedMarkId: id, editingMarkId: id, layout: _layoutShowingMap);
   }
@@ -3391,6 +3567,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> finishMarkEditing(String text) async {
     final session = _markEditing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _markEditing = null;
     final label = text.trim();
     try {
@@ -3405,6 +3582,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       }
     } finally {
       if (ref.mounted) state = state.copyWith(clearMarkEditing: true);
+      await lease?.release();
     }
   }
 
@@ -3412,11 +3590,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> cancelMarkEditing() async {
     final session = _markEditing;
     if (session == null) return;
+    final lease = _takeContentLease();
     _markEditing = null;
     try {
       if (session.created) await abortTransaction();
     } finally {
       if (ref.mounted) state = state.copyWith(clearMarkEditing: true);
+      await lease?.release();
     }
   }
 

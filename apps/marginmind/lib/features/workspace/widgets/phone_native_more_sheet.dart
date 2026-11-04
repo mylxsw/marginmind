@@ -97,6 +97,7 @@ Future<void> showPhoneNativeMoreSheet(
         ),
       ],
       'groups': [
+        [row('redo', l.redo, 'arrow.uturn.forward', enabled: state.canRedo)],
         [
           row(
             'outline',
@@ -163,6 +164,8 @@ Future<void> showPhoneNativeMoreSheet(
   switch (selected) {
     case 'undo':
       controller.undo();
+    case 'redo':
+      controller.redo();
     case 'outline':
       final command = paneChrome?.reader?.commands['reader-navigation'];
       if (command?.enabled == true) {

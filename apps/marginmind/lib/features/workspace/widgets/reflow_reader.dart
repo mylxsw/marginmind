@@ -591,10 +591,21 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       }
     });
     final reveal = state.reveal;
-    if (reveal?.documentId == widget.document.id && reveal!.textAnchors.isNotEmpty && reveal.nonce != _handledReveal) {
+    if (reveal?.documentId == widget.document.id &&
+        reveal != null &&
+        (reveal.textAnchors.isNotEmpty || reveal.textPosition != null) &&
+        reveal.nonce != _handledReveal) {
       _handledReveal = reveal.nonce;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _reveal(reveal.textAnchors);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        if (reveal.textPosition case final position?) {
+          await session.initialize();
+          if (mounted && ref.read(workspaceProvider(widget.studySetId)).reveal?.nonce == reveal.nonce) {
+            await _jump(position);
+          }
+        } else {
+          _reveal(reveal.textAnchors);
+        }
       });
     }
     ref.listen(workspaceProvider(widget.studySetId).select((s) => s.pending), (_, pending) {
@@ -1826,8 +1837,18 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                 () => navigate(p),
                                 onDelete: () => workspace.removeBookmark(b.id),
                                 onRename: () async {
-                                  final name = await showRenameSheet(context, title: l.rename, initial: b.title);
-                                  if (name != null) await workspace.renameBookmark(b.id, name);
+                                  await showContentRenameSheet(
+                                    context,
+                                    ref,
+                                    widget.studySetId,
+                                    title: l.rename,
+                                    paths: [
+                                      ['bookmarks', b.id],
+                                      ['documents', b.documentId],
+                                    ],
+                                    read: (c) => c.bookmarks.where((item) => item.id == b.id).firstOrNull?.title,
+                                    save: (name) => workspace.renameBookmark(b.id, name),
+                                  );
                                 },
                                 subtitle:
                                     '${book.chapter(p.chapterId)?.canonicalText.substring(p.offset.clamp(0, book.chapter(p.chapterId)!.canonicalText.length)).characters.take(24).string ?? ''} · ${(book.progress(p) * 100).round()}%',

@@ -16,6 +16,7 @@ dependencies:
     path: ../../third_party/desktop_drop
   record: ^7.1.2
   mm_core: any
+  mm_sync: any
   flutter:
     sdk: flutter
   window_manager: ^0.5.1

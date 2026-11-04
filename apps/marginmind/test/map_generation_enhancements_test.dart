@@ -547,7 +547,15 @@ void main() {
     final source = workspace.filePath(workspace.content.document('c1')!);
     for (final cancelled in [true, false]) {
       final unsuccessful = container
-          .read(readerOcrProvider(source).notifier)
+          .read(
+            readerOcrProvider(
+              documentOcrSource(
+                'demo-1',
+                container.read(workspaceProvider('demo-1').notifier).content.document('c1')!,
+                source,
+              ),
+            ).notifier,
+          )
           .recognize(1, 30, PdfOcrLanguage.chineseEnglish);
       await tester.pump();
       if (cancelled) {
@@ -560,7 +568,17 @@ void main() {
       expect(fake.calls, isEmpty);
       ocr.result = Completer();
     }
-    final job = container.read(readerOcrProvider(source).notifier).recognize(1, 30, PdfOcrLanguage.chineseEnglish);
+    final job = container
+        .read(
+          readerOcrProvider(
+            documentOcrSource(
+              'demo-1',
+              container.read(workspaceProvider('demo-1').notifier).content.document('c1')!,
+              source,
+            ),
+          ).notifier,
+        )
+        .recognize(1, 30, PdfOcrLanguage.chineseEnglish);
     await tester.pump();
     ocr.result.complete((
       document: const PdfOcrDocument(path: '/recognized.pdf', pageCount: 30, textPages: {1}, hasCopy: true),

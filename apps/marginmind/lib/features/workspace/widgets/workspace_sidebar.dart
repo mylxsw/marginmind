@@ -18,6 +18,7 @@ import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../translation_task_summary.dart';
+import '../content_sync.dart';
 import 'full_translation_sheet.dart';
 import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
@@ -29,6 +30,7 @@ import '../../study_notes/note_updates.dart';
 import '../../study_notes/note_export_sheet.dart';
 import 'notices.dart';
 import 'phone_workspace_sidebar.dart';
+import 'content_sync_sheet.dart';
 
 /// Study set sidebar: documents, mind maps, notes and learning tools,
 /// followed by cards and tags. Sidebar search is temporarily hidden.
@@ -171,10 +173,19 @@ class WorkspaceSidebar extends ConsumerWidget {
               position: position,
               entries: [
                 MMMenuItem(l.renameEllipsis, () async {
-                  final title = await showRenameSheet(context, title: l.renameEllipsis, initial: note.title);
-                  if (title != null && title.trim().isNotEmpty) {
-                    await controller.changeStudyNote(note.id, (n) => n.copyWith(title: title.trim()));
-                  }
+                  await showContentRenameSheet(
+                    context,
+                    ref,
+                    studySetId,
+                    title: l.renameEllipsis,
+                    paths: [
+                      ['studyNotes', note.id],
+                    ],
+                    read: (c) => c.studyNotes.where((n) => n.id == note.id).firstOrNull?.title,
+                    save: (value) => value.isEmpty
+                        ? Future<void>.value()
+                        : controller.changeStudyNote(note.id, (n) => n.copyWith(title: value)),
+                  );
                 }, icon: MMIcons.editNote),
                 MMMenuItem(
                   l.exportStudyNote,
@@ -399,6 +410,12 @@ class WorkspaceSidebar extends ConsumerWidget {
         notes: [for (final row in notes) phoneRow(row)],
         showNotes: betaEnabled && (matches(l.phoneNavigationNotes) || notes.isNotEmpty),
         learning: [
+          if (matches(l.syncTitle) &&
+              ref.watch(
+                contentSyncProvider(studySetId)
+                    .select((value) => value.hasError || value.asData?.value.enabled == true),
+              ))
+            ContentSyncSidebarItem(studySetId: studySetId),
           if (matches(l.sectionCards))
             MMPhoneNavigationRow(
               item: MMSidebarItem(
@@ -511,6 +528,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         ),
       ),
       children: [
+        ContentSyncSidebarItem(studySetId: studySetId),
         if (empty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
@@ -641,8 +659,17 @@ class WorkspaceSidebar extends ConsumerWidget {
           ),
 
         MMMenuItem(l.renameEllipsis, () async {
-          final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);
-          if (title != null) await controller.renameDocument(doc.id, title);
+          await showContentRenameSheet(
+            context,
+            ref,
+            studySetId,
+            title: l.renameDocument,
+            paths: [
+              ['documents', doc.id],
+            ],
+            read: (c) => c.documents.where((d) => d.id == doc.id).firstOrNull?.title,
+            save: (value) => controller.renameDocument(doc.id, value),
+          );
         }, icon: MMIcons.editNote),
         const MMMenuDivider(),
         MMMenuItem(
@@ -706,7 +733,15 @@ class _DocumentTranslationTrailing extends ConsumerWidget {
     final hasOcr =
         !document.capabilities().readingSettings &&
         ref
-                .watch(readerOcrProvider(ref.read(workspaceProvider(studySetId).notifier).filePath(document)))
+                .watch(
+                  readerOcrProvider(
+                    documentOcrSource(
+                      studySetId,
+                      document,
+                      ref.read(workspaceProvider(studySetId).notifier).filePath(document),
+                    ),
+                  ),
+                )
                 .document
                 ?.hasCopy ==
             true;

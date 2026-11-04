@@ -218,6 +218,14 @@ void main() {
     await tester.tap(find.byTooltip('Add Bookmark'));
     await tester.pumpAndSettle();
     expect(workspace.content.bookmarks.single.id, bookmarkId);
+    await tester.tap(find.byKey(ValueKey(bookmarkId)), buttons: 2, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rename…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Saved chapter');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(workspace.content.bookmarks.single.title, 'Saved chapter');
     workspace.setReaderPanelMode(ReaderPanelMode.annotations);
     await tester.pumpAndSettle();
     expect(find.text('No Annotations'), findsOneWidget);

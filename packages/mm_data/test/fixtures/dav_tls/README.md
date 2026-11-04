@@ -1,0 +1,1 @@
+Test-only, publicly known loopback TLS identity for the DAV socket integration tests. Never use this key outside tests. The test client trusts only this certificate (2020–2045, localhost/127.0.0.1); production TLS validation is unchanged. No external service or real account is involved.

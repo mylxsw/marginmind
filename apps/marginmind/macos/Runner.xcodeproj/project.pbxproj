@@ -21,6 +21,9 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		A60400000000000000000013 /* ICloudDriveChannelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60400000000000000000003; };
+		A60400000000000000000012 /* ICloudDriveChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60400000000000000000002; };
+		A60400000000000000000011 /* ICloudDriveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60400000000000000000001; };
 		A57500000000000000000001 /* BrowserChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57500000000000000000002 /* BrowserChannel.swift */; };
 		A52300000000000000000001 /* MapExportChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52300000000000000000002 /* MapExportChannel.swift */; };
 		A51900000000000000000001 /* ArticleParserChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51900000000000000000002 /* ArticleParserChannel.swift */; };
@@ -65,6 +68,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A60400000000000000000003 /* ICloudDriveChannelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../apple/ICloudDriveChannelTests.swift; sourceTree = SOURCE_ROOT; };
+		A60400000000000000000002 /* ICloudDriveChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../apple/ICloudDriveChannel.swift; sourceTree = SOURCE_ROOT; };
+		A60400000000000000000001 /* ICloudDriveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../apple/ICloudDriveStore.swift; sourceTree = SOURCE_ROOT; };
 		A57500000000000000000002 /* BrowserChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserChannel.swift; sourceTree = "<group>"; };
 		A52300000000000000000002 /* MapExportChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapExportChannel.swift; sourceTree = "<group>"; };
 		A51900000000000000000002 /* ArticleParserChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleParserChannel.swift; sourceTree = "<group>"; };
@@ -113,6 +119,7 @@
 			isa = PBXGroup;
 			children = (
 				331C80D7294CF71000263BE5 /* RunnerTests.swift */,
+				A60400000000000000000003 /* ICloudDriveChannelTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -175,6 +182,8 @@
 			isa = PBXGroup;
 			children = (
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
+				A60400000000000000000002 /* ICloudDriveChannel.swift */,
+				A60400000000000000000001 /* ICloudDriveStore.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				A57500000000000000000002 /* BrowserChannel.swift */,
 				A51900000000000000000002 /* ArticleParserChannel.swift */,
@@ -359,6 +368,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */,
+				A60400000000000000000013 /* ICloudDriveChannelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -367,6 +377,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
+				A60400000000000000000012 /* ICloudDriveChannel.swift in Sources */,
+				A60400000000000000000011 /* ICloudDriveStore.swift in Sources */,
 				A57500000000000000000001 /* BrowserChannel.swift in Sources */,
 				A51900000000000000000001 /* ArticleParserChannel.swift in Sources */,
 				A52100000000000000000001 /* PdfOcr.swift in Sources */,

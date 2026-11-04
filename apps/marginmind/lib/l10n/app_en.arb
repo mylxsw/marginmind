@@ -13,13 +13,17 @@
   "librarySetCount": "{count, plural, =0{No study sets} =1{1 study set} other{{count} study sets}}",
   "@librarySetCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "libraryDueCount": "{count, plural, =1{1 card due} other{{count} cards due}}",
   "@libraryDueCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "libraryContinue": "Continue Learning",
@@ -50,39 +54,51 @@
   "dueBadge": "{count} due",
   "@dueBadge": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relativeJustNow": "Just now",
   "relativeMinutes": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
   "@relativeMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relativeHours": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
   "@relativeHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relativeYesterday": "Yesterday",
   "relativeDays": "{count} days ago",
   "@relativeDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relativeWeeks": "{count, plural, =1{Last week} other{{count} weeks ago}}",
   "@relativeWeeks": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relativeMonths": "{count, plural, =1{Last month} other{{count} months ago}}",
   "@relativeMonths": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "viewAsIcons": "Icons",
@@ -244,7 +260,9 @@
   "importedHud": "{count, plural, =1{Imported 1 document} other{Imported {count} documents}}",
   "@importedHud": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "importFailed": "Couldn’t open “{name}” as a PDF",
@@ -277,7 +295,13 @@
   "rename": "Rename…",
   "renameTitle": "Rename",
   "mapNodeNoteCount": "Notes · {count}",
-  "@mapNodeNoteCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mapNodeNoteCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "deleteMapNote": "Delete Note",
   "editNote": "Edit Note",
   "save": "Save",
@@ -290,7 +314,9 @@
   "documentPages": "{count} pages",
   "@documentPages": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sampleSetTitle": "Sample: Forgetting & Spaced Repetition",
@@ -356,7 +382,9 @@
   "removeDocumentMessage": "{count, plural, =0{The document will be removed from this study set.} =1{Its highlight and excerpt card will be removed too. You can undo this with ⌘Z.} other{Its {count} highlights and their excerpt cards will be removed too. You can undo this with ⌘Z.}}",
   "@removeDocumentMessage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "renameEllipsis": "Rename…",
@@ -365,14 +393,18 @@
   "reviewCount": "{count, plural, =1{Review 1 Card} other{Review {count} Cards}}",
   "@reviewCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "reviewTitle": "Review",
   "reviewRemaining": "{count, plural, =1{1 left} other{{count} left}}",
   "@reviewRemaining": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "reviewProgress": "Review progress",
@@ -380,7 +412,9 @@
   "reviewDoneMessage": "{count, plural, =1{1 card reviewed} other{{count} cards reviewed}}",
   "@reviewDoneMessage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "reviewNothingDueTitle": "Nothing to review",
@@ -395,25 +429,33 @@
   "intervalMinutes": "{count} min",
   "@intervalMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "intervalHours": "{count, plural, =1{1 hour} other{{count} hours}}",
   "@intervalHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "intervalDays": "{count, plural, =1{1 day} other{{count} days}}",
   "@intervalDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "intervalMonths": "{count, plural, =1{1 month} other{{count} months}}",
   "@intervalMonths": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "excerptInColor": "Excerpt in {color}",
@@ -455,7 +497,13 @@
   "backToMap": "Back to Map",
   "viewInMap": "View in Map",
   "tagNodesInMap": "{count, plural, =1{1 related node · Current map} other{{count} related nodes · Current map}}",
-  "@tagNodesInMap": {"placeholders": {"count": {"type": "int"}}},
+  "@tagNodesInMap": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tagNoNodes": "No nodes with this tag",
   "addRelation": "Add Relationship",
   "addSummary": "Add Summary",
@@ -480,7 +528,9 @@
   "inkStrokeCount": "{count, plural, =1{1 stroke} other{{count} strokes}}",
   "@inkStrokeCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "showReaderSidebar": "Show Page Sidebar",
@@ -569,7 +619,9 @@
         "type": "DateTime",
         "format": "MMMd"
       },
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "insertImage": "Insert Image…",
@@ -610,7 +662,9 @@
   "ocrInvalidRange": "Enter a range from 1 to {count}",
   "@ocrInvalidRange": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ocrThisPage": "Recognize This Page",
@@ -768,7 +822,9 @@
       "parts": {
         "type": "String"
       },
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchContextSelection": "Selection",
@@ -820,7 +876,9 @@
   "researchUsedSources": "{count, plural, =1{1 source used} other{{count} sources used}}",
   "@researchUsedSources": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchErrorTimeout": "Timed out",
@@ -837,14 +895,18 @@
   "researchBadgeWeb": "Web research · {count, plural, =1{1 source used} other{{count} sources used}}",
   "@researchBadgeWeb": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchBadgeOffline": "Offline · no external sources, so no citations",
   "researchBadgeSources": "Only the {count, plural, =1{source} other{{count} sources}} you chose; no web search",
   "@researchBadgeSources": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchViewSources": "View Sources",
@@ -872,13 +934,17 @@
   "researchFailedSources": "{count, plural, =1{1 source} other{{count} sources}} couldn't be read",
   "@researchFailedSources": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchChecked": "{count} selected",
   "@researchChecked": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchClearChecked": "Deselect",
@@ -888,7 +954,9 @@
   "researchAnswerFromChosen": "Answer from {count, plural, =1{1 Chosen Source} other{{count} Chosen Sources}}",
   "@researchAnswerFromChosen": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchAnswering": "Answering…",
@@ -910,7 +978,9 @@
   "researchMerged": "{count, plural, =1{1 reprint merged} other{{count} reprints merged}}, not counted separately",
   "@researchMerged": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchRead": "Read",
@@ -956,7 +1026,9 @@
   "researchClipped": "Taken ({count})",
   "@researchClipped": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchCantRead": "Couldn't read the text",
@@ -996,7 +1068,9 @@
   "researchCitations": "{count, plural, =1{1 citation} other{{count} citations}}",
   "@researchCitations": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchContinue": "Continue",
@@ -1007,7 +1081,9 @@
   "researchCitationsLabel": "Citations ({count})",
   "@researchCitationsLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchNoExternalBasis": "No external source",
@@ -1020,7 +1096,9 @@
   "researchSplitPoints": "Split the {count} points into child cards",
   "@researchSplitPoints": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchSaving": "Saving",
@@ -1031,7 +1109,9 @@
   "researchCardKind": "{count, plural, =0{Research note} =1{Research note · 1 source} other{Research note · {count} sources}}",
   "@researchCardKind": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchCardOpen": "Full note and citations",
@@ -1088,19 +1168,25 @@
   "researchLimitSearches": "{count, plural, =1{1 search} other{{count} searches}}",
   "@researchLimitSearches": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchLimitPages": "{count, plural, =1{1 page} other{{count} pages}}",
   "@researchLimitPages": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchLimitMinutes": "{count} min",
   "@researchLimitMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "researchPrivacy": "Privacy",
@@ -1236,7 +1322,9 @@
   "assistantApply": "{count, plural, =1{Apply 1 Change} other{Apply {count} Changes}}",
   "@assistantApply": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "assistantShowInMap": "Show in Map",
@@ -1245,7 +1333,9 @@
   "assistantAppliedHud": "{count, plural, =1{Applied 1 change} other{Applied {count} changes}}",
   "@assistantAppliedHud": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "assistantPutInMap": "Put in map under “{title}”",
@@ -1312,7 +1402,9 @@
   "assistantContextCount": "{count, plural, =0{No references} =1{1 reference} other{{count} references}}",
   "@assistantContextCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "assistantManageContexts": "Manage references",
@@ -1385,7 +1477,9 @@
   "assistantQuestions": "{count, plural, =1{1 question} other{{count} questions}}",
   "@assistantQuestions": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "assistantHasNote": "has notes",
@@ -1414,7 +1508,9 @@
   "settingsServiceModels": "{count, plural, =1{1 model on} other{{count} models on}}",
   "@settingsServiceModels": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "settingsServiceNoModels": "No models yet",
@@ -1454,7 +1550,9 @@
   "settingsAddCount": "Add {count}",
   "@settingsAddCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "settingsOpenAiCompatible": "OpenAI Compatible",
@@ -1478,7 +1576,9 @@
   "assistantToolFailures": "{count, plural, =1{1 tool call failed} other{{count} tool calls failed}}",
   "@assistantToolFailures": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "assistantAnswerWithoutTools": "Answer Without Tools",
@@ -1580,7 +1680,9 @@
   "uncroppedHud": "Crop removed",
   "@cropHiddenAnnotations": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "marginNotes": "Margin Notes",
@@ -1711,7 +1813,9 @@
   "readerInvalidPage": "Enter a valid page number up to {count}.",
   "@readerInvalidPage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "outlineDragHint": "Drag above or below an entry to reorder; drag to its center to nest.",
@@ -1742,22 +1846,30 @@
   "mapEditMissingSummary": "This summary is unavailable",
   "@mergeNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@splitNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@selectedNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@mergedSources": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@mergeCleanup": {
@@ -1787,7 +1899,9 @@
   "summaryIncludedNodes": "Includes {count} unselected nodes in between",
   "@summaryIncludedNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "addWebPage": "Add Web Page…",
@@ -1846,7 +1960,9 @@
   "importFailedMany": "{count, plural, =1{1 document couldn’t be imported} other{{count} documents couldn’t be imported}}",
   "@importFailedMany": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "importErrorDrm": "Protected by DRM",
@@ -1895,13 +2011,17 @@
   "annotationsNeedReview": "Needs Review ({count})",
   "@annotationsNeedReview": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "annotationsNeedReviewHud": "{count, plural, =1{1 highlight needs review} other{{count} highlights need review}}",
   "@annotationsNeedReviewHud": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "viewAction": "View",
@@ -1985,7 +2105,9 @@
   "mapIdeaExpandEach": "{count, plural, =1{Expand 1 Topic} other{Expand {count} Topics}}",
   "@mapIdeaExpandEach": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaExpandMap": "Expand Whole Map…",
@@ -2004,7 +2126,9 @@
   "mapIdeaDepthLevels": "{count, plural, =1{1 Level} other{{count} Levels}}",
   "@mapIdeaDepthLevels": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaAmount": "Amount",
@@ -2016,13 +2140,17 @@
   "mapIdeaExpanding": "Expanding “{title}”",
   "@mapIdeaExpanding": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "mapIdeaExpandingCount": "{count, plural, =1{Expanding 1 Topic} other{Expanding {count} Topics}}",
   "@mapIdeaExpandingCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaIncompleteDepth": "Some branches are missing levels. Try again.",
@@ -2030,14 +2158,20 @@
   "mapIdeaDraftCount": "{count, plural, =1{1 idea} other{{count} ideas}}",
   "@mapIdeaDraftCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaKeptCount": "{kept} of {total} kept",
   "@mapIdeaKeptCount": {
     "placeholders": {
-      "kept": { "type": "int" },
-      "total": { "type": "int" }
+      "kept": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaRegenerate": "Try Others",
@@ -2047,7 +2181,9 @@
   "mapIdeaKeep": "{count, plural, =1{Keep 1} other{Keep {count}}}",
   "@mapIdeaKeep": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaDraftKeep": "Keep",
@@ -2057,8 +2193,12 @@
   "mapIdeaDraftSemantics": "AI draft, {title}, {state}",
   "@mapIdeaDraftSemantics": {
     "placeholders": {
-      "title": { "type": "String" },
-      "state": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
     }
   },
   "mapIdeaDraftKept": "kept",
@@ -2067,7 +2207,9 @@
   "mapIdeaAddCount": "+{count}",
   "@mapIdeaAddCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaFewer": "Fewer",
@@ -2077,7 +2219,9 @@
   "mapIdeaAdded": "{count, plural, =1{Added 1 topic} other{Added {count} topics}}",
   "@mapIdeaAdded": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "mapIdeaBlocked": "Keep or discard the suggested topics before continuing",
@@ -2097,7 +2241,13 @@
   "mapEmptySourceStart": "Start with this source",
   "mapEmptyInstructionsPlaceholder": "For example: organize by events, impact, and responses",
   "mapGenerateFrom": "Generate a Map from “{document}”",
-  "@mapGenerateFrom": { "placeholders": { "document": { "type": "String" } } },
+  "@mapGenerateFrom": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      }
+    }
+  },
   "mapGenerateSettings": "Settings",
   "mapGenerateStart": "Generate",
   "mapGenerateBlank": "Start Blank",
@@ -2107,13 +2257,34 @@
   "mapGenerateSuggestExamples": "Add Examples",
   "mapGenerateDocuments": "Documents",
   "mapGeneratePages": "{count, plural, =1{1 page} other{{count} pages}}",
-  "@mapGeneratePages": { "placeholders": { "count": { "type": "int" } } },
+  "@mapGeneratePages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateSegments": "{count, plural, =1{1 part} other{{count} parts}}",
-  "@mapGenerateSegments": { "placeholders": { "count": { "type": "int" } } },
+  "@mapGenerateSegments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateNeedsOcr": "Needs text recognition",
   "mapGenerateWholeDocument": "Entire Document",
   "mapGenerateChapterCount": "{selected} of {total} chapters",
-  "@mapGenerateChapterCount": { "placeholders": { "selected": { "type": "int" }, "total": { "type": "int" } } },
+  "@mapGenerateChapterCount": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateOrganization": "Organization",
   "mapGenerateByChapter": "By Chapter",
   "mapGenerateByTopic": "By Concept",
@@ -2124,50 +2295,152 @@
   "mapGenerateDetailMedium": "Medium",
   "mapGenerateDetailFull": "Detailed",
   "mapGenerateEstimate": "{levels} levels · about {count} topics",
-  "@mapGenerateEstimate": { "placeholders": { "levels": { "type": "int" }, "count": { "type": "int" } } },
+  "@mapGenerateEstimate": {
+    "placeholders": {
+      "levels": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateContent": "Content",
   "mapGenerateMyMarks": "My Highlights and Notes",
   "mapGenerateMarkCount": "{count}",
-  "@mapGenerateMarkCount": { "placeholders": { "count": { "type": "int" } } },
+  "@mapGenerateMarkCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateQuotes": "Key Quotes",
   "mapGenerateTarget": "Generate To",
   "mapGenerateTargetNew": "New Map",
   "mapGenerateTargetBranch": "New Branch of This Map",
   "mapGenerateTargetReplace": "Replace “{title}”",
-  "@mapGenerateTargetReplace": { "placeholders": { "title": { "type": "String" } } },
+  "@mapGenerateTargetReplace": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapGenerateInstructions": "Instructions",
   "mapGenerateReading": "Reading “{document}”",
-  "@mapGenerateReading": { "placeholders": { "document": { "type": "String" } } },
+  "@mapGenerateReading": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      }
+    }
+  },
   "mapGenerateBuilding": "Building Map",
   "mapGenerateTopicCount": "{count, plural, =1{1 topic} other{{count} topics}}",
-  "@mapGenerateTopicCount": { "placeholders": { "count": { "type": "int" } } },
+  "@mapGenerateTopicCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateQueued": "Waiting",
   "mapGenerateChapterFailed": "“{chapter}” failed",
-  "@mapGenerateChapterFailed": { "placeholders": { "chapter": { "type": "String" } } },
+  "@mapGenerateChapterFailed": {
+    "placeholders": {
+      "chapter": {
+        "type": "String"
+      }
+    }
+  },
   "mapGenerateBlocked": "Keep or discard the generated map before continuing",
   "mapGenerateBlockedRunning": "Content is being generated. Wait for it to finish or click Stop.",
   "mapGenerateCreated": "{count, plural, =1{Created “{title}” · 1 topic} other{Created “{title}” · {count} topics}}",
-  "@mapGenerateCreated": { "placeholders": { "title": { "type": "String" }, "count": { "type": "int" } } },
+  "@mapGenerateCreated": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateNothing": "No usable structure. Try another organization.",
   "mapGenerateStoppedEmpty": "Stopped before any topics",
   "mapGenerateDraftSemantics": "AI draft, {title}, page {page}, {state}",
-  "@mapGenerateDraftSemantics": { "placeholders": { "title": { "type": "String" }, "page": { "type": "int" }, "state": { "type": "String" } } },
+  "@mapGenerateDraftSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
   "mapGenerateReadProgress": "Read {done} of {total} chapters",
-  "@mapGenerateReadProgress": { "placeholders": { "done": { "type": "int" }, "total": { "type": "int" } } },
+  "@mapGenerateReadProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "mapGenerateReady": "{count, plural, =1{Ready to review, 1 topic} other{Ready to review, {count} topics}}",
-  "@mapGenerateReady": { "placeholders": { "count": { "type": "int" } } },
+  "@mapGenerateReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapSourceSemantics": "{document}, page {page}",
-  "@mapSourceSemantics": { "placeholders": { "document": { "type": "String" }, "page": { "type": "int" } } },
+  "@mapSourceSemantics": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      }
+    }
+  },
   "mapBannerNoMap": "“{document}” has no map",
-  "@mapBannerNoMap": { "placeholders": { "document": { "type": "String" } } },
+  "@mapBannerNoMap": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      }
+    }
+  },
   "mapBannerGenerate": "New Map",
   "mapBannerMerge": "Add to This Map",
   "mapBannerNeedsOcr": "Recognize text to generate a map",
   "mapFollowSwitched": "Switched to “{title}”",
-  "@mapFollowSwitched": { "placeholders": { "title": { "type": "String" } } },
+  "@mapFollowSwitched": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapUpdateDescription": "Choose sources, then preview and confirm changes before applying them to your map.",
   "mapUpdateReadBaseline": "Previously updated through page {page}",
-  "@mapUpdateReadBaseline": { "placeholders": { "page": { "type": "int" } } },
+  "@mapUpdateReadBaseline": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
   "mapUpdateTitle": "Update Map",
   "mapUpdateSources": "Sources",
   "mapUpdateAddDocument": "Add Document",
@@ -2176,12 +2449,27 @@
   "mapUpdateNewNotes": "New notes",
   "mapUpdateReadTo": "Read to",
   "mapUpdateReadRange": "p.{from} → p.{to}",
-  "@mapUpdateReadRange": { "placeholders": { "from": { "type": "int" }, "to": { "type": "int" } } },
+  "@mapUpdateReadRange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
   "mapUpdateScope": "Scope",
   "mapUpdateScopeNew": "New Material Only",
   "mapUpdateScopeAll": "Rework Everything",
   "mapUpdateProtected": "{count, plural, =1{1 edited topic stays as is} other{{count} edited topics stay as they are}}",
-  "@mapUpdateProtected": { "placeholders": { "count": { "type": "int" } } },
+  "@mapUpdateProtected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapUpdatePreview": "Preview Changes",
   "mapUpdateNothing": "Nothing to update",
   "mapDiffAdded": "Added",
@@ -2190,26 +2478,95 @@
   "mapDiffRemoved": "Suggested Removals",
   "mapDiffTagNew": "New",
   "mapDiffTagMovedFrom": "From {from}",
-  "@mapDiffTagMovedFrom": { "placeholders": { "from": { "type": "String" } } },
+  "@mapDiffTagMovedFrom": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      }
+    }
+  },
   "mapDiffTagRemove": "Remove",
   "mapDiffMoveRoute": "{from} → {to}",
-  "@mapDiffMoveRoute": { "placeholders": { "from": { "type": "String" }, "to": { "type": "String" } } },
+  "@mapDiffMoveRoute": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "mapDiffExcerpt": "Excerpt: {text}",
-  "@mapDiffExcerpt": { "placeholders": { "text": { "type": "String" } } },
+  "@mapDiffExcerpt": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "mapDiffProtected": "Protected",
   "mapUpdateApply": "{count, plural, =1{Apply 1} other{Apply {count}}}",
-  "@mapUpdateApply": { "placeholders": { "count": { "type": "int" } } },
+  "@mapUpdateApply": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapUpdateApplied": "{count, plural, =1{Updated 1 item} other{Updated {count} items}}",
-  "@mapUpdateApplied": { "placeholders": { "count": { "type": "int" } } },
+  "@mapUpdateApplied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapUpdateBlocked": "Apply or discard the map update before continuing",
   "mapDiffAddSemantics": "Suggested addition, {title}",
-  "@mapDiffAddSemantics": { "placeholders": { "title": { "type": "String" } } },
+  "@mapDiffAddSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapDiffRenameSemantics": "Suggested rename, {old} to {title}",
-  "@mapDiffRenameSemantics": { "placeholders": { "old": { "type": "String" }, "title": { "type": "String" } } },
+  "@mapDiffRenameSemantics": {
+    "placeholders": {
+      "old": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapDiffMoveSemantics": "Suggested move, {title}, from {from} to {to}",
-  "@mapDiffMoveSemantics": { "placeholders": { "title": { "type": "String" }, "from": { "type": "String" }, "to": { "type": "String" } } },
+  "@mapDiffMoveSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "mapDiffRemoveSemantics": "Suggested removal, {title}, {reason}",
-  "@mapDiffRemoveSemantics": { "placeholders": { "title": { "type": "String" }, "reason": { "type": "String" } } },
+  "@mapDiffRemoveSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "settingsMapFollowDocument": "Switch Maps with Documents",
   "settingsMapClearCache": "Clear Generation Cache",
   "notesTitle": "Notes",
@@ -2438,8 +2795,20 @@
   },
   "noteAddToReview": "Add to Review",
   "noteUpdateChanges": "{count, plural, =1{1 change} other{{count} changes}}",
-  "@noteUpdateApplied": {"placeholders": {"count": {"type": "int"}}},
-  "@noteUpdateChanges": {"placeholders": {"count": {"type": "int"}}},
+  "@noteUpdateApplied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@noteUpdateChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noteShareTitle": "Share as Image",
   "noteShareQuote": "Quote",
   "noteShareSection": "Section",
@@ -2482,38 +2851,60 @@
   "fullTranslationTaskMenu": "Full Translation… {percent}%",
   "@fullTranslationTaskMenu": {
     "placeholders": {
-      "percent": { "type": "int" }
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsule": "Full Translation",
   "fullTranslationCapsuleRunning": "{percent}% Batch {batch} · {done}/{total} pages",
   "@fullTranslationCapsuleRunning": {
     "placeholders": {
-      "percent": { "type": "int" },
-      "batch": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "percent": {
+        "type": "int"
+      },
+      "batch": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleRunningAll": "{percent}% {done}/{total} pages",
   "@fullTranslationCapsuleRunningAll": {
     "placeholders": {
-      "percent": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "percent": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleReview": "Batch {batch} Pending",
   "@fullTranslationCapsuleReview": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsulePaused": "Paused {done}/{total} pages",
   "@fullTranslationCapsulePaused": {
     "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleOffline": "Waiting for Network",
@@ -2523,26 +2914,36 @@
   "fullTranslationCapsuleDoneFailed": "Completed · {count} untranslated",
   "@fullTranslationCapsuleDoneFailed": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleStopped": "Stopped {done}/{total} pages",
   "@fullTranslationCapsuleStopped": {
     "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationPlaceholderBatch": "Will translate in batch {batch}",
   "@fullTranslationPlaceholderBatch": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationPlaceholderPageSub": "Page {page}",
   "@fullTranslationPlaceholderPageSub": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationPlaceholderOutOfRange": "Not in translation range",
@@ -2553,13 +2954,29 @@
   "fullTranslationSameLanguage": "Source and target languages are the same. Choose another target language.",
   "fullTranslationStartFailed": "Could not start translation. Check your model connection and try again. Existing translations are saved.",
   "fullTranslationTextProgress": "{percent}% · {done}/{total} paragraphs",
-  "@fullTranslationTextProgress": {"placeholders": {"percent": {"type": "int"}, "done": {"type": "int"}, "total": {"type": "int"}}},
+  "@fullTranslationTextProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "fullTranslationTitle": "Full Translation",
   "fullTranslationDocSubtitle": "{doc} · {pages} pages",
   "@fullTranslationDocSubtitle": {
     "placeholders": {
-      "doc": { "type": "String" },
-      "pages": { "type": "int" }
+      "doc": {
+        "type": "String"
+      },
+      "pages": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationSourceLangDetect": "Detect",
@@ -2583,13 +3000,17 @@
   "fullTranslationBatchPages": "{count} pages",
   "@fullTranslationBatchPages": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationBatchCount": "{count} batches total",
   "@fullTranslationBatchCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationNote": "Glossary & Requirements",
@@ -2597,7 +3018,9 @@
   "fullTranslationCkptFailed": "{count} untranslated",
   "@fullTranslationCkptFailed": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationNoteHint": "Applies only to subsequent batches; translated paragraphs won't be retranslated.",
@@ -2606,8 +3029,12 @@
   "fullTranslationStartBatch": "Start · Pages {from}–{to}",
   "@fullTranslationStartBatch": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStartAll": "Start Translation",
@@ -2624,46 +3051,66 @@
   "fullTranslationEstChanged": "Source text re-recognized · {reused} / {total} existing translations reusable",
   "@fullTranslationEstChanged": {
     "placeholders": {
-      "reused": { "type": "int" },
-      "total": { "type": "int" }
+      "reused": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstNeeds": "Needs translation: {paras} paragraphs · ~{chars} chars",
   "@fullTranslationEstNeeds": {
     "placeholders": {
-      "paras": { "type": "String" },
-      "chars": { "type": "String" }
+      "paras": {
+        "type": "String"
+      },
+      "chars": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationEstMinutes": "~{minutes} min",
   "@fullTranslationEstMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstReused": "Already have {paras} translations ({pages} pages), reused directly",
   "@fullTranslationEstReused": {
     "placeholders": {
-      "paras": { "type": "int" },
-      "pages": { "type": "int" }
+      "paras": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstReusedNoPages": "Already have {paras} translations, reused directly",
   "@fullTranslationEstReusedNoPages": {
     "placeholders": {
-      "paras": { "type": "int" }
+      "paras": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstSkip": "Not sent: {details}",
   "@fullTranslationEstSkip": {
     "placeholders": {
-      "details": { "type": "String" }
+      "details": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationEstSkipMargin": "headers/footers {count}",
   "@fullTranslationEstSkipMargin": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstSkipSame": "already {language} {count}",
@@ -2672,20 +3119,28 @@
       "language": {
         "type": "String"
       },
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstSkipDupe": "duplicate paragraphs {count}",
   "@fullTranslationEstSkipDupe": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstModel": "{model} · Est. {tokens} tokens",
   "@fullTranslationEstModel": {
     "placeholders": {
-      "model": { "type": "String" },
-      "tokens": { "type": "String" }
+      "model": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationEstBudgetWarning": "; pauses for confirmation if 50% over estimate",
@@ -2693,16 +3148,24 @@
   "fullTranslationStateRunningBatch": "Translating · Batch {batch} (pages {from}–{to})",
   "@fullTranslationStateRunningBatch": {
     "placeholders": {
-      "batch": { "type": "int" },
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "batch": {
+        "type": "int"
+      },
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStateRunningAll": "Translating · All at once",
   "fullTranslationStateReview": "Batch {batch} Pending",
   "@fullTranslationStateReview": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStatePaused": "Paused",
@@ -2721,7 +3184,9 @@
   "fullTranslationStatEstToken": "Est. {tokens}",
   "@fullTranslationStatEstToken": {
     "placeholders": {
-      "tokens": { "type": "String" }
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationStatFailed": "Untranslated",
@@ -2729,7 +3194,9 @@
   "fullTranslationDetailParas": "{count} paras",
   "@fullTranslationDetailParas": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationDetailDedup": "Deduplicated Paragraphs",
@@ -2744,23 +3211,33 @@
   "fullTranslationDetailItems": "{count} items",
   "@fullTranslationDetailItems": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationDetailModelCalls": "Model · Requests",
   "fullTranslationDetailCalls": "{model} · {calls} calls",
   "@fullTranslationDetailCalls": {
     "placeholders": {
-      "model": { "type": "String" },
-      "calls": { "type": "int" }
+      "model": {
+        "type": "String"
+      },
+      "calls": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationDetailElapsed": "Elapsed",
   "fullTranslationDetailTime": "{minutes} m {seconds} s",
   "@fullTranslationDetailTime": {
     "placeholders": {
-      "minutes": { "type": "int" },
-      "seconds": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationActionStop": "Stop",
@@ -2771,7 +3248,9 @@
   "fullTranslationActionRetryFailed": "Retry {count} Untranslated",
   "@fullTranslationActionRetryFailed": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationActionContinueTranslation": "Continue Translation…",
@@ -2781,14 +3260,20 @@
   "fullTranslationCkptBatchDone": "Batch {batch} Completed",
   "@fullTranslationCkptBatchDone": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptPages": "Pages {from}–{to}",
   "@fullTranslationCkptPages": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptCollapseTip": "Collapse to read",
@@ -2796,35 +3281,51 @@
   "fullTranslationCkptMin": "Batch {batch} Pending",
   "@fullTranslationCkptMin": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptNextBatch": "Continue Pages {from}–{to}",
   "@fullTranslationCkptNextBatch": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptFromPage": "Review starting from page {page}",
   "@fullTranslationCkptFromPage": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptRemain": "Remaining {pages} pages · ~{tokens} tokens",
   "@fullTranslationCkptRemain": {
     "placeholders": {
-      "pages": { "type": "int" },
-      "tokens": { "type": "String" }
+      "pages": {
+        "type": "int"
+      },
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationCkptTranslateRest": "Translate Rest All",
   "fullTranslationHudStartBatch": "Starting translation for pages {from}–{to}",
   "@fullTranslationHudStartBatch": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationHudStartAll": "Starting full document translation",
@@ -2832,7 +3333,9 @@
   "fullTranslationHudDoneFailed": "Full translation completed · {count} untranslated",
   "@fullTranslationHudDoneFailed": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationHudView": "View",
@@ -2840,7 +3343,9 @@
   "fullTranslationHudPausedAt": "Full translation paused at page {page}",
   "@fullTranslationHudPausedAt": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationHudContinue": "Resume",
@@ -2848,17 +3353,29 @@
   "fullTranslationGridCell": "Page {page} · {state}",
   "@fullTranslationGridCell": {
     "placeholders": {
-      "page": { "type": "int" },
-      "state": { "type": "String" }
+      "page": {
+        "type": "int"
+      },
+      "state": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationCapsuleA11y": "Full translation, {percent}%, batch {batch}, {done} / {total} pages",
   "@fullTranslationCapsuleA11y": {
     "placeholders": {
-      "percent": { "type": "int" },
-      "batch": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "percent": {
+        "type": "int"
+      },
+      "batch": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStripBadKey": "API key invalid, paused",
@@ -2869,7 +3386,9 @@
   "fullTranslationStripBudget": "Used {tokens} tokens, 50% over estimate",
   "@fullTranslationStripBudget": {
     "placeholders": {
-      "tokens": { "type": "String" }
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationStripOpenSettings": "Open Settings",
@@ -2878,8 +3397,12 @@
   "fullTranslationNotificationBodyFailed": "{doc} · {count} untranslated",
   "@fullTranslationNotificationBodyFailed": {
     "placeholders": {
-      "doc": { "type": "String" },
-      "count": { "type": "int" }
+      "doc": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "phoneGlassTitle": "Phone Liquid Glass",
@@ -2893,14 +3416,26 @@
   "phoneReaderCollapse": "Collapse",
   "phoneReaderExitTools": "Finish annotating",
   "phoneReaderPercent": "{percent}%",
-  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "@phoneReaderPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "mapCacheClearFailed": "Could not clear cache",
   "translationRetranslate": "Retranslate",
   "translationEdit": "Edit Translation",
   "translationRetranslated": "Retranslated",
   "translationEdited": "Manually edited",
   "translationParagraphFailed": "Untranslated · {reason}",
-  "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@translationParagraphFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "translationEditSaved": "Changes Saved",
   "translationCopied": "Translation Copied",
   "translationRemoved": "Translations Removed",
@@ -3053,7 +3588,13 @@
     }
   },
   "workspaceCurrentContent": "Current content: {title}",
-  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}},
+  "@workspaceCurrentContent": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "settingsAdvancedGroup": "Advanced",
   "settingsEnableBetaFeatures": "Enable Beta Features",
   "assistantIconTitle": "AI assistant icon",
@@ -3113,37 +3654,115 @@
   "aiTasksDontSave": "Don't Save",
   "aiTasksAssign": "Assign…",
   "aiTasksAddedModels": "{count, plural, =1{Added 1 model} other{Added {count} models}}",
-  "@aiTasksAddedModels": {"placeholders": {"count": {"type": "int"}}},
+  "@aiTasksAddedModels": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiTasksAssignToFeatures": "Assign to Features",
   "aiTasksRemoveTitle": "Remove “{name}”?",
-  "@aiTasksRemoveTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@aiTasksRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aiTasksQuickDefault": "Quick default",
   "aiTasksHeavyDefault": "Heavy default",
   "aiTasksConversations": "{count, plural, =1{1 conversation} other{{count} conversations}}",
-  "@aiTasksConversations": {"placeholders": {"count": {"type": "int"}}},
+  "@aiTasksConversations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiTasksMore": "{count} more",
-  "@aiTasksMore": {"placeholders": {"count": {"type": "int"}}},
+  "@aiTasksMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiTasksUsageUnavailable": "Couldn't check where it's used",
   "aiTasksRunLabel": "{task} · {source}",
-  "@aiTasksRunLabel": {"placeholders": {"task": {"type": "String"}, "source": {"type": "String"}}},
+  "@aiTasksRunLabel": {
+    "placeholders": {
+      "task": {
+        "type": "String"
+      },
+      "source": {
+        "type": "String"
+      }
+    }
+  },
   "aiTasksModel": "Model",
   "aiTasksRunAwaiting": "Needs confirmation",
   "aiTasksRunPaused": "Paused",
   "aiTasksRunPausedCount": "Paused {done}/{total}",
-  "@aiTasksRunPausedCount": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@aiTasksRunPausedCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "aiTasksRunInterrupted": "Interrupted",
   "aiTasksRunInterruptedCount": "Interrupted {done}/{total}",
-  "@aiTasksRunInterruptedCount": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@aiTasksRunInterruptedCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "aiTasksRunPartial": "Partially complete · {count} {unit} unfinished",
-  "@aiTasksRunPartial": {"placeholders": {"count": {"type": "int"}, "unit": {"type": "String"}}},
+  "@aiTasksRunPartial": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "aiTasksRunFailed": "Failed",
   "aiTasksRunStopped": "Stopped",
   "aiTasksRunStoppedCount": "Stopped {done}/{total}",
-  "@aiTasksRunStoppedCount": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@aiTasksRunStoppedCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "aiTasksRunCompleted": "Completed",
   "aiTasksRunUnfinished": "Last run didn't finish",
   "aiTasksRetryUnfinished": "Retry {count} {unit}",
-  "@aiTasksRetryUnfinished": {"placeholders": {"count": {"type": "int"}, "unit": {"type": "String"}}},
+  "@aiTasksRetryUnfinished": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "aiTaskSelectionTranslate": "Selection Translation",
   "aiTaskWordLookup": "Word Lookup",
   "aiTaskTitleGenerate": "Title Generation",
@@ -3193,18 +3812,95 @@
   "mapPhoneMore": "More",
   "mapDragHint": "Drag to a node to reparent, or to its edge to reorder. Release elsewhere to cancel.",
   "mapDropChild": "Release to move under “{title}”",
-  "@mapDropChild": {"placeholders": {"title": {"type": "String"}}},
+  "@mapDropChild": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapDropBefore": "Release to insert before “{title}”",
-  "@mapDropBefore": {"placeholders": {"title": {"type": "String"}}},
+  "@mapDropBefore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapDropAfter": "Release to insert after “{title}”",
-  "@mapDropAfter": {"placeholders": {"title": {"type": "String"}}},
+  "@mapDropAfter": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapSelectionCount": "{count} selected",
-  "@mapSelectionCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mapSelectionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapSelectionTap": "Tap",
   "mapSelectionBox": "Box",
   "mapSelectionClear": "Clear",
   "mapSelectionTapHint": "Tap nodes to select. Drag to pan; pinch to zoom.",
   "mapSelectionBoxHint": "Drag a box; adjust its corners after release. Use two fingers to move the map.",
+  "undoContentChanged": "This step can’t be applied because related content has changed. The current content has been kept.",
+  "syncTitle": "Sync and recovery",
+  "syncLocalOnly": "Manage saved content and conflicts here. For service delivery status, open Settings → Sync.",
+  "syncWaitingTransfer": "Changes pending sync",
+  "syncRecovered": "Saved work was recovered after an interrupted edit. Review it before dismissing this notice.",
+  "syncAcknowledge": "I have reviewed this work",
+  "syncRepair": "Some local files need repair. Saved work remains in the recovery history.",
+  "syncEditing": "Finish the current edit before choosing a version. Received changes are kept safely.",
+  "syncRetry": "Retry",
+  "syncStale": "Content changed during review. Review the refreshed versions before choosing again.",
+  "syncActionFailed": "The operation could not finish. Saved work is retained; you can retry.",
+  "syncLoadFailed": "Sync information could not be read. Retry without changing saved work.",
+  "syncCurrent": "Current content",
+  "syncCandidate": "Proposed change",
+  "syncKeep": "Keep current",
+  "syncUse": "Use this version",
+  "syncChoiceHint": "Your choice applies to all changes above.",
+  "syncInvalidCandidate": "This change cannot be applied safely to the current structure. Keep current content or review its dependencies first.",
+  "syncNoConflicts": "No conflicts",
+  "syncAbsent": "Not present",
+  "syncStructureValue": "Structure or reference changed",
+  "syncConflictCount": "{count} to review",
+  "@syncConflictCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncEntity": "{kind, select, studySet{Study set} card{Card} document{Document} studyNote{Study note} researchNote{Research note} annotation{Highlight} marginNote{Margin note} map{Mind map} relation{Relation} summary{Summary} bookmark{Bookmark} other{Content}}",
+  "@syncEntity": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "syncField": "{kind, select, title{Title} text{Text} tags{Tags} order{Order} structure{Structure} source{Source} appearance{Appearance} collectionBaseline{Material collection baseline} other{Related content}}",
+  "@syncField": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "syncProblem": "{kind, select, editing{Received changes are waiting for an edit to finish.} missingHistory{Earlier versions have not arrived yet. Received work is retained.} unrelatedHistory{These versions have no shared history. Both branches are retained for recovery.} ambiguousHistory{These branches have multiple possible starting points. Both are retained for review.} concurrentChoices{Another device made a different conflict choice. Both choices are retained for review.} deletion{A deletion overlaps an edit. Both versions are retained for recovery.} invalidHistory{A received branch failed validation. It is retained without replacing your content.} other{A received version is not supported. Your content has not been replaced.}}",
+  "@syncProblem": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
   "incomingShareTitle": "Import to Foliarc",
   "incomingShareCreate": "Create and Import",
   "incomingShareImport": "Import",
@@ -3226,18 +3922,127 @@
       }
     }
   },
+  "reviewSaveFailed": "The rating could not be saved. Your place is unchanged; try again.",
+  "reviewWaitingBaseline": "Earlier review history has not arrived yet. Wait for sync, then try again.",
+  "reviewFinishEditing": "Finish the current content edit, then rate this card.",
+  "manageFolders": "Manage folders",
+  "folderName": "Folder name",
+  "folderNameInvalid": "Enter a folder name with 1–256 characters.",
+  "deleteFolder": "Delete folder?",
+  "deleteFolderMessage": "Study sets are kept and shown under Unfiled.",
+  "moveToFolder": "Move to folder",
+  "folderUnavailable": "Folder awaiting recovery",
+  "folderRepairNeeded": "The folder index needs repair. Your saved changes are retained.",
+  "readingContinuationsTitle": "Continue reading",
+  "readingContinuationsHint": "Each device keeps its own position. Choose one to open it here.",
+  "readingOtherDevice": "Other device {number}",
+  "readingTextPosition": "Saved text position",
+  "readingVersionChanged": "This position belongs to a different or removed document version.",
+  "readingResourceMissing": "Download the document first",
+  "readingContinue": "Continue reading",
+  "@readingOtherDevice": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "vocabularyKeep": "Keep this word",
+  "vocabularySyncField": "{kind, select, kind{Entry type} forms{Word forms} ukPhonetic{UK pronunciation} usPhonetic{US pronunciation} senses{Meanings} gloss{Inline meaning} note{Notes} status{Learning state} alive{Keep or remove} other{Word content}}",
+  "@vocabularySyncField": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "syncTranslationConflicts": "{count, plural, one{1 translated paragraph needs a choice} other{{count} translated paragraphs need a choice}}. Open the translation beside its source to compare and choose.",
+  "@syncTranslationConflicts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncSettingsTitle": "Sync",
+  "syncSettingsScope": "Sync content and its referenced files with your chosen service. Downloads are on demand; this device stays paused between manual operations.",
+  "syncSettingsLocal": "Stored on this device",
+  "syncSettingsUnavailable": "Sync setup is unavailable on this platform or this build.",
+  "syncSettingsNew": "Create a shared library",
+  "syncSettingsJoin": "Join an existing library",
+  "syncSettingsLibraryId": "Library code",
+  "syncSettingsDeviceName": "This device’s name",
+  "syncSettingsPrepare": "Enable sync",
+  "syncSettingsIdentityHint": "Your local content will join this library. Its code cannot be changed after setup.",
+  "syncSettingsRestart": "Restart Foliarc to connect a service. Nothing has been uploaded.",
+  "syncSettingsDirectory": "Server URL (HTTPS)",
+  "syncSettingsAccount": "Username",
+  "syncSettingsPassword": "Password (leave blank to keep saved password)",
+  "syncSettingsConnect": "Connect",
+  "syncSettingsICloud": "Connect iCloud",
+  "syncSettingsConnectHint": "Checks the connection without uploading content.",
+  "syncSettingsOnce": "Sync now",
+  "syncSettingsPause": "Pause",
+  "syncSettingsPaused": "Manual sync · Paused",
+  "syncSettingsRunning": "Syncing…",
+  "syncSettingsPending": "Pending",
+  "syncSettingsConfirmed": "Confirmed by service",
+  "syncSettingsStaged": "Awaiting cloud confirmation",
+  "syncSettingsReceived": "Received",
+  "syncSettingsTimedOut": "iCloud timed out and sync paused. System transfers may continue; try again later.",
+  "syncSettingsError": "Could not complete this operation. Your local content and pending changes are preserved. Check storage or connection and retry.",
+  "syncSettingsInvalid": "Check the library code, device name and HTTPS directory. The username must be the service login account.",
+  "syncSettingsMissing": "The existing library was not found at this service. Check its code and directory; no empty replacement was created.",
+  "syncSettingsRepair": "Some local data could not be loaded or recovered. Repair it before transferring this library.",
+  "syncSettingsAuth": "Authentication failed. Check your account and app password.",
+  "syncSettingsAccountChanged": "The account changed. The previous queue is paused. Reconnect explicitly to continue.",
+  "syncSettingsLegacy": "Earlier sync history could not be verified as a complete portable graph. Local history is preserved; recover missing history on its original device before retrying.",
+  "syncSettingsHistory": "This service lacks required history. Keep using the original service, or inspect and explicitly copy the history available on this device.",
+  "syncSettingsRetry": "Refresh",
+  "syncResourcesTitle": "Files on this device",
+  "syncResourcesHint": "A received document can be downloaded when needed. Local files that differ from their saved fingerprint are preserved.",
+  "syncResourceAvailable": "Downloaded and verified",
+  "syncResourceMissing": "Download incomplete",
+  "syncResourceChanged": "File differs; kept unchanged",
+  "syncResourceUnverified": "Waiting for file details from the original device",
+  "syncResourceDownload": "Download",
+  "syncDeviceRename": "Rename",
+  "syncDeviceNameHint": "This name is shared with devices in this library. It does not identify your service account.",
+  "syncDeviceHistoryProblem": "Some device names could not be accepted. Their histories are retained; other devices can continue syncing.",
+  "syncDisconnect": "Disconnect",
+  "syncDisconnectHint": "Removes this connection and its saved password. Your library and cloud files are kept.",
+  "syncDeviceStale": "The device name changed while you were editing. Your input is kept. Cancel and reopen Rename to review the new name.",
+  "syncDisconnectICloud": "Disconnect",
+  "syncDisconnectICloudHint": "Your library and cloud files are kept. This does not sign you out of iCloud.",
+  "syncRenameStale": "This item changed while you were editing. Your input is kept. Cancel and reopen Rename to review the latest version.",
   "phoneNavigationReturnToReading": "Back to Reading",
   "phoneNavigationReturnToNote": "Back to Note",
   "phoneNavigationReturnToContent": "Back to Content",
+  "syncConcurrentChoiceHint": "This confirms a choice for all options shown. Other changes are kept.",
   "aiTaskWebFormat": "Web Page Formatting",
   "webFormatSectionLabel": "Content",
   "webFormatTitle": "AI Formatting",
   "webFormatHint": "Fixes headings, lists and paragraphs and removes page clutter, without rewriting the text.",
   "webFormatModel": "Model",
   "webFormatScope": "About {chars} characters in {sections} sections.",
-  "@webFormatScope": { "placeholders": {"chars": {"type": "String"}, "sections": {"type": "String"}} },
+  "@webFormatScope": {
+    "placeholders": {
+      "chars": {
+        "type": "String"
+      },
+      "sections": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatSendsTo": "The text will be sent to {service}.",
-  "@webFormatSendsTo": { "placeholders": {"service": {"type": "String"}} },
+  "@webFormatSendsTo": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatLocal": "Processed on this device; the text doesn’t leave it.",
   "webFormatOpenSettings": "Open Settings",
   "webFormatStart": "Start Formatting",
@@ -3246,15 +4051,54 @@
   "webFormatStopNote": "You can stop anytime. Finished sections are kept.",
   "webFormatPreparing": "Preparing",
   "webFormatProgress": "Formatting section {current} of {total}",
-  "@webFormatProgress": { "placeholders": {"current": {"type": "String"}, "total": {"type": "String"}} },
+  "@webFormatProgress": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatChecking": "Checking completeness",
   "webFormatOutputMeta": "{chars} characters · {time}",
-  "@webFormatOutputMeta": { "placeholders": {"chars": {"type": "String"}, "time": {"type": "String"}} },
+  "@webFormatOutputMeta": {
+    "placeholders": {
+      "chars": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatDoneMeta": "{sections} sections · {chars} characters · {time}",
-  "@webFormatDoneMeta": { "placeholders": {"sections": {"type": "String"}, "chars": {"type": "String"}, "time": {"type": "String"}} },
+  "@webFormatDoneMeta": {
+    "placeholders": {
+      "sections": {
+        "type": "String"
+      },
+      "chars": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatEditedMark": "Edited",
   "webFormatPartial": "{done} of {total} sections formatted; the rest stay as captured",
-  "@webFormatPartial": { "placeholders": {"done": {"type": "String"}, "total": {"type": "String"}} },
+  "@webFormatPartial": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatViewLayout": "Layout",
   "webFormatTabPreview": "Preview",
   "webFormatTabEdit": "Edit",
@@ -3263,13 +4107,31 @@
   "webFormatTabContent": "Content",
   "webFormatBackToLatest": "Back to Latest",
   "webFormatWriting": "Formatting “{title}”…",
-  "@webFormatWriting": { "placeholders": {"title": {"type": "String"}} },
+  "@webFormatWriting": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatSectionFailed": "Couldn’t format section {number}",
-  "@webFormatSectionFailed": { "placeholders": {"number": {"type": "String"}} },
+  "@webFormatSectionFailed": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatSectionFailedHint": "Other sections aren’t affected.",
   "webFormatUseSource": "Use Original",
   "webFormatSourceTag": "Section {number} · Not formatted, kept as captured",
-  "@webFormatSourceTag": { "placeholders": {"number": {"type": "String"}} },
+  "@webFormatSourceTag": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatStageRead": "Read page text",
   "webFormatStageSplit": "Split into sections",
   "webFormatStageFormat": "Format text",
@@ -3278,11 +4140,50 @@
   "webFormatCheckTitle": "Completeness",
   "webFormatSections": "Sections",
   "webFormatKept": "Images {images}/{imagesTotal}, links {links}/{linksTotal}, code blocks {code}/{codeTotal}",
-  "@webFormatKept": { "placeholders": {"images": {"type": "String"}, "imagesTotal": {"type": "String"}, "links": {"type": "String"}, "linksTotal": {"type": "String"}, "code": {"type": "String"}, "codeTotal": {"type": "String"}} },
+  "@webFormatKept": {
+    "placeholders": {
+      "images": {
+        "type": "String"
+      },
+      "imagesTotal": {
+        "type": "String"
+      },
+      "links": {
+        "type": "String"
+      },
+      "linksTotal": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      },
+      "codeTotal": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatShorter": "{title}: {percent}% shorter than the original",
-  "@webFormatShorter": { "placeholders": {"title": {"type": "String"}, "percent": {"type": "String"}} },
+  "@webFormatShorter": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatLonger": "{title}: {percent}% longer than the original",
-  "@webFormatLonger": { "placeholders": {"title": {"type": "String"}, "percent": {"type": "String"}} },
+  "@webFormatLonger": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatShorterHint": "This may be removed promotion, or article text removed by mistake.",
   "webFormatLongerHint": "Text that isn’t in the original may have been added.",
   "webFormatViewCompare": "Compare",
@@ -3297,9 +4198,21 @@
   "webFormatResultColumnEdited": "AI Formatted (Before Edits)",
   "webFormatNotFormatted": "Not formatted",
   "webFormatRemovedHint": "This section is {percent}% shorter. Removed text is struck through; please review it.",
-  "@webFormatRemovedHint": { "placeholders": {"percent": {"type": "String"}} },
+  "@webFormatRemovedHint": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatAddedHint": "This section is {percent}% longer. Please check that nothing was added.",
-  "@webFormatAddedHint": { "placeholders": {"percent": {"type": "String"}} },
+  "@webFormatAddedHint": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "webFormatConfirmCloseTitle": "Discard Formatting?",
   "webFormatConfirmClose": "Formatted text won’t be kept.",
   "webFormatConfirmCloseEdited": "Formatted text and your edits won’t be kept.",
@@ -3315,6 +4228,142 @@
   "webFormatSourceNote": "AI formatted",
   "webFormatPdfFailed": "Couldn’t create the PDF. Try again or choose another format.",
   "webFormatImage": "Image",
+  "libraryRecovery": "Deleted content",
+  "recoveryExplanation": "Creates a new study set and keeps the original. Reviews, reading progress and translations are excluded; attachments may need downloading.",
+  "recoveryFailed": "Recovery could not finish. The original history is safe. Check storage and retained resource manifests, then retry; retrying will not create a second copy.",
+  "recoveryCreated": "Recovery copy created",
+  "recoveryPending": "Copies current content only; unresolved choices stay in the original.",
+  "recoveryCopyTitle": "New study set name",
+  "recoverCopy": "Recover as a copy",
+  "recoveryEmpty": "No recoverable content",
+  "recoveryDeletedSet": "Deleted study set",
+  "recoveryDeletedDocuments": "Version containing deleted documents",
+  "recoveryContents": "{cards} cards · {documents} documents",
+  "recoveryDefaultTitle": "{title} (recovered)",
+  "@recoveryContents": {
+    "placeholders": {
+      "cards": {
+        "type": "int"
+      },
+      "documents": {
+        "type": "int"
+      }
+    }
+  },
+  "@recoveryDefaultTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "syncCacheHint": "Removes unused cache only. Files and history are kept.",
+  "syncCacheInspect": "Check cache",
+  "syncCacheUsage": "Cache: {bytes} bytes · Unused: {unused} bytes",
+  "syncCacheStaging": "Resources are being prepared. Check again when the operation finishes.",
+  "syncCacheReclaimed": "Released {bytes} bytes of unused cache.",
+  "syncCacheReclaim": "Clear unused cache",
+  "@syncCacheUsage": {
+    "placeholders": {
+      "bytes": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "unused": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "@syncCacheReclaimed": {
+    "placeholders": {
+      "bytes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "syncCacheIncomplete": "History is still incomplete. Sync missing versions before checking again.",
+  "syncCopyHint": "Copy sync history to the connected service. The original service is kept.",
+  "syncCopyPreview": "Review history copy",
+  "syncCopyConfirm": "Confirm copy",
+  "syncCopyDestination": "Allow copying to an empty service",
+  "syncCopyStale": "The library changed or editing is in progress. Finish editing and inspect the history copy again.",
+  "syncCopySummary": "{commits} versions · {others} from other devices\n{chunks} file chunks\n{excluded} unaccepted versions excluded\nAttachments may be unavailable for {unverified} versions",
+  "@syncCopySummary": {
+    "placeholders": {
+      "commits": {
+        "type": "int"
+      },
+      "others": {
+        "type": "int"
+      },
+      "chunks": {
+        "type": "int"
+      },
+      "excluded": {
+        "type": "int"
+      },
+      "unverified": {
+        "type": "int"
+      }
+    }
+  },
+  "syncCopyResources": "Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started.",
+  "syncOverviewTitle": "Sync status",
+  "syncManageTitle": "Manage",
+  "syncServiceTitle": "Sync service",
+  "syncServiceDetail": "Connection and account",
+  "syncLibraryDevices": "Library & devices",
+  "syncFilesDetail": "Download files for offline reading",
+  "syncAdvancedTitle": "Advanced",
+  "syncAdvancedDetail": "Copy history and manage cache",
+  "syncBack": "Sync",
+  "syncNotConnected": "No service connected",
+  "syncConnectIntro": "Connect a service to sync across devices.",
+  "syncSetupTitle": "Start using sync",
+  "syncSetupIntro": "Restart the app after setup, then connect a sync service.",
+  "syncSetupReady": "Ready for restart",
+  "syncDeviceExample": "For example: Work MacBook or Study iPad",
+  "syncICloudIntro": "Uses this device’s iCloud account.",
+  "syncConnectionOptions": "Migration options",
+  "syncCurrentConnection": "Current connection",
+  "syncDisconnectConfirm": "Disconnect",
+  "syncOtherDevices": "Other devices",
+  "syncLibraryCodeHint": "Enter this code on another device to join.",
+  "syncFilesEmpty": "No files yet",
+  "syncChangedHelp": "Keep the local original. Download the synced version on another device or into a separate copy.",
+  "syncCacheReadable": "Cache: {size} · Reclaimable: {unused}",
+  "@syncCacheReadable": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "unused": {
+        "type": "String"
+      }
+    }
+  },
+  "syncCacheFreed": "Freed {size}",
+  "@syncCacheFreed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "syncChoiceDetails": "About this choice",
+  "syncCandidateDevice": "From {device}",
+  "@syncCandidateDevice": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "syncUnknownDevice": "Unnamed device",
+  "syncViewFiles": "Go to downloads",
+  "recoveryIntro": "Recover deleted content as an independent study set. The original history is preserved.",
   "webFormatSectionCount": "{count} sections",
   "webFormatTabCompareShort": "Compare",
   "@webFormatSectionCount": { "placeholders": {"count": {"type": "String"}} },

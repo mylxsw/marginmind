@@ -1,5 +1,6 @@
 import Cocoa
 import CoreText
+import CryptoKit
 import PDFKit
 import Vision
 import FlutterMacOS
@@ -10,14 +11,31 @@ final class PdfOcrEngine {
     let text: String
     let rect: CGRect // normalized, bottom-left origin, in displayed crop box
   }
-  enum Failure: Error { case invalidDocument, invalidRange, render, write }
+  enum Failure: Error { case invalidDocument, invalidRange, render, write, sourceChanged }
 
-  static func copyURL(_ source: URL) -> URL {
-    source.deletingPathExtension().appendingPathExtension("ocr.pdf")
+  // Old adjacent .ocr.pdf files have no source identity. Keep them on disk,
+  // but never silently reuse them after a source was replaced or downloaded.
+  static func sourceDigest(_ source: URL) throws -> String {
+    let file = try FileHandle(forReadingFrom: source)
+    defer { try? file.close() }
+    var digest = SHA256()
+    while let chunk = try file.read(upToCount: 1024 * 1024), !chunk.isEmpty {
+      digest.update(data: chunk)
+    }
+    return digest.finalize().map { String(format: "%02x", $0) }.joined()
+  }
+
+  static func copyURL(_ source: URL) throws -> URL {
+    try copyURL(source, digest: sourceDigest(source))
+  }
+
+  private static func copyURL(_ source: URL, digest: String) -> URL {
+    source.deletingPathExtension().appendingPathExtension("\(digest).ocr.pdf")
   }
 
   static func inspect(_ source: URL) throws -> [String: Any] {
-    let copy = copyURL(source)
+    let digest = try sourceDigest(source)
+    let copy = copyURL(source, digest: digest)
     let url = FileManager.default.fileExists(atPath: copy.path) ? copy : source
     guard let document = PDFDocument(url: url), !document.isLocked else { throw Failure.invalidDocument }
     var textPages = [Int]()
@@ -28,6 +46,7 @@ final class PdfOcrEngine {
         }
       }
     }
+    guard try sourceDigest(source) == digest else { throw Failure.sourceChanged }
     return ["path": url.path, "pageCount": document.pageCount, "textPages": textPages,
             "hasCopy": url == copy]
   }
@@ -96,7 +115,8 @@ final class PdfOcrEngine {
   static func run(source: URL, first: Int, last: Int, languages: [String],
                   cancelled: () -> Bool, progress: (Int, Int) -> Void,
                   recognizer: (CGPDFPage, [String]) throws -> [Line] = recognize) throws -> [String: Any] {
-    let output = copyURL(source)
+    let digest = try sourceDigest(source)
+    let output = copyURL(source, digest: digest)
     let input = FileManager.default.fileExists(atPath: output.path) ? output : source
     guard let document = CGPDFDocument(input as CFURL), !document.isEncrypted,
           let textDocument = PDFDocument(url: input), !textDocument.isLocked else { throw Failure.invalidDocument }
@@ -140,6 +160,7 @@ final class PdfOcrEngine {
     }
     // POSIX rename atomically replaces an older copy; readers may still hold
     // its inode while the complete new file is installed. Never touch source.
+    guard try sourceDigest(source) == digest else { throw Failure.sourceChanged }
     guard rename(temporary.path, output.path) == 0 else { throw Failure.write }
     var result = try inspect(source)
     result["cancelled"] = wasCancelled || cancelled()

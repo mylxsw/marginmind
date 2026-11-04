@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>FoliarcICloudContainerIdentifier</key>
+	<string>$(FOLIARC_ICLOUD_CONTAINER_IDENTIFIER)</string>
 	<!-- Temporary macOS workaround for flutter/flutter#192522 (GUL-500).
 	     Re-enable after a stable engine includes the back-buffer cache fix. -->
 	<key>FLTEnableImpeller</key>

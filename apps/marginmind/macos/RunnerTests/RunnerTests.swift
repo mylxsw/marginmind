@@ -850,7 +850,7 @@ extension RunnerTests {
     XCTAssertEqual(progress, [1, 2])
     XCTAssertEqual(result["textPages"] as? [Int], [1, 2])
     XCTAssertEqual(try Data(contentsOf: source), original)
-    let output = PdfOcrEngine.copyURL(source)
+    let output = try PdfOcrEngine.copyURL(source)
     let document = try XCTUnwrap(PDFDocument(url: output))
     let text = try XCTUnwrap(document.page(at: 0)?.string)
     XCTAssertTrue(text.contains("MarginMind"), text)
@@ -892,7 +892,7 @@ extension RunnerTests {
 
   func testOcrFailureDoesNotReplaceCopyAndRejectsRange() throws {
     let source = try ocrFixture()
-    let copy = PdfOcrEngine.copyURL(source)
+    let copy = try PdfOcrEngine.copyURL(source)
     try FileManager.default.copyItem(at: source, to: copy)
     let original = try Data(contentsOf: copy)
     XCTAssertThrowsError(try PdfOcrEngine.run(source: source, first: 0, last: 2, languages: ["en-US"],
@@ -903,6 +903,40 @@ extension RunnerTests {
       cancelled: { false }, progress: { _, _ in }, recognizer: { _, _ in throw PdfOcrEngine.Failure.render }))
     XCTAssertEqual(try Data(contentsOf: copy), original)
     XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: source.deletingLastPathComponent().path).count, 2)
+  }
+  func testOcrCopiesFollowSourceBytesAndPreserveUnverifiedLegacyFiles() throws {
+    let source = try ocrFixture()
+    let original = try Data(contentsOf: source)
+    let legacy = source.deletingPathExtension().appendingPathExtension("ocr.pdf")
+    try original.write(to: legacy)
+    XCTAssertEqual(try PdfOcrEngine.inspect(source)["hasCopy"] as? Bool, false)
+    let firstCopy = try PdfOcrEngine.copyURL(source)
+    try original.write(to: firstCopy)
+    XCTAssertEqual(try PdfOcrEngine.inspect(source)["hasCopy"] as? Bool, true)
+    let replacement = try ocrFixture(pages: 3)
+    try Data(contentsOf: replacement).write(to: source, options: .atomic)
+    XCTAssertNotEqual(try PdfOcrEngine.copyURL(source), firstCopy)
+    XCTAssertEqual(try PdfOcrEngine.inspect(source)["hasCopy"] as? Bool, false)
+    XCTAssertEqual(try PdfOcrEngine.inspect(source)["pageCount"] as? Int, 3)
+    XCTAssertEqual(try Data(contentsOf: firstCopy), original)
+    XCTAssertEqual(try Data(contentsOf: legacy), original)
+    XCTAssertThrowsError(try PdfOcrEngine.copyURL(source.appendingPathExtension("missing")))
+  }
+
+  func testOcrSourceReplacementDuringRecognitionCannotPublishOldResult() throws {
+    let source = try ocrFixture(pages: 1)
+    let output = try PdfOcrEngine.copyURL(source)
+    let replacement = try Data(contentsOf: ocrFixture(pages: 2))
+    XCTAssertThrowsError(try PdfOcrEngine.run(source: source, first: 1, last: 1, languages: ["en-US"],
+      cancelled: { false }, progress: { _, _ in }, recognizer: { _, _ in
+        try replacement.write(to: source, options: .atomic)
+        return []
+      })) { error in
+        guard case PdfOcrEngine.Failure.sourceChanged = error else { return XCTFail("Unexpected failure") }
+      }
+    XCTAssertFalse(FileManager.default.fileExists(atPath: output.path))
+    XCTAssertEqual(try Data(contentsOf: source), replacement)
+    XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: source.deletingLastPathComponent().path).count, 1)
   }
 }
 

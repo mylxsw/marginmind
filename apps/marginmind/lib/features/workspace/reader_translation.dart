@@ -7,6 +7,7 @@ import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
 import 'reader_compare.dart';
+import 'document_resources.dart';
 import 'reader_ocr.dart';
 import 'reader_paragraphs.dart';
 import 'reflow_document.dart';
@@ -14,25 +15,49 @@ import 'reflow_session.dart';
 import 'workspace_controller.dart';
 import 'translation_schedulers.dart';
 
-final translationParagraphsProvider = FutureProvider.autoDispose.family<List<TranslationParagraph>, (String, String)>((
-  ref,
-  key,
-) {
-  final workspace = ref.read(workspaceProvider(key.$1).notifier);
-  ref.watch(workspaceProvider(key.$1).select((s) => s.content?.document(key.$2)?.revision));
-  final doc = workspace.content.document(key.$2);
-  if (doc == null) return Future.value(<TranslationParagraph>[]);
-  if (doc.contentManifest != null) {
-    return ReflowDocument.load(
-      ref.read(contentRepositoryProvider) as DocumentRepository,
-      key.$1,
-      doc,
-    ).then(reflowParagraphs);
+final translationParagraphsProvider = FutureProvider.autoDispose.family<List<TranslationParagraph>, (String, String)>(
+  (ref, key) async {
+    final workspace = ref.read(workspaceProvider(key.$1).notifier);
+    ref.watch(
+      workspaceProvider(key.$1).select((s) {
+        final d = s.content?.document(key.$2);
+        return (d?.revision, d?.fileName, d?.contentManifest, d?.layout, d?.pageCount);
+      }),
+    );
+    final doc = workspace.content.document(key.$2);
+    if (doc == null) return <TranslationParagraph>[];
+    final path = workspace.filePath(doc);
+    final ocr = ref.watch(readerOcrProvider(documentOcrSource(key.$1, doc, path)));
+    final availability = await ref.watch(documentResourcesProvider(documentResourceKey(key.$1, doc)).future);
+    if (!ref.mounted) throw StateError('Document changed while checking resources');
+    if (availability != DocumentResourceAvailability.ready) throw DocumentResourcesUnavailable(availability);
+    if (doc.contentManifest != null) {
+      return ReflowDocument.load(
+        ref.read(contentRepositoryProvider) as DocumentRepository,
+        key.$1,
+        doc,
+      ).then(reflowParagraphs);
+    }
+    return MMPdfEngine.translationParagraphs(ocr.document?.path ?? path, doc.id);
+  },
+  dependencies: [workspaceProvider, readingPagesProvider],
+  // Missing/changed resources require an explicit download or repair. Retrying
+  // the same unavailable bytes would keep the caller loading indefinitely.
+  retry: (count, error) => error is DocumentResourcesUnavailable ? null : ProviderContainer.defaultRetry(count, error),
+);
+
+/// Imperative commands need a subscription until extraction completes. A plain
+/// read does not keep an auto-disposed provider (or its resource stream) active
+/// across frames. Closing here also releases the subscription after failures.
+Future<List<TranslationParagraph>> readTranslationParagraphs(Ref ref, (String, String) key) async {
+  final provider = translationParagraphsProvider(key);
+  final subscription = ref.listen(provider, (_, _) {});
+  try {
+    return await ref.read(provider.future);
+  } finally {
+    subscription.close();
   }
-  final path = workspace.filePath(doc);
-  final ocr = ref.watch(readerOcrProvider(path));
-  return MMPdfEngine.translationParagraphs(ocr.document?.path ?? path, doc.id);
-}, dependencies: [workspaceProvider, readingPagesProvider]);
+}
 
 class ReaderTranslationState {
   const ReaderTranslationState({
@@ -165,7 +190,7 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
     try {
       // Local paragraph geometry is indexed once. Only the selected page's
       // missing paragraphs are ever passed to a model.
-      final paragraphs = await ref.read(translationParagraphsProvider((studySetId, id)).future);
+      final paragraphs = await readTranslationParagraphs(ref, (studySetId, id));
       if (!current()) return;
       final session = await ref
           .read(translationSchedulersProvider(studySetId))

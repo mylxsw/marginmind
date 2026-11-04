@@ -86,7 +86,9 @@ class TranslationSchedulers {
   }) async {
     if (_closed) throw StateError('Workspace closed');
     final key = (id, language);
-    final revision = '${content.document(id)?.revision}:${paragraphs.map((p) => p.fingerprint).join(',')}';
+    final document = content.document(id);
+    final revision =
+        '${document?.revision}:${document?.fileName}:${document?.contentManifest}:${document?.layout}:${document?.pageCount}:${paragraphs.map((p) => p.fingerprint).join(',')}';
     if (_owners.containsKey(key) && _revisions[key] == revision) return _owners[key]!;
     final previous = _owners[key];
     _revisions[key] = revision;

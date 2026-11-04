@@ -160,7 +160,13 @@
   "rename": "重命名…",
   "renameTitle": "重命名",
   "mapNodeNoteCount": "笔记 · {count}",
-  "@mapNodeNoteCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mapNodeNoteCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "deleteMapNote": "删除笔记",
   "editNote": "编辑笔记",
   "save": "保存",
@@ -272,7 +278,13 @@
   "backToMap": "返回脑图",
   "viewInMap": "在脑图中查看",
   "tagNodesInMap": "{count} 个相关节点 · 当前脑图",
-  "@tagNodesInMap": {"placeholders": {"count": {"type": "int"}}},
+  "@tagNodesInMap": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tagNoNodes": "没有带此标签的节点",
   "addRelation": "添加关联线",
   "addSummary": "添加概要",
@@ -297,7 +309,9 @@
   "inkStrokeCount": "{count} 处笔迹",
   "@inkStrokeCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "showReaderSidebar": "显示页面侧栏",
@@ -401,7 +415,9 @@
   "ocrInvalidRange": "请输入 1 至 {count} 内的页码范围",
   "@ocrInvalidRange": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ocrThisPage": "识别本页",
@@ -984,7 +1000,9 @@
   "uncroppedHud": "已取消裁边",
   "@cropHiddenAnnotations": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "marginNotes": "页边批注",
@@ -1115,7 +1133,9 @@
   "readerInvalidPage": "请输入有效页码，最大为 {count}",
   "@readerInvalidPage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "outlineDragHint": "拖到条目上方或下方调整顺序，拖到中间成为子目录",
@@ -1146,22 +1166,30 @@
   "mapEditMissingSummary": "概要已不可用",
   "@mergeNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@splitNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@selectedNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@mergedSources": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "@mergeCleanup": {
@@ -1191,7 +1219,9 @@
   "summaryIncludedNodes": "包含了中间未选中的 {count} 个节点",
   "@summaryIncludedNodes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "addWebPage": "添加网页…",
@@ -1250,7 +1280,9 @@
   "importFailedMany": "{count} 份文档无法导入",
   "@importFailedMany": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "importErrorDrm": "受 DRM 保护",
@@ -1299,13 +1331,17 @@
   "annotationsNeedReview": "需要确认 {count}",
   "@annotationsNeedReview": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "annotationsNeedReviewHud": "{count} 处标注需要确认",
   "@annotationsNeedReviewHud": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "viewAction": "查看",
@@ -1761,8 +1797,20 @@
   },
   "noteAddToReview": "加入复习",
   "noteUpdateChanges": "{count} 处更新",
-  "@noteUpdateApplied": {"placeholders": {"count": {"type": "int"}}},
-  "@noteUpdateChanges": {"placeholders": {"count": {"type": "int"}}},
+  "@noteUpdateApplied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@noteUpdateChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noteShareTitle": "分享长图",
   "noteShareQuote": "一句金句",
   "noteShareSection": "一节",
@@ -1805,38 +1853,60 @@
   "fullTranslationTaskMenu": "全文翻译任务… {percent}%",
   "@fullTranslationTaskMenu": {
     "placeholders": {
-      "percent": { "type": "int" }
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsule": "全文翻译",
   "fullTranslationCapsuleRunning": "{percent}% 第 {batch} 批 · {done}/{total} 页",
   "@fullTranslationCapsuleRunning": {
     "placeholders": {
-      "percent": { "type": "int" },
-      "batch": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "percent": {
+        "type": "int"
+      },
+      "batch": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleRunningAll": "{percent}% {done}/{total} 页",
   "@fullTranslationCapsuleRunningAll": {
     "placeholders": {
-      "percent": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "percent": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleReview": "第 {batch} 批待确认",
   "@fullTranslationCapsuleReview": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsulePaused": "已暂停 {done}/{total} 页",
   "@fullTranslationCapsulePaused": {
     "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleOffline": "等待网络",
@@ -1846,26 +1916,36 @@
   "fullTranslationCapsuleDoneFailed": "已完成 · {count} 段未译",
   "@fullTranslationCapsuleDoneFailed": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCapsuleStopped": "已停止 {done}/{total} 页",
   "@fullTranslationCapsuleStopped": {
     "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationPlaceholderBatch": "将在第 {batch} 批翻译",
   "@fullTranslationPlaceholderBatch": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationPlaceholderPageSub": "第 {page} 页",
   "@fullTranslationPlaceholderPageSub": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationPlaceholderOutOfRange": "不在本次翻译范围",
@@ -1876,13 +1956,29 @@
   "fullTranslationSameLanguage": "原文语言和目标语言相同，请选择另一种目标语言。",
   "fullTranslationStartFailed": "未能开始翻译，请检查模型连接后重试。已有译文会保留。",
   "fullTranslationTextProgress": "{percent}% · {done}/{total} 段",
-  "@fullTranslationTextProgress": {"placeholders": {"percent": {"type": "int"}, "done": {"type": "int"}, "total": {"type": "int"}}},
+  "@fullTranslationTextProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "fullTranslationTitle": "全文翻译",
   "fullTranslationDocSubtitle": "{doc} · {pages} 页",
   "@fullTranslationDocSubtitle": {
     "placeholders": {
-      "doc": { "type": "String" },
-      "pages": { "type": "int" }
+      "doc": {
+        "type": "String"
+      },
+      "pages": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationSourceLangDetect": "检测",
@@ -1899,13 +1995,17 @@
   "fullTranslationBatchPages": "{count} 页",
   "@fullTranslationBatchPages": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationBatchCount": "共 {count} 批",
   "@fullTranslationBatchCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationNote": "术语与要求",
@@ -1917,8 +2017,12 @@
   "fullTranslationStartBatch": "开始 · 第 {from}–{to} 页",
   "@fullTranslationStartBatch": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStartAll": "开始翻译",
@@ -1935,65 +2039,93 @@
   "fullTranslationEstChanged": "原文已重新识别 · 已有译文 {reused} / {total} 段仍可复用",
   "@fullTranslationEstChanged": {
     "placeholders": {
-      "reused": { "type": "int" },
-      "total": { "type": "int" }
+      "reused": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstNeeds": "需翻译 {paras} 段 · 约 {chars} 字符",
   "@fullTranslationEstNeeds": {
     "placeholders": {
-      "paras": { "type": "String" },
-      "chars": { "type": "String" }
+      "paras": {
+        "type": "String"
+      },
+      "chars": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationEstMinutes": "约 {minutes} 分钟",
   "@fullTranslationEstMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstReused": "已有 {paras} 段译文（{pages} 页），直接复用",
   "@fullTranslationEstReused": {
     "placeholders": {
-      "paras": { "type": "int" },
-      "pages": { "type": "int" }
+      "paras": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstReusedNoPages": "已有 {paras} 段译文，直接复用",
   "@fullTranslationEstReusedNoPages": {
     "placeholders": {
-      "paras": { "type": "int" }
+      "paras": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstSkip": "不发送：{details}",
   "@fullTranslationEstSkip": {
     "placeholders": {
-      "details": { "type": "String" }
+      "details": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationEstSkipMargin": "页眉页码 {count} 处",
   "@fullTranslationEstSkipMargin": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstSkipSame": "已是{language} {count} 段",
   "@fullTranslationEstSkipSame": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstSkipDupe": "重复段落 {count} 段",
   "@fullTranslationEstSkipDupe": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationEstModel": "{model} · 预计 {tokens} token",
   "@fullTranslationEstModel": {
     "placeholders": {
-      "model": { "type": "String" },
-      "tokens": { "type": "String" }
+      "model": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationEstBudgetWarning": "；超出 50% 时暂停询问",
@@ -2001,16 +2133,24 @@
   "fullTranslationStateRunningBatch": "翻译中 · 第 {batch} 批（{from}–{to} 页）",
   "@fullTranslationStateRunningBatch": {
     "placeholders": {
-      "batch": { "type": "int" },
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "batch": {
+        "type": "int"
+      },
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStateRunningAll": "翻译中 · 一次完成",
   "fullTranslationStateReview": "第 {batch} 批待确认",
   "@fullTranslationStateReview": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStatePaused": "已暂停",
@@ -2029,7 +2169,9 @@
   "fullTranslationStatEstToken": "预估 {tokens}",
   "@fullTranslationStatEstToken": {
     "placeholders": {
-      "tokens": { "type": "String" }
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationStatFailed": "未译",
@@ -2037,7 +2179,9 @@
   "fullTranslationDetailParas": "{count} 段",
   "@fullTranslationDetailParas": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationDetailDedup": "重复段落只译一次",
@@ -2045,23 +2189,33 @@
   "fullTranslationDetailItems": "{count} 处",
   "@fullTranslationDetailItems": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationDetailModelCalls": "模型 · 请求",
   "fullTranslationDetailCalls": "{model} · {calls} 次",
   "@fullTranslationDetailCalls": {
     "placeholders": {
-      "model": { "type": "String" },
-      "calls": { "type": "int" }
+      "model": {
+        "type": "String"
+      },
+      "calls": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationDetailElapsed": "用时",
   "fullTranslationDetailTime": "{minutes} 分 {seconds} 秒",
   "@fullTranslationDetailTime": {
     "placeholders": {
-      "minutes": { "type": "int" },
-      "seconds": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationActionStop": "停止",
@@ -2072,7 +2226,9 @@
   "fullTranslationActionRetryFailed": "重试 {count} 段",
   "@fullTranslationActionRetryFailed": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationActionContinueTranslation": "继续翻译…",
@@ -2082,14 +2238,20 @@
   "fullTranslationCkptBatchDone": "第 {batch} 批已完成",
   "@fullTranslationCkptBatchDone": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptPages": "第 {from}–{to} 页",
   "@fullTranslationCkptPages": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptCollapseTip": "收起，先读一读",
@@ -2097,35 +2259,51 @@
   "fullTranslationCkptMin": "第 {batch} 批待确认",
   "@fullTranslationCkptMin": {
     "placeholders": {
-      "batch": { "type": "int" }
+      "batch": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptNextBatch": "继续第 {from}–{to} 页",
   "@fullTranslationCkptNextBatch": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptFromPage": "从第 {page} 页开始检查",
   "@fullTranslationCkptFromPage": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationCkptRemain": "剩余 {pages} 页 · 约 {tokens} token",
   "@fullTranslationCkptRemain": {
     "placeholders": {
-      "pages": { "type": "int" },
-      "tokens": { "type": "String" }
+      "pages": {
+        "type": "int"
+      },
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationCkptTranslateRest": "翻译剩余全部",
   "fullTranslationHudStartBatch": "开始翻译第 {from}–{to} 页",
   "@fullTranslationHudStartBatch": {
     "placeholders": {
-      "from": { "type": "int" },
-      "to": { "type": "int" }
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationHudStartAll": "开始翻译全文",
@@ -2133,7 +2311,9 @@
   "fullTranslationHudDoneFailed": "全文翻译完成 · {count} 段未译",
   "@fullTranslationHudDoneFailed": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationHudView": "查看",
@@ -2141,7 +2321,9 @@
   "fullTranslationHudPausedAt": "全文翻译已暂停在第 {page} 页",
   "@fullTranslationHudPausedAt": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationHudContinue": "继续",
@@ -2149,17 +2331,29 @@
   "fullTranslationGridCell": "第 {page} 页 · {state}",
   "@fullTranslationGridCell": {
     "placeholders": {
-      "page": { "type": "int" },
-      "state": { "type": "String" }
+      "page": {
+        "type": "int"
+      },
+      "state": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationCapsuleA11y": "全文翻译，{percent}%，第 {batch} 批，{done} / {total} 页",
   "@fullTranslationCapsuleA11y": {
     "placeholders": {
-      "percent": { "type": "int" },
-      "batch": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "percent": {
+        "type": "int"
+      },
+      "batch": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "fullTranslationStripBadKey": "API Key 无效，已暂停",
@@ -2170,7 +2364,9 @@
   "fullTranslationStripBudget": "已用 {tokens} token，超出预估 50%",
   "@fullTranslationStripBudget": {
     "placeholders": {
-      "tokens": { "type": "String" }
+      "tokens": {
+        "type": "String"
+      }
     }
   },
   "fullTranslationStripOpenSettings": "打开设置",
@@ -2179,8 +2375,12 @@
   "fullTranslationNotificationBodyFailed": "{doc} · {count} 段未译",
   "@fullTranslationNotificationBodyFailed": {
     "placeholders": {
-      "doc": { "type": "String" },
-      "count": { "type": "int" }
+      "doc": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "phoneGlassTitle": "手机 Liquid Glass",
@@ -2194,14 +2394,26 @@
   "phoneReaderCollapse": "收起",
   "phoneReaderExitTools": "结束标注",
   "phoneReaderPercent": "{percent}%",
-  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "@phoneReaderPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "mapCacheClearFailed": "清除缓存失败",
   "translationRetranslate": "重新翻译",
   "translationEdit": "修改译文",
   "translationRetranslated": "已重新翻译",
   "translationEdited": "已手动修改",
   "translationParagraphFailed": "未译 · {reason}",
-  "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@translationParagraphFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "translationEditSaved": "已保存修改",
   "translationCopied": "已拷贝译文",
   "translationRemoved": "已移除译文",
@@ -2354,7 +2566,13 @@
     }
   },
   "workspaceCurrentContent": "当前内容：{title}",
-  "@workspaceCurrentContent": {"placeholders": {"title": {"type": "String"}}},
+  "@workspaceCurrentContent": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "settingsAdvancedGroup": "高级",
   "settingsEnableBetaFeatures": "启用 Beta 功能",
   "assistantIconTitle": "AI 助手图标",
@@ -2484,18 +2702,95 @@
   "mapPhoneMore": "更多",
   "mapDragHint": "拖到节点中间改归属，拖到边缘调顺序；空白处松手取消",
   "mapDropChild": "松手移到“{title}”下",
-  "@mapDropChild": {"placeholders": {"title": {"type": "String"}}},
+  "@mapDropChild": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapDropBefore": "松手放在“{title}”前面",
-  "@mapDropBefore": {"placeholders": {"title": {"type": "String"}}},
+  "@mapDropBefore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapDropAfter": "松手放在“{title}”后面",
-  "@mapDropAfter": {"placeholders": {"title": {"type": "String"}}},
+  "@mapDropAfter": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "mapSelectionCount": "已选 {count} 项",
-  "@mapSelectionCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mapSelectionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mapSelectionTap": "点选",
   "mapSelectionBox": "框选",
   "mapSelectionClear": "清空",
   "mapSelectionTapHint": "点节点选择或取消；单指移动画布，双指缩放",
   "mapSelectionBoxHint": "单指画框，松手后可拖动四角修正；双指移动画布",
+  "undoContentChanged": "相关内容已被后续修改，无法执行这一步。当前内容已保留。",
+  "syncTitle": "同步与恢复",
+  "syncLocalOnly": "在此处理已保存内容和冲突。服务传输状态请查看“设置 → 同步”。",
+  "syncWaitingTransfer": "有修改待同步",
+  "syncRecovered": "已恢复上次中断编辑时保存的内容，请查看后再确认。",
+  "syncAcknowledge": "我已查看恢复的内容",
+  "syncRepair": "部分本机文件需要修复，已保存的内容仍保留在恢复记录中。",
+  "syncEditing": "请结束当前编辑后再选择版本，收到的修改已安全保留。",
+  "syncRetry": "重试",
+  "syncStale": "查看期间内容已变化，请检查刷新后的版本再选择。",
+  "syncActionFailed": "操作未能完成，已保存的内容仍保留，可以重试。",
+  "syncLoadFailed": "无法读取同步信息，重试不会改动已保存的内容。",
+  "syncCurrent": "当前内容",
+  "syncCandidate": "候选修改",
+  "syncKeep": "保留当前",
+  "syncUse": "采用此版本",
+  "syncChoiceHint": "选择将应用于上述全部修改。",
+  "syncInvalidCandidate": "这项修改无法安全应用于当前结构。可以保留当前内容，或先检查关联内容。",
+  "syncNoConflicts": "没有冲突",
+  "syncAbsent": "不存在",
+  "syncStructureValue": "结构或引用已变化",
+  "syncConflictCount": "{count} 项待处理",
+  "@syncConflictCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncEntity": "{kind, select, studySet{学习集} card{卡片} document{文档} studyNote{学习笔记} researchNote{研究笔记} annotation{标注} marginNote{批注} map{脑图} relation{关系线} summary{概要} bookmark{书签} other{内容}}",
+  "@syncEntity": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "syncField": "{kind, select, title{标题} text{正文} tags{标签} order{顺序} structure{结构} source{来源} appearance{外观} collectionBaseline{资料收集基线} other{关联内容}}",
+  "@syncField": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "syncProblem": "{kind, select, editing{收到的修改正在等待当前编辑结束。} missingHistory{较早的版本尚未到达，收到的内容已保留。} unrelatedHistory{这些版本没有共同历史，双方分支均已保留，等待恢复处理。} ambiguousHistory{这些分支存在多个可能的共同起点，双方均已保留，等待进一步检查。} concurrentChoices{另一设备作出了不同的冲突选择，双方选择均已保留，等待进一步处理。} deletion{删除与编辑发生冲突，双方版本均已保留，等待恢复处理。} invalidHistory{收到的分支未通过校验，已保留该分支，没有替换当前内容。} other{暂不支持收到的版本，当前内容没有被替换。}}",
+  "@syncProblem": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
   "incomingShareTitle": "导入到 Foliarc",
   "incomingShareCreate": "创建并导入",
   "incomingShareImport": "导入",
@@ -2517,9 +2812,103 @@
       }
     }
   },
+  "reviewSaveFailed": "评分未能保存，复习进度没有改变，请重试。",
+  "reviewWaitingBaseline": "之前的复习记录尚未同步到此设备，请同步完成后重试。",
+  "reviewFinishEditing": "请先结束当前内容编辑，再为这张卡片评分。",
+  "manageFolders": "管理文件夹",
+  "folderName": "文件夹名称",
+  "folderNameInvalid": "请输入 1–256 个字符的文件夹名称。",
+  "deleteFolder": "删除文件夹？",
+  "deleteFolderMessage": "学习集会保留，并显示在“未分类”中。",
+  "moveToFolder": "移动到文件夹",
+  "folderUnavailable": "待恢复的文件夹",
+  "folderRepairNeeded": "文件夹索引需要修复，已保存的修改仍保留。",
+  "readingContinuationsTitle": "继续阅读",
+  "readingContinuationsHint": "各设备分别保留阅读位置，选择一项在这里打开。",
+  "readingOtherDevice": "其他设备 {number}",
+  "readingTextPosition": "已保存的正文位置",
+  "readingVersionChanged": "此位置属于不同或已移除的文档版本。",
+  "readingResourceMissing": "请先下载文档",
+  "readingContinue": "继续阅读",
+  "@readingOtherDevice": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "vocabularyKeep": "保留这个词条",
+  "vocabularySyncField": "{kind, select, kind{词条类型} forms{词形} ukPhonetic{英式发音} usPhonetic{美式发音} senses{释义} gloss{行内释义} note{笔记} status{学习状态} alive{保留或移除} other{词条内容}}",
+  "@vocabularySyncField": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "syncTranslationConflicts": "有 {count} 个译文段落需要选择。请打开原文旁的译文，对照后选择保留的内容。",
+  "@syncTranslationConflicts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncSettingsTitle": "同步",
+  "syncSettingsScope": "将内容和明确引用的文件同步到你选择的服务。文件按需下载，手动操作之间保持暂停。",
+  "syncSettingsLocal": "仅保存在本机",
+  "syncSettingsUnavailable": "当前平台或构建暂不支持同步设置。",
+  "syncSettingsNew": "创建共享资料库",
+  "syncSettingsJoin": "加入已有资料库",
+  "syncSettingsLibraryId": "资料库代码",
+  "syncSettingsDeviceName": "本机名称",
+  "syncSettingsPrepare": "启用同步",
+  "syncSettingsIdentityHint": "现有内容会加入此资料库。设置后不可更换资料库代码。",
+  "syncSettingsRestart": "重启 Foliarc 后连接服务。尚未上传内容。",
+  "syncSettingsDirectory": "服务器地址（HTTPS）",
+  "syncSettingsAccount": "用户名",
+  "syncSettingsPassword": "密码（留空沿用已保存密码）",
+  "syncSettingsConnect": "连接",
+  "syncSettingsICloud": "连接 iCloud",
+  "syncSettingsConnectHint": "仅验证连接，不上传内容。",
+  "syncSettingsOnce": "立即同步",
+  "syncSettingsPause": "暂停",
+  "syncSettingsPaused": "手动同步 · 已暂停",
+  "syncSettingsRunning": "正在同步…",
+  "syncSettingsPending": "待同步",
+  "syncSettingsConfirmed": "服务已确认",
+  "syncSettingsStaged": "等待云端确认",
+  "syncSettingsReceived": "已接收",
+  "syncSettingsTimedOut": "iCloud 超时，已暂停。系统可能仍在传输，请稍后重试。",
+  "syncSettingsError": "操作未完成。本机内容和待同步变更均保留，请检查存储或连接后重试。",
+  "syncSettingsInvalid": "请检查资料库代码、本机名称和 HTTPS 目录。用户名必须是服务的登录账号。",
+  "syncSettingsMissing": "此服务中未找到已有资料库。请检查代码和目录；未创建空资料库替代它。",
+  "syncSettingsRepair": "部分本机数据未能加载或恢复，请修复后再传输此资料库。",
+  "syncSettingsAuth": "认证失败，请检查账号和应用专用密码。",
+  "syncSettingsAccountChanged": "账号已变化，原队列已暂停。请明确重新连接后继续。",
+  "syncSettingsLegacy": "早期同步历史尚无法验证为完整、可跨平台传输的版本图。本机历史已保留，请先在原设备补齐历史后重试。",
+  "syncSettingsHistory": "目标服务缺少必要历史。可继续使用原服务，或先检查并明确复制本机持有的历史。",
+  "syncSettingsRetry": "刷新",
+  "syncResourcesTitle": "本机文件",
+  "syncResourcesHint": "收到文档后可按需下载。本机文件与已保存指纹不符时会保留，不会自动覆盖。",
+  "syncResourceAvailable": "已下载并验证",
+  "syncResourceMissing": "未下载完整",
+  "syncResourceChanged": "文件不一致，未覆盖",
+  "syncResourceUnverified": "待原设备提供文件信息",
+  "syncResourceDownload": "下载",
+  "syncDeviceRename": "修改名称",
+  "syncDeviceNameHint": "此名称会与同一资料库的设备共享，不代表服务账号身份。",
+  "syncDeviceHistoryProblem": "部分设备名称历史无法接收，已保留原始分支，其他设备可继续同步。",
+  "syncDisconnect": "断开连接",
+  "syncDisconnectHint": "移除此连接和已保存的密码。资料库及云端文件保留。",
+  "syncDeviceStale": "编辑期间设备名称已变化，输入已保留。请取消并重新打开改名，确认最新名称。",
+  "syncDisconnectICloud": "断开连接",
+  "syncDisconnectICloudHint": "资料库及云端文件保留，不会退出系统 iCloud。",
+  "syncRenameStale": "编辑期间内容已变化，输入已保留。请取消并重新打开改名，确认最新版本。",
   "phoneNavigationReturnToReading": "返回阅读",
   "phoneNavigationReturnToNote": "返回笔记",
   "phoneNavigationReturnToContent": "返回内容",
+  "syncConcurrentChoiceHint": "此次确认将替代当前显示的所有选择，其他修改不受影响。",
   "aiTaskWebFormat": "网页内容整理",
   "webFormatSectionLabel": "内容处理",
   "webFormatTitle": "AI 整理",
@@ -2592,6 +2981,79 @@
   "webFormatSourceNote": "AI 整理",
   "webFormatPdfFailed": "无法生成 PDF，请重试或换一种格式。",
   "webFormatImage": "图片",
+  "libraryRecovery": "已删除内容",
+  "recoveryExplanation": "创建新学习集，原记录保留。不含复习、阅读进度和译文；附件可能需另行下载。",
+  "recoveryFailed": "恢复未完成，原历史仍保留。请检查存储和保留的资源清单后重试，重试不会重复创建副本。",
+  "recoveryCreated": "已创建恢复副本",
+  "recoveryPending": "仅复制当前内容，未决选择保留在原记录中。",
+  "recoveryCopyTitle": "新学习集名称",
+  "recoverCopy": "恢复为副本",
+  "recoveryEmpty": "暂无可恢复内容",
+  "recoveryDeletedSet": "已删除学习集",
+  "recoveryDeletedDocuments": "包含已删除文档的版本",
+  "recoveryContents": "{cards} 张卡片 · {documents} 个文档",
+  "recoveryDefaultTitle": "{title}（恢复副本）",
+  "@recoveryContents": {
+    "placeholders": {
+      "cards": {
+        "type": "int"
+      },
+      "documents": {
+        "type": "int"
+      }
+    }
+  },
+  "@recoveryDefaultTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "syncCacheHint": "只清理未使用的缓存，保留文件与历史。",
+  "syncCacheInspect": "检查缓存",
+  "syncCacheUsage": "缓存：{bytes} 字节 · 可回收：{unused} 字节",
+  "syncCacheStaging": "正在准备资源，请在操作结束后重新检查。",
+  "syncCacheReclaimed": "已释放 {bytes} 字节无引用缓存。",
+  "syncCacheReclaim": "清理缓存",
+  "syncCacheIncomplete": "历史版本尚未收齐，请同步缺失版本后重新检查。",
+  "syncCopyHint": "将同步历史复制到当前服务，原服务保留。",
+  "syncCopyPreview": "检查可复制内容",
+  "syncCopyConfirm": "确认复制",
+  "syncCopyDestination": "允许复制到空服务",
+  "syncCopyStale": "资料库已变化或正在编辑。请完成编辑后重新检查历史复制。",
+  "syncCopySummary": "{commits} 个版本 · {others} 个来自其他设备\n{chunks} 个文件块\n不包含 {excluded} 个未接受版本\n{unverified} 个版本的附件无法保证恢复",
+  "syncCopyResources": "历史文件缺失或校验失败。请保留原服务，使用持有已验证历史文件的设备重新检查；尚未开始新的复制。",
+  "syncOverviewTitle": "同步状态",
+  "syncManageTitle": "管理",
+  "syncServiceTitle": "同步服务",
+  "syncServiceDetail": "连接与账号",
+  "syncLibraryDevices": "资料库与设备",
+  "syncFilesDetail": "下载文件，离线阅读",
+  "syncAdvancedTitle": "高级",
+  "syncAdvancedDetail": "复制历史与管理缓存",
+  "syncBack": "同步",
+  "syncNotConnected": "尚未连接服务",
+  "syncConnectIntro": "连接服务，开始跨设备同步。",
+  "syncSetupTitle": "开始使用同步",
+  "syncSetupIntro": "启用后需重启应用，再连接同步服务。",
+  "syncSetupReady": "准备完成，请重启",
+  "syncDeviceExample": "例如：工作 MacBook、书房 iPad",
+  "syncICloudIntro": "使用本机 iCloud 账号。",
+  "syncConnectionOptions": "迁移选项",
+  "syncCurrentConnection": "当前连接",
+  "syncDisconnectConfirm": "确认断开",
+  "syncOtherDevices": "其他设备",
+  "syncLibraryCodeHint": "在另一设备输入此代码即可加入。",
+  "syncFilesEmpty": "暂无文件",
+  "syncChangedHelp": "保留本机原件。请在另一设备或独立副本中下载同步版本。",
+  "syncCacheReadable": "缓存 {size} · 可清理 {unused}",
+  "syncCacheFreed": "已释放 {size}",
+  "syncChoiceDetails": "选择说明",
+  "syncCandidateDevice": "来自 {device}",
+  "syncUnknownDevice": "未命名设备",
+  "syncViewFiles": "前往下载",
+  "recoveryIntro": "将已删除内容恢复为独立学习集，原始历史保留。",
   "webFormatSectionCount": "{count} 段",
   "webFormatTabCompareShort": "对照",
   "webFormatNeedsReview": "{count} 段需要确认"

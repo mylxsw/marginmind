@@ -79,6 +79,15 @@ void main() {
     await store.save([entry('dog')]);
     expect((await store.load()).single.term, 'dog');
   });
+  test('default local mode preserves differently spelled legacy language entries', () async {
+    final original = entry('cat');
+    final variant = VocabularyEntry.fromJson({...original.toJson(), 'id': 'other', 'language': ' EN '});
+    await store.save([original, variant]);
+    final fresh = FileVocabularyStore(dir);
+    expect((await fresh.load()).map((e) => e.language), ['en', ' EN ']);
+    await fresh.dispose();
+    expect(await FileSyncLedger.restore(dir), isNull);
+  });
   test('duplicate IDs and keys are rejected; invalid enum does not overwrite', () async {
     await expectLater(store.save([entry('cat'), entry('cat')]), throwsFormatException);
     final j = entry('cat').toJson()..['status'] = 'future';

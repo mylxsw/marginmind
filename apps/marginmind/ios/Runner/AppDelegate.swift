@@ -6,11 +6,13 @@ import Security
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var browserFactory: BrowserFactory?
   private var nativePresentation: NativePresentation?
+  private var iCloudDrive: ICloudDriveChannel?
   private var incomingShares: IncomingShareChannel?
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "MarginMindMobile")!
     let messenger = registrar.messenger()
+    iCloudDrive = ICloudDriveChannel(messenger: messenger)
     incomingShares = IncomingShareChannel(messenger: messenger)
     nativePresentation = NativePresentation(messenger: messenger)
     registrar.register(NativeGlassFactory(), withId: "marginmind/native_glass")

@@ -1,0 +1,3 @@
+# Isolated acceptance server only. Not an application dependency.
+WsgiDAV==4.3.3
+cheroot==11.1.2

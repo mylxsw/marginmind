@@ -23,3 +23,21 @@ abstract interface class StudySetContentRepository {
   /// Resource location of a stored file: native absolute path or browser blob URL.
   String resolveFile(String studySetId, String fileName);
 }
+
+/// Optional local-first editing coordination. Each write remains durable;
+/// an outer editing session publishes one shared transaction when it ends.
+abstract interface class ContentEditRepository {
+  Future<void> beginContentTransaction(String studySetId);
+  Future<void> endContentTransaction(String studySetId);
+
+  /// Paths use contentDocument's stable entity identities, not array offsets.
+  /// Deleting an ancestor of a protected path is protected as well.
+  ContentEditLease protectContent(String studySetId, List<List<String>> paths);
+}
+
+abstract interface class ContentEditLease {
+  /// Wait for a write that already crossed its commit point before opening
+  /// an input from the latest snapshot. Later touching writes are deferred.
+  Future<void> get ready;
+  Future<void> release();
+}

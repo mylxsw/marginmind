@@ -207,7 +207,12 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
   bool _scanned(Document document) {
     if (document.format != DocumentFormat.pdf) return false;
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
-    return ref.read(readerOcrProvider(workspace.filePath(document))).document?.textPages.isEmpty == true;
+    return ref
+            .read(readerOcrProvider(documentOcrSource(widget.studySetId, document, workspace.filePath(document))))
+            .document
+            ?.textPages
+            .isEmpty ==
+        true;
   }
 
   Future<void> _start() async {
@@ -289,7 +294,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
         outlines[doc.id] = ref.watch(mapDocumentOutlineProvider((widget.studySetId, doc.id))).value ?? [];
       }
       if (doc.format == DocumentFormat.pdf) {
-        final source = workspace.filePath(doc);
+        final source = documentOcrSource(widget.studySetId, doc, workspace.filePath(doc));
         ref.watch(readerOcrInspectionProvider(source));
         if (ref.watch(readerOcrProvider(source)).document?.textPages.isEmpty == true) scanned.add(doc.id);
       }

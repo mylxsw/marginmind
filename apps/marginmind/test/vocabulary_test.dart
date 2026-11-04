@@ -95,7 +95,7 @@ void main() {
     final controller = container.read(vocabularyProvider.notifier);
     final receipt = await controller.add(
       selected: 'Cats',
-      language: 'en',
+      language: ' EN ',
       kind: VocabularyKind.word,
       context: context('c'),
       lookup: WordLookupResult(

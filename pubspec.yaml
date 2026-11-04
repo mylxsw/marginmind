@@ -11,6 +11,7 @@ workspace:
   - packages/mm_reflow
   - packages/mm_reflow/example
   - packages/mm_core
+  - packages/mm_sync
   - packages/mm_design
   - packages/mm_platform
   - packages/mm_pdf

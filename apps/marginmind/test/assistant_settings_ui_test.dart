@@ -733,7 +733,8 @@ void main() {
     expect(serviceBrand(ServiceProtocol.gemini, ''), ServiceBrand.gemini);
     expect(serviceBrand(ServiceProtocol.anthropic, ''), ServiceBrand.anthropic);
     expect(serviceBrand(ServiceProtocol.ollama, ''), ServiceBrand.ollama);
-    expect(SettingsTab.values, hasLength(7));
+    expect(SettingsTab.values, hasLength(8));
+    expect(SettingsTab.values, contains(SettingsTab.sync));
   });
 
   testWidgets('service marks render on light and dark tiles', (tester) async {

@@ -13,6 +13,8 @@ class ReviewSessionState {
     this.revealed = false,
     this.reviewed = 0,
     this.forgotten = 0,
+    this.saving = false,
+    this.saveProblem,
   });
 
   /// False until the content has loaded and the queue was built.
@@ -28,6 +30,8 @@ class ReviewSessionState {
   /// Ratings given, and how many of them were "again".
   final int reviewed;
   final int forgotten;
+  final bool saving;
+  final ReviewSaveProblem? saveProblem;
 
   String? get currentId => index < queue.length ? queue[index] : null;
 
@@ -42,6 +46,9 @@ class ReviewSessionState {
     bool? revealed,
     int? reviewed,
     int? forgotten,
+    bool? saving,
+    ReviewSaveProblem? saveProblem,
+    bool clearProblem = false,
   }) => ReviewSessionState(
     started: started ?? this.started,
     queue: queue ?? this.queue,
@@ -49,6 +56,8 @@ class ReviewSessionState {
     revealed: revealed ?? this.revealed,
     reviewed: reviewed ?? this.reviewed,
     forgotten: forgotten ?? this.forgotten,
+    saving: saving ?? this.saving,
+    saveProblem: clearProblem ? null : saveProblem ?? this.saveProblem,
   );
 }
 
@@ -63,9 +72,11 @@ class ReviewSession extends Notifier<ReviewSessionState> {
   String? mapId;
   String? branchId;
   String? tag;
+  int _generation = 0;
 
   @override
   ReviewSessionState build() {
+    _generation++;
     final route = ref.read(navigationProvider);
     final scope = route is ReviewRoute && route.studySetId == studySetId ? route : null;
     mapId = scope?.mapId;
@@ -80,6 +91,7 @@ class ReviewSession extends Notifier<ReviewSessionState> {
   }
 
   void startScope({String? mapId, String? branchId, String? tag}) {
+    _generation++;
     this.mapId = mapId;
     this.branchId = branchId;
     this.tag = tag;
@@ -103,10 +115,31 @@ class ReviewSession extends Notifier<ReviewSessionState> {
 
   Future<void> rate(Rating rating) async {
     final id = state.currentId;
-    if (id == null || !state.revealed) return;
+    if (id == null || !state.revealed || state.saving) return;
+    final generation = _generation;
+    state = state.copyWith(saving: true, clearProblem: true);
     final editor = ref.read(editorProvider);
-    await ref.read(contentRepositoryProvider).update(studySetId, (c) => editor.rate(c, id, rating));
-    if (!ref.mounted) return;
+    var rated = false;
+    try {
+      await ref.read(contentRepositoryProvider).update(studySetId, (c) {
+        rated = c.card(id) != null;
+        if (!rated) return c;
+        return editor.rate(c, id, rating);
+      });
+    } catch (error) {
+      if (ref.mounted && generation == _generation) {
+        state = state.copyWith(
+          saving: false,
+          saveProblem: error is ReviewWriteUnavailable ? error.problem : ReviewSaveProblem.storage,
+        );
+      }
+      return;
+    }
+    if (!ref.mounted || generation != _generation) return;
+    if (!rated) {
+      state = state.copyWith(saving: false, index: state.index + 1, revealed: false);
+      return;
+    }
     final again = rating == Rating.again;
     state = state.copyWith(
       queue: again ? [...state.queue, id] : null,
@@ -114,13 +147,16 @@ class ReviewSession extends Notifier<ReviewSessionState> {
       revealed: false,
       reviewed: state.reviewed + 1,
       forgotten: state.forgotten + (again ? 1 : 0),
+      saving: false,
     );
   }
 
   /// Skips a card that no longer exists (deleted while the session ran).
   void skipMissing() {
     final id = state.currentId;
-    if (id != null && content.card(id) == null) state = state.copyWith(index: state.index + 1, revealed: false);
+    if (!state.saving && id != null && content.card(id) == null) {
+      state = state.copyWith(index: state.index + 1, revealed: false);
+    }
   }
 }
 

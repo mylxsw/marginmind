@@ -26,8 +26,8 @@ class VocabularyEditor {
         final time = b.addedAt.compareTo(a.addedAt);
         return time != 0 ? time : a.id.compareTo(b.id);
       });
-    final seen = <(String, String, String)>{};
-    return sorted.where((c) => seen.add(c.identity)).take(20).toList();
+    final seen = <String>{};
+    return sorted.where((c) => seen.add(c.id)).toList();
   }
 
   List<VocabularyEntry> _replace(
@@ -39,7 +39,7 @@ class VocabularyEditor {
       if (e.id == id) change(e) else e,
   ]);
 
-  /// Add one source, keeping at most the newest twenty distinct sentences.
+  /// Add one source without discarding earlier source snapshots.
   List<VocabularyEntry> addContext(List<VocabularyEntry> entries, String id, VocabularyContext context, DateTime now) =>
       _replace(entries, id, (e) => e.copyWith(contexts: _contexts([...e.contexts, context]), updatedAt: now));
 

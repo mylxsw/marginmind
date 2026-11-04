@@ -5,7 +5,10 @@
 /// layers and implement the ports defined here.
 library;
 
+export 'src/content/reading_continuation_repository.dart';
+
 export 'src/content/editor.dart';
+export 'src/content/content_change.dart';
 export 'src/content/excerpt_lines.dart';
 export 'src/content/map_export.dart';
 export 'src/content/map_notes.dart';
@@ -55,6 +58,7 @@ export 'src/vocabulary/words.dart';
 export 'src/vocabulary/matcher.dart';
 
 export 'src/content/study_note.dart';
+export 'src/content/content_sync_repository.dart';
 export 'src/content/note_material.dart';
 export 'src/content/note_organizer.dart';
 export 'src/content/note_editor.dart';
@@ -72,3 +76,9 @@ export 'src/content/translation_state.dart';
 export 'src/content/translation_store.dart';
 
 export 'src/agent/contracts.dart';
+
+export 'src/study_set/library_organization_repository.dart';
+
+export 'src/vocabulary/sync_repository.dart';
+
+export 'src/study_set/library_recovery_repository.dart';

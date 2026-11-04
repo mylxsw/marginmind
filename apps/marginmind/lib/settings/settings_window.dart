@@ -21,18 +21,24 @@ import 'app_settings.dart';
 import 'app_icon_picker.dart';
 import 'assistant_icon_picker.dart';
 import 'settings_drafts.dart';
+import 'sync_settings_page.dart';
 
-enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice }
+enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice, sync }
 
 /// The app's settings (⌘,): a centered dialog in the main window's own
 /// language — a floating glass sidebar of sections beside a titled,
 /// scrolling page. Service forms use explicit Save actions. [focus] locates
 /// a feature or model on the AI Features page.
-Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) {
+Future<void> showSettings(
+  BuildContext context, {
+  SettingsTab tab = SettingsTab.general,
+  AiTaskFocus? focus,
+  SyncSettingsSection syncSection = SyncSettingsSection.overview,
+}) {
   return showMMDialog<void>(
     context: context,
     initialFraction: MMSizes.phoneSheetExpanded,
-    builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+    builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus, initialSyncSection: syncSection),
   );
 }
 
@@ -52,7 +58,12 @@ class SettingsNavigation extends InheritedWidget {
 }
 
 class SettingsWindow extends ConsumerStatefulWidget {
-  const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.initialFocus});
+  const SettingsWindow({
+    super.key,
+    this.initialTab = SettingsTab.general,
+    this.initialFocus,
+    this.initialSyncSection = SyncSettingsSection.overview,
+  });
 
   static const size = Size(780, 560), minSize = Size(640, 440);
 
@@ -63,6 +74,7 @@ class SettingsWindow extends ConsumerStatefulWidget {
 
   final SettingsTab initialTab;
   final AiTaskFocus? initialFocus;
+  final SyncSettingsSection initialSyncSection;
 
   @override
   ConsumerState<SettingsWindow> createState() => _SettingsWindowState();
@@ -211,7 +223,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
 
   late SettingsTab _tab =
       MMPlatformCapabilities.current.externalCredentials ||
-          [SettingsTab.general, SettingsTab.reading, SettingsTab.maps].contains(widget.initialTab)
+          [SettingsTab.general, SettingsTab.reading, SettingsTab.maps, SettingsTab.sync].contains(widget.initialTab)
       ? widget.initialTab
       : SettingsTab.general;
 
@@ -280,6 +292,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       (SettingsTab.general, MMIcons.settings, l.settingsGeneral),
       (SettingsTab.reading, MMIcons.reading, l.settingsReading),
       (SettingsTab.maps, MMIcons.mindMap, l.mapView),
+      (SettingsTab.sync, MMIcons.regenerate, l.syncSettingsTitle),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.models, MMIcons.ai, l.settingsModels),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.aiTasks, MMIcons.aiTasks, l.aiTasksTitle),
       if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
@@ -299,6 +312,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       ),
       SettingsTab.webSearch => const WebSearchSettingsPage(),
       SettingsTab.voice => const VoiceSettingsPage(),
+      SettingsTab.sync => SyncSettingsPage(initialSection: widget.initialSyncSection),
     };
     final page = pageFor(_tab);
     if (MMInput.of(context).phone) {
@@ -548,18 +562,20 @@ class _Sidebar extends StatelessWidget {
         border: Border.all(color: c.hairline, width: .5),
       ),
       padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(MMSpacing.s, 0, MMSpacing.s, 10),
-            child: Semantics(
-              header: true,
-              child: Text(title, style: context.mmText.headline.copyWith(color: c.label)),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(MMSpacing.s, 0, MMSpacing.s, 10),
+              child: Semantics(
+                header: true,
+                child: Text(title, style: context.mmText.headline.copyWith(color: c.label)),
+              ),
             ),
-          ),
-          for (final child in children) Padding(padding: const EdgeInsets.only(bottom: 2), child: child),
-        ],
+            for (final child in children) Padding(padding: const EdgeInsets.only(bottom: 2), child: child),
+          ],
+        ),
       ),
     );
     if (!reduce) panel = BackdropFilter(filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30), child: panel);

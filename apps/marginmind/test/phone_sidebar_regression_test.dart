@@ -4,19 +4,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/document_import.dart';
+import 'package:marginmind/features/workspace/content_sync.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:marginmind/features/workspace/widgets/phone_workspace_sidebar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 
-Future<ProviderContainer> openPhoneSidebar(WidgetTester tester, {bool beta = false}) async {
+Future<ProviderContainer> openPhoneSidebar(WidgetTester tester, {bool beta = false, bool sync = false}) async {
   final container = await pumpApp(
     tester,
     prefs: {if (beta) 'settings.betaFeaturesEnabled': true},
     // Keep the full tag preview visible while retaining the phone compact path.
     size: const Size(393, 1700),
-    overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+    overrides: [
+      touchPlatformProvider.overrideWithValue(true),
+      phoneProvider.overrideWithValue(true),
+      if (sync) contentSyncProvider('demo-1').overrideWith((_) => Stream.value(ContentSyncStatus(enabled: true))),
+    ],
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');
   await tester.pumpAndSettle();
@@ -104,6 +110,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(groups(tester), ['Documents', 'Mind Maps', 'Learn', 'Tags']);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('phone sync entry participates in search only when available', (tester) async {
+    final container = await openPhoneSidebar(tester, sync: true);
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    owner.setSidebarQuery('Sync');
+    await tester.pumpAndSettle();
+    expect(groups(tester), ['Learn']);
+    expect(phoneRow('Sync and recovery'), findsOneWidget);
+    owner.setSidebarQuery('no possible sidebar match');
+    await tester.pumpAndSettle();
+    expect(groups(tester), isEmpty);
+    expect(find.text('No matches').hitTestable(), findsOneWidget);
+    owner.setSidebarQuery('Review');
+    await tester.pumpAndSettle();
+    expect(groups(tester), ['Learn']);
+    expect(phoneRow('Sync and recovery'), findsNothing);
+    expect(phoneRow('Review'), findsOneWidget);
   });
 
   testWidgets('phone tags open one right drawer and keep all maps available', (tester) async {

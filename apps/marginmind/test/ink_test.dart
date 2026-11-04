@@ -186,7 +186,10 @@ void main() {
     await tester.tapAt(start, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     expect(controller.content.inkStrokes, isEmpty);
-    final undo = find.byTooltip(AppShortcuts.tip(l.undo, AppShortcuts.undo));
+    final undo = find.descendant(
+      of: find.byType(ReaderInkToolbar),
+      matching: find.byTooltip(AppShortcuts.tip(l.undo, AppShortcuts.undo)),
+    );
     await tester.tap(undo);
     await tester.pumpAndSettle();
     expect(controller.content.inkStrokes.single.id, stroke.id);

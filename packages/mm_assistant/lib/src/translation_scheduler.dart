@@ -100,6 +100,34 @@ class TranslationScheduler {
   Completer<void>? _progress;
   final _events = StreamController<TranslationSchedulerState>.broadcast(sync: true);
   final _segments = <String, TranslationSegment>{};
+  TranslationSnapshot _snapshot = TranslationSnapshot();
+  String? _documentVersion;
+  bool _sourceChanged = false;
+  StreamSubscription<TranslationSnapshot>? _storeSubscription;
+  TranslationSnapshot get snapshot => _snapshot;
+  void _acceptSnapshot(TranslationSnapshot value) {
+    if (_documentVersion != null && value.documentVersion != _documentVersion) {
+      _sourceChanged = true;
+      _failure = const ContentSyncActionException(ContentSyncActionFailure.stale);
+    }
+    _documentVersion ??= value.documentVersion;
+    for (final key in {..._segments.keys, ...value.segments.keys, ..._snapshot.tokens.keys, ...value.tokens.keys}) {
+      if (_snapshot.tokenFor(key) != value.tokenFor(key)) _editVersions[key] = (_editVersions[key] ?? 0) + 1;
+    }
+    final entries = <String, TranslationSegment>{
+      for (final e in value.segments.entries)
+        e.key:
+            _snapshot.tokenFor(e.key) == value.tokenFor(e.key) &&
+                contentValueEquals(_segments[e.key]?.toJson(), e.value.toJson())
+            ? _segments[e.key]!
+            : e.value,
+    };
+    _snapshot = value;
+    _segments
+      ..clear()
+      ..addAll(entries);
+  }
+
   final _skipped = <String>{}, _completed = <String>{}, _failed = <String>{};
   final _active = <String, Future<void>>{};
   final _retries = <String, int>{};
@@ -114,7 +142,7 @@ class TranslationScheduler {
   final _editVersions = <String, int>{};
   TranslationJob? _job;
   Object? _failure;
-  final _pendingSegments = <String, (TranslationSegment, int, bool)>{};
+  final _pendingSegments = <String, (TranslationSegment, int, bool, String?)>{};
   final _requestCancels = <CancellationToken>{};
   TranslationUsage _usage = TranslationUsage();
 
@@ -164,15 +192,31 @@ class TranslationScheduler {
   Future<void> initialize({TranslationSnapshot? snapshot}) async {
     // Capture only immutable inputs, never the scheduler/transport or its Ref.
     final ps = paragraphs, lang = language, heights = _pageHeights;
-    (Map<String, String>, Set<String>) prepared;
-    try {
-      prepared = await Isolate.run(() => _prepare(ps, lang, heights));
-    } on UnsupportedError {
-      prepared = _prepare(ps, lang, heights);
-    }
+    final prepared = await _prepareIsolated(ps, lang, heights);
     _keys.addAll(prepared.$1);
     _skipped.addAll(prepared.$2);
-    _segments.addAll((snapshot ?? await store.load(documentId, language)).segments);
+    _acceptSnapshot(snapshot ?? await store.load(documentId, language));
+    if (store is GuardedTranslationStore) {
+      _storeSubscription = (store as GuardedTranslationStore)
+          .watchTranslations(documentId, language)
+          .listen(
+            (_) {
+              final refresh = _segmentWrites.then((_) async {
+                if (_closed || _closingRequested) return;
+                _acceptSnapshot(await store.load(documentId, language));
+                _emit();
+              });
+              _segmentWrites = refresh.catchError((Object error) {
+                _failure = error;
+                if (!_closed) _emit();
+              });
+            },
+            onError: (Object error) {
+              _failure = error;
+              if (!_closed) _emit();
+            },
+          );
+    }
     _job = await store.loadJob(documentId, language);
     _usage = _job?.usage ?? TranslationUsage();
     _failed.addAll(_job?.failures.keys ?? []);
@@ -345,7 +389,8 @@ class TranslationScheduler {
   }
 
   /// User edits are journal entries, outside the content undo stack.
-  Future<void> edit(TranslationParagraph p, String text) async {
+  Future<void> edit(TranslationParagraph p, String text, {String? expectedToken}) async {
+    if (_sourceChanged) throw const ContentSyncActionException(ContentSyncActionFailure.stale);
     if (_closed || _closingRequested) throw StateError('Scheduler closed');
     final old = _segments[keyOf(p)];
     if (old == null ||
@@ -367,7 +412,23 @@ class TranslationScheduler {
         origin: TranslationOrigin.edited,
         at: _now(),
       ),
+      expectedToken: expectedToken ?? _snapshot.tokenFor(key),
     );
+  }
+
+  Future<void> choose(TranslationParagraph p, String choice, String token) async {
+    if (_sourceChanged) throw const ContentSyncActionException(ContentSyncActionFailure.stale);
+    final guarded = store;
+    if (guarded is! GuardedTranslationStore) throw StateError('No translation choices');
+    await (guarded as GuardedTranslationStore).chooseTranslation(
+      documentId,
+      language,
+      keyOf(p),
+      choice,
+      expectedToken: token,
+    );
+    _acceptSnapshot(await store.load(documentId, language));
+    _emit();
   }
 
   /// Appends the old value; a stale HUD cannot overwrite a later edit.
@@ -375,7 +436,7 @@ class TranslationScheduler {
     if (_closed || _closingRequested) return;
     final key = old.key;
     if (!identical(_segments[key], replacing)) return;
-    await _append(old, replacing: replacing);
+    await _append(old, replacing: replacing, expectedToken: _snapshot.tokenFor(key));
   }
 
   Future<void> _append(
@@ -383,14 +444,35 @@ class TranslationScheduler {
     int? editVersion,
     bool replaceEdited = true,
     TranslationSegment? replacing,
+    String? expectedToken,
   }) async {
     final write = _segmentWrites.then((_) async {
+      if (_sourceChanged) throw const ContentSyncActionException(ContentSyncActionFailure.stale);
       if (editVersion != null && (_editVersions[segment.key] ?? 0) != editVersion) return;
       if (!replaceEdited && _segments[segment.key]?.origin == TranslationOrigin.edited) return;
       if (replacing != null && !identical(_segments[segment.key], replacing)) return;
-      await store.append(documentId, language, segment);
+      if (store is GuardedTranslationStore) {
+        try {
+          _acceptSnapshot(
+            await (store as GuardedTranslationStore).appendGuarded(
+              documentId,
+              language,
+              segment,
+              expectedToken: expectedToken,
+              replaceEdited: replaceEdited,
+            ),
+          );
+        } on ContentSyncActionException catch (e) {
+          if (editVersion == null || e.reason != ContentSyncActionFailure.stale) rethrow;
+          _acceptSnapshot(await store.load(documentId, language));
+          _emit();
+          return; // A result for an obsolete observation is never retried as a fresh overwrite.
+        }
+      } else {
+        await store.append(documentId, language, segment);
+        _segments[segment.key] = segment;
+      }
       if (editVersion == null) _editVersions[segment.key] = (_editVersions[segment.key] ?? 0) + 1;
-      _segments[segment.key] = segment;
       _completed.add(segment.key);
       _clearFailures(paragraphs.firstWhere((p) => keyOf(p) == segment.key));
       _emit();
@@ -402,6 +484,7 @@ class TranslationScheduler {
   Future<void> retranslate(TranslationParagraph p) => _explicit(p, replace: true);
 
   Future<void> _explicit(TranslationParagraph p, {required bool replace}) async {
+    if (_sourceChanged) throw const ContentSyncActionException(ContentSyncActionFailure.stale);
     if (_closed || _closingRequested) return;
     if (p.documentId != documentId || !paragraphs.any((q) => q.fingerprint == p.fingerprint && q.text == p.text)) {
       throw ArgumentError('Unknown paragraph');
@@ -498,8 +581,8 @@ class TranslationScheduler {
   Future<void> _drain() async {
     try {
       for (final entry in _pendingSegments.entries.toList()) {
-        final (segment, version, replace) = entry.value;
-        await _append(segment, editVersion: version, replaceEdited: replace);
+        final (segment, version, replace, token) = entry.value;
+        await _append(segment, editVersion: version, replaceEdited: replace, expectedToken: token);
         _pendingSegments.remove(entry.key);
       }
     } catch (_) {
@@ -608,7 +691,12 @@ class TranslationScheduler {
     // A stopped job permits new on-demand work, but never revives its old bulk attempts.
     bool bulkJobRunning() => bulkJobId == null || (_job?.id == bulkJobId && _job?.state == TranslationJobState.running);
     bool canAttempt() =>
-        !_closed && !_closingRequested && _available && (explicit || (bulkJobRunning() && _gate && slot < concurrency));
+        !_sourceChanged &&
+        !_closed &&
+        !_closingRequested &&
+        _available &&
+        (explicit || (bulkJobRunning() && _gate && slot < concurrency));
+    final observedTokens = {for (final p in pack) keyOf(p): _snapshot.tokenFor(keyOf(p))};
     final editVersions = {for (final p in pack) keyOf(p): _editVersions[keyOf(p)] ?? 0};
     // Capture provenance before awaiting: edits to requirements affect later requests.
     final note = _job?.note ?? '';
@@ -706,13 +794,13 @@ class TranslationScheduler {
             origin: TranslationOrigin.ai,
             at: _now(),
           );
-          _pendingSegments[segment.key] = (segment, editVersions[segment.key]!, explicit);
+          _pendingSegments[segment.key] = (segment, editVersions[segment.key]!, explicit, observedTokens[segment.key]);
         }
         for (final key in pack.map(keyOf)) {
           final pending = _pendingSegments[key];
           if (pending == null) continue;
-          final (segment, version, replace) = pending;
-          await _append(segment, editVersion: version, replaceEdited: replace);
+          final (segment, version, replace, token) = pending;
+          await _append(segment, editVersion: version, replaceEdited: replace, expectedToken: token);
           _pendingSegments.remove(key);
         }
         await _persist();
@@ -951,6 +1039,7 @@ class TranslationScheduler {
     _ledgerTimer?.cancel();
     _ledgerTimer = null;
     _closingRequested = true;
+    await _storeSubscription?.cancel();
     if (_translator case final ScheduledParagraphTranslator t) t.pauseDispatch();
     _emit();
     try {
@@ -973,6 +1062,20 @@ class TranslationScheduler {
         await _events.close();
       }
     }
+  }
+}
+
+// Keep the isolate closure in a scope containing only transferable values.
+// Closures declared alongside store listeners otherwise share their captured this.
+Future<(Map<String, String>, Set<String>)> _prepareIsolated(
+  List<TranslationParagraph> paragraphs,
+  String language,
+  Map<int, double> heights,
+) async {
+  try {
+    return await Isolate.run(() => _prepare(paragraphs, language, heights));
+  } on UnsupportedError {
+    return _prepare(paragraphs, language, heights);
   }
 }
 

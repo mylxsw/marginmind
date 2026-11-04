@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A60400000000000000000013 /* ICloudDriveChannelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60400000000000000000003; };
+		A60400000000000000000012 /* ICloudDriveChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60400000000000000000002; };
+		A60400000000000000000011 /* ICloudDriveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60400000000000000000001; };
 		A57600000000000000000001 /* NativePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57600000000000000000002; };
 		A57500000000000000000001 /* BrowserChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57500000000000000000002 /* BrowserChannel.swift */; };
         A53900000000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A53900000000000000000002; };
@@ -55,6 +58,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A60400000000000000000003 /* ICloudDriveChannelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../apple/ICloudDriveChannelTests.swift; sourceTree = SOURCE_ROOT; };
+		A60400000000000000000002 /* ICloudDriveChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../apple/ICloudDriveChannel.swift; sourceTree = SOURCE_ROOT; };
+		A60400000000000000000001 /* ICloudDriveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../apple/ICloudDriveStore.swift; sourceTree = SOURCE_ROOT; };
 		A57600000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePresentation.swift; sourceTree = "<group>"; };
 		A57500000000000000000002 /* BrowserChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserChannel.swift; sourceTree = "<group>"; };
         A53900000000000000000003 = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -105,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
+				A60400000000000000000003 /* ICloudDriveChannelTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -154,6 +161,8 @@
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
+				A60400000000000000000002 /* ICloudDriveChannel.swift */,
+				A60400000000000000000001 /* ICloudDriveStore.swift */,
 				A57500000000000000000002 /* BrowserChannel.swift */,
 				A57600000000000000000002,
 				A65900000000000000000003,
@@ -318,6 +327,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
+				A60400000000000000000013 /* ICloudDriveChannelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,6 +336,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				A60400000000000000000012 /* ICloudDriveChannel.swift in Sources */,
+				A60400000000000000000011 /* ICloudDriveStore.swift in Sources */,
 				A65900000000000000000014,
 				A65900000000000000000015,
 				A65900000000000000000016,

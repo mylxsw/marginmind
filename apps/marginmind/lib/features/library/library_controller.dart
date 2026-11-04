@@ -43,7 +43,19 @@ class LibraryViewState {
 /// selection and sidebar visibility.
 class LibraryViewController extends Notifier<LibraryViewState> {
   @override
-  LibraryViewState build() => const LibraryViewState();
+  LibraryViewState build() {
+    ref.listen(foldersProvider, (_, next) {
+      final folders = next.asData?.value;
+      final filter = state.query.filter;
+      if (folders != null &&
+          filter is FolderFilter &&
+          filter.folderId != null &&
+          !folders.any((folder) => folder.id == filter.folderId)) {
+        setFilter(const FolderFilter(null));
+      }
+    });
+    return const LibraryViewState();
+  }
 
   void setFilter(LibraryFilter filter) =>
       state = state.copyWith(query: state.query.copyWith(filter: filter), clearSelection: true);
