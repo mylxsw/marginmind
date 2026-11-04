@@ -101,6 +101,18 @@ cd apps/marginmind && flutter run -d macos
 
 常用命令：
 
+在仓库根目录可用 `make` 查看移动端快捷命令：`make iphone`、`make ipad` 构建并安装到真机，`make ipad-simulator` 运行 iPad 模拟器，`make android-apk` 生成 APK。真机安装后会尝试启动应用；如果设备锁屏，请解锁后手动打开。设备原有数据不会主动清除。
+
+首次使用时，执行 `make devices` 查看设备编号，并在仓库根目录创建 `.make.local`（该文件不会提交）：
+
+```makefile
+IPHONE_ID := iPhone 的设备编号
+IPAD_ID := iPad 的设备编号
+IPAD_SIMULATOR_ID := iPad 模拟器的设备编号
+```
+
+也可以临时指定设备，例如 `make iphone IPHONE_ID=设备编号`。iOS 真机部署需要 Xcode、已登录的 Apple 开发者账号和有效的签名配置；Android Release APK 当前使用调试签名，仅供测试，输出在 `apps/marginmind/build/app/outputs/flutter-apk/app-release.apk`。
+
 ```bash
 flutter analyze                          # 静态检查（根目录）
 dart format --set-exit-if-changed apps packages

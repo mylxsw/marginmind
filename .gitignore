@@ -22,6 +22,7 @@ apps/marginmind/macos/Runner/Configs/LocalSigning.xcconfig
 
 # Local tooling
 macrun.toml
+/.make.local
 
 # Local PDF performance runs
 /performance-artifacts/
