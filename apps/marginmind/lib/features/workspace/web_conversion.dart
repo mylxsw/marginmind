@@ -699,7 +699,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
                       else if (session != null)
                         // The whole sheet is the work area, above any keyboard.
                         SizedBox(
-                          height: (sheet.maxHeight - (compact ? 150 : 140)).clamp(300.0, double.infinity),
+                          height: (sheet.maxHeight - (compact ? 172 : 140)).clamp(300.0, double.infinity),
                           child: previewPane(settings: settings),
                         )
                       else if (widget.formatting != null) ...[
@@ -714,7 +714,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
                         ),
                         const SizedBox(height: MMSpacing.m),
                         SizedBox(
-                          height: (sheet.maxHeight - 190).clamp(300.0, double.infinity),
+                          height: (sheet.maxHeight - 228).clamp(300.0, double.infinity),
                           child: _idlePreview ? previewPane() : SingleChildScrollView(child: settings),
                         ),
                       ] else ...[

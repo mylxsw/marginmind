@@ -154,6 +154,8 @@ Finder get toggle =>
     find.descendant(of: find.byKey(const ValueKey('web-format-card')), matching: find.byType(MMSwitch));
 
 Future<void> startFormatting(WidgetTester tester) async {
+  await tester.ensureVisible(toggle);
+  await tester.pumpAndSettle();
   await tester.tap(toggle);
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(MMButton, '开始整理'));
@@ -439,6 +441,10 @@ void main() {
     final sheetTitle = tester.getRect(find.text('保存到资料库'));
     expect((tester.getCenter(find.widgetWithText(MMButton, '保存文档')).dy - sheetTitle.center.dy).abs(), lessThan(24));
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
+    final sheetScroll = tester.state<ScrollableState>(
+      find.ancestor(of: find.byType(MMSegmentedControl<bool>), matching: find.byType(Scrollable)).first,
+    );
+    expect(sheetScroll.position.maxScrollExtent, 0, reason: 'tabs stay pinned: only the pane below them scrolls');
     await tester.tap(find.text('预览'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);
@@ -464,6 +470,10 @@ void main() {
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
+    final sheetScroll = tester.state<ScrollableState>(
+      find.ancestor(of: find.byType(MMSegmentedControl<bool>), matching: find.byType(Scrollable)).first,
+    );
+    expect(sheetScroll.position.maxScrollExtent, 0, reason: 'tabs stay pinned: only the pane below them scrolls');
     await tester.tap(find.text('预览'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);

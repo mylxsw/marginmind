@@ -1066,17 +1066,19 @@ class _WebFormatPaneState extends State<WebFormatPane> {
                       if (section.needsReview)
                         Padding(
                           padding: const EdgeInsets.only(bottom: MMSpacing.s),
-                          child: Wrap(
-                            spacing: MMSpacing.s,
-                            crossAxisAlignment: WrapCrossAlignment.center,
+                          child: Row(
                             children: [
                               Icon(MMIcons.warning, size: _statusIcon(context), color: c.caution),
-                              Text(
-                                section.check!.changePercent < 0
-                                    ? l.webFormatRemovedHint('${-section.check!.changePercent}')
-                                    : l.webFormatAddedHint('${section.check!.changePercent}'),
-                                style: t.footnote.copyWith(color: c.caution),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  section.check!.changePercent < 0
+                                      ? l.webFormatRemovedHint('${-section.check!.changePercent}')
+                                      : l.webFormatAddedHint('${section.check!.changePercent}'),
+                                  style: t.footnote.copyWith(color: c.caution),
+                                ),
                               ),
+                              const SizedBox(width: MMSpacing.s),
                               _TextLink(label: l.webFormatAcknowledge, onTap: () => session.acknowledge(i)),
                             ],
                           ),
