@@ -37,13 +37,17 @@ class BrowserFiles {
     _db = db;
   }
 
-  static Future<void> commit(Map<String, Uint8List> writes, Iterable<String> deletes) async {
+  static Future<void> commit(
+    Map<String, Uint8List> writes,
+    Iterable<String> deletes, {
+    Map<String, Uint8List?> guards = const {},
+  }) async {
     final db = _db ?? (throw StateError('Open browser storage before use'));
     final removed = deletes.toList();
     final tx = db.transaction('files'.toJS, 'readwrite');
     final completed = _completed(tx);
     final store = tx.objectStore('files');
-    final names = {...removed, ...writes.keys};
+    final names = {...removed, ...writes.keys, ...guards.keys};
     var remaining = names.length;
     // Compare against the version this tab loaded in the same transaction.
     // Another tab may have edited the package since then; never overwrite it.
@@ -52,7 +56,7 @@ class BrowserFiles {
       request.onsuccess = ((web.Event _) {
         final current = request.result;
         final bytes = current == null ? null : (current as JSUint8Array).toDart;
-        final expected = _files[name];
+        final expected = guards.containsKey(name) ? guards[name] : _files[name];
         if (!_equal(bytes, expected)) {
           tx.abort();
           return;
@@ -76,6 +80,17 @@ class BrowserFiles {
       _files.remove(name);
     }
     _files.addAll(writes);
+  }
+
+  /// Read a transfer binding from IndexedDB, not this tab's hydrated cache.
+  /// Another tab's pause/account switch must stop network work immediately.
+  static Future<Uint8List?> readCurrent(String path) async {
+    final db = _db ?? (throw StateError('Open browser storage before use'));
+    final tx = db.transaction('files'.toJS, 'readonly');
+    final completed = _completed(tx);
+    final value = await _request(tx.objectStore('files').get(path.toJS));
+    await completed;
+    return value == null ? null : (value as JSUint8Array).toDart;
   }
 
   static void close() {

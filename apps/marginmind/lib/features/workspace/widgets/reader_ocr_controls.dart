@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
+import 'package:mm_core/mm_core.dart';
+
+import '../../../settings/settings_window.dart';
 
 import '../../../shared/l10n.dart';
 import '../reader_ocr.dart';
@@ -15,10 +18,31 @@ Future<void> showReaderOcrOptions(BuildContext context, WidgetRef ref, String st
   final id = documentId ?? ref.read(workspaceProvider(studySetId)).activeDocumentId;
   final doc = id == null ? null : workspace.content.document(id);
   if (doc == null || !ref.read(pdfOcrServiceProvider).supported) return;
-  final source = workspace.filePath(doc);
+  final source = documentOcrSource(studySetId, doc, workspace.filePath(doc));
   await ref.read(readerOcrProvider(source).notifier).inspect();
   if (!context.mounted || !ref.context.mounted) return;
   final state = ref.read(readerOcrProvider(source));
+  if (state.unavailable case final unavailable?) {
+    await showMMSheet<void>(
+      context: context,
+      builder: (context) => MMSheet(
+        title: context.l10n.ocrTitle,
+        actions: [
+          MMButton(label: context.l10n.cancel, onPressed: () => Navigator.pop(context)),
+          MMButton(
+            label: context.l10n.syncSettingsTitle,
+            onPressed: () => showSettings(context, tab: SettingsTab.sync),
+          ),
+        ],
+        child: Text(
+          unavailable == DocumentResourceAvailability.missing
+              ? context.l10n.syncResourceMissing
+              : context.l10n.syncResourceChanged,
+        ),
+      ),
+    );
+    return;
+  }
   if (state.running || state.document == null) return;
   final page = workspace.activePage ?? 1;
   await showMMSheet<void>(
@@ -36,7 +60,7 @@ class ReaderOcrControls extends ConsumerStatefulWidget {
     required this.initialPage,
     required this.onRecognize,
   });
-  final String source;
+  final ReaderOcrSource source;
   final String studySetId;
   final String documentId;
   final int initialPage;
@@ -65,10 +89,12 @@ class _ReaderOcrControlsState extends ConsumerState<ReaderOcrControls> {
     final l = context.l10n;
     final document = state.document;
     if (state.running) return const SizedBox.shrink();
-    if (document == null && !state.failed) return const SizedBox.shrink();
+    if (document == null && !state.failed && state.unavailable == null) return const SizedBox.shrink();
     final hasText = document?.textPages.contains(page) ?? false;
     if (hasText) return const SizedBox.shrink();
-    final label = state.failed
+    final label = state.unavailable != null
+        ? (state.unavailable == DocumentResourceAvailability.missing ? l.syncResourceMissing : l.syncResourceChanged)
+        : state.failed
         ? l.ocrFailed
         : state.cancelled
         ? l.ocrCancelled
@@ -93,7 +119,12 @@ class _ReaderOcrControlsState extends ConsumerState<ReaderOcrControls> {
             ),
             const SizedBox(width: MMSpacing.s),
             if (!hasText || (document?.textPages.length ?? 0) < (document?.pageCount ?? 0))
-              MMButton(label: l.ocrRecognize, onPressed: widget.onRecognize),
+              MMButton(
+                label: state.unavailable == null ? l.ocrRecognize : l.syncSettingsTitle,
+                onPressed: state.unavailable == null
+                    ? widget.onRecognize
+                    : () => showSettings(context, tab: SettingsTab.sync),
+              ),
           ],
         ),
       ),
@@ -103,7 +134,7 @@ class _ReaderOcrControlsState extends ConsumerState<ReaderOcrControls> {
 
 class ReaderOcrProgress extends ConsumerWidget {
   const ReaderOcrProgress({super.key, required this.source});
-  final String source;
+  final ReaderOcrSource source;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(readerOcrProvider(source));
@@ -137,7 +168,7 @@ class ReaderOcrProgress extends ConsumerWidget {
 
 class _OcrOptions extends ConsumerStatefulWidget {
   const _OcrOptions({required this.source, required this.page, required this.pageCount});
-  final String source;
+  final ReaderOcrSource source;
   final int page;
   final int pageCount;
   @override
@@ -172,7 +203,14 @@ class _OcrOptionsState extends ConsumerState<_OcrOptions> {
       _Scope.current => widget.page,
       _Scope.range => int.tryParse(_last.text.trim()) ?? 0,
     };
-    final valid = first >= 1 && last >= first && last <= widget.pageCount;
+    final state = ref.watch(readerOcrProvider(widget.source));
+    final valid =
+        first >= 1 &&
+        last >= first &&
+        last <= widget.pageCount &&
+        state.unavailable == null &&
+        state.document != null &&
+        !state.running;
     return MMSheet(
       title: l.ocrTitle,
       actions: [
@@ -193,6 +231,10 @@ class _OcrOptionsState extends ConsumerState<_OcrOptions> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (state.unavailable != null)
+            Text(
+              state.unavailable == DocumentResourceAvailability.missing ? l.syncResourceMissing : l.syncResourceChanged,
+            ),
           Text(l.ocrScope, style: context.mmText.footnote),
           const SizedBox(height: MMSpacing.s),
           MMSegmentedControl<_Scope>(

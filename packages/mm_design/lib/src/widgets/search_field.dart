@@ -153,6 +153,7 @@ class MMTextField extends StatefulWidget {
     this.plain = false,
     this.textAlign = TextAlign.start,
     this.enabled = true,
+    this.readOnly = false,
   }) : _settings = false;
 
   /// A settings value: bounded width, focus-only outline, right-aligned text,
@@ -168,6 +169,7 @@ class MMTextField extends StatefulWidget {
     this.autofocus = false,
     this.obscureText = false,
     this.enabled = true,
+    this.readOnly = false,
     this.style,
   }) : plain = false,
        textAlign = TextAlign.right,
@@ -182,6 +184,7 @@ class MMTextField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final bool autofocus;
   final bool enabled;
+  final bool readOnly;
   final bool _settings;
 
   final String? semanticLabel;
@@ -252,6 +255,7 @@ class _MMTextFieldState extends State<MMTextField> {
         focusNode: _focus,
         autofocus: widget.autofocus,
         enabled: widget.enabled,
+        readOnly: widget.readOnly,
         autocorrect: !widget._settings,
         enableSuggestions: !widget._settings,
         onChanged: widget.onChanged,

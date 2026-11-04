@@ -13,9 +13,15 @@ import 'modal_surface.dart';
 /// Presents a compact modal form centered in the window.
 /// Esc cancels; clicking outside does nothing (sheets are modal to the
 /// window). A compact window shows it as a bottom sheet.
-Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder builder, double width = 420}) {
+Future<T?> showMMSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  double width = 420,
+  bool expand = true,
+  double initialFraction = MMSizes.phoneSheetMedium,
+}) {
   if (MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact) {
-    return showMMBottomSheet<T>(context: context, builder: builder);
+    return showMMBottomSheet<T>(context: context, builder: builder, expand: expand, initialFraction: initialFraction);
   }
   final c = context.mmColors;
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);

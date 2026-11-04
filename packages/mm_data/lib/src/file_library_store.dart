@@ -1,3 +1,5 @@
+import 'file_sync_devices.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -5,10 +7,22 @@ import 'library_io.dart' if (dart.library.js_interop) 'library_browser_io.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_sync/mm_sync.dart';
 import 'package:path/path.dart' as p;
 
 import 'format_migration.dart';
 import 'file_translation_store.dart';
+import 'file_sync_ledger.dart';
+import 'content_sync_review.dart';
+import 'resource_cache.dart';
+
+part 'file_library_sync_status.dart';
+part 'file_library_reviews.dart';
+part 'file_library_folders.dart';
+part 'file_library_reading.dart';
+part 'file_library_translations.dart';
+part 'file_library_resources.dart';
+part 'file_library_recovery.dart';
 
 /// Stores the library on disk:
 ///
@@ -24,21 +38,511 @@ import 'file_translation_store.dart';
 /// replace this behind the same ports once data grows.
 class FileLibraryStore
     implements
+        ContentEditRepository,
+        ContentSyncRepository,
+        LibraryOrganizationRepository,
+        LibraryRecoveryRepository,
+        ReadingContinuationRepository,
         TranslationStoreRepository,
         StudySetRepository,
+        StudySetTitleRepository,
         StudySetContentRepository,
         DocumentRepository,
+        DocumentResourceRepository,
+        ReferencedResourceRepository,
         ResearchSessionRepository,
         ResearchSnapshotRepository {
-  FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator})
+  FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator, FileSyncLedger? sync})
     : _clock = clock ?? DateTime.now,
+      // Public option for a private field that may be restored lazily.
+      // ignore: prefer_initializing_formals
+      _sync = sync,
       _newId = idGenerator ?? newId;
 
-  FileLibraryStore.browser() : this(browserRoot());
+  FileLibraryStore.browser({FileSyncLedger? sync}) : this(browserRoot(), sync: sync);
 
   final Directory root;
   final DateTime Function() _clock;
   final String Function() _newId;
+  FileSyncLedger? _sync;
+  Map<String, LocalSyncSnapshot> _syncSnapshots = {};
+  Future<FileSyncLedger?> get syncLedger async {
+    await _ensureLoaded();
+    return _sync;
+  }
+
+  @override
+  Future<bool> get libraryRecoveryEnabled async {
+    await _ensureLoaded();
+    return _sync != null;
+  }
+
+  @override
+  Future<LibraryRecovery> libraryRecovery() => _libraryRecovery();
+  @override
+  Stream<LibraryRecovery> watchLibraryRecovery() => _watchSyncState(_libraryRecovery);
+  @override
+  Future<String> recoverLibraryCopy(LibraryRecoveryEntry selection, {required String title}) =>
+      _recoverLibraryCopy(selection, title: title);
+
+  Map<String, Object> get syncProjectionErrors => _sync?.projectionErrors ?? const {};
+  static String _scope(String id) => 'sets/$id';
+
+  final _syncStatusChanges = StreamController<void>.broadcast();
+  final _resourceVersions = <String, int>{};
+  @override
+  Stream<DocumentResourceAvailability> watchDocumentResources(String studySetId, String documentId) =>
+      _watchDocumentResources(studySetId, documentId);
+
+  @override
+  Stream<ReferencedResource> watchReferencedResource(String studySetId, String fileName) =>
+      _watchReferencedResource(studySetId, fileName);
+
+  @override
+  Future<ReadingContinuations> readingContinuations(String id) => _readingContinuations(id);
+  @override
+  Stream<ReadingContinuations> watchReadingContinuations(String id) =>
+      _watchContentSync(id).asyncMap((_) => _readingContinuations(id));
+  @override
+  Future<ReadingPosition> prepareReadingContinuation(
+    String id,
+    String deviceId,
+    String documentId, {
+    required String remoteRevision,
+    required String localToken,
+  }) => _prepareReadingContinuation(id, deviceId, documentId, remoteRevision: remoteRevision, localToken: localToken);
+
+  @override
+  Stream<LibraryOrganization> watchOrganization() => _watchOrganization();
+  @override
+  Future<Folder> createFolder(String name) => _createFolder(name);
+  @override
+  Future<void> renameFolder(String id, String name, {required String expectedRevision}) =>
+      _changeFolder(id, name, expectedRevision: expectedRevision);
+  @override
+  Future<void> deleteFolder(String id, {required String expectedRevision}) =>
+      _changeFolder(id, null, expectedRevision: expectedRevision);
+  @override
+  Future<void> moveStudySet(String id, String? folderId, {required String? expectedFolderId}) =>
+      _moveStudySet(id, folderId, expectedFolderId: expectedFolderId);
+  @override
+  Future<void> chooseFolderName(
+    String id,
+    String transaction, {
+    required String expectedRevision,
+    required bool useCandidate,
+  }) => _chooseFolderName(id, transaction, expectedRevision: expectedRevision, useCandidate: useCandidate);
+  @override
+  Future<void> retryOrganization() => _retryOrganization();
+
+  @override
+  Stream<ContentSyncStatus> watchContentSync(String id) => _watchContentSync(id);
+  @override
+  Future<ContentSyncStatus> contentSyncStatus(String id) => _contentSyncStatus(id);
+  @override
+  Future<void> chooseContentSync(
+    String id,
+    String conflictId, {
+    required String expectedRevision,
+    required bool useCandidate,
+  }) => _chooseContentSync(id, conflictId, expectedRevision: expectedRevision, useCandidate: useCandidate);
+  @override
+  Future<void> acknowledgeContentRecovery(String id, String recoveryId) => _acknowledgeContentRecovery(id, recoveryId);
+  @override
+  Future<void> retryContentSync(String id) => _retryContentSync(id);
+
+  final _contentTransactions = <String, int>{};
+  final _editLeases = <_ContentLease>{};
+  final _recoveredEditingDrafts = <String>{};
+  Set<String> get recoveredEditingDrafts => Set.unmodifiable(_recoveredEditingDrafts);
+  final _editSyncErrors = <String, Object>{};
+  Map<String, Object> get editSyncErrors => Map.unmodifiable(_editSyncErrors);
+  Future<void> _editReleaseWork = Future.value();
+
+  @override
+  Future<void> beginContentTransaction(String id) async {
+    await _ensureLoaded();
+    await _queueWrite(id, () async {
+      final record = _require(id);
+      final depth = _contentTransactions[id] ?? 0;
+      final sync = _sync;
+      if (depth == 0 && sync != null) {
+        final snapshot = (await sync.snapshots())[_scope(id)]!;
+        _syncSnapshots = await sync.commit(
+          [SyncMutation(_scope(id), local: record.toJson(), shared: snapshot.commit.payload, deferShared: true)],
+          expected: {_scope(id): _syncSnapshots[_scope(id)]?.revision},
+        );
+      }
+      _contentTransactions[id] = depth + 1;
+      _syncStatusChanges.add(null);
+    });
+  }
+
+  @override
+  Future<void> endContentTransaction(String id) async {
+    await _ensureLoaded();
+    var ended = false;
+    await _queueWrite(id, () async {
+      final depth = _contentTransactions[id] ?? 0;
+      if (depth == 0) return;
+      if (depth > 1) {
+        _contentTransactions[id] = depth - 1;
+        return;
+      }
+      await _saveRecord(_require(id), finishDraft: true);
+      _contentTransactions.remove(id);
+      _syncStatusChanges.add(null);
+      ended = true;
+    });
+    if (ended) await _retryAfterEditing(id);
+  }
+
+  @override
+  ContentEditLease protectContent(String id, List<List<String>> paths) {
+    final lease = _ContentLease(this, id, [
+      for (final path in paths) List.unmodifiable(path),
+    ], _ensureLoaded().then((_) => _queueWrite(id, () async {})));
+    _editLeases.add(lease);
+    _syncStatusChanges.add(null);
+    return lease;
+  }
+
+  bool _protected(String id, Map<String, Object?>? candidate, Map<String, Object?>? current) {
+    if (_contentTransactions.containsKey(id)) return true;
+    Object? at(Object? value, List<String> path) {
+      for (final key in path) {
+        if (value is! Map || !value.containsKey(key)) return contentMissing;
+        value = value[key];
+      }
+      return value;
+    }
+
+    final local = current == null ? null : sharedContent(_SetRecord.fromJson(current).content);
+    for (final lease in _editLeases.where((l) => l.id == id)) {
+      for (final path in lease.paths) {
+        if (candidate == null || !contentValueEquals(at(local, path), at(candidate['content'], path))) return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _retryAfterEditing(String id) async {
+    if (_sync == null) return;
+    try {
+      await reconcileSync();
+      _editSyncErrors.remove(id);
+    } catch (error) {
+      // The user's saved edit remains successful. Retry failures are separate,
+      // observable state and the received commits remain in the durable ledger.
+      _editSyncErrors[id] = error;
+    } finally {
+      _syncStatusChanges.add(null);
+    }
+  }
+
+  Future<void> _releaseEdit(_ContentLease lease) {
+    if (!_editLeases.remove(lease)) return _editReleaseWork;
+    _syncStatusChanges.add(null);
+    return _editReleaseWork = _editReleaseWork.then((_) => _retryAfterEditing(lease.id));
+  }
+
+  /// Receive first, then reconcile through the same queues used by editing.
+  /// Other domains stay durably received until their domain handlers run.
+  /// The editing coordinator may defer a set and retry after its edit ends.
+  Future<List<SyncMergePlan>> receiveSync(
+    Iterable<SyncCommit> commits, {
+    bool Function(String studySetId)? canApply,
+  }) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) throw StateError('This library has not enabled sync');
+    await sync.receive(commits);
+    return reconcileSync(canApply: canApply);
+  }
+
+  Future<List<SyncMergePlan>> reconcileSync({bool Function(String studySetId)? canApply}) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) throw StateError('This library has not enabled sync');
+    final history = await sync.history();
+    // Retry every received transaction, not just tips: an incomplete or
+    // invalid descendant must not hide a valid preceding transaction.
+    final depths = <String, int>{};
+    int depth(SyncCommit c) => depths.putIfAbsent(c.id, () {
+      try {
+        return syncAncestry(history, [c.id]).length;
+      } on MissingSyncParents {
+        return history.length + 1;
+      } on FormatException {
+        return history.length + 1;
+      }
+    });
+
+    final tips = history.values.where((c) => c.scope.startsWith('sets/') && c.deviceId != sync.deviceId).toList()
+      ..sort((a, b) {
+        // Apply descendants first. Merging an older parent while its already
+        // merged descendant is available creates endless crossed merge commits.
+        final byDepth = depth(b).compareTo(depth(a));
+        return byDepth == 0 ? a.id.compareTo(b.id) : byDepth;
+      });
+    final results = <SyncMergePlan>[];
+    for (final remote in tips) {
+      final id = remote.scope.substring(5);
+      await _queueWrite(id, () async {
+        while (true) {
+          final snapshots = await sync.snapshots();
+          final current = snapshots[remote.scope];
+          final known = await sync.history();
+          var plan = planSyncMerge(
+            known,
+            remote: remote.id,
+            local: current?.commit.id,
+            validateTransaction: (payload) => _validateSyncTransaction(id, payload),
+          );
+          final expected = {remote.scope: current?.revision};
+          if (plan.state == SyncMergeState.ready &&
+              syncAncestry(known, [remote.id]).values.any((c) => c.requires.isNotEmpty)) {
+            plan = SyncMergePlan(
+              remote: remote.id,
+              local: current?.commit.id,
+              state: SyncMergeState.conflict,
+              reason: 'unsupportedDependencies',
+            );
+          }
+          try {
+            if (plan.state == SyncMergeState.unchanged) {
+              await sync.commit([], expected: expected, resolved: [remote.id]);
+              results.add(plan);
+              return;
+            }
+            if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(id)) {
+              plan = SyncMergePlan(
+                remote: remote.id,
+                local: current?.commit.id,
+                state: SyncMergeState.conflict,
+                reason: 'invalidIdentity',
+              );
+            } else if (plan.state == SyncMergeState.ready &&
+                (current?.draft == true ||
+                    canApply?.call(id) == false ||
+                    _protected(id, plan.deleted ? null : plan.payload, current?.value))) {
+              plan = SyncMergePlan(
+                remote: remote.id,
+                local: current?.commit.id,
+                state: SyncMergeState.waiting,
+                reason: 'editing',
+              );
+            }
+            _SetRecord? record;
+            if (plan.state == SyncMergeState.ready && !plan.deleted) {
+              try {
+                record = _materializeSync(id, plan.payload!, current?.value);
+              } on FormatException {
+                plan = SyncMergePlan(
+                  remote: remote.id,
+                  local: current?.commit.id,
+                  state: SyncMergeState.conflict,
+                  reason: 'invalidContent',
+                  bases: plan.bases,
+                );
+              } on TypeError {
+                plan = SyncMergePlan(
+                  remote: remote.id,
+                  local: current?.commit.id,
+                  state: SyncMergeState.conflict,
+                  reason: 'invalidContent',
+                  bases: plan.bases,
+                );
+              } on ArgumentError {
+                plan = SyncMergePlan(
+                  remote: remote.id,
+                  local: current?.commit.id,
+                  state: SyncMergeState.conflict,
+                  reason: 'invalidContent',
+                  bases: plan.bases,
+                );
+              }
+            }
+            if (plan.state != SyncMergeState.ready) {
+              await sync.recordIssue(plan, scope: remote.scope, expected: current?.revision);
+              results.add(plan);
+              return;
+            }
+            final documents = record?.content.documents.map((d) => d.id).toSet() ?? <String>{};
+            final accepted = syncAncestry(known, [remote.id, if (current != null) current.commit.id]).keys;
+            _syncSnapshots = await sync.commit(
+              [
+                SyncMutation(
+                  remote.scope,
+                  local: record?.toJson(),
+                  shared: plan.deleted ? null : plan.payload,
+                  adopt: plan.adopt ? remote.id : null,
+                  mergeParent: plan.adopt ? null : remote.id,
+                  pending: plan.pending,
+                ),
+              ],
+              expected: expected,
+              validate: (_) {
+                if (canApply?.call(id) == false || _protected(id, plan.deleted ? null : plan.payload, current?.value)) {
+                  throw const _EditingDeferred();
+                }
+              },
+              resolved: accepted,
+              tombstoneWhere: (scope) =>
+                  ((scope.startsWith('translations/$id/') || scope.startsWith('translated/$id/')) &&
+                      !documents.contains(scope.split('/')[2])) ||
+                  (plan.deleted && (scope == 'reading/$id/${sync.deviceId}' || scope == 'reviews/$id')),
+            );
+            // The durable decision precedes projections, live caches and watch
+            // notifications. A projection failure must not invite a second edit.
+            if (record == null) {
+              _sets.remove(id);
+              await sync.project(_packagePath(id), () async {
+                final file = File(p.join(_packagePath(id), 'studyset.json'));
+                if (await file.exists()) await file.delete();
+              });
+            } else {
+              _sets[id] = record;
+              await sync.project(_packagePath(id), () => _writeRecordFile(record!));
+              await _syncResearchSessions(id, record.content);
+            }
+            _contentChanges.add(id);
+            _libraryChanges.add(null);
+            results.add(plan);
+            return;
+          } on _EditingDeferred {
+            final waiting = SyncMergePlan(
+              remote: remote.id,
+              local: current?.commit.id,
+              state: SyncMergeState.waiting,
+              reason: 'editing',
+            );
+            try {
+              await sync.recordIssue(waiting, scope: remote.scope, expected: current?.revision);
+            } on SyncRevisionChanged {
+              continue;
+            }
+            results.add(waiting);
+            return;
+          } on SyncRevisionChanged {
+            // A receipt/merge caller using the shared ledger may have advanced
+            // the version while this awaited IO. Recompute from its snapshot.
+            continue;
+          }
+        }
+      });
+    }
+    await _reconcileFolders();
+    await _reconcileReviews(canApply: canApply);
+    await FileSyncDevices(sync).reconcile();
+    await _reconcileReading();
+    await _reconcileTranslations(canApply: canApply);
+    return results;
+  }
+
+  void _validateSyncTransaction(String id, Map<String, Object?> payload) {
+    try {
+      _materializeSync(id, payload, null);
+    } on TypeError {
+      throw const FormatException('Malformed shared study set');
+    } on ArgumentError {
+      throw const FormatException('Malformed shared study set');
+    }
+  }
+
+  Future<List<PendingSyncTransaction>> syncConflicts(String id) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) return const [];
+    final head = (await sync.snapshots())[_scope(id)]?.commit;
+    if (head == null || head.pending.isEmpty) return const [];
+    return replaySyncTransactions(
+      syncAncestry(await sync.history(), [head.id], checkKnownForks: false),
+      validate: (payload) => _validateSyncTransaction(id, payload),
+    ).pending;
+  }
+
+  /// Explicit conflict choice; a stale dialog must not overwrite newer edits.
+  /// Choosing the candidate applies only this transaction's changed paths.
+  Future<void> resolveSyncConflict(
+    String id,
+    String transaction, {
+    required String expectedRevision,
+    required bool useCandidate,
+  }) async {
+    await _ensureLoaded();
+    final sync = _sync;
+    if (sync == null) throw StateError('This library has not enabled sync');
+    await _queueWrite(id, () async {
+      final current = (await sync.snapshots())[_scope(id)];
+      if (current?.revision != expectedRevision) throw SyncRevisionChanged(_scope(id));
+      if (current == null || !current.commit.pending.contains(transaction)) {
+        throw const FormatException('Transaction is not pending');
+      }
+      final history = await sync.history();
+      final ancestry = syncAncestry(history, [current.commit.id], checkKnownForks: false);
+      final group = syncChoiceGroup(ancestry, transaction);
+      final payload = useCandidate
+          ? chooseSyncCandidate(ancestry, transaction, current.commit.payload)
+          : current.commit.payload;
+      if (_protected(id, payload, current.value)) throw StateError('Finish editing before choosing a conflict');
+      final record = _materializeSync(id, payload, current.value);
+      final documents = record.content.documents.map((d) => d.id).toSet();
+      _syncSnapshots = await sync.commit(
+        [SyncMutation(_scope(id), local: record.toJson(), shared: payload, resolves: group)],
+        expected: {_scope(id): expectedRevision},
+        validate: (_) {
+          if (_protected(id, payload, current.value)) throw StateError('Finish editing before choosing a conflict');
+        },
+        tombstoneWhere: (scope) =>
+            (scope.startsWith('translations/$id/') || scope.startsWith('translated/$id/')) &&
+            !documents.contains(scope.split('/')[2]),
+      );
+      _sets[id] = record;
+      await sync.project(_packagePath(id), () => _writeRecordFile(record));
+      await _syncResearchSessions(id, record.content);
+      _contentChanges.add(id);
+      _libraryChanges.add(null);
+    });
+  }
+
+  _SetRecord _materializeSync(String id, Map<String, Object?> payload, Map<String, Object?>? current) {
+    const fields = {'format', 'id', 'title', 'colorIndex', 'folderId', 'starred', 'createdAt', 'content', 'resources'};
+    if (payload['format'] != currentStudySetFormat ||
+        payload['id'] != id ||
+        payload.keys.any((k) => !fields.contains(k))) {
+      throw const FormatException('Unsupported shared study set');
+    }
+    final shared = (payload['content'] as Map).cast<String, Object?>();
+    final decoded = contentFromDocument(shared);
+    if (!contentValueEquals(sharedContent(decoded), shared) || contentIntegrityErrors(decoded).isNotEmpty) {
+      throw const FormatException('Invalid shared content or local-only fields');
+    }
+    for (final path in [
+      for (final d in decoded.documents) ...[
+        d.fileName,
+        ?d.sourceFileName,
+        ?d.contentManifest,
+        ?d.origin?.snapshotFile,
+      ],
+      for (final c in decoded.cards) ?c.imageFileName,
+      for (final source in decoded.researchSources)
+        for (final version in source.versions) version.snapshotFile,
+    ]) {
+      _validateResourcePath(path);
+    }
+    if (payload.containsKey('resources')) {
+      final resources = payload['resources'];
+      if (resources is! Map) throw const FormatException('Invalid resource manifest');
+      SyncResources.fromJson(resources.cast<String, Object?>()).validate(decoded);
+    }
+    final local = current == null ? StudySetContent.empty : _SetRecord.fromJson(current).content;
+    return _SetRecord.fromJson({
+      ...payload,
+      'lastOpenedAt': current?['lastOpenedAt'] ?? payload['createdAt'],
+      'content': materializeShared(shared, local).toJson(),
+    });
+  }
 
   final Map<String, _SetRecord> _sets = {};
   List<Folder> _folders = [];
@@ -84,27 +588,79 @@ class FileLibraryStore
   });
 
   Future<void> _load() async {
+    _sync ??= await FileSyncLedger.restore(root);
+    if (_sync != null) {
+      if (p.normalize(p.absolute(_sync!.root.path)) != p.normalize(p.absolute(root.path))) {
+        throw ArgumentError('Sync ledger must belong to this library');
+      }
+      _syncSnapshots = await _sync!.snapshots();
+    }
     final sets = <String, _SetRecord>{};
     var folders = <Folder>[];
     _packageLoadErrors.clear();
     await _setsDir.create(recursive: true);
-    if (await _libraryFile.exists()) {
-      final json = jsonDecode(await _libraryFile.readAsString()) as Map<String, Object?>;
+    final librarySnapshot = _syncSnapshots['library'];
+    if (librarySnapshot != null || await _libraryFile.exists()) {
+      final json = librarySnapshot?.value ?? jsonDecode(await _libraryFile.readAsString()) as Map<String, Object?>;
       folders = [
         for (final f in (json['folders'] as List?) ?? const [])
           Folder(id: (f as Map)['id'] as String, name: f['name'] as String),
       ];
     }
-    await for (final entry in _setsDir.list()) {
-      if (entry is! Directory || !entry.path.endsWith('.mmset')) continue;
+    if (_sync != null && librarySnapshot == null) {
+      final value = <String, Object?>{
+        'folders': [
+          for (final f in folders) {'id': f.id, 'name': f.name},
+        ],
+      };
+      _syncSnapshots = await _sync!.commit([SyncMutation('library', local: value, shared: value)]);
+    }
+    if (_sync case final sync?) {
+      // Upgrade legacy folder indexes once. Each folder has its own history;
+      // empty libraries on joining devices must not invent competing roots.
+      final seeds = <SyncMutation>[];
+      for (final folder in folders) {
+        final value = sharedFolder(folder);
+        folderFromSync(folder.id, value);
+        if (!_syncSnapshots.containsKey('folders/${folder.id}')) {
+          seeds.add(SyncMutation('folders/${folder.id}', local: value, shared: value));
+        }
+      }
+      if (seeds.isNotEmpty) _syncSnapshots = await sync.commit(seeds);
+      await sync.project(
+        _libraryFile.path,
+        () => _atomicWrite(_libraryFile, utf8.encode(jsonEncode(_syncSnapshots['library']!.value))),
+      );
+    }
+    final paths = <String>{};
+    await for (final entry in _setsDir.list(followLinks: false)) {
+      if (entry is Directory && entry.path.endsWith('.mmset')) paths.add(entry.path);
+    }
+    for (final scope in _syncSnapshots.keys.where((s) => s.startsWith('sets/'))) {
+      final id = scope.substring(5);
+      if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(id)) throw const FormatException('Invalid sync study set id');
+      paths.add(_packagePath(id));
+    }
+    for (final path in paths) {
+      final entry = Directory(path);
       final file = File(p.join(entry.path, 'studyset.json'));
+      final snapshot = _syncSnapshots[_scope(p.basenameWithoutExtension(path))];
+      if (snapshot?.deleted == true) {
+        await _sync!.project(path, () async {
+          if (await file.exists()) await file.delete();
+        });
+        continue;
+      }
       try {
-        if (!await file.exists()) continue;
-        final original = await file.readAsBytes();
-        final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
+        if (snapshot == null && !await file.exists()) continue;
+        final original = snapshot == null ? await file.readAsBytes() : utf8.encode(jsonEncode(snapshot.value));
+        final json = snapshot?.value ?? jsonDecode(utf8.decode(original)) as Map<String, Object?>;
         final migrated = migrateStudySet(json);
         // Decode before touching disk so invalid input cannot replace the source.
         final record = _SetRecord.fromJson(migrated);
+        if (_sync != null && record.id != p.basenameWithoutExtension(path)) {
+          throw const FormatException('Study set path/identity mismatch');
+        }
         if (json['format'] != currentStudySetFormat) {
           final backup = File('${file.path}.format-${json['format']}.bak');
           if (!await backup.exists()) {
@@ -114,9 +670,28 @@ class FileLibraryStore
           }
           await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(migrated)));
         }
+        if (_sync != null) {
+          if (snapshot == null || snapshot.draft) {
+            await _saveRecord(
+              record,
+              finishDraft: snapshot?.draft == true,
+              recovered: snapshot?.draft == true ? snapshot!.revision : null,
+            );
+            if (snapshot?.draft == true) _recoveredEditingDrafts.add(record.id);
+          } else {
+            await _sync!.project(path, () => _writeRecordFile(record));
+          }
+        }
+        final translations = FileTranslationStore(entry, sync: _sync, studySetId: record.id);
+        if (_sync case final sync?) {
+          await sync.project(
+            'translation-seed/${record.id}',
+            () => translations.seedExisting(record.content.documents.map((d) => d.id).toSet()),
+          );
+        }
         await _cleanTranslations(
           entry.path,
-          () => FileTranslationStore(entry).cleanOrphans(record.content.documents.map((d) => d.id).toSet()),
+          () => translations.cleanOrphans(record.content.documents.map((d) => d.id).toSet()),
         );
         sets[record.id] = record;
       } on FormatException catch (error) {
@@ -130,6 +705,11 @@ class FileLibraryStore
         // Do not repair or overwrite its source/backup on the error path.
         _packageLoadErrors[entry.path] = error;
       }
+    }
+    if (_sync case final sync?) {
+      _recoveredEditingDrafts
+        ..clear()
+        ..addAll((await sync.recoveries()).keys.where((s) => s.startsWith('sets/')).map((s) => s.substring(5)));
     }
     _sets
       ..clear()
@@ -146,7 +726,14 @@ class FileLibraryStore
   @override
   Stream<List<Folder>> watchFolders() => _watch(_libraryChanges.stream, () => List.unmodifiable(_folders));
 
-  List<StudySet> _summaries() => [for (final r in _sets.values) r.summary(_clock())];
+  List<StudySet> _summaries() => [for (final r in _sets.values) _summary(r)];
+
+  StudySet _summary(_SetRecord record) {
+    final summary = record.summary(_clock());
+    return record.folderId != null && !_folders.any((f) => f.id == record.folderId)
+        ? summary.copyWith(clearFolder: true)
+        : summary;
+  }
 
   @override
   Future<StudySet> create(NewStudySet input) async {
@@ -162,11 +749,14 @@ class FileLibraryStore
       lastOpenedAt: now,
       content: StudySetContent.empty,
     );
-    _sets[record.id] = record;
-    await Directory(p.join(_packagePath(record.id), 'documents')).create(recursive: true);
-    await _persist(record.id);
-    _libraryChanges.add(null);
-    return record.summary(now);
+    await _queueWrite(record.id, () async {
+      if (_sets.containsKey(record.id)) throw StateError('Study set already exists');
+      await Directory(p.join(_packagePath(record.id), 'documents')).create(recursive: true);
+      await _saveRecord(record);
+      _sets[record.id] = record;
+      _libraryChanges.add(null);
+    });
+    return _summary(record);
   }
 
   @override
@@ -178,28 +768,70 @@ class FileLibraryStore
   @override
   Future<void> rename(String id, String title) => _updateMeta(id, (r) => r.copyWith(title: title.trim()));
 
+  StudySetTitle _editableTitle(String id) => StudySetTitle(
+    _require(id).title,
+    syncDigest({'title': _require(id).title, 'head': _syncSnapshots[_scope(id)]?.commit.id}),
+  );
+
+  @override
+  Future<StudySetTitle> titleForEditing(String id) async {
+    await _ensureLoaded();
+    late StudySetTitle result;
+    await _queueWrite(id, () async {
+      result = _editableTitle(id);
+    });
+    return result;
+  }
+
+  @override
+  Future<void> renameObserved(String id, String title, {required String expectedRevision}) => _updateMeta(id, (record) {
+    if (_editableTitle(id).revision != expectedRevision) {
+      throw const ContentSyncActionException(ContentSyncActionFailure.stale);
+    }
+    return record.copyWith(title: title.trim());
+  });
+
   @override
   Future<void> setColor(String id, int colorIndex) => _updateMeta(id, (r) => r.copyWith(colorIndex: colorIndex));
 
   @override
   Future<void> delete(String id) async {
     await _ensureLoaded();
-    _require(id);
-    _sets.remove(id);
-    _libraryChanges.add(null);
-    _contentChanges.add(id);
-    // Let a pending write finish first so it cannot recreate the folder.
-    await (_writeQueue.remove(id) ?? Future<void>.value());
-    final dir = Directory(_packagePath(id));
-    if (await dir.exists()) await dir.delete(recursive: true);
+    await _queueWrite(id, () async {
+      _require(id);
+      if (_contentTransactions.containsKey(id)) throw StateError('Finish the current edit before deleting');
+      final dir = Directory(_packagePath(id));
+      if (_sync case final sync?) {
+        _syncSnapshots = await sync.commit(
+          [SyncMutation(_scope(id), local: null, shared: null)],
+          expected: {_scope(id): _syncSnapshots[_scope(id)]?.revision},
+          tombstoneWhere: (scope) =>
+              (scope.startsWith('translations/$id/') || scope.startsWith('translated/$id/')) ||
+              scope == 'reading/$id/${sync.deviceId}' ||
+              scope == 'reviews/$id',
+        );
+        // Retain immutable assets for deleted branches and later recovery.
+        await sync.project(dir.path, () async {
+          final file = File(p.join(dir.path, 'studyset.json'));
+          if (await file.exists()) await file.delete();
+        });
+      } else if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+      _sets.remove(id);
+      _libraryChanges.add(null);
+      _contentChanges.add(id);
+    });
   }
 
   Future<void> _updateMeta(String id, _SetRecord Function(_SetRecord) change) async {
     await _ensureLoaded();
-    final record = _require(id);
-    _sets[id] = change(record);
-    await _persist(id);
-    _libraryChanges.add(null);
+    await _queueWrite(id, () async {
+      final record = change(_require(id));
+      await _saveRecord(record);
+      _sets[id] = record;
+      _libraryChanges.add(null);
+    });
   }
 
   /// Translation storage is separate from content snapshots and undo/redo.
@@ -209,6 +841,8 @@ class FileLibraryStore
     _require(studySetId);
     return FileTranslationStore(
       Directory(_packagePath(studySetId)),
+      sync: _sync,
+      studySetId: studySetId,
       documentExists: (id) => _sets[studySetId]?.content.document(id) != null,
     );
   }
@@ -236,10 +870,7 @@ class FileLibraryStore
       next = change(record.content);
       final dir = Directory(_packagePath(studySetId));
       await dir.create(recursive: true);
-      await _atomicWrite(
-        File(p.join(dir.path, 'studyset.json')),
-        utf8.encode(const JsonEncoder.withIndent('  ').convert(record.copyWith(content: next).toJson())),
-      );
+      await _saveRecord(record.copyWith(content: next));
       // Publish only after durable commit. A failed write leaves no receipt,
       // graph mutation or misleading successful retry in memory.
       _sets[studySetId] = _require(studySetId).copyWith(content: next);
@@ -247,7 +878,8 @@ class FileLibraryStore
       _libraryChanges.add(null);
       final remainingDocuments = next.documents.map((d) => d.id).toSet();
       for (final document in record.content.documents) {
-        if (!remainingDocuments.contains(document.id)) {
+        if (!remainingDocuments.contains(document.id) &&
+            !(_sync != null && _contentTransactions.containsKey(studySetId))) {
           await _cleanTranslations(
             p.join(dir.path, document.id),
             () => FileTranslationStore(dir).removeDocument(document.id),
@@ -275,6 +907,7 @@ class FileLibraryStore
     final fileName = 'documents/$digest$ext';
     final target = File(_resolvePath(studySetId, fileName));
     await _queueWrite(studySetId, () async {
+      _require(studySetId);
       if (!await target.exists()) await _atomicWrite(target, bytes);
     });
     return fileName;
@@ -326,10 +959,7 @@ class FileLibraryStore
         );
         next = package.reconcile?.call(next) ?? next;
         checkCancelled();
-        await _atomicWrite(
-          File(p.join(_packagePath(studySetId), 'studyset.json')),
-          utf8.encode(const JsonEncoder.withIndent('  ').convert(record.copyWith(content: next).toJson())),
-        );
+        await _saveRecord(record.copyWith(content: next));
       } catch (_) {
         for (final file in created.reversed) {
           for (final candidate in [file, File('${file.path}.tmp')]) {
@@ -355,6 +985,15 @@ class FileLibraryStore
     await _ensureLoaded();
     _require(studySetId);
     final bytes = await File(_resolvePath(studySetId, fileName)).readAsBytes();
+    final descriptor = _require(studySetId).resources?.groups.values
+        .expand((g) => g.entries)
+        .where((e) => e.key == fileName)
+        .firstOrNull
+        ?.value;
+    if (descriptor != null &&
+        (bytes.length != descriptor.length || sha256.convert(bytes).toString() != descriptor.hash)) {
+      throw const FormatException('Document resource differs from sync manifest');
+    }
     final hash = RegExp(r'/([0-9a-f]{64})\.[a-z0-9]+$').firstMatch(fileName)?.group(1);
     if (hash != null && sha256.convert(bytes).toString() != hash) {
       throw const FormatException('Document resource hash mismatch');
@@ -385,6 +1024,7 @@ class FileLibraryStore
     final target = File(p.join(_packagePath(studySetId), name));
     // Use the same per-set queue as JSON writes, including concurrent imports.
     await _queueWrite(studySetId, () async {
+      _require(studySetId);
       if (!await target.exists()) await _atomicWrite(target, bytes);
     });
     return name;
@@ -545,7 +1185,22 @@ class FileLibraryStore
   @override
   String resolveFile(String studySetId, String fileName) => resourcePath(_resolvePath(studySetId, fileName));
 
-  String _resolvePath(String studySetId, String fileName) => p.join(_packagePath(studySetId), fileName);
+  String _resolvePath(String studySetId, String fileName) {
+    // Existing local callers request the package directory with an empty name.
+    if (fileName.isNotEmpty) _validateResourcePath(fileName);
+    return p.join(_packagePath(studySetId), fileName);
+  }
+
+  // Portable package-relative paths only. In particular a received snapshot
+  // must not turn a later asset read into access outside the study-set package.
+  static void _validateResourcePath(String path) {
+    if (path.contains('\\') ||
+        path.contains(':') ||
+        path.contains('\u0000') ||
+        path.split('/').any((part) => part.isEmpty || part == '.' || part == '..')) {
+      throw ArgumentError.value(path, 'resourcePath', 'Expected a package-relative resource');
+    }
+  }
 
   // ---- internals -----------------------------------------------------------
 
@@ -570,26 +1225,83 @@ class FileLibraryStore
     return out.stream;
   }
 
-  /// Serializes writes per set; each write stores the latest in-memory state.
-  Future<void> _persist(String id, {bool syncSessions = false}) {
-    return _queueWrite(id, () async {
-      final record = _sets[id];
-      if (record == null) return;
-      final dir = Directory(_packagePath(id));
-      await dir.create(recursive: true);
-      final file = File(p.join(dir.path, 'studyset.json'));
-      await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(record.toJson())));
-      if (syncSessions) await _syncResearchSessions(id, record.content);
-    });
+  Future<void> _writeRecordFile(_SetRecord record) => _atomicWrite(
+    File(p.join(_packagePath(record.id), 'studyset.json')),
+    utf8.encode(const JsonEncoder.withIndent('  ').convert(record.toJson())),
+  );
+
+  /// Called only inside the set's write queue (or initial load). The ledger is
+  /// the commit point; .mmset materialization may be retried without new edits.
+  Future<void> _saveRecord(
+    _SetRecord record, {
+    bool finishDraft = false,
+    String? recovered,
+    List<SyncMutation> additional = const [],
+    Map<String, String?> observed = const {},
+    void Function(Map<String, LocalSyncSnapshot>)? validate,
+  }) async {
+    final sync = _sync;
+    if (sync == null) return _writeRecordFile(record);
+    final local = record.toJson();
+    final shared = Map<String, Object?>.of(local)..remove('lastOpenedAt');
+    shared['content'] = sharedContent(record.content);
+    final reviews = _prepareReviews(record);
+    final reading = DeviceReading.fromContent(record.content).toJson();
+    final documents = record.content.documents.map((d) => d.id).toSet();
+    _syncSnapshots = await sync.commit(
+      [
+        ...additional,
+        SyncMutation(
+          _scope(record.id),
+          local: local,
+          shared: shared,
+          deferShared: !finishDraft && _contentTransactions.containsKey(record.id),
+          finishDraft: finishDraft,
+        ),
+        if (reviews != null)
+          SyncMutation('reviews/${record.id}', local: reviews, shared: reviews, requireScopes: [_scope(record.id)]),
+        // The private set snapshot already includes saved reading progress.
+        // Publish only after the content draft has a real shared dependency.
+        if (finishDraft || !_contentTransactions.containsKey(record.id))
+          SyncMutation(
+            'reading/${record.id}/${sync.deviceId}',
+            local: reading,
+            shared: reading,
+            requireScopes: [_scope(record.id)],
+          ),
+      ],
+      expected: {
+        _scope(record.id): _syncSnapshots[_scope(record.id)]?.revision,
+        'reviews/${record.id}': _syncSnapshots['reviews/${record.id}']?.revision,
+        ...observed,
+      },
+      validate: validate,
+      recovered: recovered == null ? {} : {_scope(record.id): recovered},
+      tombstoneWhere: (scope) =>
+          (finishDraft || !_contentTransactions.containsKey(record.id)) &&
+          (scope.startsWith('translations/${record.id}/') || scope.startsWith('translated/${record.id}/')) &&
+          !documents.contains(scope.split('/')[2]),
+    );
+    await sync.project(_packagePath(record.id), () => _writeRecordFile(record));
+    if (finishDraft) {
+      await _cleanTranslations(
+        p.join(_packagePath(record.id), 'translations'),
+        () => FileTranslationStore(Directory(_packagePath(record.id))).cleanOrphans(documents),
+      );
+    }
   }
 
   /// Waits for pending writes (used by tests and on shutdown).
-  Future<void> flush() => Future.wait(_writeQueue.values);
+  Future<void> flush() async {
+    await _editReleaseWork;
+    await Future.wait(_writeQueue.values);
+  }
 
   bool get isLoaded => _loaded;
 
   Future<void> dispose() async {
     await flush();
+    await _syncStatusChanges.close();
     await _libraryChanges.close();
     await _contentChanges.close();
   }
@@ -605,8 +1317,10 @@ class _SetRecord {
     required this.createdAt,
     required this.lastOpenedAt,
     required this.content,
+    this.resources,
   });
 
+  final SyncResources? resources;
   final String id;
   final String title;
   final int colorIndex;
@@ -618,19 +1332,23 @@ class _SetRecord {
 
   _SetRecord copyWith({
     String? title,
+    String? folderId,
+    bool clearFolder = false,
     int? colorIndex,
     bool? starred,
     DateTime? lastOpenedAt,
     StudySetContent? content,
+    SyncResources? resources,
   }) => _SetRecord(
     id: id,
     title: title ?? this.title,
     colorIndex: colorIndex ?? this.colorIndex,
-    folderId: folderId,
+    folderId: clearFolder ? null : folderId ?? this.folderId,
     starred: starred ?? this.starred,
     createdAt: createdAt,
     lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,
     content: content ?? this.content,
+    resources: (resources ?? this.resources)?.retain(content ?? this.content),
   );
 
   StudySet summary(DateTime now) {
@@ -673,9 +1391,11 @@ class _SetRecord {
     'createdAt': createdAt.toIso8601String(),
     'lastOpenedAt': lastOpenedAt.toIso8601String(),
     'content': content.toJson(),
+    if (resources != null) 'resources': resources!.retain(content).toJson(),
   };
 
   factory _SetRecord.fromJson(Map<String, Object?> j) => _SetRecord(
+    resources: j['resources'] is Map ? SyncResources.fromJson((j['resources'] as Map).cast<String, Object?>()) : null,
     id: j['id'] as String,
     title: j['title'] as String,
     colorIndex: j['colorIndex'] as int,
@@ -685,4 +1405,19 @@ class _SetRecord {
     lastOpenedAt: DateTime.parse(j['lastOpenedAt'] as String),
     content: StudySetEditor.initializeMemory(StudySetContent.fromJson(((j['content'] as Map?) ?? const {}).cast())),
   );
+}
+
+class _EditingDeferred implements Exception {
+  const _EditingDeferred();
+}
+
+class _ContentLease implements ContentEditLease {
+  _ContentLease(this.store, this.id, this.paths, this.ready);
+  @override
+  final Future<void> ready;
+  final FileLibraryStore store;
+  final String id;
+  final List<List<String>> paths;
+  @override
+  Future<void> release() => store._releaseEdit(this);
 }

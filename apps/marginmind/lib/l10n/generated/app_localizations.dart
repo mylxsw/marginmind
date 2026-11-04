@@ -11102,6 +11102,156 @@ abstract class AppLocalizations {
   /// **'Drag a box; adjust its corners after release. Use two fingers to move the map.'**
   String get mapSelectionBoxHint;
 
+  /// No description provided for @undoContentChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This step can’t be applied because related content has changed. The current content has been kept.'**
+  String get undoContentChanged;
+
+  /// No description provided for @syncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync and recovery'**
+  String get syncTitle;
+
+  /// No description provided for @syncLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage saved content and conflicts here. For service delivery status, open Settings → Sync.'**
+  String get syncLocalOnly;
+
+  /// No description provided for @syncWaitingTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes pending sync'**
+  String get syncWaitingTransfer;
+
+  /// No description provided for @syncRecovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved work was recovered after an interrupted edit. Review it before dismissing this notice.'**
+  String get syncRecovered;
+
+  /// No description provided for @syncAcknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'I have reviewed this work'**
+  String get syncAcknowledge;
+
+  /// No description provided for @syncRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Some local files need repair. Saved work remains in the recovery history.'**
+  String get syncRepair;
+
+  /// No description provided for @syncEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the current edit before choosing a version. Received changes are kept safely.'**
+  String get syncEditing;
+
+  /// No description provided for @syncRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get syncRetry;
+
+  /// No description provided for @syncStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Content changed during review. Review the refreshed versions before choosing again.'**
+  String get syncStale;
+
+  /// No description provided for @syncActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The operation could not finish. Saved work is retained; you can retry.'**
+  String get syncActionFailed;
+
+  /// No description provided for @syncLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync information could not be read. Retry without changing saved work.'**
+  String get syncLoadFailed;
+
+  /// No description provided for @syncCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current content'**
+  String get syncCurrent;
+
+  /// No description provided for @syncCandidate.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed change'**
+  String get syncCandidate;
+
+  /// No description provided for @syncKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep current'**
+  String get syncKeep;
+
+  /// No description provided for @syncUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this version'**
+  String get syncUse;
+
+  /// No description provided for @syncChoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your choice applies to all changes above.'**
+  String get syncChoiceHint;
+
+  /// No description provided for @syncInvalidCandidate.
+  ///
+  /// In en, this message translates to:
+  /// **'This change cannot be applied safely to the current structure. Keep current content or review its dependencies first.'**
+  String get syncInvalidCandidate;
+
+  /// No description provided for @syncNoConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'No conflicts'**
+  String get syncNoConflicts;
+
+  /// No description provided for @syncAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not present'**
+  String get syncAbsent;
+
+  /// No description provided for @syncStructureValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Structure or reference changed'**
+  String get syncStructureValue;
+
+  /// No description provided for @syncConflictCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} to review'**
+  String syncConflictCount(int count);
+
+  /// No description provided for @syncEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, studySet{Study set} card{Card} document{Document} studyNote{Study note} researchNote{Research note} annotation{Highlight} marginNote{Margin note} map{Mind map} relation{Relation} summary{Summary} bookmark{Bookmark} other{Content}}'**
+  String syncEntity(String kind);
+
+  /// No description provided for @syncField.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, title{Title} text{Text} tags{Tags} order{Order} structure{Structure} source{Source} appearance{Appearance} collectionBaseline{Material collection baseline} other{Related content}}'**
+  String syncField(String kind);
+
+  /// No description provided for @syncProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, editing{Received changes are waiting for an edit to finish.} missingHistory{Earlier versions have not arrived yet. Received work is retained.} unrelatedHistory{These versions have no shared history. Both branches are retained for recovery.} ambiguousHistory{These branches have multiple possible starting points. Both are retained for review.} concurrentChoices{Another device made a different conflict choice. Both choices are retained for review.} deletion{A deletion overlaps an edit. Both versions are retained for recovery.} invalidHistory{A received branch failed validation. It is retained without replacing your content.} other{A received version is not supported. Your content has not been replaced.}}'**
+  String syncProblem(String kind);
+
   /// No description provided for @incomingShareTitle.
   ///
   /// In en, this message translates to:
@@ -11186,6 +11336,438 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 document} other{{count} documents}}'**
   String incomingShareFiles(int count);
 
+  /// No description provided for @reviewSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The rating could not be saved. Your place is unchanged; try again.'**
+  String get reviewSaveFailed;
+
+  /// No description provided for @reviewWaitingBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier review history has not arrived yet. Wait for sync, then try again.'**
+  String get reviewWaitingBaseline;
+
+  /// No description provided for @reviewFinishEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the current content edit, then rate this card.'**
+  String get reviewFinishEditing;
+
+  /// No description provided for @manageFolders.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage folders'**
+  String get manageFolders;
+
+  /// No description provided for @folderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get folderName;
+
+  /// No description provided for @folderNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a folder name with 1–256 characters.'**
+  String get folderNameInvalid;
+
+  /// No description provided for @deleteFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder?'**
+  String get deleteFolder;
+
+  /// No description provided for @deleteFolderMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Study sets are kept and shown under Unfiled.'**
+  String get deleteFolderMessage;
+
+  /// No description provided for @moveToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get moveToFolder;
+
+  /// No description provided for @folderUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder awaiting recovery'**
+  String get folderUnavailable;
+
+  /// No description provided for @folderRepairNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'The folder index needs repair. Your saved changes are retained.'**
+  String get folderRepairNeeded;
+
+  /// No description provided for @readingContinuationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue reading'**
+  String get readingContinuationsTitle;
+
+  /// No description provided for @readingContinuationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Each device keeps its own position. Choose one to open it here.'**
+  String get readingContinuationsHint;
+
+  /// No description provided for @readingOtherDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Other device {number}'**
+  String readingOtherDevice(int number);
+
+  /// No description provided for @readingTextPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved text position'**
+  String get readingTextPosition;
+
+  /// No description provided for @readingVersionChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This position belongs to a different or removed document version.'**
+  String get readingVersionChanged;
+
+  /// No description provided for @readingResourceMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the document first'**
+  String get readingResourceMissing;
+
+  /// No description provided for @readingContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue reading'**
+  String get readingContinue;
+
+  /// No description provided for @vocabularyKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this word'**
+  String get vocabularyKeep;
+
+  /// No description provided for @vocabularySyncField.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, kind{Entry type} forms{Word forms} ukPhonetic{UK pronunciation} usPhonetic{US pronunciation} senses{Meanings} gloss{Inline meaning} note{Notes} status{Learning state} alive{Keep or remove} other{Word content}}'**
+  String vocabularySyncField(String kind);
+
+  /// No description provided for @syncTranslationConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 translated paragraph needs a choice} other{{count} translated paragraphs need a choice}}. Open the translation beside its source to compare and choose.'**
+  String syncTranslationConflicts(int count);
+
+  /// No description provided for @syncSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get syncSettingsTitle;
+
+  /// No description provided for @syncSettingsScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync content and its referenced files with your chosen service. Downloads are on demand; this device stays paused between manual operations.'**
+  String get syncSettingsScope;
+
+  /// No description provided for @syncSettingsLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored on this device'**
+  String get syncSettingsLocal;
+
+  /// No description provided for @syncSettingsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync setup is unavailable on this platform or this build.'**
+  String get syncSettingsUnavailable;
+
+  /// No description provided for @syncSettingsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a shared library'**
+  String get syncSettingsNew;
+
+  /// No description provided for @syncSettingsJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join an existing library'**
+  String get syncSettingsJoin;
+
+  /// No description provided for @syncSettingsLibraryId.
+  ///
+  /// In en, this message translates to:
+  /// **'Library code'**
+  String get syncSettingsLibraryId;
+
+  /// No description provided for @syncSettingsDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s name'**
+  String get syncSettingsDeviceName;
+
+  /// No description provided for @syncSettingsPrepare.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable sync'**
+  String get syncSettingsPrepare;
+
+  /// No description provided for @syncSettingsIdentityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your local content will join this library. Its code cannot be changed after setup.'**
+  String get syncSettingsIdentityHint;
+
+  /// No description provided for @syncSettingsRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Foliarc to connect a service. Nothing has been uploaded.'**
+  String get syncSettingsRestart;
+
+  /// No description provided for @syncSettingsDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL (HTTPS)'**
+  String get syncSettingsDirectory;
+
+  /// No description provided for @syncSettingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get syncSettingsAccount;
+
+  /// No description provided for @syncSettingsPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password (leave blank to keep saved password)'**
+  String get syncSettingsPassword;
+
+  /// No description provided for @syncSettingsConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get syncSettingsConnect;
+
+  /// No description provided for @syncSettingsICloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect iCloud'**
+  String get syncSettingsICloud;
+
+  /// No description provided for @syncSettingsConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks the connection without uploading content.'**
+  String get syncSettingsConnectHint;
+
+  /// No description provided for @syncSettingsOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get syncSettingsOnce;
+
+  /// No description provided for @syncSettingsPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get syncSettingsPause;
+
+  /// No description provided for @syncSettingsPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual sync · Paused'**
+  String get syncSettingsPaused;
+
+  /// No description provided for @syncSettingsRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get syncSettingsRunning;
+
+  /// No description provided for @syncSettingsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get syncSettingsPending;
+
+  /// No description provided for @syncSettingsConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed by service'**
+  String get syncSettingsConfirmed;
+
+  /// No description provided for @syncSettingsStaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting cloud confirmation'**
+  String get syncSettingsStaged;
+
+  /// No description provided for @syncSettingsReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get syncSettingsReceived;
+
+  /// No description provided for @syncSettingsTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'iCloud timed out and sync paused. System transfers may continue; try again later.'**
+  String get syncSettingsTimedOut;
+
+  /// No description provided for @syncSettingsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete this operation. Your local content and pending changes are preserved. Check storage or connection and retry.'**
+  String get syncSettingsError;
+
+  /// No description provided for @syncSettingsInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the library code, device name and HTTPS directory. The username must be the service login account.'**
+  String get syncSettingsInvalid;
+
+  /// No description provided for @syncSettingsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The existing library was not found at this service. Check its code and directory; no empty replacement was created.'**
+  String get syncSettingsMissing;
+
+  /// No description provided for @syncSettingsRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Some local data could not be loaded or recovered. Repair it before transferring this library.'**
+  String get syncSettingsRepair;
+
+  /// No description provided for @syncSettingsAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Check your account and app password.'**
+  String get syncSettingsAuth;
+
+  /// No description provided for @syncSettingsAccountChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The account changed. The previous queue is paused. Reconnect explicitly to continue.'**
+  String get syncSettingsAccountChanged;
+
+  /// No description provided for @syncSettingsLegacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier sync history could not be verified as a complete portable graph. Local history is preserved; recover missing history on its original device before retrying.'**
+  String get syncSettingsLegacy;
+
+  /// No description provided for @syncSettingsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'This service lacks required history. Keep using the original service, or inspect and explicitly copy the history available on this device.'**
+  String get syncSettingsHistory;
+
+  /// No description provided for @syncSettingsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get syncSettingsRetry;
+
+  /// No description provided for @syncResourcesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Files on this device'**
+  String get syncResourcesTitle;
+
+  /// No description provided for @syncResourcesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A received document can be downloaded when needed. Local files that differ from their saved fingerprint are preserved.'**
+  String get syncResourcesHint;
+
+  /// No description provided for @syncResourceAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded and verified'**
+  String get syncResourceAvailable;
+
+  /// No description provided for @syncResourceMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Download incomplete'**
+  String get syncResourceMissing;
+
+  /// No description provided for @syncResourceChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'File differs; kept unchanged'**
+  String get syncResourceChanged;
+
+  /// No description provided for @syncResourceUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for file details from the original device'**
+  String get syncResourceUnverified;
+
+  /// No description provided for @syncResourceDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get syncResourceDownload;
+
+  /// No description provided for @syncDeviceRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get syncDeviceRename;
+
+  /// No description provided for @syncDeviceNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This name is shared with devices in this library. It does not identify your service account.'**
+  String get syncDeviceNameHint;
+
+  /// No description provided for @syncDeviceHistoryProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Some device names could not be accepted. Their histories are retained; other devices can continue syncing.'**
+  String get syncDeviceHistoryProblem;
+
+  /// No description provided for @syncDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get syncDisconnect;
+
+  /// No description provided for @syncDisconnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes this connection and its saved password. Your library and cloud files are kept.'**
+  String get syncDisconnectHint;
+
+  /// No description provided for @syncDeviceStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The device name changed while you were editing. Your input is kept. Cancel and reopen Rename to review the new name.'**
+  String get syncDeviceStale;
+
+  /// No description provided for @syncDisconnectICloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get syncDisconnectICloud;
+
+  /// No description provided for @syncDisconnectICloudHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your library and cloud files are kept. This does not sign you out of iCloud.'**
+  String get syncDisconnectICloudHint;
+
+  /// No description provided for @syncRenameStale.
+  ///
+  /// In en, this message translates to:
+  /// **'This item changed while you were editing. Your input is kept. Cancel and reopen Rename to review the latest version.'**
+  String get syncRenameStale;
+
   /// No description provided for @phoneNavigationReturnToReading.
   ///
   /// In en, this message translates to:
@@ -11203,6 +11785,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to Content'**
   String get phoneNavigationReturnToContent;
+
+  /// No description provided for @syncConcurrentChoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This confirms a choice for all options shown. Other changes are kept.'**
+  String get syncConcurrentChoiceHint;
 
   /// No description provided for @aiTaskWebFormat.
   ///
@@ -11642,6 +12230,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Image'**
   String get webFormatImage;
+
+  /// No description provided for @libraryRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted content'**
+  String get libraryRecovery;
+
+  /// No description provided for @recoveryExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates a new study set and keeps the original. Reviews, reading progress and translations are excluded; attachments may need downloading.'**
+  String get recoveryExplanation;
+
+  /// No description provided for @recoveryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery could not finish. The original history is safe. Check storage and retained resource manifests, then retry; retrying will not create a second copy.'**
+  String get recoveryFailed;
+
+  /// No description provided for @recoveryCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery copy created'**
+  String get recoveryCreated;
+
+  /// No description provided for @recoveryPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Copies current content only; unresolved choices stay in the original.'**
+  String get recoveryPending;
+
+  /// No description provided for @recoveryCopyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New study set name'**
+  String get recoveryCopyTitle;
+
+  /// No description provided for @recoverCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover as a copy'**
+  String get recoverCopy;
+
+  /// No description provided for @recoveryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No recoverable content'**
+  String get recoveryEmpty;
+
+  /// No description provided for @recoveryDeletedSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted study set'**
+  String get recoveryDeletedSet;
+
+  /// No description provided for @recoveryDeletedDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Version containing deleted documents'**
+  String get recoveryDeletedDocuments;
+
+  /// No description provided for @recoveryContents.
+  ///
+  /// In en, this message translates to:
+  /// **'{cards} cards · {documents} documents'**
+  String recoveryContents(int cards, int documents);
+
+  /// No description provided for @recoveryDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} (recovered)'**
+  String recoveryDefaultTitle(String title);
+
+  /// No description provided for @syncCacheHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes unused cache only. Files and history are kept.'**
+  String get syncCacheHint;
+
+  /// No description provided for @syncCacheInspect.
+  ///
+  /// In en, this message translates to:
+  /// **'Check cache'**
+  String get syncCacheInspect;
+
+  /// No description provided for @syncCacheUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache: {bytes} bytes · Unused: {unused} bytes'**
+  String syncCacheUsage(int bytes, int unused);
+
+  /// No description provided for @syncCacheStaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Resources are being prepared. Check again when the operation finishes.'**
+  String get syncCacheStaging;
+
+  /// No description provided for @syncCacheReclaimed.
+  ///
+  /// In en, this message translates to:
+  /// **'Released {bytes} bytes of unused cache.'**
+  String syncCacheReclaimed(int bytes);
+
+  /// No description provided for @syncCacheReclaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear unused cache'**
+  String get syncCacheReclaim;
+
+  /// No description provided for @syncCacheIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'History is still incomplete. Sync missing versions before checking again.'**
+  String get syncCacheIncomplete;
+
+  /// No description provided for @syncCopyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy sync history to the connected service. The original service is kept.'**
+  String get syncCopyHint;
+
+  /// No description provided for @syncCopyPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review history copy'**
+  String get syncCopyPreview;
+
+  /// No description provided for @syncCopyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm copy'**
+  String get syncCopyConfirm;
+
+  /// No description provided for @syncCopyDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow copying to an empty service'**
+  String get syncCopyDestination;
+
+  /// No description provided for @syncCopyStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The library changed or editing is in progress. Finish editing and inspect the history copy again.'**
+  String get syncCopyStale;
+
+  /// No description provided for @syncCopySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{commits} versions · {others} from other devices\n{chunks} file chunks\n{excluded} unaccepted versions excluded\nAttachments may be unavailable for {unverified} versions'**
+  String syncCopySummary(int commits, int others, int chunks, int excluded, int unverified);
+
+  /// No description provided for @syncCopyResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started.'**
+  String get syncCopyResources;
+
+  /// No description provided for @syncOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync status'**
+  String get syncOverviewTitle;
+
+  /// No description provided for @syncManageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get syncManageTitle;
+
+  /// No description provided for @syncServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync service'**
+  String get syncServiceTitle;
+
+  /// No description provided for @syncServiceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection and account'**
+  String get syncServiceDetail;
+
+  /// No description provided for @syncLibraryDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Library & devices'**
+  String get syncLibraryDevices;
+
+  /// No description provided for @syncFilesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Download files for offline reading'**
+  String get syncFilesDetail;
+
+  /// No description provided for @syncAdvancedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get syncAdvancedTitle;
+
+  /// No description provided for @syncAdvancedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy history and manage cache'**
+  String get syncAdvancedDetail;
+
+  /// No description provided for @syncBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get syncBack;
+
+  /// No description provided for @syncNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'No service connected'**
+  String get syncNotConnected;
+
+  /// No description provided for @syncConnectIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a service to sync across devices.'**
+  String get syncConnectIntro;
+
+  /// No description provided for @syncSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start using sync'**
+  String get syncSetupTitle;
+
+  /// No description provided for @syncSetupIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the app after setup, then connect a sync service.'**
+  String get syncSetupIntro;
+
+  /// No description provided for @syncSetupReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for restart'**
+  String get syncSetupReady;
+
+  /// No description provided for @syncDeviceExample.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: Work MacBook or Study iPad'**
+  String get syncDeviceExample;
+
+  /// No description provided for @syncICloudIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses this device’s iCloud account.'**
+  String get syncICloudIntro;
+
+  /// No description provided for @syncConnectionOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Migration options'**
+  String get syncConnectionOptions;
+
+  /// No description provided for @syncCurrentConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current connection'**
+  String get syncCurrentConnection;
+
+  /// No description provided for @syncDisconnectConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get syncDisconnectConfirm;
+
+  /// No description provided for @syncOtherDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Other devices'**
+  String get syncOtherDevices;
+
+  /// No description provided for @syncLibraryCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter this code on another device to join.'**
+  String get syncLibraryCodeHint;
+
+  /// No description provided for @syncFilesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No files yet'**
+  String get syncFilesEmpty;
+
+  /// No description provided for @syncChangedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the local original. Download the synced version on another device or into a separate copy.'**
+  String get syncChangedHelp;
+
+  /// No description provided for @syncCacheReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache: {size} · Reclaimable: {unused}'**
+  String syncCacheReadable(String size, String unused);
+
+  /// No description provided for @syncCacheFreed.
+  ///
+  /// In en, this message translates to:
+  /// **'Freed {size}'**
+  String syncCacheFreed(String size);
+
+  /// No description provided for @syncChoiceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'About this choice'**
+  String get syncChoiceDetails;
+
+  /// No description provided for @syncCandidateDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'From {device}'**
+  String syncCandidateDevice(String device);
+
+  /// No description provided for @syncUnknownDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed device'**
+  String get syncUnknownDevice;
+
+  /// No description provided for @syncViewFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to downloads'**
+  String get syncViewFiles;
+
+  /// No description provided for @recoveryIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover deleted content as an independent study set. The original history is preserved.'**
+  String get recoveryIntro;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

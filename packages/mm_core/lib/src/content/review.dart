@@ -5,6 +5,13 @@ import 'package:meta/meta.dart';
 /// How well the user recalled a card.
 enum Rating { again, hard, good, easy }
 
+enum ReviewSaveProblem { storage, awaitingBaseline, editing }
+
+class ReviewWriteUnavailable implements Exception {
+  const ReviewWriteUnavailable(this.problem);
+  final ReviewSaveProblem problem;
+}
+
 /// Spaced-repetition state of one card. Cards without a state are "new".
 @immutable
 class ReviewState {
@@ -104,6 +111,7 @@ class ReviewLog {
     required this.rating,
     required this.intervalBefore,
     required this.intervalAfter,
+    this.algorithm,
   });
 
   final String id;
@@ -113,6 +121,9 @@ class ReviewLog {
   final double intervalBefore;
   final double intervalAfter;
 
+  /// Absent on legacy history: its original scheduling policy is unknown.
+  final ReviewAlgorithm? algorithm;
+
   Map<String, Object?> toJson() => {
     'id': id,
     'cardId': cardId,
@@ -120,6 +131,7 @@ class ReviewLog {
     'rating': rating.name,
     'intervalBefore': intervalBefore,
     'intervalAfter': intervalAfter,
+    if (algorithm != null) 'algorithm': algorithm!.toJson(),
   };
 
   factory ReviewLog.fromJson(Map<String, Object?> j) => ReviewLog(
@@ -129,7 +141,40 @@ class ReviewLog {
     rating: Rating.values.byName(j['rating'] as String),
     intervalBefore: (j['intervalBefore'] as num).toDouble(),
     intervalAfter: (j['intervalAfter'] as num).toDouble(),
+    algorithm: j['algorithm'] == null ? null : ReviewAlgorithm.fromJson((j['algorithm'] as Map).cast()),
   );
+}
+
+/// Versioned scheduling contract. Changes to scheduling/rounding/step policy
+/// require a new version; replacing weights alone changes the parameter value.
+class ReviewAlgorithm {
+  ReviewAlgorithm({FsrsParameters? parameters}) : parameters = parameters ?? FsrsParameters.defaults;
+  final FsrsParameters parameters;
+  Map<String, Object?> toJson() => {
+    'name': 'foliarc-fsrs5',
+    'version': 1,
+    'parametersVersion': 1,
+    'weights': parameters.weights,
+    'retention': parameters.retention,
+    'maximumInterval': parameters.maximumInterval,
+  };
+  factory ReviewAlgorithm.fromJson(Map<String, Object?> json) {
+    if (json['name'] != 'foliarc-fsrs5' ||
+        json['version'] != 1 ||
+        json['parametersVersion'] != 1 ||
+        json.keys.any(
+          (k) => !{'name', 'version', 'parametersVersion', 'weights', 'retention', 'maximumInterval'}.contains(k),
+        )) {
+      throw const FormatException('Unsupported review algorithm');
+    }
+    return ReviewAlgorithm(
+      parameters: FsrsParameters(
+        weights: (json['weights'] as List).map((v) => (v as num).toDouble()).toList(),
+        retention: (json['retention'] as num).toDouble(),
+        maximumInterval: json['maximumInterval'] as int,
+      ),
+    );
+  }
 }
 
 /// Immutable, replaceable FSRS-5 parameter set. No optimizer or IO lives here.
@@ -215,6 +260,7 @@ abstract final class ReviewScheduler {
     FsrsParameters? parameters,
   }) {
     final p = parameters ?? FsrsParameters.defaults;
+    if (s != null && now.isBefore(s.lastReviewedAt)) now = s.lastReviewedAt;
     final w = p.weights;
     final old = memory ?? (s == null ? null : fromLegacy(s));
     final g = rating.index + 1;

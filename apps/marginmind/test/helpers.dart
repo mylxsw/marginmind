@@ -46,7 +46,7 @@ Future<List<Override>> testOverrides({
   bool renderPdf = false,
   VocabularyRepository? vocabulary,
   List<StudySet>? sets,
-  InMemoryStudySetContentRepository? content,
+  StudySetContentRepository? content,
   PdfPicker? pdfPicker,
   DateTime Function()? clock,
 }) async {

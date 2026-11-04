@@ -298,6 +298,9 @@ final mapDocumentOutlineProvider = FutureProvider.family<List<PdfOutlineEntry>, 
     }
     if (!ref.read(pdfRenderingEnabledProvider)) return [];
     final workspace = ref.read(workspaceProvider(studySetId).notifier);
+    await ref
+        .read(readerOcrProvider(documentOcrSource(studySetId, doc, workspace.filePath(doc))).notifier)
+        .requireAvailable();
     return OutlineTree.flatten((await MMPdfEngine.outline(workspace.filePath(doc), doc.id)).items).toList();
   } catch (_) {
     return [];
@@ -312,8 +315,14 @@ final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, Str
     contexts: const [],
     filePath: workspace.filePath,
     pageText: (path, page) async {
-      if (ref.read(pdfOcrServiceProvider).supported) await ref.read(readerOcrProvider(path).notifier).inspect();
-      final recognized = ref.read(readerOcrProvider(path)).document?.path ?? path;
+      final doc = workspace.content.documents.where((d) => workspace.filePath(d) == path).firstOrNull;
+      if (doc == null) throw StateError('Source document no longer exists');
+      final source = documentOcrSource(studySetId, doc, path);
+      final controller = ref.read(readerOcrProvider(source).notifier);
+      await controller.requireAvailable();
+      if (ref.read(pdfOcrServiceProvider).supported) await controller.inspect();
+      await controller.requireAvailable();
+      final recognized = ref.read(readerOcrProvider(source)).document?.path ?? path;
       return ref.read(assistantPageTextProvider)(recognized, page);
     },
   );
@@ -323,6 +332,9 @@ final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, Str
     loadOutline: (doc, cancel) async {
       if (!ref.read(pdfRenderingEnabledProvider)) return null;
       try {
+        await ref
+            .read(readerOcrProvider(documentOcrSource(studySetId, doc, workspace.filePath(doc))).notifier)
+            .requireAvailable();
         return await cancel.bind(MMPdfEngine.outline(workspace.filePath(doc), doc.id));
       } on ResearchFailure {
         rethrow;
@@ -555,7 +567,10 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         failure: const ResearchFailure(ResearchFailureKind.protocol, '需先识别文字'),
       );
       final doc = snapshot.document(e.documentId)!;
-      _ocrSubscription = ref.listen(readerOcrProvider(workspace.filePath(doc)), (before, after) {
+      _ocrSubscription = ref.listen(readerOcrProvider(documentOcrSource(arg, doc, workspace.filePath(doc))), (
+        before,
+        after,
+      ) {
         if (before?.running == true &&
             !after.running &&
             !after.failed &&
@@ -813,9 +828,13 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         }
         if (!loaded.containsKey(key)) {
           try {
+            await ref
+                .read(readerOcrProvider(documentOcrSource(arg, doc, workspace.filePath(doc))).notifier)
+                .requireAvailable();
             loaded[key] = await cancel.bind(
               ref.read(mapQuotePageProvider)(
-                ref.read(readerOcrProvider(workspace.filePath(doc))).document?.path ?? workspace.filePath(doc),
+                ref.read(readerOcrProvider(documentOcrSource(arg, doc, workspace.filePath(doc)))).document?.path ??
+                    workspace.filePath(doc),
                 source.page,
               ),
             );

@@ -52,7 +52,7 @@ Future<void> main() async {
   if (const bool.fromEnvironment('OCR_AUTO')) {
     Timer(const Duration(seconds: 15), () async {
       final controller = container.read(workspaceProvider(set.id).notifier);
-      final source = controller.filePath(content.documents.first);
+      final source = documentOcrSource(set.id, content.documents.first, controller.filePath(content.documents.first));
       final ocr = container.read(readerOcrProvider(source).notifier);
       await ocr.inspect();
       await ocr.recognize(1, info.pageCount, PdfOcrLanguage.chineseEnglish);

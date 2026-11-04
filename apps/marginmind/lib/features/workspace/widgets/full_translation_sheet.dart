@@ -10,6 +10,8 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../../settings/settings_window.dart';
+import '../document_resources.dart';
 import '../../assistant/assistant_services.dart';
 import '../../assistant/settings/model_route_picker.dart';
 import '../../assistant/settings/ai_task_status.dart' show aiInvocationError;
@@ -187,12 +189,34 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     final content = ref.watch(workspaceContentProvider(widget.studySetId));
     final doc = content?.document(widget.documentId);
     if (doc == null) return const SizedBox.shrink();
+    final availability = ref.watch(documentResourcesProvider(documentResourceKey(widget.studySetId, doc)));
+    if (availability.isLoading || availability.value != DocumentResourceAvailability.ready) {
+      return MMSheet(
+        title: l.fullTranslationTitle,
+        subtitle: doc.title,
+        actions: [
+          MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
+          if (!availability.isLoading)
+            MMButton(
+              label: l.syncSettingsTitle,
+              onPressed: () => showSettings(context, tab: SettingsTab.sync),
+            ),
+        ],
+        child: availability.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Text(
+                availability.value == DocumentResourceAvailability.missing
+                    ? l.syncResourceMissing
+                    : l.syncResourceChanged,
+              ),
+      );
+    }
     final isText = doc.contentManifest != null;
 
     final info = ref.watch(compareDocumentInfoProvider((widget.studySetId, widget.documentId))).value;
     _sourceLang = info?.language;
     final docPath = ref.read(workspaceProvider(widget.studySetId).notifier).filePath(doc);
-    final ocr = ref.watch(readerOcrProvider(docPath));
+    final ocr = ref.watch(readerOcrProvider(documentOcrSource(widget.studySetId, doc, docPath)));
     final paragraphsAsync = ref.watch(translationParagraphsProvider((widget.studySetId, widget.documentId)));
     final paragraphs = paragraphsAsync.value ?? const <TranslationParagraph>[];
     if (isText && paragraphs.isNotEmpty) {

@@ -20,7 +20,7 @@ class MapOcrBanner extends ConsumerStatefulWidget {
 }
 
 class _MapOcrBannerState extends ConsumerState<MapOcrBanner> {
-  String? _dismissed;
+  ReaderOcrSource? _dismissed;
   @override
   Widget build(BuildContext context) {
     if (!ref.watch(settingsProvider.select((s) => s.betaFeaturesEnabled))) return widget.fallback;
@@ -32,7 +32,7 @@ class _MapOcrBannerState extends ConsumerState<MapOcrBanner> {
         ref.watch(workspaceProvider(widget.studySetId).select((s) => s.activeDocumentId));
     final doc = content.document(id ?? '');
     if (doc == null || doc.format != DocumentFormat.pdf) return widget.fallback;
-    final source = workspace.filePath(doc);
+    final source = documentOcrSource(widget.studySetId, doc, workspace.filePath(doc));
     ref.watch(readerOcrInspectionProvider(source));
     final ocr = ref.watch(readerOcrProvider(source));
     if (preview?.needsTextDocumentId == null && (ocr.document?.textPages.isEmpty != true || _dismissed == source)) {

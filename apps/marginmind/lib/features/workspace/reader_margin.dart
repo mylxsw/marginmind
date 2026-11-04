@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 
 import '../../app/providers.dart';
+import '../../shared/content_input.dart';
 import 'workspace_controller.dart';
 
 class ReaderMarginState {
@@ -30,10 +32,15 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
   ReaderMarginSession(this.studySetId);
   final String studySetId;
   Future<bool>? _saving;
+  bool _opening = false;
+  ContentInputSession<MarginNote>? _input;
   WorkspaceController get _workspace => ref.read(workspaceProvider(studySetId).notifier);
 
   @override
   ReaderMarginState build() {
+    ref.onDispose(() {
+      unawaited(_input?.close());
+    });
     ref.listen(workspaceProvider(studySetId).select((s) => s.activeDocumentId), (before, after) {
       if (before != after) finish();
     });
@@ -89,46 +96,75 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
     int? colorIndex,
     MarginNote? existing,
   }) async {
+    if (_opening) return;
     if (existing?.id == state.draft?.id && existing != null) return;
-    if (!await finish() || !ref.mounted) return;
-    final editor = ref.read(editorProvider);
-    final anchor = textAnchors.isNotEmpty
-        ? (anchor: AnnotationAnchor(textAnchors: textAnchors, quote: quote), lineY: null)
-        : pages == null
-        ? (anchor: null, lineY: lineY)
-        : marginAnchor(pages, quote);
-    final candidate =
-        existing ??
-        MarginNote(
-          id: editor.newId(),
-          documentId: documentId,
-          page: textAnchors.isNotEmpty ? null : page ?? pages!.first.page,
-          anchor: anchor.anchor,
-          lineY: anchor.lineY,
-          text: '',
-          colorIndex: colorIndex ?? ref.read(workspaceProvider(studySetId)).color.index,
-          createdAt: editor.now(),
-          updatedAt: editor.now(),
-        );
-    // Geometry is the identity of a text anchor; highlight lifetime is independent.
-    final note =
-        existing ??
-        _workspace.content.marginNotes
-            .where(
-              (n) =>
-                  n.documentId == documentId &&
-                  (textAnchors.isNotEmpty || n.page == candidate.page) &&
-                  n.lineY == candidate.lineY &&
-                  jsonEncode(n.anchor?.toJson()) == jsonEncode(candidate.anchor?.toJson()),
-            )
-            .firstOrNull ??
-        candidate;
-    _workspace.dismissPending();
-    _set(
-      open: existing != null ? state.openDocuments : {...state.openDocuments, documentId},
-      draft: note,
-      popup: {note.id},
-    );
+    _opening = true;
+    try {
+      if (!await finish() || !ref.mounted) return;
+      final editor = ref.read(editorProvider);
+      final anchor = textAnchors.isNotEmpty
+          ? (anchor: AnnotationAnchor(textAnchors: textAnchors, quote: quote), lineY: null)
+          : pages == null
+          ? (anchor: null, lineY: lineY)
+          : marginAnchor(pages, quote);
+      final candidate =
+          existing ??
+          MarginNote(
+            id: editor.newId(),
+            documentId: documentId,
+            page: textAnchors.isNotEmpty ? null : page ?? pages!.first.page,
+            anchor: anchor.anchor,
+            lineY: anchor.lineY,
+            text: '',
+            colorIndex: colorIndex ?? ref.read(workspaceProvider(studySetId)).color.index,
+            createdAt: editor.now(),
+            updatedAt: editor.now(),
+          );
+      MarginNote? read(StudySetContent content) {
+        if (!content.documents.any((d) => d.id == documentId)) return null;
+        if (existing != null) return content.marginNotes.where((n) => n.id == existing.id).firstOrNull;
+        // Geometry identifies an existing note independently of highlight lifetime.
+        return content.marginNotes
+                .where(
+                  (n) =>
+                      n.documentId == documentId &&
+                      (textAnchors.isNotEmpty || n.page == candidate.page) &&
+                      n.lineY == candidate.lineY &&
+                      jsonEncode(n.anchor?.toJson()) == jsonEncode(candidate.anchor?.toJson()),
+                )
+                .firstOrNull ??
+            candidate;
+      }
+
+      final input = await ContentInput<MarginNote>(
+        repository: ref.read(contentRepositoryProvider),
+        studySetId: studySetId,
+        paths: [
+          ['documents', documentId],
+          // A new anchor must not race another note at the same geometry.
+          if (existing == null) ['marginNotes'] else ['marginNotes', existing.id],
+        ],
+        relatedPaths: (c) => [
+          if (read(c)?.nodeId case final id?) ['cards', id],
+        ],
+        read: read,
+      ).open();
+      if (!ref.mounted) {
+        await input.close();
+        return;
+      }
+      _input = input;
+      _workspace.dismissPending();
+      _set(
+        open: existing != null ? state.openDocuments : {...state.openDocuments, documentId},
+        draft: input.value,
+        popup: {input.value.id},
+      );
+    } catch (_) {
+      if (ref.mounted) _set(errors: state.errors + 1);
+    } finally {
+      _opening = false;
+    }
   }
 
   void text(String value) {
@@ -139,7 +175,24 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
     if (_saving != null) return _saving!;
     final draft = state.draft;
     if (draft == null) return Future.value(true);
-    return _saving = _finish(draft).whenComplete(() => _saving = null);
+    return _saving = _save(draft).whenComplete(() => _saving = null);
+  }
+
+  Future<bool> _save(MarginNote draft) async {
+    final input = _input;
+    var saved = false;
+    if (input == null) {
+      saved = await _finish(draft);
+    } else {
+      await input.save(() async {
+        saved = await _finish(draft);
+      });
+    }
+    if (saved) {
+      if (identical(_input, input)) _input = null;
+      await input?.close();
+    }
+    return saved;
   }
 
   Future<bool> _finish(MarginNote draft) async {
@@ -168,7 +221,7 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
       if (state.draft?.id == note.id) {
         _set(draft: state.draft!.copyWith(colorIndex: colorIndex));
       } else {
-        await _workspace.saveMarginNote(note.copyWith(colorIndex: colorIndex));
+        await _workspace.recolorMarginNote(note.id, colorIndex);
       }
     } catch (_) {
       if (ref.mounted) _set(errors: state.errors + 1);
@@ -177,14 +230,36 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
 
   Future<void> delete(MarginNote note) async {
     if (_saving != null && !await _saving!) return;
+    if (!ref.mounted) return;
+    if (state.draft != null && state.draft!.id != note.id && !await finish()) return;
+    if (!ref.mounted) return;
+    await (_saving = _delete(note).whenComplete(() => _saving = null));
+  }
+
+  Future<bool> _delete(MarginNote note) async {
     try {
       final saved = _workspace.content.marginNotes.any((n) => n.id == note.id);
-      if (saved) await _workspace.deleteMarginNote(note.id);
-      if (!ref.mounted) return;
-      if (state.draft?.id == note.id) _set(clearDraft: true);
+      if (saved) {
+        final workspace = _workspace;
+        if (_input case final input?) {
+          await input.save(() => workspace.deleteMarginNote(note.id));
+        } else {
+          await workspace.deleteMarginNote(note.id);
+        }
+      }
+      if (!ref.mounted) return true;
+      if (state.draft?.id == note.id) {
+        _set(clearDraft: true);
+        final input = _input;
+        _input = null;
+        await input?.close();
+        if (!ref.mounted) return true;
+      }
       if (saved) _set(deleted: state.deleted + 1);
+      return true;
     } catch (_) {
       if (ref.mounted) _set(errors: state.errors + 1);
+      return false;
     }
   }
 }

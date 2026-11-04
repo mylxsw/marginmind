@@ -150,6 +150,7 @@ class FullTranslationState {
     this.paragraphs = const [],
     this.values = const {},
     this.segments = const {},
+    this.syncSnapshot,
     this.segmentStates = const {},
     this.runningKeys = const {},
     this.retries = const {},
@@ -167,6 +168,7 @@ class FullTranslationState {
   final List<TranslationParagraph> paragraphs;
   final Map<String, String> values;
   final Map<String, TranslationSegment> segments;
+  final TranslationSnapshot? syncSnapshot;
   final Map<String, TranslationSegmentState> segmentStates;
   final Set<String> runningKeys;
   final Map<String, int> retries;
@@ -285,6 +287,7 @@ class FullTranslationState {
     List<TranslationParagraph>? paragraphs,
     Map<String, String>? values,
     Map<String, TranslationSegment>? segments,
+    TranslationSnapshot? syncSnapshot,
     Map<String, TranslationSegmentState>? segmentStates,
     Set<String>? runningKeys,
     Map<String, int>? retries,
@@ -302,6 +305,7 @@ class FullTranslationState {
     paragraphs: paragraphs ?? this.paragraphs,
     values: values ?? this.values,
     segments: segments ?? this.segments,
+    syncSnapshot: syncSnapshot ?? this.syncSnapshot,
     segmentStates: segmentStates ?? this.segmentStates,
     runningKeys: runningKeys ?? this.runningKeys,
     retries: retries ?? this.retries,
@@ -338,9 +342,15 @@ class FullTranslationController extends Notifier<FullTranslationState> {
       _loadGeneration++;
       unawaited(_subscription?.cancel());
     });
-    ref.listen(workspaceProvider(studySetId).select((s) => s.content?.document(documentId)?.revision), (before, next) {
-      if (before != next) _loading = _reload();
-    });
+    ref.listen(
+      workspaceProvider(studySetId).select((s) {
+        final d = s.content?.document(documentId);
+        return (d?.revision, d?.fileName, d?.contentManifest, d?.layout, d?.pageCount);
+      }),
+      (before, next) {
+        if (before != next) _loading = _reload();
+      },
+    );
     _loading = Future.microtask(_reload);
     return FullTranslationState(studySetId: studySetId, documentId: documentId, targetLang: targetLang, loading: true);
   }
@@ -348,7 +358,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
   Future<void> _reload() async {
     final gen = ++_loadGeneration;
     try {
-      final paragraphs = await ref.read(translationParagraphsProvider((studySetId, documentId)).future);
+      final paragraphs = await readTranslationParagraphs(ref, (studySetId, documentId));
       if (!ref.mounted || gen != _loadGeneration) return;
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
       final schedulers = ref.read(translationSchedulersProvider(studySetId));
@@ -367,6 +377,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
         paragraphs: paragraphs,
         values: scheduler.values,
         segments: scheduler.segments,
+        syncSnapshot: scheduler.snapshot,
         segmentStates: {for (final p in paragraphs) p.fingerprint: scheduler.segmentState(p)},
         runningKeys: scheduler.state.runningKeys,
         retries: scheduler.state.retries,
@@ -388,6 +399,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
       clearJob: s.job == null,
       values: s.values,
       segments: _scheduler!.segments,
+      syncSnapshot: _scheduler!.snapshot,
       segmentStates: {for (final p in state.paragraphs) p.fingerprint: _scheduler!.segmentState(p)},
       runningKeys: s.runningKeys,
       retries: s.retries,
@@ -428,8 +440,15 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     ModelReference? modelOverride,
     required int estimatedTokens,
   }) async {
-    await _loading;
-    if (!ref.mounted) throw StateError('Workspace closed');
+    // Loading the workspace or receiving a new document version can replace
+    // extraction while Start is waiting. Only the latest load can authorize a
+    // scheduler; an obsolete load deliberately returns without publishing one.
+    while (true) {
+      final loading = _loading;
+      await loading;
+      if (!ref.mounted) throw StateError('Workspace closed');
+      if (identical(loading, _loading)) break;
+    }
     final scheduler = _scheduler;
     if (scheduler == null || state.loadError != null) throw StateError('Translation unavailable: ${state.loadError}');
     final isOnline = ref.read(translationOnlineProvider(studySetId));
@@ -481,11 +500,18 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     await _scheduler?.retry(paragraph);
   }
 
-  Future<void> editParagraph(TranslationParagraph paragraph, String text) async {
+  Future<void> editParagraph(TranslationParagraph paragraph, String text, {String? expectedToken}) async {
     await _loading;
     final scheduler = _scheduler;
     if (scheduler == null) throw StateError('Translation unavailable');
-    await scheduler.edit(paragraph, text);
+    await scheduler.edit(paragraph, text, expectedToken: expectedToken);
+  }
+
+  Future<void> chooseTranslation(TranslationParagraph paragraph, String choice, String token) async {
+    await _loading;
+    final scheduler = _scheduler;
+    if (scheduler == null) throw StateError('Translation unavailable');
+    await scheduler.choose(paragraph, choice, token);
   }
 
   Future<Future<void> Function()?> retranslateParagraph(TranslationParagraph paragraph) async {

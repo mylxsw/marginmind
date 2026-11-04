@@ -1191,6 +1191,7 @@ class StudySetEditor {
           rating: rating,
           intervalBefore: previous?.intervalDays ?? 0,
           intervalAfter: next.intervalDays,
+          algorithm: ReviewAlgorithm(parameters: fsrsParameters),
         ),
       ],
       reviews: [

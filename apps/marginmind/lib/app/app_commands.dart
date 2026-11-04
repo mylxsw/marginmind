@@ -1059,7 +1059,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ReaderZoomCommand.fitPage: l.pdfFitPage,
     };
     final ocrSource = hasDocument
-        ? workspace.filePath(workspace.content.document(workspaceState.activeDocumentId!)!)
+        ? documentOcrSource(
+            workspaceId!,
+            workspace.content.document(workspaceState.activeDocumentId!)!,
+            workspace.filePath(workspace.content.document(workspaceState.activeDocumentId!)!),
+          )
         : null;
     final ocrState = ocrSource == null ? null : ref.watch(readerOcrProvider(ocrSource));
     final crop = inWorkspace ? ref.watch(readerCropProvider(workspaceId)) : null;

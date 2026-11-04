@@ -35,7 +35,9 @@ final currentMapSourceProvider = FutureProvider.autoDispose.family<MapSource?, (
   final document = content?.document(documentId);
   if (content == null || document == null) return null;
   final workspace = ref.read(workspaceProvider(studySetId).notifier);
-  ref.watch(readerOcrProvider(workspace.filePath(document)).select((s) => s.revision));
+  ref.watch(
+    readerOcrProvider(documentOcrSource(studySetId, document, workspace.filePath(document))).select((s) => s.revision),
+  );
   final cancellation = CancellationToken();
   ref.onDispose(cancellation.cancel);
   final digest = await ref

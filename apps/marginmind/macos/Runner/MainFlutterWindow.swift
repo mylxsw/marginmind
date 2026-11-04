@@ -116,6 +116,7 @@ class MainFlutterWindow: NSWindow {
   private var systemNotification: SystemNotificationChannel?
   private var mapExport: MapExportChannel?
   private var articleParser: ArticleParserChannel?
+  private var iCloudDrive: ICloudDriveChannel?
   private var pdfOcr: PdfOcrChannel?
   private var secretStore: SecretStoreChannel?
   private var mapClipboard: FlutterMethodChannel?
@@ -233,6 +234,7 @@ class MainFlutterWindow: NSWindow {
     flutterViewController.registrar(forPlugin: "MarginMindBrowser").register(browser, withId: "marginmind/browser")
     mapExport = MapExportChannel(messenger: flutterViewController.engine.binaryMessenger)
     articleParser = ArticleParserChannel(messenger: flutterViewController.engine.binaryMessenger)
+    iCloudDrive = ICloudDriveChannel(messenger: flutterViewController.engine.binaryMessenger)
     pdfOcr = PdfOcrChannel(messenger: flutterViewController.engine.binaryMessenger)
     secretStore = SecretStoreChannel(messenger: flutterViewController.engine.binaryMessenger)
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)

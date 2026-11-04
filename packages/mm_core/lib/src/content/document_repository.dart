@@ -69,3 +69,26 @@ abstract interface class DocumentRepository {
   });
   Future<List<int>> readDocumentFile(String studySetId, String fileName);
 }
+
+enum DocumentResourceAvailability { ready, missing, changed }
+
+/// Optional port: local/mock repositories keep their existing reader behavior.
+/// A ready value verifies bytes when a synchronized manifest is present.
+abstract interface class DocumentResourceRepository {
+  Stream<DocumentResourceAvailability> watchDocumentResources(String studySetId, String documentId);
+}
+
+/// An immutable, verified read for standalone images and research snapshots.
+/// Bytes are provided only while the current content still references the file.
+class ReferencedResource {
+  ReferencedResource(this.availability, [List<int>? bytes])
+    : bytes = bytes == null ? null : Uint8List.fromList(bytes).asUnmodifiableView();
+  final DocumentResourceAvailability availability;
+  final Uint8List? bytes;
+}
+
+/// Optional port. Render these exact bytes rather than reopening a path after
+/// verification or reusing a path-keyed image cache from a previous version.
+abstract interface class ReferencedResourceRepository {
+  Stream<ReferencedResource> watchReferencedResource(String studySetId, String fileName);
+}

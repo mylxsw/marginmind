@@ -20,7 +20,7 @@ void main() {
     focus.dispose();
   });
 
-  Future<void> pump(WidgetTester tester, {bool multiline = false, int? maxLines}) async {
+  Future<void> pump(WidgetTester tester, {bool multiline = false, int? maxLines, bool readOnly = false}) async {
     await tester.pumpWidget(
       harness(
         Column(
@@ -38,6 +38,7 @@ void main() {
                 onTapOutside: () => calls.add('outside'),
                 multiline: multiline,
                 maxLines: maxLines,
+                readOnly: readOnly,
               ),
             ),
             const SizedBox(width: 200, height: 100),
@@ -48,6 +49,18 @@ void main() {
     focus.requestFocus();
     await tester.pump();
   }
+
+  testWidgets('read-only input cannot submit, cancel or insert a line break', (tester) async {
+    await pump(tester, multiline: true, readOnly: true);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    expect(calls, isEmpty);
+    expect(controller.text, 'Topic');
+    expect(tester.widget<TextField>(find.byType(TextField)).readOnly, isTrue);
+  });
 
   testWidgets('Enter and keypad Enter submit, Esc cancels, other keys type', (tester) async {
     await pump(tester);

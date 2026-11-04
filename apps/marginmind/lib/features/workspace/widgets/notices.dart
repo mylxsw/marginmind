@@ -3,6 +3,10 @@ import '../document_import.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_core/mm_core.dart';
+
+import '../../../app/providers.dart';
+import '../../../shared/content_input.dart';
 
 import '../../../shared/l10n.dart';
 import '../../../shared/phone_form.dart';
@@ -114,6 +118,7 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
     AreaFailedNotice() => l.somethingWentWrong,
     RemovedNotice() => l.removedHud,
     HighlightDeletedNotice(:final underline) => underline ? l.underlineDeletedHud : l.highlightDeletedHud,
+    UndoneNotice(conflict: true) => l.undoContentChanged,
     UndoneNotice(:final redo) => redo ? l.redoneHud : l.undoneHud,
     DocumentRemovedNotice() => l.documentRemovedHud,
     ResearchNoteSavedNotice(:final cardId, :final inSource) =>
@@ -158,12 +163,90 @@ Future<void> showMapRenameSheet(BuildContext context, WidgetRef ref, String stud
   final controller = ref.read(workspaceProvider(studySetId).notifier);
   final map = controller.content.map(mapId);
   if (map == null) return;
-  final title = await showRenameSheet(
+  final defaultTitle = context.l10n.mainMap;
+  await showContentRenameSheet(
     context,
+    ref,
+    studySetId,
     title: context.l10n.renameMap,
-    initial: map.title.isEmpty ? context.l10n.mainMap : map.title,
+    paths: [
+      ['maps', mapId],
+    ],
+    read: (c) {
+      final map = c.map(mapId);
+      return map == null
+          ? null
+          : map.title.isEmpty
+          ? defaultTitle
+          : map.title;
+    },
+    save: (value) => controller.renameMap(mapId, value),
   );
-  if (title != null && context.mounted) await controller.renameMap(mapId, title);
+}
+
+/// Content-backed forms hold their observed entity until save or dismissal.
+/// Save happens inside the sheet so failures retain the text and protection.
+Future<void> showContentRenameSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String studySetId, {
+  required String title,
+  required List<List<String>> paths,
+  required String? Function(StudySetContent) read,
+  required Future<void> Function(String) save,
+}) async {
+  ContentInputSession<String>? input;
+  try {
+    input = await ContentInput(
+      repository: ref.read(contentRepositoryProvider),
+      studySetId: studySetId,
+      paths: paths,
+      read: read,
+    ).open();
+    if (!context.mounted) return;
+    final session = input;
+    await showMMSheet<String>(
+      context: context,
+      builder: (_) =>
+          _RenameSheet(title: title, initial: session.value, save: (value) => session.save(() => save(value))),
+    );
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);
+  } finally {
+    await input?.close();
+  }
+}
+
+/// Metadata uses an observed repository revision, not a content edit path.
+Future<void> showStudySetRenameSheet(BuildContext context, WidgetRef ref, StudySet set) async {
+  final repository = ref.read(studySetRepositoryProvider);
+  try {
+    final observed = repository is StudySetTitleRepository
+        ? await (repository as StudySetTitleRepository).titleForEditing(set.id)
+        : StudySetTitle(set.title, '');
+    if (!context.mounted) return;
+    await showMMSheet<String>(
+      context: context,
+      builder: (_) => _RenameSheet(
+        title: context.l10n.renameStudySet,
+        initial: observed.title,
+        save: (value) async {
+          if (value.isEmpty) throw ArgumentError('Empty title');
+          if (repository is StudySetTitleRepository) {
+            await (repository as StudySetTitleRepository).renameObserved(
+              set.id,
+              value,
+              expectedRevision: observed.revision,
+            );
+          } else {
+            await repository.rename(set.id, value);
+          }
+        },
+      ),
+    );
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);
+  }
 }
 
 /// Two-button confirmation sheet; resolves to true when confirmed.
@@ -227,12 +310,13 @@ Future<String?> showRenameSheet(
 }
 
 class _RenameSheet extends StatefulWidget {
-  const _RenameSheet({required this.title, required this.initial, this.fieldLabel, this.actionLabel});
+  const _RenameSheet({required this.title, required this.initial, this.fieldLabel, this.actionLabel, this.save});
 
   final String title;
   final String initial;
   final String? fieldLabel;
   final String? actionLabel;
+  final Future<void> Function(String)? save;
 
   @override
   State<_RenameSheet> createState() => _RenameSheetState();
@@ -249,7 +333,28 @@ class _RenameSheetState extends State<_RenameSheet> {
     super.dispose();
   }
 
-  void _save() => Navigator.of(context).pop(_controller.text.trim());
+  bool _saving = false;
+  Object? _error;
+  Future<void> _save() async {
+    if (_saving) return;
+    final value = _controller.text.trim();
+    if (widget.save == null) {
+      Navigator.of(context).pop(value);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.save!(value);
+      if (mounted) Navigator.of(context).pop(value);
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -257,17 +362,34 @@ class _RenameSheetState extends State<_RenameSheet> {
     return MMSheet(
       title: widget.title.replaceFirst(RegExp(r'(…|\.{3})$'), ''),
       actions: [
-        MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
-        MMButton(label: widget.actionLabel ?? l.save, variant: MMButtonVariant.primary, onPressed: _save),
-      ],
-      child: MMFormRow(
-        label: widget.fieldLabel ?? l.sheetName,
-        child: MMTextField(
-          controller: _controller,
-          semanticLabel: widget.fieldLabel ?? l.sheetName,
-          autofocus: true,
-          onSubmitted: (_) => _save(),
+        MMButton(label: l.cancel, onPressed: _saving ? null : () => Navigator.of(context).pop()),
+        MMButton(
+          label: widget.actionLabel ?? l.save,
+          variant: MMButtonVariant.primary,
+          onPressed: _saving ? null : _save,
         ),
+      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_error != null)
+            Text(
+              _error is ContentSyncActionException &&
+                      (_error as ContentSyncActionException).reason == ContentSyncActionFailure.stale
+                  ? l.syncRenameStale
+                  : l.somethingWentWrong,
+            ),
+          MMFormRow(
+            label: widget.fieldLabel ?? l.sheetName,
+            child: MMTextField(
+              enabled: !_saving,
+              controller: _controller,
+              semanticLabel: widget.fieldLabel ?? l.sheetName,
+              autofocus: true,
+              onSubmitted: (_) => _save(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -277,15 +399,33 @@ Future<void> showCardTagsSheet(BuildContext context, WidgetRef ref, String study
   final controller = ref.read(workspaceProvider(studySetId).notifier);
   final card = controller.content.card(cardId);
   if (card == null) return;
-  final tags = await showMMSheet<List<String>>(
-    context: context,
-    builder: (_) => _CardTagsSheet(tags: card.tags),
-  );
-  if (tags != null && context.mounted) await controller.setTags(cardId, tags);
+  ContentInputSession<List<String>>? input;
+  try {
+    input = await ContentInput(
+      repository: ref.read(contentRepositoryProvider),
+      studySetId: studySetId,
+      paths: [
+        ['cards', cardId],
+      ],
+      read: (c) => c.card(cardId)?.tags,
+    ).open();
+    if (!context.mounted) return;
+    final session = input;
+    await showMMSheet<void>(
+      context: context,
+      builder: (_) =>
+          _CardTagsSheet(tags: session.value, save: (tags) => session.save(() => controller.setTags(cardId, tags))),
+    );
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);
+  } finally {
+    await input?.close();
+  }
 }
 
 class _CardTagsSheet extends StatefulWidget {
-  const _CardTagsSheet({required this.tags});
+  const _CardTagsSheet({required this.tags, required this.save});
+  final Future<void> Function(List<String>) save;
   final List<String> tags;
   @override
   State<_CardTagsSheet> createState() => _CardTagsSheetState();
@@ -294,6 +434,7 @@ class _CardTagsSheet extends StatefulWidget {
 class _CardTagsSheetState extends State<_CardTagsSheet> {
   late final _tags = [...widget.tags];
   final _input = TextEditingController();
+  bool _saving = false, _failed = false;
 
   @override
   void dispose() {
@@ -302,6 +443,7 @@ class _CardTagsSheetState extends State<_CardTagsSheet> {
   }
 
   void _add() {
+    if (_saving) return;
     final tag = _input.text.trim();
     if (tag.isEmpty) return;
     setState(() {
@@ -310,9 +452,21 @@ class _CardTagsSheetState extends State<_CardTagsSheet> {
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
+    if (_saving) return;
     _add();
-    Navigator.of(context).pop(_tags);
+    setState(() {
+      _saving = true;
+      _failed = false;
+    });
+    try {
+      await widget.save(List.of(_tags));
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -321,12 +475,13 @@ class _CardTagsSheetState extends State<_CardTagsSheet> {
     return MMSheet(
       title: l.sectionTags,
       actions: [
-        MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
-        MMButton(label: l.save, variant: MMButtonVariant.primary, onPressed: _save),
+        MMButton(label: l.cancel, onPressed: _saving ? null : () => Navigator.of(context).pop()),
+        MMButton(label: l.save, variant: MMButtonVariant.primary, onPressed: _saving ? null : _save),
       ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_failed) Text(l.somethingWentWrong),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height / 3),
             child: SingleChildScrollView(
@@ -340,7 +495,7 @@ class _CardTagsSheetState extends State<_CardTagsSheet> {
                         MMIconButton(
                           icon: MMIcons.close,
                           tooltip: l.removeTag,
-                          onPressed: () => setState(() => _tags.remove(tag)),
+                          onPressed: _saving ? null : () => setState(() => _tags.remove(tag)),
                         ),
                       ],
                     ),
@@ -352,6 +507,7 @@ class _CardTagsSheetState extends State<_CardTagsSheet> {
             children: [
               Expanded(
                 child: MMTextField(
+                  enabled: !_saving,
                   controller: _input,
                   placeholder: l.addTag,
                   semanticLabel: l.addTag,

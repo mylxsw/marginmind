@@ -23,3 +23,14 @@ abstract interface class StudySetRepository {
   /// Deletes the study set with all its content and files.
   Future<void> delete(String id);
 }
+
+class StudySetTitle {
+  const StudySetTitle(this.title, this.revision);
+  final String title, revision;
+}
+
+/// Optional guarded metadata form. A title is not a path in study-set content.
+abstract interface class StudySetTitleRepository {
+  Future<StudySetTitle> titleForEditing(String id);
+  Future<void> renameObserved(String id, String title, {required String expectedRevision});
+}

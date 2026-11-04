@@ -131,16 +131,26 @@ void main() {
       ),
     );
     await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 50)));
-    await tester.pumpAndSettle();
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(seconds: 5),
+    );
     final container = ProviderScope.containerOf(tester.element(find.byType(MarginMindApp)));
     container.read(navigationProvider.notifier).openStudySet(id);
     await tester.pump();
-    await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
-    await tester.pumpAndSettle();
-    for (var i = 0; i < 5; i++) {
-      await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 20)));
-      await tester.pumpAndSettle();
+    // Resource checks and projections perform real file I/O. Advancing only
+    // the fake clock can starve their completions while loading indicators
+    // keep scheduling frames. Let both queues settle before counting builds.
+    var idleFrames = 0;
+    for (var i = 0; i < 500 && idleFrames < 5; i++) {
+      await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+      await tester.pump(const Duration(milliseconds: 16));
+      idleFrames = container.read(workspaceProvider(id)).content != null && !tester.binding.hasScheduledFrame
+          ? idleFrames + 1
+          : 0;
     }
+    expect(idleFrames, 5, reason: 'initial file checks must finish before measuring builds');
     expect(container.read(workspaceProvider(id)).content!.nodes.length, greaterThan(300));
     final summary = translationTaskSummaryProvider((id, 'c1'));
     expect(container.read(summary).isLoading, isTrue);
@@ -175,7 +185,11 @@ void main() {
         await tester.pump();
       }
       expect(container.read(summary), const AsyncData<TranslationTaskSummary?>(null));
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        const Duration(seconds: 5),
+      );
       expect(container.read(studySetProvider(id))!.lastPosition!.page, 42);
       expect(builds, isEmpty);
       final reloaded = FileLibraryStore(dir);
@@ -186,7 +200,23 @@ void main() {
       debugOnRebuildDirtyWidget = old;
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
-      await tester.runAsync(store.dispose);
+      // Disposing editors may queue lease-release work in the widget zone.
+      // Drain that zone together with real file I/O, just as for the save above.
+      var disposed = false;
+      Object? disposeError;
+      store.dispose().then(
+        (_) => disposed = true,
+        onError: (Object error) {
+          disposeError = error;
+          disposed = true;
+        },
+      );
+      for (var i = 0; i < 500 && !disposed; i++) {
+        await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+        await tester.pump();
+      }
+      expect(disposeError, isNull);
+      expect(disposed, isTrue, reason: 'repository cleanup must finish after releasing editors');
       await tester.runAsync(() => dir.delete(recursive: true));
     }
   });

@@ -39,6 +39,8 @@ class _TranslationParagraphViewState extends ConsumerState<TranslationParagraphV
   final _focus = FocusNode();
   Timer? _hide;
   bool _editing = false, _busy = false;
+  String? _observedToken;
+  String? _observedValue;
 
   (String, String, String) get _key => (widget.studySetId, widget.paragraph.documentId, widget.language);
   FullTranslationController get _controller => ref.read(fullTranslationProvider(_key).notifier);
@@ -61,6 +63,13 @@ class _TranslationParagraphViewState extends ConsumerState<TranslationParagraphV
     setState(() => _busy = true);
     try {
       await action();
+    } on ContentSyncActionException catch (e) {
+      if (mounted) {
+        MMHud.show(
+          context,
+          e.reason == ContentSyncActionFailure.editing ? context.l10n.syncEditing : context.l10n.syncStale,
+        );
+      }
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.somethingWentWrong);
     } finally {
@@ -71,6 +80,11 @@ class _TranslationParagraphViewState extends ConsumerState<TranslationParagraphV
   void _edit() {
     _hide?.cancel();
     _overlay.hide();
+    _observedValue = widget.value;
+    _observedToken = ref
+        .read(fullTranslationProvider(_key))
+        .syncSnapshot
+        ?.tokenFor(textKey(widget.paragraph.text, widget.language));
     _text.text = widget.value!;
     setState(() => _editing = true);
     _focus.requestFocus();
@@ -78,11 +92,11 @@ class _TranslationParagraphViewState extends ConsumerState<TranslationParagraphV
 
   Future<void> _save() => _run(() async {
     final value = _text.text.trim();
-    if (value.isEmpty || value == widget.value) {
+    if (value.isEmpty || value == _observedValue) {
       setState(() => _editing = false);
       return;
     }
-    await _controller.editParagraph(widget.paragraph, value);
+    await _controller.editParagraph(widget.paragraph, value, expectedToken: _observedToken);
     if (mounted) {
       setState(() => _editing = false);
       MMHud.show(context, context.l10n.translationEditSaved);
@@ -139,6 +153,34 @@ class _TranslationParagraphViewState extends ConsumerState<TranslationParagraphV
 
   @override
   Widget build(BuildContext context) {
+    final snapshot = ref.watch(fullTranslationProvider(_key)).syncSnapshot;
+    final key = textKey(widget.paragraph.text, widget.language);
+    final choices = snapshot?.conflicts[key] ?? const <TranslationChoice>[];
+    if (_editing || choices.isEmpty) return _buildParagraph(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildParagraph(context),
+        if (!_editing && choices.isNotEmpty) ...[
+          Text(context.l10n.syncTitle, style: context.mmText.headline),
+          for (final choice in choices) ...[
+            Text(choice.segment?.text ?? context.l10n.syncAbsent),
+            MMButton(
+              key: ValueKey('translation-choice-${choice.id}'),
+              label: context.l10n.syncUse,
+              onPressed: _busy
+                  ? null
+                  : () => _run(
+                      () => _controller.chooseTranslation(widget.paragraph, choice.id, snapshot!.tokenFor(key)!),
+                    ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildParagraph(BuildContext context) {
     final state = ref.watch(fullTranslationProvider(_key));
     final p = widget.paragraph, l = context.l10n, c = context.mmColors;
     final edited = state.segments[textKey(p.text, widget.language)]?.origin == TranslationOrigin.edited;

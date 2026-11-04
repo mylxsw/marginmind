@@ -6,9 +6,11 @@ import 'package:path_provider/path_provider.dart';
 
 Future<({FileLibraryStore store, FileVocabularyStore vocabulary, ResearchWebCache? cache})> openStorage() async {
   final support = await getApplicationSupportDirectory();
+  final root = Directory(p.join(support.path, 'Library'));
+  final sync = await FileSyncSetup(root).openLedger();
   return (
-    store: FileLibraryStore(Directory(p.join(support.path, 'Library'))),
-    vocabulary: FileVocabularyStore(Directory(p.join(support.path, 'Library'))),
+    store: FileLibraryStore(root, sync: sync),
+    vocabulary: FileVocabularyStore(root, sync: sync),
     cache: ResearchWebCache(support),
   );
 }

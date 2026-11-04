@@ -6054,6 +6054,124 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapSelectionBoxHint => '单指画框，松手后可拖动四角修正；双指移动画布';
 
   @override
+  String get undoContentChanged => '相关内容已被后续修改，无法执行这一步。当前内容已保留。';
+
+  @override
+  String get syncTitle => '同步与恢复';
+
+  @override
+  String get syncLocalOnly => '在此处理已保存内容和冲突。服务传输状态请查看“设置 → 同步”。';
+
+  @override
+  String get syncWaitingTransfer => '有修改待同步';
+
+  @override
+  String get syncRecovered => '已恢复上次中断编辑时保存的内容，请查看后再确认。';
+
+  @override
+  String get syncAcknowledge => '我已查看恢复的内容';
+
+  @override
+  String get syncRepair => '部分本机文件需要修复，已保存的内容仍保留在恢复记录中。';
+
+  @override
+  String get syncEditing => '请结束当前编辑后再选择版本，收到的修改已安全保留。';
+
+  @override
+  String get syncRetry => '重试';
+
+  @override
+  String get syncStale => '查看期间内容已变化，请检查刷新后的版本再选择。';
+
+  @override
+  String get syncActionFailed => '操作未能完成，已保存的内容仍保留，可以重试。';
+
+  @override
+  String get syncLoadFailed => '无法读取同步信息，重试不会改动已保存的内容。';
+
+  @override
+  String get syncCurrent => '当前内容';
+
+  @override
+  String get syncCandidate => '候选修改';
+
+  @override
+  String get syncKeep => '保留当前';
+
+  @override
+  String get syncUse => '采用此版本';
+
+  @override
+  String get syncChoiceHint => '选择将应用于上述全部修改。';
+
+  @override
+  String get syncInvalidCandidate => '这项修改无法安全应用于当前结构。可以保留当前内容，或先检查关联内容。';
+
+  @override
+  String get syncNoConflicts => '没有冲突';
+
+  @override
+  String get syncAbsent => '不存在';
+
+  @override
+  String get syncStructureValue => '结构或引用已变化';
+
+  @override
+  String syncConflictCount(int count) {
+    return '$count 项待处理';
+  }
+
+  @override
+  String syncEntity(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'studySet': '学习集',
+      'card': '卡片',
+      'document': '文档',
+      'studyNote': '学习笔记',
+      'researchNote': '研究笔记',
+      'annotation': '标注',
+      'marginNote': '批注',
+      'map': '脑图',
+      'relation': '关系线',
+      'summary': '概要',
+      'bookmark': '书签',
+      'other': '内容',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String syncField(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'title': '标题',
+      'text': '正文',
+      'tags': '标签',
+      'order': '顺序',
+      'structure': '结构',
+      'source': '来源',
+      'appearance': '外观',
+      'collectionBaseline': '资料收集基线',
+      'other': '关联内容',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String syncProblem(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'editing': '收到的修改正在等待当前编辑结束。',
+      'missingHistory': '较早的版本尚未到达，收到的内容已保留。',
+      'unrelatedHistory': '这些版本没有共同历史，双方分支均已保留，等待恢复处理。',
+      'ambiguousHistory': '这些分支存在多个可能的共同起点，双方均已保留，等待进一步检查。',
+      'concurrentChoices': '另一设备作出了不同的冲突选择，双方选择均已保留，等待进一步处理。',
+      'deletion': '删除与编辑发生冲突，双方版本均已保留，等待恢复处理。',
+      'invalidHistory': '收到的分支未通过校验，已保留该分支，没有替换当前内容。',
+      'other': '暂不支持收到的版本，当前内容没有被替换。',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get incomingShareTitle => '导入到 Foliarc';
 
   @override
@@ -6098,6 +6216,240 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get reviewSaveFailed => '评分未能保存，复习进度没有改变，请重试。';
+
+  @override
+  String get reviewWaitingBaseline => '之前的复习记录尚未同步到此设备，请同步完成后重试。';
+
+  @override
+  String get reviewFinishEditing => '请先结束当前内容编辑，再为这张卡片评分。';
+
+  @override
+  String get manageFolders => '管理文件夹';
+
+  @override
+  String get folderName => '文件夹名称';
+
+  @override
+  String get folderNameInvalid => '请输入 1–256 个字符的文件夹名称。';
+
+  @override
+  String get deleteFolder => '删除文件夹？';
+
+  @override
+  String get deleteFolderMessage => '学习集会保留，并显示在“未分类”中。';
+
+  @override
+  String get moveToFolder => '移动到文件夹';
+
+  @override
+  String get folderUnavailable => '待恢复的文件夹';
+
+  @override
+  String get folderRepairNeeded => '文件夹索引需要修复，已保存的修改仍保留。';
+
+  @override
+  String get readingContinuationsTitle => '继续阅读';
+
+  @override
+  String get readingContinuationsHint => '各设备分别保留阅读位置，选择一项在这里打开。';
+
+  @override
+  String readingOtherDevice(int number) {
+    return '其他设备 $number';
+  }
+
+  @override
+  String get readingTextPosition => '已保存的正文位置';
+
+  @override
+  String get readingVersionChanged => '此位置属于不同或已移除的文档版本。';
+
+  @override
+  String get readingResourceMissing => '请先下载文档';
+
+  @override
+  String get readingContinue => '继续阅读';
+
+  @override
+  String get vocabularyKeep => '保留这个词条';
+
+  @override
+  String vocabularySyncField(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'kind': '词条类型',
+      'forms': '词形',
+      'ukPhonetic': '英式发音',
+      'usPhonetic': '美式发音',
+      'senses': '释义',
+      'gloss': '行内释义',
+      'note': '笔记',
+      'status': '学习状态',
+      'alive': '保留或移除',
+      'other': '词条内容',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String syncTranslationConflicts(int count) {
+    return '有 $count 个译文段落需要选择。请打开原文旁的译文，对照后选择保留的内容。';
+  }
+
+  @override
+  String get syncSettingsTitle => '同步';
+
+  @override
+  String get syncSettingsScope => '将内容和明确引用的文件同步到你选择的服务。文件按需下载，手动操作之间保持暂停。';
+
+  @override
+  String get syncSettingsLocal => '仅保存在本机';
+
+  @override
+  String get syncSettingsUnavailable => '当前平台或构建暂不支持同步设置。';
+
+  @override
+  String get syncSettingsNew => '创建共享资料库';
+
+  @override
+  String get syncSettingsJoin => '加入已有资料库';
+
+  @override
+  String get syncSettingsLibraryId => '资料库代码';
+
+  @override
+  String get syncSettingsDeviceName => '本机名称';
+
+  @override
+  String get syncSettingsPrepare => '启用同步';
+
+  @override
+  String get syncSettingsIdentityHint => '现有内容会加入此资料库。设置后不可更换资料库代码。';
+
+  @override
+  String get syncSettingsRestart => '重启 Foliarc 后连接服务。尚未上传内容。';
+
+  @override
+  String get syncSettingsDirectory => '服务器地址（HTTPS）';
+
+  @override
+  String get syncSettingsAccount => '用户名';
+
+  @override
+  String get syncSettingsPassword => '密码（留空沿用已保存密码）';
+
+  @override
+  String get syncSettingsConnect => '连接';
+
+  @override
+  String get syncSettingsICloud => '连接 iCloud';
+
+  @override
+  String get syncSettingsConnectHint => '仅验证连接，不上传内容。';
+
+  @override
+  String get syncSettingsOnce => '立即同步';
+
+  @override
+  String get syncSettingsPause => '暂停';
+
+  @override
+  String get syncSettingsPaused => '手动同步 · 已暂停';
+
+  @override
+  String get syncSettingsRunning => '正在同步…';
+
+  @override
+  String get syncSettingsPending => '待同步';
+
+  @override
+  String get syncSettingsConfirmed => '服务已确认';
+
+  @override
+  String get syncSettingsStaged => '等待云端确认';
+
+  @override
+  String get syncSettingsReceived => '已接收';
+
+  @override
+  String get syncSettingsTimedOut => 'iCloud 超时，已暂停。系统可能仍在传输，请稍后重试。';
+
+  @override
+  String get syncSettingsError => '操作未完成。本机内容和待同步变更均保留，请检查存储或连接后重试。';
+
+  @override
+  String get syncSettingsInvalid => '请检查资料库代码、本机名称和 HTTPS 目录。用户名必须是服务的登录账号。';
+
+  @override
+  String get syncSettingsMissing => '此服务中未找到已有资料库。请检查代码和目录；未创建空资料库替代它。';
+
+  @override
+  String get syncSettingsRepair => '部分本机数据未能加载或恢复，请修复后再传输此资料库。';
+
+  @override
+  String get syncSettingsAuth => '认证失败，请检查账号和应用专用密码。';
+
+  @override
+  String get syncSettingsAccountChanged => '账号已变化，原队列已暂停。请明确重新连接后继续。';
+
+  @override
+  String get syncSettingsLegacy => '早期同步历史尚无法验证为完整、可跨平台传输的版本图。本机历史已保留，请先在原设备补齐历史后重试。';
+
+  @override
+  String get syncSettingsHistory => '目标服务缺少必要历史。可继续使用原服务，或先检查并明确复制本机持有的历史。';
+
+  @override
+  String get syncSettingsRetry => '刷新';
+
+  @override
+  String get syncResourcesTitle => '本机文件';
+
+  @override
+  String get syncResourcesHint => '收到文档后可按需下载。本机文件与已保存指纹不符时会保留，不会自动覆盖。';
+
+  @override
+  String get syncResourceAvailable => '已下载并验证';
+
+  @override
+  String get syncResourceMissing => '未下载完整';
+
+  @override
+  String get syncResourceChanged => '文件不一致，未覆盖';
+
+  @override
+  String get syncResourceUnverified => '待原设备提供文件信息';
+
+  @override
+  String get syncResourceDownload => '下载';
+
+  @override
+  String get syncDeviceRename => '修改名称';
+
+  @override
+  String get syncDeviceNameHint => '此名称会与同一资料库的设备共享，不代表服务账号身份。';
+
+  @override
+  String get syncDeviceHistoryProblem => '部分设备名称历史无法接收，已保留原始分支，其他设备可继续同步。';
+
+  @override
+  String get syncDisconnect => '断开连接';
+
+  @override
+  String get syncDisconnectHint => '移除此连接和已保存的密码。资料库及云端文件保留。';
+
+  @override
+  String get syncDeviceStale => '编辑期间设备名称已变化，输入已保留。请取消并重新打开改名，确认最新名称。';
+
+  @override
+  String get syncDisconnectICloud => '断开连接';
+
+  @override
+  String get syncDisconnectICloudHint => '资料库及云端文件保留，不会退出系统 iCloud。';
+
+  @override
+  String get syncRenameStale => '编辑期间内容已变化，输入已保留。请取消并重新打开改名，确认最新版本。';
+
+  @override
   String get phoneNavigationReturnToReading => '返回阅读';
 
   @override
@@ -6105,6 +6457,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneNavigationReturnToContent => '返回内容';
+
+  @override
+  String get syncConcurrentChoiceHint => '此次确认将替代当前显示的所有选择，其他修改不受影响。';
 
   @override
   String get aiTaskWebFormat => '网页内容整理';
@@ -6356,4 +6711,196 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get webFormatImage => '图片';
+
+  @override
+  String get libraryRecovery => '已删除内容';
+
+  @override
+  String get recoveryExplanation => '创建新学习集，原记录保留。不含复习、阅读进度和译文；附件可能需另行下载。';
+
+  @override
+  String get recoveryFailed => '恢复未完成，原历史仍保留。请检查存储和保留的资源清单后重试，重试不会重复创建副本。';
+
+  @override
+  String get recoveryCreated => '已创建恢复副本';
+
+  @override
+  String get recoveryPending => '仅复制当前内容，未决选择保留在原记录中。';
+
+  @override
+  String get recoveryCopyTitle => '新学习集名称';
+
+  @override
+  String get recoverCopy => '恢复为副本';
+
+  @override
+  String get recoveryEmpty => '暂无可恢复内容';
+
+  @override
+  String get recoveryDeletedSet => '已删除学习集';
+
+  @override
+  String get recoveryDeletedDocuments => '包含已删除文档的版本';
+
+  @override
+  String recoveryContents(int cards, int documents) {
+    return '$cards 张卡片 · $documents 个文档';
+  }
+
+  @override
+  String recoveryDefaultTitle(String title) {
+    return '$title（恢复副本）';
+  }
+
+  @override
+  String get syncCacheHint => '只清理未使用的缓存，保留文件与历史。';
+
+  @override
+  String get syncCacheInspect => '检查缓存';
+
+  @override
+  String syncCacheUsage(int bytes, int unused) {
+    final intl.NumberFormat bytesNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String bytesString = bytesNumberFormat.format(bytes);
+    final intl.NumberFormat unusedNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String unusedString = unusedNumberFormat.format(unused);
+
+    return '缓存：$bytesString 字节 · 可回收：$unusedString 字节';
+  }
+
+  @override
+  String get syncCacheStaging => '正在准备资源，请在操作结束后重新检查。';
+
+  @override
+  String syncCacheReclaimed(int bytes) {
+    final intl.NumberFormat bytesNumberFormat = intl.NumberFormat.decimalPattern(localeName);
+    final String bytesString = bytesNumberFormat.format(bytes);
+
+    return '已释放 $bytesString 字节无引用缓存。';
+  }
+
+  @override
+  String get syncCacheReclaim => '清理缓存';
+
+  @override
+  String get syncCacheIncomplete => '历史版本尚未收齐，请同步缺失版本后重新检查。';
+
+  @override
+  String get syncCopyHint => '将同步历史复制到当前服务，原服务保留。';
+
+  @override
+  String get syncCopyPreview => '检查可复制内容';
+
+  @override
+  String get syncCopyConfirm => '确认复制';
+
+  @override
+  String get syncCopyDestination => '允许复制到空服务';
+
+  @override
+  String get syncCopyStale => '资料库已变化或正在编辑。请完成编辑后重新检查历史复制。';
+
+  @override
+  String syncCopySummary(int commits, int others, int chunks, int excluded, int unverified) {
+    return '$commits 个版本 · $others 个来自其他设备\n$chunks 个文件块\n不包含 $excluded 个未接受版本\n$unverified 个版本的附件无法保证恢复';
+  }
+
+  @override
+  String get syncCopyResources => '历史文件缺失或校验失败。请保留原服务，使用持有已验证历史文件的设备重新检查；尚未开始新的复制。';
+
+  @override
+  String get syncOverviewTitle => '同步状态';
+
+  @override
+  String get syncManageTitle => '管理';
+
+  @override
+  String get syncServiceTitle => '同步服务';
+
+  @override
+  String get syncServiceDetail => '连接与账号';
+
+  @override
+  String get syncLibraryDevices => '资料库与设备';
+
+  @override
+  String get syncFilesDetail => '下载文件，离线阅读';
+
+  @override
+  String get syncAdvancedTitle => '高级';
+
+  @override
+  String get syncAdvancedDetail => '复制历史与管理缓存';
+
+  @override
+  String get syncBack => '同步';
+
+  @override
+  String get syncNotConnected => '尚未连接服务';
+
+  @override
+  String get syncConnectIntro => '连接服务，开始跨设备同步。';
+
+  @override
+  String get syncSetupTitle => '开始使用同步';
+
+  @override
+  String get syncSetupIntro => '启用后需重启应用，再连接同步服务。';
+
+  @override
+  String get syncSetupReady => '准备完成，请重启';
+
+  @override
+  String get syncDeviceExample => '例如：工作 MacBook、书房 iPad';
+
+  @override
+  String get syncICloudIntro => '使用本机 iCloud 账号。';
+
+  @override
+  String get syncConnectionOptions => '迁移选项';
+
+  @override
+  String get syncCurrentConnection => '当前连接';
+
+  @override
+  String get syncDisconnectConfirm => '确认断开';
+
+  @override
+  String get syncOtherDevices => '其他设备';
+
+  @override
+  String get syncLibraryCodeHint => '在另一设备输入此代码即可加入。';
+
+  @override
+  String get syncFilesEmpty => '暂无文件';
+
+  @override
+  String get syncChangedHelp => '保留本机原件。请在另一设备或独立副本中下载同步版本。';
+
+  @override
+  String syncCacheReadable(String size, String unused) {
+    return '缓存 $size · 可清理 $unused';
+  }
+
+  @override
+  String syncCacheFreed(String size) {
+    return '已释放 $size';
+  }
+
+  @override
+  String get syncChoiceDetails => '选择说明';
+
+  @override
+  String syncCandidateDevice(String device) {
+    return '来自 $device';
+  }
+
+  @override
+  String get syncUnknownDevice => '未命名设备';
+
+  @override
+  String get syncViewFiles => '前往下载';
+
+  @override
+  String get recoveryIntro => '将已删除内容恢复为独立学习集，原始历史保留。';
 }

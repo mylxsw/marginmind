@@ -36,6 +36,7 @@ marginmind/
 │  ├─ mm_design/           设计令牌、主题（浅色/深色）与 macOS 风格组件库
 │  ├─ mm_core/             领域层：实体、编辑操作、仓库端口、查询（纯 Dart，无 Flutter）
 │  ├─ mm_data/             持久化：学习集文件包（JSON + PDF 副本）
+│  ├─ mm_sync/             同步协议与领域合并（基础组件，尚未开放云端同步）
 │  ├─ mm_pdf/              PDF：渲染、选字、高亮叠加、定位（pdfrx / PDFium）
 │  ├─ mm_layout/           脑图树布局算法（纯 Dart）
 │  └─ mm_platform/         平台适配：原生窗口、拖动、快捷键、系统外观

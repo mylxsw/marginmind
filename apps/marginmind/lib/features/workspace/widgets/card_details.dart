@@ -10,6 +10,8 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/card_image.dart';
+import '../../../shared/content_input.dart';
+import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/note_text.dart';
 import '../../assistant/assistant_entry.dart';
@@ -107,6 +109,22 @@ class CardDetails extends ConsumerWidget {
 
     final color = MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0);
     final reviewable = card.suspended || card.kind != CardKind.topic;
+    ContentInput<({String text, TextFormat format})> input({bool body = false}) => ContentInput(
+      repository: ref.read(contentRepositoryProvider),
+      studySetId: studySetId,
+      paths: [
+        ['cards', card.id],
+      ],
+      relatedPaths: (c) => [
+        for (final s in c.summaries.where((s) => s.cardId == card.id)) ['summaries', s.id],
+        for (final n in c.marginNotes.where((n) => n.nodeId == card.id)) ['marginNotes', n.id],
+        if (c.card(card.id)?.annotationId case final id?) ['annotations', id],
+      ],
+      read: (c) {
+        final latest = c.card(card.id);
+        return latest == null ? null : (text: body ? latest.body : latest.title, format: latest.textFormat);
+      },
+    );
     final sections = <Widget>[
       if (card.kind == CardKind.image && card.imageFileName != null)
         ClipRRect(
@@ -134,6 +152,7 @@ class CardDetails extends ConsumerWidget {
       _DetailsTitle(
         key: ValueKey('details-title-${card.id}'),
         title: card.title,
+        input: input(),
         format: card.textFormat,
         note: card.kind == CardKind.note,
         image: card.kind == CardKind.image,
@@ -146,6 +165,7 @@ class CardDetails extends ConsumerWidget {
           key: ValueKey('details-body-${card.id}'),
           optional: false,
           title: card.body,
+          input: input(body: true),
           format: card.textFormat,
           note: true,
           formatted: true,
@@ -302,11 +322,13 @@ class _DetailsTitle extends StatefulWidget {
     required this.optional,
     this.image = false,
     required this.onCommit,
+    required this.input,
     this.format = TextFormat.plain,
     this.formatted = false,
   });
 
   final String title;
+  final ContentInput<({String text, TextFormat format})> input;
   final TextFormat format;
 
   /// A note takes basic formatting (P2-C07): a format bar shows while it
@@ -338,14 +360,15 @@ class _DetailsTitleState extends State<_DetailsTitle> {
 
   /// Puts the stored text (and format) back in the field.
   void _reset() {
-    if (_controller case final NoteFormatController note) note.format = widget.format;
-    _controller.text = widget.title;
+    if (_controller case final NoteFormatController note) note.format = _session?.value.format ?? widget.format;
+    _controller.text = _session?.value.text ?? widget.title;
   }
 
   final _focus = FocusNode(debugLabel: 'DetailsTitle');
 
   /// The field has had the keyboard since its text was last saved or reset.
-  bool _editing = false;
+  bool _editing = false, _opening = false, _saving = false;
+  ContentInputSession<({String text, TextFormat format})>? _session;
 
   @override
   void initState() {
@@ -353,7 +376,7 @@ class _DetailsTitleState extends State<_DetailsTitle> {
     _focus.addListener(() {
       if (!mounted) return;
       if (_focus.hasFocus) {
-        _editing = true;
+        _begin();
       } else {
         _commit();
       }
@@ -368,30 +391,103 @@ class _DetailsTitleState extends State<_DetailsTitle> {
   void didUpdateWidget(_DetailsTitle oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Undo, the map's own editor or another window changed the title.
-    if (!_focus.hasFocus && (widget.title != _controller.text || widget.format != _format)) _reset();
+    if (!_editing && !_opening && !_saving && (widget.title != _controller.text || widget.format != _format)) _reset();
   }
 
-  /// Whether [text] in [format] would change the stored title.
-  bool _changes(String text, TextFormat format) =>
-      (text.trim() != widget.title || format != widget.format) && (widget.optional || text.trim().isNotEmpty);
-
-  void _commit() {
-    _editing = false;
-    final text = _controller.text;
-    if (_changes(text, _format)) {
-      unawaited(widget.onCommit(text, _format));
-    } else if (text != widget.title || _format != widget.format) {
-      _reset();
+  Future<void> _begin() async {
+    if (_editing || _opening || _saving) return;
+    if (!widget.input.requiresProtection) {
+      _editing = true;
+      return;
     }
+    _opening = true;
+    try {
+      final session = await widget.input.open();
+      if (!mounted || !_focus.hasFocus) {
+        await session.close();
+        return;
+      }
+      _session = session;
+      _reset();
+      _editing = true;
+    } catch (_) {
+      if (mounted) {
+        _focus.unfocus();
+        MMHud.show(context, context.l10n.noteFailed);
+      }
+    } finally {
+      _opening = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  bool _changes(String text, TextFormat format) =>
+      (text.trim() != (_session?.value.text ?? widget.title) || format != (_session?.value.format ?? widget.format)) &&
+      (widget.optional || text.trim().isNotEmpty);
+
+  Future<void> _commit() async {
+    if (!_editing || _saving) return;
+    _saving = true;
+    if (mounted) setState(() {});
+    try {
+      final text = _controller.text, format = _format, save = widget.onCommit;
+      if (_changes(text, format)) {
+        if (_session case final session?) {
+          await session.save(() => save(text, format));
+        } else {
+          await save(text, format);
+        }
+      } else {
+        _reset();
+      }
+      _editing = false;
+      final session = _session;
+      _session = null;
+      await session?.close();
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } finally {
+      _saving = false;
+      if (mounted) {
+        setState(() {});
+        if (_focus.hasFocus && !_editing) unawaited(_begin());
+      }
+    }
+  }
+
+  void _cancel() {
+    if (_saving) return;
+    _reset();
+    _editing = false;
+    final session = _session;
+    _session = null;
+    _focus.unfocus();
+    unawaited(session?.close());
   }
 
   @override
   void dispose() {
-    // Moving to another card or closing the panel keeps what was typed.
-    final text = _controller.text;
-    final format = _format;
-    final commit = widget.onCommit;
-    if (_editing && _changes(text, format)) Future.microtask(() => commit(text, format));
+    // Closing details still saves the text, with protection held through the
+    // write. Capture callbacks now; the widget/ref may be gone when it finishes.
+    final text = _controller.text, format = _format, save = widget.onCommit;
+    final session = _session;
+    if (_editing && !_saving && _changes(text, format)) {
+      unawaited(
+        (session == null
+                ? Future<void>.microtask(() => save(text, format))
+                : session.save(() => Future<void>.microtask(() => save(text, format))))
+            .catchError((Object error, StackTrace stack) {
+              FlutterError.reportError(
+                FlutterErrorDetails(exception: error, stack: stack, library: 'card details save'),
+              );
+            })
+            .whenComplete(() async {
+              await session?.close();
+            }),
+      );
+    } else {
+      unawaited(session?.close());
+    }
     _focus.dispose();
     _controller.dispose();
     super.dispose();
@@ -419,16 +515,13 @@ class _DetailsTitleState extends State<_DetailsTitle> {
             ),
           MMInlineTextField(
             controller: _controller,
+            readOnly: _saving || (widget.input.requiresProtection && !_editing),
             focusNode: _focus,
             style: style,
             multiline: widget.note,
             semanticLabel: (widget.image ? context.l10n.imageQuestion : context.l10n.addTitle),
             onSubmitted: _focus.unfocus,
-            onCancel: () {
-              _editing = false;
-              _reset();
-              _focus.unfocus();
-            },
+            onCancel: _cancel,
           ),
         ],
       ),
@@ -438,8 +531,11 @@ class _DetailsTitleState extends State<_DetailsTitle> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_focus.hasFocus) ...[NoteFormatBar(controller: controller), const SizedBox(height: MMSpacing.xs)],
-        NoteFormatScope(controller: controller, child: field),
+        if (_focus.hasFocus && _editing && !_saving) ...[
+          NoteFormatBar(controller: controller),
+          const SizedBox(height: MMSpacing.xs),
+        ],
+        NoteFormatScope(controller: controller, enabled: _editing && !_saving, child: field),
       ],
     );
   }

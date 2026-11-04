@@ -19,6 +19,16 @@ import '../workspace/workspace_browser.dart';
 import '../workspace/workspace_controller.dart';
 import 'vocabulary_controller.dart';
 import 'vocabulary_source_flash.dart';
+import 'vocabulary_sync.dart';
+
+final vocabularyEntryIdProvider = FutureProvider.autoDispose.family<String?, String>((ref, id) async {
+  // Retry resolution when received or restored words change the live index.
+  ref.watch(vocabularyProvider);
+  final repo = ref.watch(vocabularyRepositoryProvider);
+  return repo is VocabularyIdentityRepository
+      ? (repo as VocabularyIdentityRepository).resolveVocabularyEntryId(id)
+      : id;
+});
 
 /// A single application-level destination, also usable by lookup/hit cards via
 /// AppNavigation.showVocabulary(entryId: ...). Direct links reveal known words.
@@ -82,7 +92,12 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
     final learningCount = matching.where((e) => e.status == VocabularyStatus.learning).length;
     final visible = matching.where((e) => _status == null || e.status == _status).toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final selected = visible.where((e) => e.id == _selected).firstOrNull ?? (compact ? null : visible.firstOrNull);
+    final selectedId = _selected == null || entries.any((e) => e.id == _selected)
+        ? _selected
+        : ref.watch(vocabularyEntryIdProvider(_selected!)).value;
+    final selected =
+        visible.where((e) => e.id == selectedId).firstOrNull ??
+        (compact || _selected != null ? null : visible.firstOrNull);
     final showDetail = compact && (_pushed || widget.route.entryId != null) && selected != null;
     void back() {
       if (showDetail) {
@@ -99,6 +114,7 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
     final today = DateTime(now.year, now.month, now.day);
     Widget list = Column(
       children: [
+        const VocabularySyncButton(),
         Padding(
           padding: const EdgeInsets.all(MMSpacing.l),
           child: Column(
@@ -438,6 +454,58 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
   CancellationToken? _cancel;
   bool _busy = false;
   static const _editor = VocabularyEditor();
+  final _noteFocus = FocusNode(), _glossFocus = FocusNode();
+  ContentEditLease? _lease;
+  late final VocabularyRepository _repository;
+  bool _ready = true;
+  final _failedInputs = <String>{};
+  Future<void> _writes = Future.value();
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = ref.read(vocabularyRepositoryProvider);
+    _ready = _repository is! VocabularyEditRepository || !widget.entry.id.startsWith('word-');
+    _noteFocus.addListener(_focusChanged);
+    _glossFocus.addListener(_focusChanged);
+  }
+
+  void _focusChanged() {
+    if (_repository is! VocabularyEditRepository || !widget.entry.id.startsWith('word-')) return;
+    if (_noteFocus.hasFocus || _glossFocus.hasFocus) {
+      if (_lease != null) return;
+      final lease = (_repository as VocabularyEditRepository).protectVocabulary(widget.entry.id);
+      _lease = lease;
+      unawaited(() async {
+        try {
+          await lease.ready;
+          final entry = (await _repository.load()).where((e) => e.id == widget.entry.id).firstOrNull;
+          if (!mounted || !identical(lease, _lease)) return;
+          if (entry == null) throw StateError('Vocabulary entry removed');
+          _note.text = entry.note;
+          _gloss.text = entry.gloss;
+          setState(() => _ready = true);
+        } catch (_) {
+          if (mounted) MMHud.show(context, context.l10n.syncActionFailed);
+        }
+      }());
+    } else {
+      final lease = _lease;
+      unawaited(() async {
+        await _writes;
+        if (!mounted ||
+            _noteFocus.hasFocus ||
+            _glossFocus.hasFocus ||
+            _failedInputs.isNotEmpty ||
+            !identical(lease, _lease)) {
+          return;
+        }
+        _lease = null;
+        setState(() => _ready = false);
+        await lease?.release();
+      }());
+    }
+  }
 
   @override
   void didUpdateWidget(VocabularyDetail old) {
@@ -449,6 +517,15 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
   @override
   void dispose() {
     _cancel?.cancel();
+    _noteFocus.dispose();
+    _glossFocus.dispose();
+    final lease = _lease;
+    _lease = null;
+    unawaited(
+      _writes.then((_) async {
+        await lease?.release();
+      }),
+    );
     unawaited(MMSpeech.stop().catchError((Object _) {}));
     _gloss.dispose();
     _note.dispose();
@@ -456,13 +533,28 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
     super.dispose();
   }
 
-  Future<void> _edit(List<VocabularyEntry> Function(List<VocabularyEntry>, DateTime) change, {String? message}) async {
+  Future<void> _edit(
+    List<VocabularyEntry> Function(List<VocabularyEntry>, DateTime) change, {
+    String? message,
+    String? inputField,
+  }) {
+    final result = _performEdit(change, message: message, inputField: inputField);
+    _writes = Future.wait([_writes, result]).then((_) {});
+    return result;
+  }
+
+  Future<void> _performEdit(
+    List<VocabularyEntry> Function(List<VocabularyEntry>, DateTime) change, {
+    String? message,
+    String? inputField,
+  }) async {
     final owner = ref.read(vocabularyProvider.notifier);
     final now = ref.read(clockProvider)();
     final hud = context.findAncestorStateOfType<MMHudState>();
     final l = context.l10n;
     try {
       final undo = await owner.edit((entries) => change(entries, now));
+      if (inputField != null) _failedInputs.remove(inputField);
       if (message == null || hud == null || !hud.mounted) return;
       hud.show(
         message,
@@ -478,6 +570,7 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
         ),
       );
     } catch (_) {
+      if (inputField != null) _failedInputs.add(inputField);
       if (hud?.mounted == true) hud!.show(l.somethingWentWrong);
     }
   }
@@ -505,14 +598,22 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
                 true,
           );
       if (!mounted || cancel.isCancelled) return;
-      await _edit(
-        (entries, now) => _editor.updateSenses(
+      await _edit((entries, now) {
+        final current = entries.where((e) => e.id == entry.id).firstOrNull;
+        if (current == null ||
+            !contentValueEquals(
+              current.senses.map((s) => s.toJson()).toList(),
+              entry.senses.map((s) => s.toJson()).toList(),
+            )) {
+          throw StateError('Vocabulary meanings changed during lookup');
+        }
+        return _editor.updateSenses(
           entries,
           entry.id,
           result.senses.map((s) => VocabularySense(partOfSpeech: s.pos, meaning: s.meaning)).toList(),
           now,
-        ),
-      );
+        );
+      });
     } catch (_) {
       if (mounted && !cancel.isCancelled) MMHud.show(context, context.l10n.somethingWentWrong);
     } finally {
@@ -608,6 +709,8 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
           l.vocabularyGloss,
           MMTextField(
             key: const ValueKey('vocabulary-gloss'),
+            focusNode: _glossFocus,
+            readOnly: !_ready,
             controller: _gloss,
             placeholder: '—',
             onChanged: (v) {
@@ -618,7 +721,7 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
                   selection: TextSelection.collapsed(offset: value.length),
                 );
               }
-              unawaited(_edit((entries, now) => _editor.updateGloss(entries, e.id, value, now)));
+              unawaited(_edit((entries, now) => _editor.updateGloss(entries, e.id, value, now), inputField: 'gloss'));
             },
           ),
         ),
@@ -626,10 +729,13 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
           l.vocabularyNote,
           MMTextField(
             key: const ValueKey('vocabulary-note'),
+            focusNode: _noteFocus,
+            readOnly: !_ready,
             controller: _note,
             maxLines: null,
             minLines: 3,
-            onChanged: (v) => unawaited(_edit((entries, now) => _editor.updateNote(entries, e.id, v, now))),
+            onChanged: (v) =>
+                unawaited(_edit((entries, now) => _editor.updateNote(entries, e.id, v, now), inputField: 'note')),
           ),
         ),
         section(

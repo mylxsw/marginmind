@@ -10,6 +10,8 @@ import 'reader_page_field.dart';
 import '../reflow_session.dart';
 import '../../../shared/document_icon.dart';
 import '../document_reader.dart';
+import '../document_resources.dart';
+import '../../../settings/settings_window.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -247,7 +249,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final rootTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
     final reveal = state.reveal;
-    if (reveal != null && reveal.textAnchors.isEmpty && reveal.nonce != _vocabularyRevealNonce) {
+    if (reveal != null &&
+        reveal.textPosition == null &&
+        reveal.textAnchors.isEmpty &&
+        reveal.nonce != _vocabularyRevealNonce) {
       _vocabularyRevealNonce = reveal.nonce;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -374,7 +379,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     WorkspaceState state,
     WorkspaceController controller,
     MMReaderStyle style,
-    String? ocrSource,
+    ReaderOcrSource? ocrSource,
   ) {
     if (WorkspaceToolbarScope.maybeOf(context) == null) {
       return _legacyToolbar(context, state, controller, style, ocrSource);
@@ -811,7 +816,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     WorkspaceState state,
     WorkspaceController controller,
     MMReaderStyle style,
-    String? ocrSource,
+    ReaderOcrSource? ocrSource,
   ) {
     final l = context.l10n;
     final capabilities = controller.activeCapabilities;
@@ -1210,7 +1215,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     // pages run on beneath the bottom bar and scroll clear of it.
     final chrome = MMChromeInsets.of(context);
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
-    final source = doc == null ? null : controller.filePath(doc);
+    final source = doc == null ? null : documentOcrSource(widget.studySetId, doc, controller.filePath(doc));
     final ocr =
         source == null ||
             !doc!.capabilities(runtime: DocumentRuntime(ocr: ref.watch(pdfOcrServiceProvider).supported)).ocr
@@ -1426,6 +1431,34 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     VoidCallback onDismiss, {
     int side = 0,
   }) {
+    if (ref.watch(contentRepositoryProvider) is DocumentResourceRepository) {
+      final availability = ref.watch(
+        documentResourcesProvider((
+          widget.studySetId,
+          doc.id,
+          doc.revision,
+          doc.fileName,
+          doc.contentManifest,
+          doc.origin?.snapshotFile,
+        )),
+      );
+      if (availability.isLoading) return const Center(child: CircularProgressIndicator());
+      if (availability.value != DocumentResourceAvailability.ready) {
+        return MMEmptyState(
+          icon: documentIcon(doc),
+          title: doc.title,
+          message: availability.value == DocumentResourceAvailability.missing
+              ? context.l10n.syncResourceMissing
+              : context.l10n.syncResourceChanged,
+          actions: [
+            MMButton(
+              label: context.l10n.syncSettingsTitle,
+              onPressed: () => showSettings(context, tab: SettingsTab.sync),
+            ),
+          ],
+        );
+      }
+    }
     if (doc.contentManifest != null) {
       return ref.watch(documentReaderBuilderProvider)?.call(context, ref, widget.studySetId, doc) ??
           MMEmptyState(icon: documentIcon(doc), title: doc.title, message: '');
@@ -1437,10 +1470,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final provider = workspaceProvider(widget.studySetId);
     final pdf = ref.watch(documentPdfProvider((widget.studySetId, doc.id)));
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
-    final source = controller.filePath(doc);
+    final source = documentOcrSource(widget.studySetId, doc, controller.filePath(doc));
     final ocr = !ref.watch(pdfOcrServiceProvider).supported ? null : ref.watch(readerOcrProvider(source));
     // Every column needs inspection, including the PDF without the outer OCR bar.
-    if (ocr != null && ocr.document == null && !ocr.failed) {
+    if (ocr != null && ocr.document == null && !ocr.failed && ocr.unavailable == null) {
       ref.read(readerOcrProvider(source).notifier).inspect();
     }
     final documentScoped = doc.id != state.activeDocumentId;
@@ -1522,7 +1555,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       child: child,
     );
     final documentSurface =
-        !ref.watch(pdfRenderingEnabledProvider) || (ocr != null && ocr.document == null && !ocr.failed)
+        !ref.watch(pdfRenderingEnabledProvider) ||
+            (ocr != null && ocr.document == null && !ocr.failed && ocr.unavailable == null)
         ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
         : PdfVocabularyHints(
             key: ValueKey((doc.id, ocr?.revision)),

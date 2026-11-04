@@ -15,6 +15,8 @@ import '../../shared/pdf_drop.dart';
 import '../workspace/widgets/notices.dart';
 import '../vocabulary/vocabulary_controller.dart';
 import 'library_controller.dart';
+import 'folder_sheet.dart';
+import 'recovery_sheet.dart';
 import 'new_study_set.dart';
 import 'sample_study_set.dart';
 import 'widgets/continue_card.dart';
@@ -369,6 +371,17 @@ class _LibrarySidebar extends ConsumerWidget {
               ),
               onTap: () => ref.read(navigationProvider.notifier).showVocabulary(),
             ),
+            if (ref.watch(libraryRecoveryEnabledProvider).hasError ||
+                ref.watch(libraryRecoveryEnabledProvider).value == true)
+              MMSidebarItem(
+                key: const ValueKey('library-recovery'),
+                icon: MMIcons.recent,
+                label: l.libraryRecovery,
+                onTap: () {
+                  onDismiss?.call();
+                  showLibraryRecovery(context);
+                },
+              ),
             item(MMIcons.grid, l.libraryTitleAll, LibraryFilter.all, trailing: count(sets.length)),
             item(MMIcons.recent, l.libraryRecent, LibraryFilter.recent),
             item(MMIcons.star, l.libraryStarred, LibraryFilter.starred, trailing: count(starred)),
@@ -387,10 +400,20 @@ class _LibrarySidebar extends ConsumerWidget {
               ),
             ],
           ),
-        if (folders.isNotEmpty || hasUnfiled)
+        if (folders.isNotEmpty || hasUnfiled || ref.watch(studySetRepositoryProvider) is LibraryOrganizationRepository)
           MMSidebarSection(
             title: l.libraryFolders,
             children: [
+              if (ref.watch(studySetRepositoryProvider) is LibraryOrganizationRepository)
+                MMSidebarItem(
+                  key: const ValueKey('manage-folders'),
+                  icon: MMIcons.folder,
+                  label: l.manageFolders,
+                  onTap: () {
+                    onDismiss?.call();
+                    showFolderSheet(context);
+                  },
+                ),
               for (final f in folders)
                 item(
                   MMIcons.folder,
@@ -528,11 +551,10 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
               ref.read(navigationProvider.notifier).startReview(id);
             }, icon: MMIcons.review),
           const MMMenuDivider(),
-          MMMenuItem(l.renameEllipsis, () async {
-            final title = await showRenameSheet(context, title: l.renameStudySet, initial: s.title);
-            if (title != null && title.isNotEmpty) await repo.rename(id, title);
-          }, icon: MMIcons.editNote),
+          MMMenuItem(l.renameEllipsis, () => showStudySetRenameSheet(context, ref, s), icon: MMIcons.editNote),
           MMMenuItem(s.starred ? l.unstar : l.star, () => repo.setStarred(id, starred: !s.starred), icon: MMIcons.star),
+          if (repo is LibraryOrganizationRepository)
+            MMMenuItem(l.moveToFolder, () => showFolderSheet(context, move: s), icon: MMIcons.folder),
           const MMMenuDivider(),
           MMMenuItem(l.deleteEllipsis, () => confirmDelete(s), destructive: true, icon: MMIcons.trash),
         ],

@@ -46,14 +46,10 @@ Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor, {St
         if (i > 0) const MMMenuDivider(),
         MMMenuHeader(service.name),
         for (final m in models)
-          MMMenuItem(
-            modelLabel(services, m),
-            () {
-              if (!context.mounted || ref.read(assistantControllerProvider).id != conversation.id) return;
-              unawaited(controller.switchModel(m, retryMessageId: retryMessageId).catchError((Object _) {}));
-            },
-            checked: sameModel(m, current),
-          ),
+          MMMenuItem(modelLabel(services, m), () {
+            if (!context.mounted || ref.read(assistantControllerProvider).id != conversation.id) return;
+            unawaited(controller.switchModel(m, retryMessageId: retryMessageId).catchError((Object _) {}));
+          }, checked: sameModel(m, current)),
       ],
       if (groups.isNotEmpty) const MMMenuDivider(),
       MMMenuItem(

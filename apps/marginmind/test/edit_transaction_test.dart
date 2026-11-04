@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import 'helpers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late ProviderContainer container;
   late FailingRepository repo;
   late WorkspaceController controller;
