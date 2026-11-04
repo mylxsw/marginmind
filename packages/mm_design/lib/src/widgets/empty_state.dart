@@ -36,8 +36,9 @@ class MMEmptyState extends StatelessWidget {
         ),
       if (actions.isNotEmpty) Wrap(spacing: 10, runSpacing: 10, alignment: WrapAlignment.center, children: actions),
     ];
+    // Short windows (a landscape phone) scroll instead of overflowing.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,

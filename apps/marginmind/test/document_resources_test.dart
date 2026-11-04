@@ -140,12 +140,12 @@ void main() {
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    expect(find.text('Not fully downloaded'), findsOneWidget);
+    expect(find.text('Download incomplete'), findsOneWidget);
     expect(find.text('Verified source reader'), findsNothing);
     expect(repo.subscriptions, 1);
     repo.changes.add(DocumentResourceAvailability.changed);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Local file differs'), findsOneWidget);
+    expect(find.textContaining('File differs'), findsOneWidget);
     repo.changes.add(DocumentResourceAvailability.ready);
     await tester.pumpAndSettle();
     expect(find.text('Verified source reader'), findsOneWidget);
@@ -164,11 +164,11 @@ void main() {
     await tester.pumpAndSettle();
     final sheet = find.byType(FullTranslationSheet);
     expect(sheet, findsOneWidget);
-    expect(find.descendant(of: sheet, matching: find.text('Not fully downloaded')), findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.text('Download incomplete')), findsOneWidget);
     expect(find.descendant(of: sheet, matching: find.text('Sync')), findsOneWidget);
     repo.changes.add(DocumentResourceAvailability.changed);
     await tester.pumpAndSettle();
-    expect(find.descendant(of: sheet, matching: find.textContaining('Local file differs')), findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.textContaining('File differs')), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
     await repo.changes.close();

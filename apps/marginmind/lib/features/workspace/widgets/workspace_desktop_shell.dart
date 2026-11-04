@@ -119,56 +119,17 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                     ),
                     LayoutId(
                       id: _TitlebarSlot.trailing,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          WorkspaceHistoryControls(studySetId: studySetId, dense: touch),
-                          if (layoutControls ||
-                              (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant))
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: touch ? 6 : 10),
-                              child: SizedBox(
-                                height: 18,
-                                child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
-                              ),
-                            ),
-                          if (layoutControls) ...[
-                            Container(
-                              key: const ValueKey('workspace-layout-controls'),
-                              padding: const EdgeInsets.all(2),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  for (final entry in [
-                                    (MMSplitMode.primary, MMIcons.layoutReader, l.layoutReader),
-                                    (MMSplitMode.split, MMIcons.layoutSplit, l.layoutSplit),
-                                    (MMSplitMode.secondary, MMIcons.layoutMap, l.layoutMap),
-                                  ])
-                                    MMIconButton(
-                                      compact: touch,
-                                      key: ValueKey(
-                                        'toolbar-layout-${switch (entry.$1) {
-                                          MMSplitMode.primary => 'reader',
-                                          MMSplitMode.split => 'split',
-                                          MMSplitMode.secondary => 'map',
-                                        }}',
-                                      ),
-                                      size: 28,
-                                      icon: entry.$2,
-                                      tooltip: entry.$3,
-                                      selected:
-                                          (browserTab
-                                              ? MMSplitMode.primary
-                                              : _shownLayout(context, constraints, state)) ==
-                                          entry.$1,
-                                      onPressed: documents ? () => owner.setLayout(entry.$1) : null,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant) ...[
-                            if (layoutControls)
+                      // A window crossing into compact keeps the sidebar for one
+                      // animation, leaving less width than these controls need.
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            WorkspaceHistoryControls(studySetId: studySetId, dense: touch),
+                            if (layoutControls ||
+                                (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant))
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: touch ? 6 : 10),
                                 child: SizedBox(
@@ -176,19 +137,64 @@ class WorkspaceDesktopShell extends ConsumerWidget {
                                   child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
                                 ),
                               ),
-                            MMIconButton(
-                              compact: touch,
-                              key: const ValueKey('toolbar-assistant'),
-                              iconWidget: const AssistantIcon(),
-                              iconSize: 18,
-                              tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
-                              selected: state.panel == RightPanel.assistant,
-                              color: c.research,
-                              onPressed: () => toggleAssistant(ref, studySetId),
-                            ),
+                            if (layoutControls) ...[
+                              Container(
+                                key: const ValueKey('workspace-layout-controls'),
+                                padding: const EdgeInsets.all(2),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    for (final entry in [
+                                      (MMSplitMode.primary, MMIcons.layoutReader, l.layoutReader),
+                                      (MMSplitMode.split, MMIcons.layoutSplit, l.layoutSplit),
+                                      (MMSplitMode.secondary, MMIcons.layoutMap, l.layoutMap),
+                                    ])
+                                      MMIconButton(
+                                        compact: touch,
+                                        key: ValueKey(
+                                          'toolbar-layout-${switch (entry.$1) {
+                                            MMSplitMode.primary => 'reader',
+                                            MMSplitMode.split => 'split',
+                                            MMSplitMode.secondary => 'map',
+                                          }}',
+                                        ),
+                                        size: 28,
+                                        icon: entry.$2,
+                                        tooltip: entry.$3,
+                                        selected:
+                                            (browserTab
+                                                ? MMSplitMode.primary
+                                                : _shownLayout(context, constraints, state)) ==
+                                            entry.$1,
+                                        onPressed: documents ? () => owner.setLayout(entry.$1) : null,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (MMPlatformCapabilities.current.assistant && state.panel != RightPanel.assistant) ...[
+                              if (layoutControls)
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: touch ? 6 : 10),
+                                  child: SizedBox(
+                                    height: 18,
+                                    child: VerticalDivider(width: 1, thickness: 1, color: c.separator),
+                                  ),
+                                ),
+                              MMIconButton(
+                                compact: touch,
+                                key: const ValueKey('toolbar-assistant'),
+                                iconWidget: const AssistantIcon(),
+                                iconSize: 18,
+                                tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
+                                selected: state.panel == RightPanel.assistant,
+                                color: c.research,
+                                onPressed: () => toggleAssistant(ref, studySetId),
+                              ),
+                            ],
+                            SizedBox(width: touch ? 6 : 12),
                           ],
-                          SizedBox(width: touch ? 6 : 12),
-                        ],
+                        ),
                       ),
                     ),
                   ],

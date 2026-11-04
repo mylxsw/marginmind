@@ -488,8 +488,20 @@ void main() {
       // The button opens and closes it.
       await clickStyle(tester, mouse);
       await tester.pumpAndSettle();
+      expect(find.byType(MapStylePopover), findsOneWidget);
       await clickStyle(tester, mouse);
       await tester.pumpAndSettle();
+      expect(find.byType(MapStylePopover), findsNothing);
+      // Dismissing the More menu with an outside click closes the popover too.
+      await clickStyle(tester, mouse);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-more')).hitTestable().first);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('map-style-menu')), findsOneWidget);
+      expect(find.byType(MapStylePopover), findsOneWidget);
+      await tester.tapAt(Offset(panel.left - 16, panel.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('map-style-menu')), findsNothing);
       expect(find.byType(MapStylePopover), findsNothing);
       await settleHud(tester);
     });

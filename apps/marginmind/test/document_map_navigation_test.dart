@@ -17,12 +17,19 @@ import 'package:marginmind/features/assistant/expansion_controller.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart' show ModelSetupCard;
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:marginmind/settings/settings_window.dart';
+import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 import 'map_generation_ui_test.dart' as harness;
+
+RoutingRowState route(RoutingIssue issue) => RoutingRowState(
+  effective: const ModelReference('fixture', 'model'),
+  source: RoutingSource.categoryDefault,
+  issue: issue,
+);
 
 MapGeneration generation(List<String> docs) => MapGeneration(
   sources: [for (final id in docs) MapSource(documentId: id, fingerprint: 'test', readThrough: 1)],
@@ -295,17 +302,13 @@ void main() {
     c.read(mapGenerationControllerProvider('demo-1').notifier).discard();
   });
 
-  testWidgets('opening generation settings does not start admission; routed preview displays setup', (tester) async {
-    var reads = 0;
+  testWidgets('opening generation settings reports nothing; starting explains the route and keeps the form', (
+    tester,
+  ) async {
     final c = await pumpApp(
       tester,
       prefs: {'settings.language': 'zh', 'settings.betaFeaturesEnabled': true},
-      overrides: [
-        mapTaskReadyProvider.overrideWith((ref, scope) async {
-          reads++;
-          return false;
-        }),
-      ],
+      overrides: [mapTaskRouteProvider.overrideWith((ref, scope) async => route(RoutingIssue.secretUnavailable))],
     );
     c.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
@@ -313,14 +316,18 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('document-map-merge')));
     await tester.pumpAndSettle();
-    expect(reads, 0);
+    const message = 'API Key 未配置或无法读取';
+    expect(find.textContaining(message), findsNothing);
     await tester.tap(find.byKey(const ValueKey('map-generate-sheet-start-button')));
     await tester.pumpAndSettle();
-    expect(reads, 1);
-    expect(find.byType(ModelSetupCard), findsOneWidget);
+    expect(find.textContaining(message), findsOneWidget);
+    expect(find.byType(ModelSetupCard), findsNothing);
+    expect(find.byType(GenerateMapSheet), findsOneWidget);
+    expect(c.read(mapGenerationControllerProvider('demo-1')), isNull);
+    await settleHud(tester);
   });
 
-  testWidgets('unconfigured banner new map opens settings instead of generating', (tester) async {
+  testWidgets('unconfigured banner new map explains the route instead of generating', (tester) async {
     await harness.openWorkspace(tester, credentialState: AssistantCredentialState.unconfigured);
     final c = tester.element(find.byType(WorkspaceScreen));
     // Resolve the container through the existing workspace harness.
@@ -329,9 +336,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('document-map-generate')));
     await tester.pumpAndSettle();
-    expect(find.byType(GenerateMapSheet), findsOneWidget);
     expect(container.read(mapGenerationControllerProvider('demo-1')), isNull);
-    expect(find.byType(ModelSetupCard), findsOneWidget);
+    expect(find.textContaining('API Key 未配置或无法读取'), findsOneWidget);
+    // Nothing started, so the banner stays available for another attempt.
+    expect(find.byKey(const ValueKey('document-map-banner')), findsOneWidget);
+    await settleHud(tester);
   });
 
   testWidgets('rapid document changes never commit a stale map switch', (tester) async {

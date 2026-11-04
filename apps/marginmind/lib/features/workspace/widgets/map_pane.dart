@@ -214,6 +214,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
   final _stylePortal = OverlayPortalController();
   BuildContext? _styleSheetContext;
   static const _styleRegion = 'map-style';
+  MMPopupActivity? _popupActivity;
+  bool _styleOpenAtMenu = false;
+
+  void _onToolbarPopup(Object owner, bool open) {
+    _popupActivity?.onChanged(owner, open);
+    if (open) _styleOpenAtMenu = _styleOpen;
+  }
+
+  /// Pressing a More item is a tap outside the popover, which has already
+  /// closed by the time Style is chosen; toggle what the menu opened over.
+  void _toggleStyleFromMenu() => _styleOpenAtMenu ? _closeStyle() : _toggleStyle();
 
   void _toggleStyle() {
     if (_styleOpen) {
@@ -791,6 +802,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
   @override
   Widget build(BuildContext context) {
+    _popupActivity = context.getInheritedWidgetOfExactType<MMPopupActivity>();
     ref.watch(phoneMapSelectionProvider(widget.studySetId));
     final l = context.l10n;
     final c = context.mmColors;
@@ -1056,7 +1068,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
               ),
             ),
           ),
-          child: child,
+          child: MMPopupActivity(onChanged: _onToolbarPopup, child: child),
         );
         final controls = Row(
           mainAxisSize: MainAxisSize.min,
@@ -1532,7 +1544,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         ),
                                         MMDropdownItem<VoidCallback>(
                                           key: const ValueKey('map-style-menu'),
-                                          value: _toggleStyle,
+                                          value: _toggleStyleFromMenu,
                                           enabled: map != null,
                                           icon: MMIcons.mapStyle,
                                           child: Text(l.mapStyle),

@@ -486,11 +486,16 @@ void main() {
     );
     expect(store.saved['changed-child']!.usage.modelCalls, 0);
   });
-  test('unknown multimodal rejected even if spec omits capability', () async {
-    final client = ScriptClient([answer('should not send')]);
-    final h = runtime(MemoryRuns(), client).start(request(), context(ModelProtocol.chatCompletions, multimodal: false));
-    expect((await h.result).status, RunStatus.failed);
-    expect(client.calls, 0);
+  test('unknown multimodal metadata does not block images from reaching the provider', () async {
+    final adapter = PortWire(ModelProtocol.chatCompletions);
+    final connection = connectAssistant(wire.model(ModelProtocol.chatCompletions), 'fixture-key', adapter: adapter);
+    addTearDown(connection.close);
+    final result = await runtime(
+      MemoryRuns(),
+      connection.client,
+    ).start(request(stream: false), context(ModelProtocol.chatCompletions, multimodal: false)).result;
+    expect(result.status, RunStatus.completed, reason: result.failureCode);
+    expect(jsonEncode(adapter.bodies.single), contains(image.base64Data));
   });
   test('cancelled stream emits no late drafts and never validates incomplete output', () async {
     final source = StreamController<sdk.StreamingMessage>();
@@ -573,7 +578,7 @@ void main() {
       expect(jsonEncode(saved.checkpoint), isNot(contains('short keywords')));
     });
   }
-  test('native search rejects unknown tools and Quick without provider dispatch', () async {
+  test('native search rejects unsupported protocols and Quick without provider dispatch', () async {
     var calls = 0;
     final steps = ProviderSteps(
       connection: (_, _, _) {
@@ -581,27 +586,41 @@ void main() {
         throw StateError('unexpected');
       },
     );
-    for (final c in [
-      context(ModelProtocol.responses, tools: false, category: TaskCategory.heavy),
-      context(ModelProtocol.responses),
+    for (final (c, category) in [
+      (context(ModelProtocol.chatCompletions, category: TaskCategory.heavy), TaskCategory.heavy),
+      (context(ModelProtocol.responses), TaskCategory.quick),
     ]) {
       await expectLater(
         steps.run(
           context: c,
-          category:
-              c.config.policy.effective == ReasoningPolicy.off &&
-                  c.config.capabilities.tools == CapabilitySupport.supported
-              ? TaskCategory.quick
-              : TaskCategory.heavy,
+          category: category,
           taskType: TaskType.assistantChat,
           purpose: RunPurpose.nativeSearch,
           loadModel: binding,
           cancellation: CancellationToken(),
         ),
-        throwsA(isA<ConfigurationFailure>()),
+        throwsA(isA<ConfigurationFailure>().having((e) => e.code, 'code', 'nativeSearchNotAdmitted')),
       );
     }
     expect(calls, 0);
+  });
+  test('unknown tools metadata does not block native search on a supported protocol', () async {
+    final adapter = PortWire(ModelProtocol.responses, search: true);
+    final steps = ProviderSteps(
+      connection: (model, key, policy) =>
+          connectAssistant(model, key, callPolicy: policy, adapter: adapter, retryRequests: false),
+    );
+    final result = await steps.run(
+      context: context(ModelProtocol.responses, tools: false, category: TaskCategory.heavy),
+      category: TaskCategory.heavy,
+      taskType: TaskType.assistantChat,
+      purpose: RunPurpose.nativeSearch,
+      query: 'short keywords',
+      loadModel: binding,
+      cancellation: CancellationToken(),
+    );
+    expect(result['hits'], isNotEmpty);
+    expect(adapter.bodies.single['tools'], isNotEmpty);
   });
   for (final failPending in [false, true]) {
     test('provider save failure retry does not repeat purchase (pending=$failPending)', () async {

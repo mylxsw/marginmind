@@ -384,7 +384,7 @@ void main() {
     await _type(tester, '/总');
     await _press(tester, LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(MMSheet), findsOneWidget);
     await tester.tap(find.widgetWithText(TextButton, '发送'));
     await pumpFor(tester, 20);
     final first = conversationOf(tester).messages.first;

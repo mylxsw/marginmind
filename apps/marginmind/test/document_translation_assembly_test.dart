@@ -146,28 +146,8 @@ void main() {
         text: 'Translate this {name}',
         rects: const [],
       );
-      await expectLater(
-        translator().translatePack([paragraph], 'zh', CancellationToken(), 64),
-        throwsA(isA<ConfigurationFailure>()),
-      );
-      expect(bodies, isEmpty);
-      profiles.put(
-        ModelCapabilityProfile(
-          identity: serviceCapabilityIdentity(service, service.models.first),
-          thinking: ThinkingCapability.switchable,
-          contextTokens: 64000,
-          outputTokens: 8192,
-          policies: {ReasoningPolicy.off: ReasoningRecipe.effortNone},
-          evidence: CapabilityEvidence(
-            source: CapabilityEvidenceSource.maintainedProfile,
-            reference: 'loopback-test-only',
-            semanticBasis: 'Synthetic SDK transport, no production admission',
-            wireVerified: true,
-            verifiedAt: DateTime.utc(2026),
-          ),
-        ),
-      );
       final first = translator();
+      // Capability metadata is optional: no profile is installed, and the model still translates.
       expect((await first.translatePack([paragraph], 'zh', CancellationToken(), 64)).texts, ['译文 {name}']);
       expect(bodies.single['model'], 'heavy-model');
       expect((await assembly.runs.load('document'))!.context.config.model.modelId, 'heavy-model');

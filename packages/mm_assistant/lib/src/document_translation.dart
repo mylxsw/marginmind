@@ -114,6 +114,8 @@ typedef FreezeDocumentTranslation = Future<RunContext> Function(
   Map<String, dynamic>,
 );
 
+const _unknownOutputTokens = 4096, _unknownContextTokens = 60000;
+
 /// The scheduler remains the sole queue/cache owner. Each paid generation is a
 /// durable SDK child run; deterministic IDs allow journal-save retries to reuse
 /// validated output, while explicit retranslation creates a fresh generation.
@@ -417,9 +419,10 @@ class RuntimeDocumentTranslator implements ScheduledParagraphTranslator {
       throw const ResearchFailure(ResearchFailureKind.invalidRequest, 'translationScopeMismatch');
     }
     final context = await _open();
-    final output = context.config.policy.maxOutputTokens ?? context.config.capabilities.outputTokens;
-    final window = context.config.capabilities.contextTokens;
-    if (output == null || window == null) throw const ConfigurationFailure('translationCapacityUnknown');
+    // Capability metadata is optional: a model without it gets conservative sizes, never a refusal.
+    final output =
+        context.config.policy.maxOutputTokens ?? context.config.capabilities.outputTokens ?? _unknownOutputTokens;
+    final window = context.config.capabilities.contextTokens ?? _unknownContextTokens;
     final overhead = 4096 + note.length * 4;
     final capacity = math.min(12000, math.min((output - 256) ~/ 6, (window - output - overhead) ~/ 6));
     final texts = <String>[];

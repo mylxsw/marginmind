@@ -1032,5 +1032,5 @@ class _QuickActions extends StatelessWidget {
   final List<Widget> children;
   @override
   Widget build(BuildContext context) =>
-      MMInput.of(context).phone ? Wrap(spacing: 4, runSpacing: 4, children: children) : Row(children: children);
+      Wrap(spacing: MMInput.of(context).phone ? 4 : 0, runSpacing: 4, children: children);
 }

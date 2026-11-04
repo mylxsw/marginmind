@@ -92,8 +92,13 @@ String _failureStage(AppLocalizations l, MapGenerationPreview preview, ResearchF
     ? l.mapFailureChapter
     : l.mapFailurePrepare;
 
+bool _usesLargeText(BuildContext context) => MediaQuery.textScalerOf(context).scale(1) > 1.3;
+
+/// Large text leaves the half-height sheet almost no room between its header
+/// and stacked actions, so the diagnostics open at full height.
 Future<void> showMapGenerationFailure(BuildContext context, MapGenerationPreview preview) => showMMDialog<void>(
   context: context,
+  initialFraction: _usesLargeText(context) ? MMSizes.phoneSheetExpanded : MMSizes.phoneSheetMedium,
   builder: (_) => _MapFailureDialog(preview: preview),
 );
 
@@ -124,7 +129,7 @@ class _MapFailureDialogState extends State<_MapFailureDialog> {
   Widget build(BuildContext context) {
     final c = context.mmColors, t = context.mmText, l = context.l10n;
     final preview = widget.preview;
-    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    final largeText = _usesLargeText(context);
     final failures = <({String title, ResearchFailure failure})>[
       if (preview.failure case final failure?) (title: _failureStage(l, preview, failure), failure: failure),
       for (final entry in preview.chapterFailures.entries)

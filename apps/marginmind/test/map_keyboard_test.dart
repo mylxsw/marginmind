@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
+import 'package:marginmind/features/workspace/widgets/reader_find_bar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -237,7 +238,9 @@ void main() {
     expect(controller.content.node('c3')!.collapsed, isTrue);
     await key(tester, LogicalKeyboardKey.digit0, primary: true);
     // A reader/search field keeps map commands disabled.
-    await tester.tap(find.byType(TextField).first);
+    controller.openFind();
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(ReaderFindBar), matching: find.byType(TextField)));
     await tester.pumpAndSettle();
     expect(command('Add Child Topic').onSelected, isNull);
     expect(command('Locate Selected Node').onSelected, isNull);

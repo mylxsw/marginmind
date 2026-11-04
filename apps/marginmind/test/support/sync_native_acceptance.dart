@@ -160,10 +160,7 @@ void syncNativeAcceptance() {
       expect(find.text('Other device choice'), findsWidgets);
       final useCandidate = difference.candidate == 'Other device choice';
       await tapKey('content-sync-${useCandidate ? 'use' : 'keep'}-${conflict.id}');
-      await until(
-        () => find.textContaining('No conflicts need a choice.').evaluate().isNotEmpty,
-        'saved conflict choice',
-      );
+      await until(() => find.text('No conflicts').evaluate().isNotEmpty, 'saved conflict choice');
       expect((await drive(a.library.load(id))).card(card.id)!.title, 'Other device choice');
       Navigator.of(tester.element(find.byType(ContentSyncSheet))).pop();
       await tester.pumpAndSettle(

@@ -156,7 +156,7 @@ void main() {
   });
 
   for (final size in [const Size(320, 640), const Size(402, 874), const Size(900, 390)]) {
-    testWidgets('update sheet keeps close and actions visible with long sources at $size', (tester) async {
+    testWidgets('update sheet keeps dismissal and actions visible with long sources at $size', (tester) async {
       final base = updateFixture();
       final content = base.copyWith(
         documents: [
@@ -180,7 +180,10 @@ void main() {
       await tester.pumpAndSettle();
       showUpdateMapSheet(tester.element(find.byType(Navigator).first), 'demo-1', content.maps.first.id);
       await tester.pumpAndSettle();
-      final close = find.byKey(const ValueKey('map-update-close'));
+      // Bottom sheets draw no close glyph; their handle dismisses them instead.
+      final compact = size.width < 600;
+      final close = find.byKey(ValueKey(compact ? 'mm-bottom-sheet-handle' : 'map-update-close'));
+      if (compact) expect(find.byTooltip('关闭'), findsNothing);
       final preview = find.byKey(const ValueKey('map-update-preview'));
       expect(close.hitTestable(), findsOneWidget);
       expect(preview.hitTestable(), findsOneWidget);
@@ -351,7 +354,7 @@ void main() {
     expect(container.read(mapGenerationControllerProvider('demo-1')), isNull);
   });
 
-  testWidgets('credentials are requested only on preview, missing model stays in form', (tester) async {
+  testWidgets('credentials are checked only on preview, missing model stays in form', (tester) async {
     await openWorkspace(
       tester,
       content: InMemoryStudySetContentRepository({'demo-1': updateFixture()}),
@@ -361,10 +364,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('map-generate-menu-item')));
     await tester.pumpAndSettle();
-    expect(find.byType(ModelSetupCard), findsNothing);
+    expect(find.textContaining('API Key 未配置或无法读取'), findsNothing);
     await tester.tap(find.text('预览更改'));
     await tester.pumpAndSettle();
-    expect(find.byType(ModelSetupCard).hitTestable(), findsOneWidget);
+    // The failed attempt explains itself in a HUD and leaves the form usable.
+    expect(find.textContaining('API Key 未配置或无法读取'), findsOneWidget);
+    expect(find.byType(ModelSetupCard), findsNothing);
+    expect(find.byType(UpdateMapSheet), findsOneWidget);
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-update-preview'))).onPressed, isNotNull);
+    await settleHud(tester);
   });
   testWidgets('phone review leaves canvas visible above a bottom panel', (tester) async {
     final before = updateFixture();

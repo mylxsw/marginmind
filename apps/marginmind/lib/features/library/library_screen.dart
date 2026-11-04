@@ -603,7 +603,9 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                                 crossAxisCount: ((MediaQuery.sizeOf(context).width - 56) / 340).floor().clamp(1, 3),
                                 mainAxisExtent:
                                     (MMInput.of(context).phone ? 120 : 104) +
-                                    (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4,
+                                    // Text is about five 16pt lines tall on a phone (two-line title), four elsewhere.
+                                    (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) *
+                                        (MMInput.of(context).phone ? 5 : 4),
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
                               )

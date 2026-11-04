@@ -1,3 +1,5 @@
+import '../../assistant/map_task_route.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -73,6 +75,8 @@ class DocumentMapBanner extends ConsumerWidget {
       onPressed: busy
           ? null
           : () async {
+              if (!await checkMapTaskRoute(context, ref, studySetId, TaskType.mapGenerate)) return;
+              if (!context.mounted) return;
               navigation.dismiss();
               if (ref.read(assistantControllerProvider.notifier).busy) return;
               final prefs = ref.read(sharedPreferencesProvider);

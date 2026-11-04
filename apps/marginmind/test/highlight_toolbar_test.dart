@@ -151,7 +151,11 @@ void main() {
       controller.tapHighlight(annotation.id);
       await tester.pumpAndSettle();
       expect(command('Highlight').onSelected, isNull);
-      expect(command('Excerpt with Note').onSelected, isNull);
+      // The reader no longer offers excerpting with a note.
+      expect(
+        flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus).map((item) => item.label),
+        isNot(contains('Excerpt with Note')),
+      );
       expect(command('Locate Card').onSelected == null, !linked);
       command(linked ? 'Locate Card' : 'Add to Map').onSelected!();
       await tester.pumpAndSettle();

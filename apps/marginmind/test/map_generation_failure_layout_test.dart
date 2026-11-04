@@ -197,6 +197,9 @@ void main() {
         data: preview(failures: 12, long: true),
       );
       await tester.ensureVisible(find.byKey(const ValueKey('map-generation-diagnostics-0')));
+      await tester.pumpAndSettle();
+      // The diagnostics must be reachable without first dragging the sheet taller.
+      expect(find.byKey(const ValueKey('map-generation-diagnostics-0')).hitTestable(), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('map-generation-diagnostics-0')));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

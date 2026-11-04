@@ -171,8 +171,9 @@ void main() {
         routing: AssistantRoutingStore(prefs, services),
         profiles: profiles,
       );
-      // Empty production profiles remain unknown; only this test supplies evidence.
-      await expectLater(assembly.freeze(fixture.request(), runId: 'unknown'), throwsA(isA<ConfigurationFailure>()));
+      // A profile is optional metadata: a configured model without one still resolves.
+      final unprofiled = await assembly.freeze(fixture.request(), runId: 'unknown');
+      expect(unprofiled.config.capabilities.tools, CapabilitySupport.unknown);
       profiles.put(caps);
       final context = await assembly.freeze(fixture.request(), runId: 'assembly');
       expect(context.config.serviceLabel, 'Local catalog');
@@ -210,18 +211,19 @@ void main() {
         (await reopened.load('assembly-image'))!.checkpoint['images'],
         imageRequest.images.map((i) => i.toJson()).toList(),
       );
-      // Probe factory shares the durable store but never upgrades an unknown profile.
+      // Probe factory shares the durable store; a connection test reports the service responded.
       profiles.clear();
       final probe = assembly.createCapabilityProbe();
       final probeResult = await probe.probe(context.config.model, cancellation: CancellationToken());
-      expect(probeResult.issue, RoutingIssue.unknown);
+      expect(probeResult.issue, RoutingIssue.none);
       final probeRecord = probe.steps.records.values.singleWhere((r) => r.stage == RunPurpose.capabilityProbe.name);
       expect((await reopened.load(probeRecord.context.runId))!.usage.inputTokens, 9);
       expect(bodies.last['max_completion_tokens'], 16);
       expect(bodies.last.containsKey('reasoning_effort'), false);
-      await expectLater(
-        assembly.freeze(fixture.request(), runId: 'still-unknown'),
-        throwsA(isA<ConfigurationFailure>()),
+      expect(profiles.lookup(serviceCapabilityIdentity(service, service.models.first)).evidence, isNull);
+      expect(
+        (await assembly.freeze(fixture.request(), runId: 'still-unknown')).config.capabilities.tools,
+        CapabilitySupport.unknown,
       );
       profiles.put(caps);
       final state = sdk.AgentState(

@@ -54,6 +54,9 @@ void main() {
     expect(find.byTooltip('Zoom Out'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
+    // Page fitting moved into its own submenu; zoom steps stay on the toolbar.
+    await tester.tap(find.byKey(const ValueKey('reader-page-fit')));
+    await tester.pumpAndSettle();
     expect(find.text('Fit Width'), findsOneWidget);
     expect(find.text('Fit Page'), findsOneWidget);
     expect(find.text('Actual Size'), findsOneWidget);

@@ -82,6 +82,7 @@ class ModelRoutePicker extends StatelessWidget {
     this.focusNode,
     this.highlighted = false,
     this.maxWidth = 260,
+    this.opensAbove = false,
   });
 
   /// The button text: the effective model (or a placeholder).
@@ -113,6 +114,9 @@ class ModelRoutePicker extends StatelessWidget {
   final bool highlighted;
   final double maxWidth;
 
+  /// For a button at the bottom of a pane: the menu sits above it, right edges aligned.
+  final bool opensAbove;
+
   bool get _enabled => onChanged != null;
 
   Future<void> open(BuildContext context) {
@@ -124,6 +128,7 @@ class ModelRoutePicker extends StatelessWidget {
     return showMMMenu(
       context,
       position: anchor.bottomLeft + const Offset(0, 2),
+      anchor: opensAbove ? anchor : null,
       minWidth: box.size.width < 220 ? 220 : box.size.width,
       entries: [
         if (followLabel != null) ...[

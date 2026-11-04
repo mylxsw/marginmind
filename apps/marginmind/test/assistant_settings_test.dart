@@ -80,8 +80,11 @@ void main() {
     expect(outside, isA<sdk.AgentToolResult>());
     expect((outside as sdk.AgentToolResult).metadata?['failure'], 'invalidRequest');
     expect(reads, [('a.pdf', 23), ('a.pdf', 24), ('a.pdf', 25), ('b.pdf', 1)]);
-    expect(run.agent.systemPrompts.join('\n'), contains('学习的底层逻辑'));
-    expect(run.agent.systemPrompts.join('\n'), contains('"pageCount":164'));
+    // The catalog is low-trust typed input data, not system prompt text.
+    final attachments = jsonEncode((run as SdkAssistantRun).inputData['attachments']);
+    expect(attachments, contains('学习的底层逻辑'));
+    expect(attachments, contains(r'\"pageCount\":164'));
+    expect(run.agent.systemPrompts.join('\n'), isNot(contains('学习的底层逻辑')));
 
     final withoutFocus = await factory(
       sdk.AgentState(sessionId: 'no-focus'),

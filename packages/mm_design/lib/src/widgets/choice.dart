@@ -109,11 +109,15 @@ class MMSwitch extends StatelessWidget {
     if (MMInput.of(context).phone && defaultTargetPlatform == TargetPlatform.android) {
       return Semantics(
         label: semanticLabel,
-        child: Switch(
-          value: value,
-          onChanged: onChanged,
-          activeTrackColor: color ?? c.accent,
-          activeThumbColor: c.onAccent,
+        // Screens are not guaranteed a Material ancestor, which Switch requires.
+        child: Material(
+          type: MaterialType.transparency,
+          child: Switch(
+            value: value,
+            onChanged: onChanged,
+            activeTrackColor: color ?? c.accent,
+            activeThumbColor: c.onAccent,
+          ),
         ),
       );
     }

@@ -86,18 +86,18 @@ void main() {
     expect(inSidebar('遗忘的规律'), findsNothing);
     expect(inSidebar('对策一：间隔重复'), findsNothing);
     expect(find.descendant(of: find.byType(TagContentPane), matching: find.text('遗忘的规律')), findsOneWidget);
-    await tester.enterText(find.byType(TextField).first, 'science');
+    controller.setSidebarQuery('science');
     await tester.pumpAndSettle();
     expect(inSidebar('遗忘的规律'), findsOneWidget);
-    await tester.enterText(find.byType(TextField).first, 'zzz');
+    controller.setSidebarQuery('zzz');
     await tester.pumpAndSettle();
     expect(inSidebar('遗忘的规律'), findsNothing);
     expect(inSidebar('Cards'), findsNothing);
-    await tester.enterText(find.byType(TextField).first, '');
+    controller.setSidebarQuery('');
     controller.closePanel();
     await tester.pumpAndSettle();
     expect(container.read(workspaceProvider('demo-1')).tagFilter, isNull);
-    await tester.enterText(find.byType(TextField).first, 'practice');
+    controller.setSidebarQuery('practice');
     await tester.pumpAndSettle();
     expect(inSidebar('对策一：间隔重复'), findsOneWidget);
     expect(inSidebar('遗忘的规律'), findsNothing);
@@ -129,8 +129,9 @@ void main() {
 
   testWidgets('sidebar search filters sections and documents open as tabs', (tester) async {
     final container = await openFirstSet(tester);
-    final search = find.byType(TextField).first;
-    await tester.enterText(search, '论文');
+    // The search field is temporarily hidden; its query still filters the sections.
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    controller.setSidebarQuery('论文');
     await tester.pumpAndSettle();
     expect(find.text('Mind Maps'), findsNothing);
     await tester.tap(find.descendant(of: find.byType(MMSidebar), matching: find.text('论文：检索练习效应')));
@@ -138,7 +139,7 @@ void main() {
     expect(container.read(workspaceProvider('demo-1')).activeDocumentId, 'c2');
     expect(container.read(workspaceProvider('demo-1')).openDocumentIds, ['c1', 'c2']);
 
-    await tester.enterText(search, 'zzz');
+    controller.setSidebarQuery('zzz');
     await tester.pumpAndSettle();
     expect(find.text('No matches'), findsOneWidget);
   });

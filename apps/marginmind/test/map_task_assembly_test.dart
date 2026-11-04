@@ -18,7 +18,7 @@ import 'quick_task_assembly_test.dart' show DiskRepository;
 
 void main() {
   test(
-    'production map factories resolve bindings, freeze children, persist partials, and reject unknown profiles',
+    'production map factories resolve bindings, freeze children, persist partials, and need no capability profile',
     () async {
       final directory = await Directory.systemTemp.createTemp('map-runtime-');
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -98,33 +98,7 @@ void main() {
         final factory = Provider<MapTaskSession>((ref) => MapTaskSession(ref, 'study', mapExpandSpec));
         final session = container.read(factory);
         final execute = session.execute;
-        await expectLater(
-          execute('Fixed instructions', {'stage': 'one'}, CancellationToken(), (_) => ValidationReport()),
-          throwsA(isA<ConfigurationFailure>()),
-        );
-        expect(bodies, isEmpty);
-        // Unknown identities are never admitted in production. Only this test
-        // supplies synthetic evidence for its own loopback transport.
-        for (final model in service.models) {
-          profiles.put(
-            ModelCapabilityProfile(
-              identity: serviceCapabilityIdentity(service, model),
-              thinking: ThinkingCapability.notApplicable,
-              tools: CapabilitySupport.supported,
-              historyReplay: CapabilitySupport.supported,
-              contextTokens: 32000,
-              outputTokens: 16000,
-              evidence: CapabilityEvidence(
-                source: CapabilityEvidenceSource.maintainedProfile,
-                reference: 'test fixture',
-                semanticBasis: 'Synthetic transport only',
-                verifiedAt: DateTime.utc(2026),
-                wireVerified: true,
-              ),
-            ),
-          );
-        }
-        // Rejected admission made no run. Corrected evidence can now pin the session.
+        // Capability metadata is optional: no profile is installed, and the session still pins its route.
         final fresh = execute;
         final cacheIdentity = await session.cacheIdentity();
         await fresh(

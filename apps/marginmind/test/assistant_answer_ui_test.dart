@@ -431,15 +431,13 @@ void main() {
       final newConversation = tester.getRect(find.byKey(const ValueKey('assistant-new')));
       final close = tester.getRect(find.byKey(const ValueKey('assistant-close')));
       expect(close.right, closeTo(panel.right - 8, 1));
-      expect(newConversation.right, lessThanOrEqualTo(close.left));
-      expect(
-        tester.getRect(find.byKey(const ValueKey('assistant-history-button'))).right,
-        lessThanOrEqualTo(newConversation.left),
-      );
+      final historyRect = tester.getRect(find.byKey(const ValueKey('assistant-history-button')));
+      expect(historyRect.right, lessThanOrEqualTo(close.left));
+      expect(newConversation.right, lessThanOrEqualTo(historyRect.left));
       expect(find.byKey(const ValueKey('assistant-settings')), findsNothing);
       expect(find.byKey(const ValueKey('assistant-close')), findsOneWidget);
       final history = find.byKey(const ValueKey('assistant-history-button'));
-      expect(find.descendant(of: history, matching: find.byIcon(MMIcons.recent)), findsOneWidget);
+      expect(find.descendant(of: history, matching: find.byIcon(MMIcons.conversationHistory)), findsOneWidget);
       expect(find.descendant(of: history, matching: find.byType(Text)), findsNothing);
       expect(tester.widget<MMIconButton>(history).tooltip, '对话记录');
       for (final key in ['assistant-history-button', 'assistant-new', 'assistant-close']) {
