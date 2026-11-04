@@ -1289,12 +1289,27 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         : book.progress(position);
     void jumpPage(int page) => _jump(book.position(book.chapters[(page - 1).clamp(0, book.chapters.length - 1)].id, 0));
     if (usePhoneReaderControls(context)) {
+      // Continuous scrolling observes source positions without turning s.page.
+      // Each visible chapter owns its layout, including its own page count.
+      final visibleLayout = paged ? s.layout : _surfaceLayouts[(position.chapterId, null)] ?? s.layout;
+      final pageLayout = visibleLayout?.isDisposed == false ? visibleLayout : null;
+      final atEnd =
+          !paged &&
+          position.chapterId == book.chapters.last.id &&
+          _scroll.hasClients &&
+          _scroll.position.maxScrollExtent > _scroll.position.minScrollExtent &&
+          _scroll.position.extentAfter < 1;
+      final page = atEnd && pageLayout != null
+          ? pageLayout.pages.length - 1
+          : !paged && pageLayout?.chapter.id == position.chapterId
+          ? pageLayout!.pageForOffset(position.offset)
+          : s.page;
       return PhoneReaderControls(
         studySetId: widget.studySetId,
-        page: fixed ? sourcePage : s.page + 1,
-        pageCount: fixed ? book.chapters.length : (s.layout?.pages.length ?? 1),
+        page: fixed ? sourcePage : page + 1,
+        pageCount: fixed ? book.chapters.length : (pageLayout?.pages.length ?? 1),
         chapter: book.title(position, fallback: widget.document.title),
-        progress: progress,
+        progress: atEnd ? 1 : progress,
         onProgress: (value) {
           fixed ? jumpPage((value * (book.chapters.length - 1)).round() + 1) : _jump(book.atProgress(value));
         },

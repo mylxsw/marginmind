@@ -1,0 +1,10 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/phone_reflow_page_sync_test.dart
+Running Xcode build...                                          
+Xcode build done.                                           42.4s
+00:00 +0: phone reflow page capsule updates during touch scrolling and after slider navigation
+PHONE_SHOT:01-before-scroll:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/F7498667-CBDD-44E8-984B-173FF027868F/data/Containers/Data/Application/D97DB925-E10F-4A15-95B2-44AB1B5FC2DC/Library/Caches/page-sync-shot
+PHONE_SHOT:02-after-scroll:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/F7498667-CBDD-44E8-984B-173FF027868F/data/Containers/Data/Application/D97DB925-E10F-4A15-95B2-44AB1B5FC2DC/Library/Caches/page-sync-shot
+PHONE_SHOT:03-scroll-after-slider:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/F7498667-CBDD-44E8-984B-173FF027868F/data/Containers/Data/Application/D97DB925-E10F-4A15-95B2-44AB1B5FC2DC/Library/Caches/page-sync-shot
+PHONE_SHOT:04-document-bottom:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/F7498667-CBDD-44E8-984B-173FF027868F/data/Containers/Data/Application/D97DB925-E10F-4A15-95B2-44AB1B5FC2DC/Library/Caches/page-sync-shot
+00:44 +1: (tearDownAll)
+00:44 +1: All tests passed!
