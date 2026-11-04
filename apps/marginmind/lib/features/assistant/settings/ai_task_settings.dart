@@ -750,12 +750,19 @@ class _RouteRow extends StatelessWidget {
 
         final pickerText = picker is ModelRoutePicker ? (picker as ModelRoutePicker).label : '';
         final needed = width(label) + MMSpacing.m + width(pickerText) + 36 + 28;
+        // Pickers stay in one column: a long name wraps beside its picker while
+        // that still leaves it readable, and stacks only when it wouldn't.
+        final pickerWidth = width(pickerText) + 36 + 28;
+        final wraps =
+            !largeText &&
+            needed > constraints.maxWidth &&
+            constraints.maxWidth - pickerWidth - MMSpacing.m >= width(label) / 2 + t.body.fontSize!;
         final stacked =
             (touch && constraints.maxWidth < (largeText ? 480 : 300)) ||
-            (constraints.maxWidth < 460 && needed > constraints.maxWidth);
+            (constraints.maxWidth < 460 && needed > constraints.maxWidth && !wraps);
         final name = Text(
           label,
-          maxLines: stacked ? null : 1,
+          maxLines: stacked ? null : (wraps ? 2 : 1),
           style: t.body.copyWith(color: context.mmColors.label),
         );
         final content = stacked
@@ -771,7 +778,9 @@ class _RouteRow extends StatelessWidget {
             : Row(
                 children: [
                   ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: constraints.maxWidth * .5),
+                    constraints: BoxConstraints(
+                      maxWidth: wraps ? constraints.maxWidth - pickerWidth - MMSpacing.m : constraints.maxWidth * .5,
+                    ),
                     child: name,
                   ),
                   const SizedBox(width: MMSpacing.m),

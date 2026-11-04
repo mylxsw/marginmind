@@ -278,6 +278,8 @@ Future<bool> showConfirmSheet(
         MMButton(
           label: confirmLabel,
           variant: MMButtonVariant.primary,
+          // Same meaning as the native sheet's destructive action.
+          color: context.mmColors.critical,
           autofocus: true,
           onPressed: () => Navigator.of(context).pop(true),
         ),

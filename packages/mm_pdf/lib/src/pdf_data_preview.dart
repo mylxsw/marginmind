@@ -54,7 +54,11 @@ class MMPdfDataPreview extends StatelessWidget {
                   document: document,
                   pageNumber: page.pageNumber,
                   backgroundColor: Colors.white,
-                  decoration: const BoxDecoration(color: Colors.white),
+                  // A page needs its edge on a white sheet too, in both appearances.
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0x26000000), width: 0.5),
+                  ),
                 ),
               ),
             );
