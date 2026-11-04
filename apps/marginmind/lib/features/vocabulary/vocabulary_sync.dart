@@ -143,7 +143,6 @@ class _VocabularySyncSheetState extends ConsumerState<VocabularySyncSheet> {
                       ),
                   ],
                   const SizedBox(height: MMSpacing.l),
-                  Text(l.syncLocalOnly, style: context.mmText.callout),
                   MMButton(
                     key: const ValueKey('vocabulary-sync-retry'),
                     label: l.syncRetry,

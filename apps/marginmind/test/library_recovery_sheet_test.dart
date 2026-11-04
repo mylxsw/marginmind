@@ -109,7 +109,7 @@ void main() {
     repository.gate!.complete();
     await tester.pumpAndSettle();
     expect(repository.calls.map((e) => e.$2), ['My recovery', 'My recovery']);
-    expect(find.text('A recovery copy was created. Later edits or deletion of that copy are kept.'), findsWidgets);
+    expect(find.text('Recovery copy created'), findsWidgets);
     expect(find.byKey(const ValueKey('recovery-confirm')), findsNothing);
   });
   testWidgets('stale choice retains observed version; cancel allows a fresh selection', (tester) async {
@@ -179,7 +179,7 @@ void main() {
 
   testWidgets('optional local repositories show no invented history', (tester) async {
     await pump(tester, optional: false);
-    expect(find.textContaining('No recoverable deleted content'), findsOneWidget);
+    expect(find.textContaining('No recoverable content'), findsOneWidget);
     expect(find.text('Recover as a copy'), findsNothing);
   });
 }

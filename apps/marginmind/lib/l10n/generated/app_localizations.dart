@@ -11123,7 +11123,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncWaitingTransfer.
   ///
   /// In en, this message translates to:
-  /// **'Saved changes are awaiting service confirmation.'**
+  /// **'Changes pending sync'**
   String get syncWaitingTransfer;
 
   /// No description provided for @syncRecovered.
@@ -11189,19 +11189,19 @@ abstract class AppLocalizations {
   /// No description provided for @syncKeep.
   ///
   /// In en, this message translates to:
-  /// **'Keep current content'**
+  /// **'Keep current'**
   String get syncKeep;
 
   /// No description provided for @syncUse.
   ///
   /// In en, this message translates to:
-  /// **'Apply this change'**
+  /// **'Use this version'**
   String get syncUse;
 
   /// No description provided for @syncChoiceHint.
   ///
   /// In en, this message translates to:
-  /// **'These related changes form one edit. Your choice applies to all of them.'**
+  /// **'Your choice applies to all changes above.'**
   String get syncChoiceHint;
 
   /// No description provided for @syncInvalidCandidate.
@@ -11213,7 +11213,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncNoConflicts.
   ///
   /// In en, this message translates to:
-  /// **'No conflicts need a choice. This does not confirm cloud delivery.'**
+  /// **'No conflicts'**
   String get syncNoConflicts;
 
   /// No description provided for @syncAbsent.
@@ -11231,7 +11231,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncConflictCount.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 edit needs a choice} other{{count} edits need a choice}}'**
+  /// **'{count} to review'**
   String syncConflictCount(int count);
 
   /// No description provided for @syncEntity.
@@ -11405,7 +11405,7 @@ abstract class AppLocalizations {
   /// No description provided for @readingContinuationsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Continue from another device'**
+  /// **'Continue reading'**
   String get readingContinuationsTitle;
 
   /// No description provided for @readingContinuationsHint.
@@ -11435,13 +11435,13 @@ abstract class AppLocalizations {
   /// No description provided for @readingResourceMissing.
   ///
   /// In en, this message translates to:
-  /// **'The document is not available on this device yet.'**
+  /// **'Download the document first'**
   String get readingResourceMissing;
 
   /// No description provided for @readingContinue.
   ///
   /// In en, this message translates to:
-  /// **'Continue here'**
+  /// **'Continue reading'**
   String get readingContinue;
 
   /// No description provided for @vocabularyKeep.
@@ -11477,7 +11477,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncSettingsLocal.
   ///
   /// In en, this message translates to:
-  /// **'This library is stored on this device. Preparing sync preserves its existing content.'**
+  /// **'Stored on this device'**
   String get syncSettingsLocal;
 
   /// No description provided for @syncSettingsUnavailable.
@@ -11513,61 +11513,61 @@ abstract class AppLocalizations {
   /// No description provided for @syncSettingsPrepare.
   ///
   /// In en, this message translates to:
-  /// **'Prepare this library'**
+  /// **'Enable sync'**
   String get syncSettingsPrepare;
 
   /// No description provided for @syncSettingsIdentityHint.
   ///
   /// In en, this message translates to:
-  /// **'To join, copy the library code from the other device. Existing local content will also be included; conflicting histories are preserved for review. The library identity cannot be switched after initialization.'**
+  /// **'Your local content will join this library. Its code cannot be changed after setup.'**
   String get syncSettingsIdentityHint;
 
   /// No description provided for @syncSettingsRestart.
   ///
   /// In en, this message translates to:
-  /// **'Preparation saved. Close and reopen Foliarc to initialize sync safely, then connect a service here. Nothing has been uploaded.'**
+  /// **'Restart Foliarc to connect a service. Nothing has been uploaded.'**
   String get syncSettingsRestart;
 
   /// No description provided for @syncSettingsDirectory.
   ///
   /// In en, this message translates to:
-  /// **'WebDAV HTTPS directory'**
+  /// **'Server URL (HTTPS)'**
   String get syncSettingsDirectory;
 
   /// No description provided for @syncSettingsAccount.
   ///
   /// In en, this message translates to:
-  /// **'WebDAV username'**
+  /// **'Username'**
   String get syncSettingsAccount;
 
   /// No description provided for @syncSettingsPassword.
   ///
   /// In en, this message translates to:
-  /// **'Password / app password (blank to reuse saved credential)'**
+  /// **'Password (leave blank to keep saved password)'**
   String get syncSettingsPassword;
 
   /// No description provided for @syncSettingsConnect.
   ///
   /// In en, this message translates to:
-  /// **'Check and save WebDAV connection'**
+  /// **'Connect'**
   String get syncSettingsConnect;
 
   /// No description provided for @syncSettingsICloud.
   ///
   /// In en, this message translates to:
-  /// **'Connect this device’s iCloud'**
+  /// **'Connect iCloud'**
   String get syncSettingsICloud;
 
   /// No description provided for @syncSettingsConnectHint.
   ///
   /// In en, this message translates to:
-  /// **'Connecting checks the service without uploading. Credentials are stored securely. Changing service or account pauses the previous queue.'**
+  /// **'Checks the connection without uploading content.'**
   String get syncSettingsConnectHint;
 
   /// No description provided for @syncSettingsOnce.
   ///
   /// In en, this message translates to:
-  /// **'Sync once'**
+  /// **'Sync now'**
   String get syncSettingsOnce;
 
   /// No description provided for @syncSettingsPause.
@@ -11579,43 +11579,43 @@ abstract class AppLocalizations {
   /// No description provided for @syncSettingsPaused.
   ///
   /// In en, this message translates to:
-  /// **'Paused · runs only when you choose Sync once'**
+  /// **'Manual sync · Paused'**
   String get syncSettingsPaused;
 
   /// No description provided for @syncSettingsRunning.
   ///
   /// In en, this message translates to:
-  /// **'Working… Pause stops subsequent transfers; a request already sent may finish.'**
+  /// **'Syncing…'**
   String get syncSettingsRunning;
 
   /// No description provided for @syncSettingsPending.
   ///
   /// In en, this message translates to:
-  /// **'Shared changes awaiting confirmation'**
+  /// **'Pending'**
   String get syncSettingsPending;
 
   /// No description provided for @syncSettingsConfirmed.
   ///
   /// In en, this message translates to:
-  /// **'Metadata objects confirmed by the service'**
+  /// **'Confirmed by service'**
   String get syncSettingsConfirmed;
 
   /// No description provided for @syncSettingsStaged.
   ///
   /// In en, this message translates to:
-  /// **'Objects staged locally, awaiting cloud confirmation'**
+  /// **'Awaiting cloud confirmation'**
   String get syncSettingsStaged;
 
   /// No description provided for @syncSettingsReceived.
   ///
   /// In en, this message translates to:
-  /// **'Metadata objects received'**
+  /// **'Received'**
   String get syncSettingsReceived;
 
   /// No description provided for @syncSettingsTimedOut.
   ///
   /// In en, this message translates to:
-  /// **'iCloud took too long. Sync is paused and pending changes are preserved. A file operation already sent to the system may still finish. Check iCloud availability and retry.'**
+  /// **'iCloud timed out and sync paused. System transfers may continue; try again later.'**
   String get syncSettingsTimedOut;
 
   /// No description provided for @syncSettingsError.
@@ -11669,7 +11669,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncSettingsRetry.
   ///
   /// In en, this message translates to:
-  /// **'Reload status'**
+  /// **'Refresh'**
   String get syncSettingsRetry;
 
   /// No description provided for @syncResourcesTitle.
@@ -11687,37 +11687,37 @@ abstract class AppLocalizations {
   /// No description provided for @syncResourceAvailable.
   ///
   /// In en, this message translates to:
-  /// **'Verified and available'**
+  /// **'Downloaded and verified'**
   String get syncResourceAvailable;
 
   /// No description provided for @syncResourceMissing.
   ///
   /// In en, this message translates to:
-  /// **'Not fully downloaded'**
+  /// **'Download incomplete'**
   String get syncResourceMissing;
 
   /// No description provided for @syncResourceChanged.
   ///
   /// In en, this message translates to:
-  /// **'Local file differs or cannot be verified. It will not be overwritten.'**
+  /// **'File differs; kept unchanged'**
   String get syncResourceChanged;
 
   /// No description provided for @syncResourceUnverified.
   ///
   /// In en, this message translates to:
-  /// **'No verified file list yet. Sync from the device that owns the original files.'**
+  /// **'Waiting for file details from the original device'**
   String get syncResourceUnverified;
 
   /// No description provided for @syncResourceDownload.
   ///
   /// In en, this message translates to:
-  /// **'Download files'**
+  /// **'Download'**
   String get syncResourceDownload;
 
   /// No description provided for @syncDeviceRename.
   ///
   /// In en, this message translates to:
-  /// **'Rename this device'**
+  /// **'Rename'**
   String get syncDeviceRename;
 
   /// No description provided for @syncDeviceNameHint.
@@ -11735,13 +11735,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncDisconnect.
   ///
   /// In en, this message translates to:
-  /// **'Disconnect and remove saved credential'**
+  /// **'Disconnect'**
   String get syncDisconnect;
 
   /// No description provided for @syncDisconnectHint.
   ///
   /// In en, this message translates to:
-  /// **'Disconnecting removes this connection and its saved credential from this device. Library content, cloud files and delivery history are kept.'**
+  /// **'Removes this connection and its saved password. Your library and cloud files are kept.'**
   String get syncDisconnectHint;
 
   /// No description provided for @syncDeviceStale.
@@ -11753,13 +11753,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncDisconnectICloud.
   ///
   /// In en, this message translates to:
-  /// **'Disconnect iCloud from this library'**
+  /// **'Disconnect'**
   String get syncDisconnectICloud;
 
   /// No description provided for @syncDisconnectICloudHint.
   ///
   /// In en, this message translates to:
-  /// **'Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account.'**
+  /// **'Your library and cloud files are kept. This does not sign you out of iCloud.'**
   String get syncDisconnectICloudHint;
 
   /// No description provided for @syncRenameStale.
@@ -11789,7 +11789,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncConcurrentChoiceHint.
   ///
   /// In en, this message translates to:
-  /// **'Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept.'**
+  /// **'This confirms a choice for all options shown. Other changes are kept.'**
   String get syncConcurrentChoiceHint;
 
   /// No description provided for @aiTaskWebFormat.
@@ -12240,7 +12240,7 @@ abstract class AppLocalizations {
   /// No description provided for @recoveryExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Recover a saved content version as a new study set. Original deletion and conflicts remain unchanged. Review scores, reading progress and separate translations are not copied. Only files with a verified historical manifest are copied; missing files may need downloading in Sync settings. Books and web documents require their retained resource manifest before recovery.'**
+  /// **'Creates a new study set and keeps the original. Reviews, reading progress and translations are excluded; attachments may need downloading.'**
   String get recoveryExplanation;
 
   /// No description provided for @recoveryFailed.
@@ -12252,13 +12252,13 @@ abstract class AppLocalizations {
   /// No description provided for @recoveryCreated.
   ///
   /// In en, this message translates to:
-  /// **'A recovery copy was created. Later edits or deletion of that copy are kept.'**
+  /// **'Recovery copy created'**
   String get recoveryCreated;
 
   /// No description provided for @recoveryPending.
   ///
   /// In en, this message translates to:
-  /// **'This version had unresolved choices. Only its displayed content is copied; original candidates remain in the source history.'**
+  /// **'Copies current content only; unresolved choices stay in the original.'**
   String get recoveryPending;
 
   /// No description provided for @recoveryCopyTitle.
@@ -12276,7 +12276,7 @@ abstract class AppLocalizations {
   /// No description provided for @recoveryEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No recoverable deleted content in retained sync history. Local-only deletions and history not received on this device are not listed.'**
+  /// **'No recoverable content'**
   String get recoveryEmpty;
 
   /// No description provided for @recoveryDeletedSet.
@@ -12306,13 +12306,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncCacheHint.
   ///
   /// In en, this message translates to:
-  /// **'Only unused sync chunks can be removed. Original files, recovery history and chunks referenced by any version are kept.'**
+  /// **'Removes unused cache only. Files and history are kept.'**
   String get syncCacheHint;
 
   /// No description provided for @syncCacheInspect.
   ///
   /// In en, this message translates to:
-  /// **'Check sync cache'**
+  /// **'Check cache'**
   String get syncCacheInspect;
 
   /// No description provided for @syncCacheUsage.
@@ -12336,7 +12336,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncCacheReclaim.
   ///
   /// In en, this message translates to:
-  /// **'Remove unused chunks'**
+  /// **'Clear unused cache'**
   String get syncCacheReclaim;
 
   /// No description provided for @syncCacheIncomplete.
@@ -12348,25 +12348,25 @@ abstract class AppLocalizations {
   /// No description provided for @syncCopyHint.
   ///
   /// In en, this message translates to:
-  /// **'Copy the accepted sync history held on this device to the selected service, including contributions from other devices and deleted versions. This does not delete the original service. Unaccepted unrelated branches stay here. All referenced historical files must be available locally or at the destination. Inspect first, then explicitly confirm the copy.'**
+  /// **'Copy sync history to the connected service. The original service is kept.'**
   String get syncCopyHint;
 
   /// No description provided for @syncCopyPreview.
   ///
   /// In en, this message translates to:
-  /// **'Inspect history copy'**
+  /// **'Review history copy'**
   String get syncCopyPreview;
 
   /// No description provided for @syncCopyConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Copy this history to the selected service'**
+  /// **'Confirm copy'**
   String get syncCopyConfirm;
 
   /// No description provided for @syncCopyDestination.
   ///
   /// In en, this message translates to:
-  /// **'Use as a history-copy destination (allow an empty service; connecting remains read-only)'**
+  /// **'Allow copying to an empty service'**
   String get syncCopyDestination;
 
   /// No description provided for @syncCopyStale.
@@ -12378,7 +12378,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncCopySummary.
   ///
   /// In en, this message translates to:
-  /// **'{commits} versions, including {others} from other devices; {chunks} resource chunks. {excluded} unaccepted versions are excluded. {unverified} versions lack file verification manifests; their files are not guaranteed by this copy.'**
+  /// **'{commits} versions · {others} from other devices\n{chunks} file chunks\n{excluded} unaccepted versions excluded\nAttachments may be unavailable for {unverified} versions'**
   String syncCopySummary(int commits, int others, int chunks, int excluded, int unverified);
 
   /// No description provided for @syncCopyResources.
@@ -12402,7 +12402,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncServiceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Connect a service'**
+  /// **'Sync service'**
   String get syncServiceTitle;
 
   /// No description provided for @syncServiceDetail.
@@ -12426,7 +12426,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncAdvancedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Advanced management'**
+  /// **'Advanced'**
   String get syncAdvancedTitle;
 
   /// No description provided for @syncAdvancedDetail.
@@ -12438,7 +12438,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncBack.
   ///
   /// In en, this message translates to:
-  /// **'Back to sync'**
+  /// **'Sync'**
   String get syncBack;
 
   /// No description provided for @syncNotConnected.
@@ -12450,7 +12450,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncConnectIntro.
   ///
   /// In en, this message translates to:
-  /// **'Choose a service to sync this library with your other devices. Your local content stays here.'**
+  /// **'Connect a service to sync across devices.'**
   String get syncConnectIntro;
 
   /// No description provided for @syncSetupTitle.
@@ -12462,7 +12462,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncSetupIntro.
   ///
   /// In en, this message translates to:
-  /// **'Create a library or join one from another device. After preparing, restart Foliarc to choose your sync service.'**
+  /// **'Restart the app after setup, then connect a sync service.'**
   String get syncSetupIntro;
 
   /// No description provided for @syncSetupReady.
@@ -12480,13 +12480,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncICloudIntro.
   ///
   /// In en, this message translates to:
-  /// **'Uses the iCloud account signed in on this device. Availability depends on this app’s iCloud configuration.'**
+  /// **'Uses this device’s iCloud account.'**
   String get syncICloudIntro;
 
   /// No description provided for @syncConnectionOptions.
   ///
   /// In en, this message translates to:
-  /// **'Moving an existing library?'**
+  /// **'Migration options'**
   String get syncConnectionOptions;
 
   /// No description provided for @syncCurrentConnection.
@@ -12510,19 +12510,19 @@ abstract class AppLocalizations {
   /// No description provided for @syncLibraryCodeHint.
   ///
   /// In en, this message translates to:
-  /// **'Copy this code when joining this library on another device.'**
+  /// **'Enter this code on another device to join.'**
   String get syncLibraryCodeHint;
 
   /// No description provided for @syncFilesEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No referenced files to display. Reload after syncing if files are expected.'**
+  /// **'No files yet'**
   String get syncFilesEmpty;
 
   /// No description provided for @syncChangedHelp.
   ///
   /// In en, this message translates to:
-  /// **'Keep the local original. To obtain the synced version without overwriting it, use another device or an independent library copy.'**
+  /// **'Keep the local original. Download the synced version on another device or into a separate copy.'**
   String get syncChangedHelp;
 
   /// No description provided for @syncCacheReadable.
@@ -12534,7 +12534,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncCacheFreed.
   ///
   /// In en, this message translates to:
-  /// **'Freed {size} of unreferenced cache.'**
+  /// **'Freed {size}'**
   String syncCacheFreed(String size);
 
   /// No description provided for @syncChoiceDetails.
@@ -12546,19 +12546,19 @@ abstract class AppLocalizations {
   /// No description provided for @syncCandidateDevice.
   ///
   /// In en, this message translates to:
-  /// **'Candidate from {device}'**
+  /// **'From {device}'**
   String syncCandidateDevice(String device);
 
   /// No description provided for @syncUnknownDevice.
   ///
   /// In en, this message translates to:
-  /// **'Unregistered device'**
+  /// **'Unnamed device'**
   String get syncUnknownDevice;
 
   /// No description provided for @syncViewFiles.
   ///
   /// In en, this message translates to:
-  /// **'View files & downloads'**
+  /// **'Go to downloads'**
   String get syncViewFiles;
 
   /// No description provided for @recoveryIntro.

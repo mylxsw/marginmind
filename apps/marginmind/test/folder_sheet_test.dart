@@ -214,7 +214,7 @@ void main() {
     expect(find.textContaining('Candidate name'), findsOneWidget);
     await tester.tap(find.text('About this choice'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Different devices made choices'), findsOneWidget);
+    expect(find.textContaining('This confirms a choice for all options shown'), findsOneWidget);
     expect(find.textContaining('private-hash'), findsNothing);
     expect(find.text('Folder awaiting recovery'), findsOneWidget);
     for (final use in [true, false]) {

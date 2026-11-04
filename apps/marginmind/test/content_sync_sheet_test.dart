@@ -135,7 +135,7 @@ void main() {
     await pump(tester, width: 390, locale: 'zh');
     await tester.tap(find.text('选择说明'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('不同设备对同一项修改作出了选择'), findsOneWidget);
+    expect(find.textContaining('此次确认将替代当前显示的所有选择'), findsOneWidget);
     await tap(tester, 'content-sync-use-private-hash');
     expect(repo.choices.single, ('private-hash', 'observed-group', true));
     expect(tester.takeException(), isNull);
@@ -145,10 +145,10 @@ void main() {
     repo.status = ContentSyncStatus(enabled: true, translationConflicts: 2);
     await pump(tester);
     expect(find.textContaining('2 translated paragraphs need a choice'), findsOneWidget);
-    expect(find.textContaining('No conflicts need a choice'), findsNothing);
+    expect(find.textContaining('No conflicts'), findsNothing);
     repo.publish(ContentSyncStatus(enabled: true));
     await tester.pumpAndSettle();
-    expect(find.textContaining('No conflicts need a choice'), findsOneWidget);
+    expect(find.textContaining('No conflicts'), findsOneWidget);
   });
   testWidgets('optional port keeps local mode quiet; enabled sidebar opens an honest status sheet', (tester) async {
     await pump(tester, sidebar: true, optional: false);
@@ -159,10 +159,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text('Manage saved content and conflicts here. For service delivery status, open Settings → Sync.'),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.text('Saved changes are awaiting service confirmation.'), findsOneWidget);
-    expect(find.textContaining('No conflicts need a choice.'), findsOneWidget);
+    expect(find.text('Changes pending sync'), findsOneWidget);
+    expect(find.textContaining('No conflicts'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

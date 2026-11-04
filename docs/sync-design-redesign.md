@@ -67,3 +67,22 @@
 日志：`sync-redesign-ui-release.log`、`sync-redesign-design-release.log`、`sync-redesign-status.log`、
 `sync-redesign-recovery-keyboard.log`、`sync-redesign-capture-keyboard-final.log`。
 附件包含改前/改后选图、三端 PDF、59 张原图 ZIP 和可筛选 HTML 图库。
+
+
+## 文案减法（2026-11-04，用户再次反馈）
+
+继续按现有界面精简：概览去掉服务器长地址、重复标题、入口副标题和底部说明；
+连接表单缩短标签，断开后果只出现在确认框；设备页不再解释名称与账号的技术区别。
+内容/生词/文件夹不再反复说明设置入口，阅读接续去掉操作自述。恢复确认合并为一段，
+保留新身份副本及不复制复习/进度/译文的必要信息。复制范围和文件不足仍在实际复制前展示。
+中英文同步调整，没有修改协议、删除历史或放宽确认前提。
+
+三端由同一生产组件截图夹具重新捕获。检查重点是减少阅读负担，同时保留错误、
+断开确认、云确认与本机暂存区别、键盘下的恢复操作。交付只提供两张重点选图，避免重复大报告。
+
+
+本轮验证：应用相关 85 项、三端捕获 3 项通过；workspace analyze 无问题。
+独立 `coverage/copyedit-final`：设置页 334/344=97.09%，内容面板 155/160=96.88%，
+恢复页 106/108=98.15%。确认框仍验证保留文件/退出账号语义，连接失败仍保留密码。
+截图为生产组件与合成状态，无真实服务操作。日志 `sync-copyedit-tests.log`、
+`sync-copyedit-capture.log`、`sync-copyedit-analyze.log`；不宣称完整 app/CI 或真机验收。

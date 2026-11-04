@@ -263,7 +263,6 @@ class _FolderSheetState extends ConsumerState<FolderSheet> {
                     ),
                   ),
                 if (organization.syncEnabled) ...[
-                  Text(l.syncLocalOnly, style: context.mmText.callout),
                   if (organization.queued > 0) Text(l.syncWaitingTransfer, style: context.mmText.callout),
                 ],
                 if (organization.syncEnabled)

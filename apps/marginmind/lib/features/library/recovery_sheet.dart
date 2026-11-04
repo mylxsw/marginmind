@@ -5,7 +5,6 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../app/providers.dart';
 import '../../shared/l10n.dart';
-import '../../shared/sync_details.dart';
 
 final libraryRecoveryEnabledProvider = FutureProvider.autoDispose<bool>((ref) {
   final repository = ref.watch(studySetRepositoryProvider);
@@ -112,7 +111,6 @@ class _LibraryRecoverySheetState extends ConsumerState<LibraryRecoverySheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(l.recoveryIntro),
               if (_selected != null) Text(l.recoveryExplanation, style: context.mmText.callout),
               const SizedBox(height: MMSpacing.m),
               if (_error != null) Text(_error!, key: const ValueKey('recovery-error')),
@@ -175,11 +173,6 @@ class _LibraryRecoverySheetState extends ConsumerState<LibraryRecoverySheet> {
                         ),
                       ),
                   ],
-                ),
-              if (_selected == null)
-                SyncDetails(
-                  title: l.syncChoiceDetails,
-                  children: [Text(l.recoveryExplanation, style: context.mmText.callout)],
                 ),
             ],
           ),

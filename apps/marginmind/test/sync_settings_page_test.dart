@@ -214,7 +214,7 @@ void main() {
     await tap(tester, 'sync-copy-preview');
     expect(service.actions, ['copy-preview']);
     expect(find.textContaining('12 个版本'), findsOneWidget);
-    expect(find.textContaining('2 个未接受版本'), findsOneWidget);
+    expect(find.textContaining('不包含 2 个未接受版本'), findsOneWidget);
     final plan = service.historyCopy!;
     await tap(tester, 'sync-copy-confirm');
     expect(service.actions.last, same(plan));
@@ -245,6 +245,9 @@ void main() {
     await tap(tester, 'sync-back');
     await tap(tester, 'sync-nav-connection');
     await tap(tester, 'sync-disconnect');
+    if (service.target?.service == 'icloud') {
+      expect(find.textContaining('does not sign you out'), findsOneWidget);
+    }
     expect(service.actions, isNot(contains('disconnect')));
     await tap(tester, 'sync-disconnect-confirm');
     expect(service.actions.last, 'disconnect');
@@ -260,9 +263,12 @@ void main() {
       libraryId: 'library-code',
     );
     await pump(tester, width: 375, section: SyncSettingsSection.connection);
-    expect(find.textContaining('does not sign you out'), findsOneWidget);
+    expect(find.textContaining('does not sign you out'), findsNothing);
     expect(find.textContaining('opaque-apple'), findsNothing);
     await tap(tester, 'sync-disconnect');
+    if (service.target?.service == 'icloud') {
+      expect(find.textContaining('does not sign you out'), findsOneWidget);
+    }
     expect(service.actions, isNot(contains('disconnect')));
     await tap(tester, 'sync-disconnect-confirm');
     expect(service.actions.last, 'disconnect');
@@ -328,8 +334,8 @@ void main() {
     service.result = const SyncRunResult(received: 2, confirmed: 0, staged: 5);
     service.publish();
     await tester.pumpAndSettle();
-    expect(find.textContaining('awaiting cloud confirmation: 5'), findsOneWidget);
-    expect(find.textContaining('confirmed by the service: 0'), findsOneWidget);
+    expect(find.textContaining('Awaiting cloud confirmation: 5'), findsOneWidget);
+    expect(find.textContaining('Confirmed by service: 0'), findsOneWidget);
   });
 
   testWidgets('Chinese narrow layout keeps status and account controls readable', (tester) async {
@@ -362,8 +368,8 @@ void main() {
       const SyncResourceStatus('set', 'unknown', 'Unknown', 'rev', SyncResourceAvailability.unverified, 0),
     ];
     await pump(tester, width: 375, section: SyncSettingsSection.files);
-    expect(find.text('Not fully downloaded'), findsOneWidget);
-    expect(find.text('Verified and available'), findsOneWidget);
+    expect(find.text('Download incomplete'), findsOneWidget);
+    expect(find.text('Downloaded and verified'), findsOneWidget);
     await tap(tester, 'sync-download-document/missing');
     expect(service.actions.last, missing);
     service.busy = true;
@@ -387,7 +393,7 @@ void main() {
       canReclaim: true,
     );
     await pump(tester, locale: 'zh', width: 390, section: SyncSettingsSection.advanced);
-    expect(find.textContaining('任何版本仍引用的块均保留'), findsOneWidget);
+    expect(find.textContaining('保留文件与历史'), findsOneWidget);
     await tap(tester, 'sync-cache-inspect');
     expect(service.actions.last, 'cache-inspect');
     await tap(tester, 'sync-cache-reclaim');
@@ -407,7 +413,7 @@ void main() {
     );
     service.publish();
     await tester.pumpAndSettle();
-    expect(find.textContaining('已清理 2.0 KiB'), findsOneWidget);
+    expect(find.textContaining('已释放 2.0 KiB'), findsOneWidget);
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('sync-cache-reclaim'))).onPressed, isNull);
     service.cacheUsage = const SyncCacheUsage(
       bytes: 2048,
@@ -449,8 +455,8 @@ void main() {
     active();
     service.failure = SyncSettingsFailure.timedOut;
     await pump(tester, locale: 'zh', width: 390);
-    expect(find.textContaining('iCloud 等待超时'), findsOneWidget);
-    expect(find.textContaining('已交给系统的文件操作可能仍会完成'), findsOneWidget);
+    expect(find.textContaining('iCloud 超时'), findsOneWidget);
+    expect(find.textContaining('系统可能仍在传输'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -477,7 +483,7 @@ void main() {
     service.initialized = false;
     service.publish();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Reload status'));
+    await tester.tap(find.text('Refresh'));
     await tester.pumpAndSettle();
     expect(service.actions.last, 'initialize');
   });

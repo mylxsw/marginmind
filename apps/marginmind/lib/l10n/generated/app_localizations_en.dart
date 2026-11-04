@@ -6309,7 +6309,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage saved content and conflicts here. For service delivery status, open Settings → Sync.';
 
   @override
-  String get syncWaitingTransfer => 'Saved changes are awaiting service confirmation.';
+  String get syncWaitingTransfer => 'Changes pending sync';
 
   @override
   String get syncRecovered =>
@@ -6343,20 +6343,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncCandidate => 'Proposed change';
 
   @override
-  String get syncKeep => 'Keep current content';
+  String get syncKeep => 'Keep current';
 
   @override
-  String get syncUse => 'Apply this change';
+  String get syncUse => 'Use this version';
 
   @override
-  String get syncChoiceHint => 'These related changes form one edit. Your choice applies to all of them.';
+  String get syncChoiceHint => 'Your choice applies to all changes above.';
 
   @override
   String get syncInvalidCandidate =>
       'This change cannot be applied safely to the current structure. Keep current content or review its dependencies first.';
 
   @override
-  String get syncNoConflicts => 'No conflicts need a choice. This does not confirm cloud delivery.';
+  String get syncNoConflicts => 'No conflicts';
 
   @override
   String get syncAbsent => 'Not present';
@@ -6366,13 +6366,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String syncConflictCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count edits need a choice',
-      one: '1 edit needs a choice',
-    );
-    return '$_temp0';
+    return '$count to review';
   }
 
   @override
@@ -6505,7 +6499,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get folderRepairNeeded => 'The folder index needs repair. Your saved changes are retained.';
 
   @override
-  String get readingContinuationsTitle => 'Continue from another device';
+  String get readingContinuationsTitle => 'Continue reading';
 
   @override
   String get readingContinuationsHint => 'Each device keeps its own position. Choose one to open it here.';
@@ -6522,10 +6516,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readingVersionChanged => 'This position belongs to a different or removed document version.';
 
   @override
-  String get readingResourceMissing => 'The document is not available on this device yet.';
+  String get readingResourceMissing => 'Download the document first';
 
   @override
-  String get readingContinue => 'Continue here';
+  String get readingContinue => 'Continue reading';
 
   @override
   String get vocabularyKeep => 'Keep this word';
@@ -6566,8 +6560,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync content and its referenced files with your chosen service. Downloads are on demand; this device stays paused between manual operations.';
 
   @override
-  String get syncSettingsLocal =>
-      'This library is stored on this device. Preparing sync preserves its existing content.';
+  String get syncSettingsLocal => 'Stored on this device';
 
   @override
   String get syncSettingsUnavailable => 'Sync setup is unavailable on this platform or this build.';
@@ -6585,62 +6578,60 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSettingsDeviceName => 'This device’s name';
 
   @override
-  String get syncSettingsPrepare => 'Prepare this library';
+  String get syncSettingsPrepare => 'Enable sync';
 
   @override
   String get syncSettingsIdentityHint =>
-      'To join, copy the library code from the other device. Existing local content will also be included; conflicting histories are preserved for review. The library identity cannot be switched after initialization.';
+      'Your local content will join this library. Its code cannot be changed after setup.';
 
   @override
-  String get syncSettingsRestart =>
-      'Preparation saved. Close and reopen Foliarc to initialize sync safely, then connect a service here. Nothing has been uploaded.';
+  String get syncSettingsRestart => 'Restart Foliarc to connect a service. Nothing has been uploaded.';
 
   @override
-  String get syncSettingsDirectory => 'WebDAV HTTPS directory';
+  String get syncSettingsDirectory => 'Server URL (HTTPS)';
 
   @override
-  String get syncSettingsAccount => 'WebDAV username';
+  String get syncSettingsAccount => 'Username';
 
   @override
-  String get syncSettingsPassword => 'Password / app password (blank to reuse saved credential)';
+  String get syncSettingsPassword => 'Password (leave blank to keep saved password)';
 
   @override
-  String get syncSettingsConnect => 'Check and save WebDAV connection';
+  String get syncSettingsConnect => 'Connect';
 
   @override
-  String get syncSettingsICloud => 'Connect this device’s iCloud';
+  String get syncSettingsICloud => 'Connect iCloud';
 
   @override
-  String get syncSettingsConnectHint =>
-      'Connecting checks the service without uploading. Credentials are stored securely. Changing service or account pauses the previous queue.';
+  String get syncSettingsConnectHint => 'Checks the connection without uploading content.';
 
   @override
-  String get syncSettingsOnce => 'Sync once';
+  String get syncSettingsOnce => 'Sync now';
 
   @override
   String get syncSettingsPause => 'Pause';
 
   @override
-  String get syncSettingsPaused => 'Paused · runs only when you choose Sync once';
+  String get syncSettingsPaused => 'Manual sync · Paused';
 
   @override
-  String get syncSettingsRunning => 'Working… Pause stops subsequent transfers; a request already sent may finish.';
+  String get syncSettingsRunning => 'Syncing…';
 
   @override
-  String get syncSettingsPending => 'Shared changes awaiting confirmation';
+  String get syncSettingsPending => 'Pending';
 
   @override
-  String get syncSettingsConfirmed => 'Metadata objects confirmed by the service';
+  String get syncSettingsConfirmed => 'Confirmed by service';
 
   @override
-  String get syncSettingsStaged => 'Objects staged locally, awaiting cloud confirmation';
+  String get syncSettingsStaged => 'Awaiting cloud confirmation';
 
   @override
-  String get syncSettingsReceived => 'Metadata objects received';
+  String get syncSettingsReceived => 'Received';
 
   @override
   String get syncSettingsTimedOut =>
-      'iCloud took too long. Sync is paused and pending changes are preserved. A file operation already sent to the system may still finish. Check iCloud availability and retry.';
+      'iCloud timed out and sync paused. System transfers may continue; try again later.';
 
   @override
   String get syncSettingsError =>
@@ -6674,7 +6665,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This service lacks required history. Keep using the original service, or inspect and explicitly copy the history available on this device.';
 
   @override
-  String get syncSettingsRetry => 'Reload status';
+  String get syncSettingsRetry => 'Refresh';
 
   @override
   String get syncResourcesTitle => 'Files on this device';
@@ -6684,22 +6675,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'A received document can be downloaded when needed. Local files that differ from their saved fingerprint are preserved.';
 
   @override
-  String get syncResourceAvailable => 'Verified and available';
+  String get syncResourceAvailable => 'Downloaded and verified';
 
   @override
-  String get syncResourceMissing => 'Not fully downloaded';
+  String get syncResourceMissing => 'Download incomplete';
 
   @override
-  String get syncResourceChanged => 'Local file differs or cannot be verified. It will not be overwritten.';
+  String get syncResourceChanged => 'File differs; kept unchanged';
 
   @override
-  String get syncResourceUnverified => 'No verified file list yet. Sync from the device that owns the original files.';
+  String get syncResourceUnverified => 'Waiting for file details from the original device';
 
   @override
-  String get syncResourceDownload => 'Download files';
+  String get syncResourceDownload => 'Download';
 
   @override
-  String get syncDeviceRename => 'Rename this device';
+  String get syncDeviceRename => 'Rename';
 
   @override
   String get syncDeviceNameHint =>
@@ -6710,22 +6701,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Some device names could not be accepted. Their histories are retained; other devices can continue syncing.';
 
   @override
-  String get syncDisconnect => 'Disconnect and remove saved credential';
+  String get syncDisconnect => 'Disconnect';
 
   @override
   String get syncDisconnectHint =>
-      'Disconnecting removes this connection and its saved credential from this device. Library content, cloud files and delivery history are kept.';
+      'Removes this connection and its saved password. Your library and cloud files are kept.';
 
   @override
   String get syncDeviceStale =>
       'The device name changed while you were editing. Your input is kept. Cancel and reopen Rename to review the new name.';
 
   @override
-  String get syncDisconnectICloud => 'Disconnect iCloud from this library';
+  String get syncDisconnectICloud => 'Disconnect';
 
   @override
-  String get syncDisconnectICloudHint =>
-      'Disconnecting keeps your library, cloud files and delivery history. It does not sign you out of your Apple Account.';
+  String get syncDisconnectICloudHint => 'Your library and cloud files are kept. This does not sign you out of iCloud.';
 
   @override
   String get syncRenameStale =>
@@ -6741,8 +6731,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneNavigationReturnToContent => 'Back to Content';
 
   @override
-  String get syncConcurrentChoiceHint =>
-      'Different devices made choices about the same change. Review these alternatives together. Choosing here replaces all currently shown choices for that change; unrelated edits are kept.';
+  String get syncConcurrentChoiceHint => 'This confirms a choice for all options shown. Other changes are kept.';
 
   @override
   String get aiTaskWebFormat => 'Web Page Formatting';
@@ -7002,18 +6991,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recoveryExplanation =>
-      'Recover a saved content version as a new study set. Original deletion and conflicts remain unchanged. Review scores, reading progress and separate translations are not copied. Only files with a verified historical manifest are copied; missing files may need downloading in Sync settings. Books and web documents require their retained resource manifest before recovery.';
+      'Creates a new study set and keeps the original. Reviews, reading progress and translations are excluded; attachments may need downloading.';
 
   @override
   String get recoveryFailed =>
       'Recovery could not finish. The original history is safe. Check storage and retained resource manifests, then retry; retrying will not create a second copy.';
 
   @override
-  String get recoveryCreated => 'A recovery copy was created. Later edits or deletion of that copy are kept.';
+  String get recoveryCreated => 'Recovery copy created';
 
   @override
-  String get recoveryPending =>
-      'This version had unresolved choices. Only its displayed content is copied; original candidates remain in the source history.';
+  String get recoveryPending => 'Copies current content only; unresolved choices stay in the original.';
 
   @override
   String get recoveryCopyTitle => 'New study set name';
@@ -7022,8 +7010,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recoverCopy => 'Recover as a copy';
 
   @override
-  String get recoveryEmpty =>
-      'No recoverable deleted content in retained sync history. Local-only deletions and history not received on this device are not listed.';
+  String get recoveryEmpty => 'No recoverable content';
 
   @override
   String get recoveryDeletedSet => 'Deleted study set';
@@ -7042,11 +7029,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get syncCacheHint =>
-      'Only unused sync chunks can be removed. Original files, recovery history and chunks referenced by any version are kept.';
+  String get syncCacheHint => 'Removes unused cache only. Files and history are kept.';
 
   @override
-  String get syncCacheInspect => 'Check sync cache';
+  String get syncCacheInspect => 'Check cache';
 
   @override
   String syncCacheUsage(int bytes, int unused) {
@@ -7070,24 +7056,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get syncCacheReclaim => 'Remove unused chunks';
+  String get syncCacheReclaim => 'Clear unused cache';
 
   @override
   String get syncCacheIncomplete => 'History is still incomplete. Sync missing versions before checking again.';
 
   @override
-  String get syncCopyHint =>
-      'Copy the accepted sync history held on this device to the selected service, including contributions from other devices and deleted versions. This does not delete the original service. Unaccepted unrelated branches stay here. All referenced historical files must be available locally or at the destination. Inspect first, then explicitly confirm the copy.';
+  String get syncCopyHint => 'Copy sync history to the connected service. The original service is kept.';
 
   @override
-  String get syncCopyPreview => 'Inspect history copy';
+  String get syncCopyPreview => 'Review history copy';
 
   @override
-  String get syncCopyConfirm => 'Copy this history to the selected service';
+  String get syncCopyConfirm => 'Confirm copy';
 
   @override
-  String get syncCopyDestination =>
-      'Use as a history-copy destination (allow an empty service; connecting remains read-only)';
+  String get syncCopyDestination => 'Allow copying to an empty service';
 
   @override
   String get syncCopyStale =>
@@ -7095,7 +7079,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String syncCopySummary(int commits, int others, int chunks, int excluded, int unverified) {
-    return '$commits versions, including $others from other devices; $chunks resource chunks. $excluded unaccepted versions are excluded. $unverified versions lack file verification manifests; their files are not guaranteed by this copy.';
+    return '$commits versions · $others from other devices\n$chunks file chunks\n$excluded unaccepted versions excluded\nAttachments may be unavailable for $unverified versions';
   }
 
   @override
@@ -7109,7 +7093,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncManageTitle => 'Manage';
 
   @override
-  String get syncServiceTitle => 'Connect a service';
+  String get syncServiceTitle => 'Sync service';
 
   @override
   String get syncServiceDetail => 'Connection and account';
@@ -7121,27 +7105,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncFilesDetail => 'Download files for offline reading';
 
   @override
-  String get syncAdvancedTitle => 'Advanced management';
+  String get syncAdvancedTitle => 'Advanced';
 
   @override
   String get syncAdvancedDetail => 'Copy history and manage cache';
 
   @override
-  String get syncBack => 'Back to sync';
+  String get syncBack => 'Sync';
 
   @override
   String get syncNotConnected => 'No service connected';
 
   @override
-  String get syncConnectIntro =>
-      'Choose a service to sync this library with your other devices. Your local content stays here.';
+  String get syncConnectIntro => 'Connect a service to sync across devices.';
 
   @override
   String get syncSetupTitle => 'Start using sync';
 
   @override
-  String get syncSetupIntro =>
-      'Create a library or join one from another device. After preparing, restart Foliarc to choose your sync service.';
+  String get syncSetupIntro => 'Restart the app after setup, then connect a sync service.';
 
   @override
   String get syncSetupReady => 'Ready for restart';
@@ -7150,11 +7132,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncDeviceExample => 'For example: Work MacBook or Study iPad';
 
   @override
-  String get syncICloudIntro =>
-      'Uses the iCloud account signed in on this device. Availability depends on this app’s iCloud configuration.';
+  String get syncICloudIntro => 'Uses this device’s iCloud account.';
 
   @override
-  String get syncConnectionOptions => 'Moving an existing library?';
+  String get syncConnectionOptions => 'Migration options';
 
   @override
   String get syncCurrentConnection => 'Current connection';
@@ -7166,14 +7147,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncOtherDevices => 'Other devices';
 
   @override
-  String get syncLibraryCodeHint => 'Copy this code when joining this library on another device.';
+  String get syncLibraryCodeHint => 'Enter this code on another device to join.';
 
   @override
-  String get syncFilesEmpty => 'No referenced files to display. Reload after syncing if files are expected.';
+  String get syncFilesEmpty => 'No files yet';
 
   @override
   String get syncChangedHelp =>
-      'Keep the local original. To obtain the synced version without overwriting it, use another device or an independent library copy.';
+      'Keep the local original. Download the synced version on another device or into a separate copy.';
 
   @override
   String syncCacheReadable(String size, String unused) {
@@ -7182,7 +7163,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String syncCacheFreed(String size) {
-    return 'Freed $size of unreferenced cache.';
+    return 'Freed $size';
   }
 
   @override
@@ -7190,14 +7171,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String syncCandidateDevice(String device) {
-    return 'Candidate from $device';
+    return 'From $device';
   }
 
   @override
-  String get syncUnknownDevice => 'Unregistered device';
+  String get syncUnknownDevice => 'Unnamed device';
 
   @override
-  String get syncViewFiles => 'View files & downloads';
+  String get syncViewFiles => 'Go to downloads';
 
   @override
   String get recoveryIntro => 'Recover deleted content as an independent study set. The original history is preserved.';

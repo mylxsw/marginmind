@@ -118,7 +118,6 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
               if (status.enabled && !status.needsAttention) Text(l.syncNoConflicts),
               ReadingContinuationsSection(studySetId: widget.studySetId),
               const SizedBox(height: 16),
-              Text(l.syncLocalOnly, style: context.mmText.callout),
               if (status.queued > 0) _notice(l.syncWaitingTransfer),
               if (status.enabled)
                 Align(

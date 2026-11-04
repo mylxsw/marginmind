@@ -107,22 +107,9 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
     setState(() => _section = section);
   }
 
-  Widget _link(SyncSettingsSection section, String title, String detail, bool enabled) => MMSettingsRow(
+  Widget _link(SyncSettingsSection section, String title, bool enabled) => MMSettingsRow(
     key: ValueKey('sync-nav-${section.name}'),
-    height: 64,
-    leading: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: context.mmText.body),
-        Text(
-          detail,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel),
-        ),
-      ],
-    ),
+    leading: Text(title, style: context.mmText.body),
     trailing: const Icon(MMIcons.chevronRight, size: 14),
     onTap: enabled ? () => _go(section) : null,
   );
@@ -255,7 +242,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
           if (_joining) _input('sync-library-code', l.syncSettingsLibraryId, _code, enabled),
           _input('sync-device-name', l.syncSettingsDeviceName, _name, enabled),
           _note(l.syncDeviceExample),
-          _note(l.syncSettingsIdentityHint),
+          if (_joining) _note(l.syncSettingsIdentityHint),
           _error(s),
           _actions([
             MMButton(
@@ -278,7 +265,6 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   List<Widget> _overview(SyncSettingsController s) {
     final l = context.l10n, enabled = !s.busy, target = s.target;
     return [
-      MMSettingsHeader(l.syncOverviewTitle),
       _group([
         Text(
           target == null
@@ -289,7 +275,6 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
           style: context.mmText.title3,
         ),
         if (target != null) ...[
-          _note(target.location),
           if (target.service == 'webdav') Text(target.account, style: context.mmText.callout),
           const SizedBox(height: 12),
           if (!s.busy) Text(l.syncSettingsPaused),
@@ -314,23 +299,21 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
           ),
         ]),
       ]),
-      MMSettingsHeader(l.syncManageTitle),
+      const SizedBox(height: 20),
       MMSettingsGroup(
         children: [
-          _link(SyncSettingsSection.connection, l.syncServiceTitle, l.syncServiceDetail, enabled),
-          _link(SyncSettingsSection.devices, l.syncLibraryDevices, s.deviceName ?? l.syncSettingsDeviceName, enabled),
-          _link(SyncSettingsSection.files, l.syncResourcesTitle, l.syncFilesDetail, enabled),
-          _link(SyncSettingsSection.advanced, l.syncAdvancedTitle, l.syncAdvancedDetail, enabled),
+          _link(SyncSettingsSection.connection, l.syncServiceTitle, enabled),
+          _link(SyncSettingsSection.devices, l.syncLibraryDevices, enabled),
+          _link(SyncSettingsSection.files, l.syncResourcesTitle, enabled),
+          _link(SyncSettingsSection.advanced, l.syncAdvancedTitle, enabled),
         ],
       ),
-      _note(l.syncSettingsScope),
     ];
   }
 
   List<Widget> _connection(SyncSettingsController s) {
     final l = context.l10n, enabled = !s.busy;
     return [
-      _note(l.syncSettingsConnectHint),
       _group([
         MMPopUpButton<bool>(
           key: const ValueKey('sync-service-picker'),
@@ -346,6 +329,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
         ],
         if (!_icloud && !s.canStoreSecrets) _note(l.syncSettingsUnavailable),
         if (_icloud) _note(l.syncICloudIntro),
+        _note(l.syncSettingsConnectHint),
         _error(s),
         _actions([
           MMButton(
@@ -394,7 +378,6 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
         MMSettingsHeader(l.syncCurrentConnection),
         _group([
           Text('${target.service == 'icloud' ? 'iCloud Drive' : 'WebDAV'} · ${target.location}'),
-          _note(target.service == 'icloud' ? l.syncDisconnectICloudHint : l.syncDisconnectHint),
           _actions([
             MMButton(
               key: const ValueKey('sync-disconnect'),
@@ -446,7 +429,6 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
             ),
           ]),
         ],
-        _note(l.syncDeviceNameHint),
         _error(s),
       ]),
       if (s.devices.any((d) => !d.local)) ...[
@@ -467,7 +449,6 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
   List<Widget> _files(SyncSettingsController s) {
     final l = context.l10n, enabled = !s.busy;
     return [
-      _note(l.syncResourcesHint),
       _error(s),
       if (s.resources.isEmpty) _group([Text(l.syncFilesEmpty)]),
       for (final r in s.resources)
@@ -508,7 +489,6 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
     final l = context.l10n, enabled = !s.busy;
     return [
       _error(s),
-      MMSettingsHeader(l.syncCopyPreview),
       _group([
         _note(l.syncCopyHint),
         if (s.target == null)
@@ -545,7 +525,7 @@ class _SyncSettingsPageState extends ConsumerState<SyncSettingsPage> {
           ],
         ],
       ]),
-      MMSettingsHeader(l.syncCacheInspect),
+      const SizedBox(height: 20),
       _group([
         _note(l.syncCacheHint),
         if (s.cacheUsage case final cache?) ...[

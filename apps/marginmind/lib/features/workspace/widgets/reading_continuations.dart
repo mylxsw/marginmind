@@ -78,7 +78,6 @@ class _ReadingContinuationsSectionState extends ConsumerState<ReadingContinuatio
               children: [
                 const SizedBox(height: MMSpacing.m),
                 Text(l.readingContinuationsTitle, style: context.mmText.headline),
-                Text(l.readingContinuationsHint, style: context.mmText.callout),
                 if (_error != null) Text(_error!, key: const ValueKey('reading-continuation-error')),
                 for (final choice in status.items)
                   Padding(
