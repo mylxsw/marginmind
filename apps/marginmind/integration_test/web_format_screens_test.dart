@@ -319,6 +319,10 @@ void main() {
 
     await openSheet(session);
     await shot('02-off');
+    if (has(find.descendant(of: find.byType(MMSegmentedControl<bool>), matching: find.text('预览')))) {
+      await tap(find.text('预览').last);
+      await shot('02b-off-preview');
+    }
     await cancelSheet();
 
     route = const RoutingRowState(effective: null, source: RoutingSource.categoryDefault, issue: RoutingIssue.unset);

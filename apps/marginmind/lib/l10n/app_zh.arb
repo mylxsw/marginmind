@@ -2593,5 +2593,6 @@
   "webFormatPdfFailed": "无法生成 PDF，请重试或换一种格式。",
   "webFormatImage": "图片",
   "webFormatSectionCount": "{count} 段",
-  "webFormatTabCompareShort": "对照"
+  "webFormatTabCompareShort": "对照",
+  "webFormatNeedsReview": "{count} 段需要确认"
 }

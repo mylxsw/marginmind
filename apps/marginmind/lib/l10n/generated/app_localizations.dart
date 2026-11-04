@@ -11654,6 +11654,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Compare'**
   String get webFormatTabCompareShort;
+
+  /// No description provided for @webFormatNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sections need review'**
+  String webFormatNeedsReview(String count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

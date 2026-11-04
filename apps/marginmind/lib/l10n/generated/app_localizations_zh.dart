@@ -6364,4 +6364,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get webFormatTabCompareShort => '对照';
+
+  @override
+  String webFormatNeedsReview(String count) {
+    return '$count 段需要确认';
+  }
 }

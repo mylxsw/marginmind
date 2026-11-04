@@ -186,6 +186,8 @@ Future<bool> showConfirmSheet(
   }
   final ok = await showMMSheet<bool>(
     context: context,
+    // A question fits its content; half a screen of blank sheet says nothing.
+    expand: false,
     builder: (context) => MMSheet(
       title: title,
       actions: [

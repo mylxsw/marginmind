@@ -6612,4 +6612,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webFormatTabCompareShort => 'Compare';
+
+  @override
+  String webFormatNeedsReview(String count) {
+    return '$count sections need review';
+  }
 }

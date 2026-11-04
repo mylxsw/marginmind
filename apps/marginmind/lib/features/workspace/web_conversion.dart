@@ -148,7 +148,7 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
       prepared = await showMMSheet<PreparedWebDocument>(
         context: context,
         width: MMSizes.webConversionSheetWidth,
-        initialFraction: MMSizes.phoneSheetWork,
+        initialFraction: MMSizes.phoneSheetExpanded,
         builder: (_) => WebConversionSheet(
           prepare: prepare,
           formatting: formatting,
@@ -245,7 +245,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   WebFormatPageSource? _pageSource;
   WebFormatSession? _session;
   WebFormatTab _tab = WebFormatTab.preview;
-  bool _closing = false, _saving = false, _saveFailed = false;
+  bool _closing = false, _saving = false, _saveFailed = false, _idlePreview = false;
   (String, String, Future<PreparedWebDocument>)? _formattedPdf;
   String? _appliedTitle;
 
@@ -614,15 +614,29 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
           return LayoutBuilder(
             builder: (context, sheet) => MMSheet(
               title: l.convertTitle,
-              footer: running && !compact
+              // Phones keep the main action in the title row, like every other form.
+              titleTrailing: !compact
+                  ? null
+                  : running
+                  ? MMButton(label: l.webFormatStop, icon: MMIcons.stop, onPressed: session!.stop)
+                  : session == null && _aiReady
+                  ? start
+                  : save,
+              footer: compact
+                  ? (_saveFailed
+                        ? Text(l.docSaveFailed, style: context.mmText.footnote.copyWith(color: c.critical))
+                        : null)
+                  : running
                   ? Text(l.webFormatStopNote, style: context.mmText.footnote.copyWith(color: c.secondaryLabel))
                   : _saveFailed
                   ? Text(l.docSaveFailed, style: context.mmText.footnote.copyWith(color: c.critical))
                   : null,
               actions: [
                 MMButton(label: l.cancel, onPressed: () => unawaited(_close())),
-                if (running) MMButton(label: l.webFormatStop, icon: MMIcons.stop, onPressed: session!.stop),
-                if (session == null && _aiReady) start else if (!running || !compact) save,
+                if (!compact) ...[
+                  if (running) MMButton(label: l.webFormatStop, icon: MMIcons.stop, onPressed: session!.stop),
+                  if (session == null && _aiReady) start else save,
+                ],
               ],
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -631,11 +645,14 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      section(l.convertDocumentName, titleField),
-                      const SizedBox(height: MMSpacing.xxl),
-                      section(l.convertFormat, segments),
-                      if (session != null) ...[
+                      // While running, a phone's progress tab is about progress.
+                      if (!(compact && running)) ...[
+                        section(l.convertDocumentName, titleField),
                         const SizedBox(height: MMSpacing.xxl),
+                        section(l.convertFormat, segments),
+                        if (session != null) const SizedBox(height: MMSpacing.xxl),
+                      ],
+                      if (session != null) ...[
                         WebFormatProgress(
                           session: session,
                           onReveal: _revealSection,
@@ -682,10 +699,25 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
                       else if (session != null)
                         // The whole sheet is the work area, above any keyboard.
                         SizedBox(
-                          height: (sheet.maxHeight - 140).clamp(300.0, double.infinity),
+                          height: (sheet.maxHeight - (compact ? 150 : 140)).clamp(300.0, double.infinity),
                           child: previewPane(settings: settings),
                         )
-                      else ...[
+                      else if (widget.formatting != null) ...[
+                        MMSegmentedControl<bool>(
+                          expand: true,
+                          segments: [
+                            MMSegment(value: false, label: l.webFormatTabSettings),
+                            MMSegment(value: true, label: l.webFormatTabPreview),
+                          ],
+                          value: _idlePreview,
+                          onChanged: (value) => setState(() => _idlePreview = value),
+                        ),
+                        const SizedBox(height: MMSpacing.m),
+                        SizedBox(
+                          height: (sheet.maxHeight - 190).clamp(300.0, double.infinity),
+                          child: _idlePreview ? previewPane() : SingleChildScrollView(child: settings),
+                        ),
+                      ] else ...[
                         settings,
                         const SizedBox(height: MMSpacing.xl),
                         SizedBox(height: 300, child: previewPane()),
@@ -718,12 +750,14 @@ class _FormatHeader extends StatelessWidget {
         if (origin != null) ...[
           Text(
             '${Uri.tryParse(origin.url)?.host} · $date',
-            style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
+            style: (MMInput.of(context).phone ? context.mmText.footnote : context.mmText.callout).copyWith(
+              color: context.mmColors.secondaryLabel,
+            ),
           ),
           const SizedBox(height: MMSpacing.m),
         ],
         Text(title, style: context.mmText.title2.copyWith(fontSize: 20, height: 1.4)),
-        const SizedBox(height: MMSpacing.xl),
+        SizedBox(height: MMInput.of(context).phone ? MMSpacing.m : MMSpacing.xl),
       ],
     );
   }
@@ -853,7 +887,10 @@ class _Preview extends StatelessWidget {
                           ),
                           style: block.kind == book.BlockKind.heading
                               ? context.mmText.headline.copyWith(fontSize: 16, height: 1.5)
-                              : context.mmText.body.copyWith(fontSize: 15, height: 1.75),
+                              : context.mmText.body.copyWith(
+                                  fontSize: MMInput.of(context).phone ? 16 : 15,
+                                  height: 1.75,
+                                ),
                         ),
                 ),
           ],

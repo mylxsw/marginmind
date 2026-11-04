@@ -3317,5 +3317,7 @@
   "webFormatImage": "Image",
   "webFormatSectionCount": "{count} sections",
   "webFormatTabCompareShort": "Compare",
-  "@webFormatSectionCount": { "placeholders": {"count": {"type": "String"}} }
+  "@webFormatSectionCount": { "placeholders": {"count": {"type": "String"}} },
+  "webFormatNeedsReview": "{count} sections need review",
+  "@webFormatNeedsReview": { "placeholders": {"count": {"type": "String"}} }
 }

@@ -18,9 +18,10 @@ Future<T?> showMMSheet<T>({
   required WidgetBuilder builder,
   double width = 420,
   double initialFraction = MMSizes.phoneSheetMedium,
+  bool expand = true,
 }) {
   if (MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact) {
-    return showMMBottomSheet<T>(context: context, builder: builder, initialFraction: initialFraction);
+    return showMMBottomSheet<T>(context: context, builder: builder, initialFraction: initialFraction, expand: expand);
   }
   final c = context.mmColors;
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);

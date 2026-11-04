@@ -21,6 +21,14 @@ import '../web_format_session.dart';
 /// [settings] exists only in a single column, where it shares the pane.
 enum WebFormatTab { preview, edit, compare, settings }
 
+/// Supporting text: phones' body size is for reading, not for annotations.
+TextStyle _secondary(BuildContext context) => MMInput.of(context).phone
+    ? context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel)
+    : context.mmText.bodySecondary;
+
+/// Status icons keep their proportion to the text beside them.
+double _statusIcon(BuildContext context) => MMInput.of(context).phone ? 16 : 13;
+
 /// An inline action that lines up with the text around it.
 class _TextLink extends StatelessWidget {
   const _TextLink({required this.label, required this.onTap, this.color});
@@ -38,7 +46,7 @@ class _TextLink extends StatelessWidget {
         widthFactor: 1,
         child: Text(
           label,
-          style: context.mmText.callout.copyWith(
+          style: (MMInput.of(context).phone ? context.mmText.footnote : context.mmText.callout).copyWith(
             color: color ?? context.mmColors.accent,
             decoration: state.hovered ? TextDecoration.underline : null,
           ),
@@ -107,12 +115,15 @@ class WebFormatCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: MMSpacing.s),
-          Text(l.webFormatHint, style: t.bodySecondary),
+          Text(l.webFormatHint, style: _secondary(context)),
           if (row != null && !ready) ...[
             const SizedBox(height: MMSpacing.s),
             Row(
               children: [
-                if (issue != null) ...[Icon(MMIcons.warning, size: 13, color: c.critical), const SizedBox(width: 4)],
+                if (issue != null) ...[
+                  Icon(MMIcons.warning, size: _statusIcon(context), color: c.critical),
+                  const SizedBox(width: 4),
+                ],
                 Expanded(
                   child: Text(
                     issue ?? l.assistantSetupHint,
@@ -128,7 +139,7 @@ class WebFormatCard extends ConsumerWidget {
             const SizedBox(height: MMSpacing.s),
             Row(
               children: [
-                Expanded(child: Text(l.webFormatModel, style: t.bodySecondary)),
+                Expanded(child: Text(l.webFormatModel, style: _secondary(context))),
                 ModelRoutePicker(
                   label: row.effective == null || catalog == null
                       ? l.aiTasksNotSet
@@ -229,7 +240,7 @@ class WebFormatProgress extends StatelessWidget {
             children: [
               Icon(
                 check.complete ? MMIcons.check : MMIcons.warning,
-                size: 13,
+                size: _statusIcon(context),
                 color: check.complete ? c.positive : c.caution,
               ),
               const SizedBox(width: 6),
@@ -314,7 +325,12 @@ class WebFormatProgress extends StatelessWidget {
                 : Center(child: _dot(c)),
           ),
           const SizedBox(width: MMSpacing.s),
-          Expanded(child: Text(title, style: done || running ? t.body : t.bodySecondary)),
+          Expanded(
+            child: Text(
+              title,
+              style: done || running ? t.body.copyWith(height: 1.3) : t.bodySecondary.copyWith(height: 1.3),
+            ),
+          ),
           if (note != null && (done || running)) Text(note, style: t.footnote.copyWith(color: c.secondaryLabel)),
         ],
       ),
@@ -330,10 +346,14 @@ class WebFormatProgress extends StatelessWidget {
   Widget _row(BuildContext context, int index, WebFormatSection section) {
     final l = context.l10n, c = context.mmColors, t = context.mmText;
     final icon = switch (section.state) {
-      WebFormatSectionState.done when section.needsReview => Icon(MMIcons.warning, size: 13, color: c.caution),
-      WebFormatSectionState.done => Icon(MMIcons.check, size: 13, color: c.positive),
+      WebFormatSectionState.done when section.needsReview => Icon(
+        MMIcons.warning,
+        size: _statusIcon(context),
+        color: c.caution,
+      ),
+      WebFormatSectionState.done => Icon(MMIcons.check, size: _statusIcon(context), color: c.positive),
       WebFormatSectionState.running => const CupertinoActivityIndicator(radius: 6),
-      WebFormatSectionState.failed => Icon(MMIcons.warning, size: 13, color: c.critical),
+      WebFormatSectionState.failed => Icon(MMIcons.warning, size: _statusIcon(context), color: c.critical),
       _ => Center(child: _dot(c)),
     };
     final settled = section.formatted || section.state == WebFormatSectionState.running;
@@ -365,11 +385,11 @@ class WebFormatProgress extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  constraints: const BoxConstraints(minHeight: 26),
+                  constraints: BoxConstraints(minHeight: context.mmTouchPlatform ? MMSizes.touchTarget : 26),
                   alignment: Alignment.centerLeft,
                   child: Row(
                     children: [
-                      SizedBox(width: 14, height: 14, child: icon),
+                      SizedBox(width: _statusIcon(context) + 1, height: _statusIcon(context) + 1, child: icon),
                       const SizedBox(width: MMSpacing.s),
                       Expanded(
                         child: Text(
@@ -540,18 +560,34 @@ class _WebFormatPaneState extends State<WebFormatPane> {
     );
   }
 
-  Widget _body(String text, {bool cursor = false, double size = 15}) => MediaQuery(
-    data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(size / 13)),
-    child: AnswerBody(
-      text: text,
-      citations: const [],
-      onCitation: (_) {},
-      cursor: cursor,
-      imageBuilder: _image,
-      headingStyle: (level) =>
-          (level <= 2 ? context.mmText.title3 : context.mmText.headline).copyWith(color: context.mmColors.label),
-    ),
-  );
+  bool get _phone => MMInput.of(context).phone;
+
+  /// Fixed code sizes: 12pt next to phone prose would look like a footnote.
+  TextStyle get _mono =>
+      MMTypography.mono.copyWith(color: context.mmColors.label, fontSize: _phone ? 14 : null, height: 1.6);
+
+  /// [size] is the desktop point size; phones read one point larger. The scaler
+  /// is relative to the platform's body style, which AnswerBody starts from.
+  Widget _body(String text, {bool cursor = false, double size = 15}) {
+    final target = _phone ? size + 1 : size;
+    final scale = target / context.mmText.body.fontSize!;
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+      child: AnswerBody(
+        text: text,
+        citations: const [],
+        onCitation: (_) {},
+        cursor: cursor,
+        imageBuilder: _image,
+        headingStyle: (level) => TextStyle(
+          fontSize: (level <= 2 ? target + 2 : target) / scale,
+          height: 1.4,
+          fontWeight: FontWeight.w700,
+          color: context.mmColors.label,
+        ),
+      ),
+    );
+  }
 
   /// The extraction's raw HTML blocks read as plain rows in a preview.
   String _readable(String block) {
@@ -597,7 +633,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
       ),
       _ when _source && widget.session.running => Padding(
         padding: const EdgeInsets.only(bottom: MMSpacing.l),
-        child: Text(section.output, style: MMTypography.mono.copyWith(color: c.label, height: 1.6)),
+        child: Text(section.output, style: _mono),
       ),
       _ => Padding(
         padding: const EdgeInsets.only(bottom: MMSpacing.l),
@@ -625,12 +661,12 @@ class _WebFormatPaneState extends State<WebFormatPane> {
             children: [
               Icon(MMIcons.warning, size: 14, color: c.critical),
               const SizedBox(width: 6),
-              Expanded(child: Text(l.webFormatSectionFailed('${index + 1}'), style: t.headline)),
+              Expanded(child: Text(l.webFormatSectionFailed('${index + 1}'), style: t.headline.copyWith(height: 1.3))),
             ],
           ),
           const SizedBox(height: 6),
-          Text(aiInvocationError(l, section.error!), style: t.bodySecondary),
-          Text(l.webFormatSectionFailedHint, style: t.bodySecondary),
+          Text(aiInvocationError(l, section.error!), style: _secondary(context)),
+          Text(l.webFormatSectionFailedHint, style: _secondary(context)),
           const SizedBox(height: MMSpacing.s),
           Wrap(
             spacing: MMSpacing.s,
@@ -773,13 +809,59 @@ class _WebFormatPaneState extends State<WebFormatPane> {
       onChanged: widget.onTab,
     );
     final resume = canResume ? MMButton(label: l.webFormatResume, onPressed: session.resume) : null;
-    if (narrow || _stackStrip) {
+    if (narrow) {
+      // Statistics can wait on a phone: only what asks for a decision earns a row.
+      final reviews = [
+        for (final (i, s) in session.sections.indexed)
+          if (s.needsReview) i,
+      ];
       return Padding(
         padding: const EdgeInsets.only(bottom: MMSpacing.s),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (narrow) tabs else Align(alignment: Alignment.centerLeft, child: tabs),
+            tabs,
+            if (done < total) ...[
+              const SizedBox(height: MMSpacing.s),
+              Row(
+                children: [
+                  Expanded(child: summary),
+                  if (resume != null) ...[const SizedBox(width: MMSpacing.s), resume],
+                ],
+              ),
+            ] else if (reviews.isNotEmpty && widget.tab == WebFormatTab.preview) ...[
+              const SizedBox(height: MMSpacing.xs),
+              Row(
+                children: [
+                  Icon(MMIcons.warning, size: _statusIcon(context), color: c.caution),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      l.webFormatNeedsReview('${reviews.length}'),
+                      style: t.footnote.copyWith(color: c.caution),
+                    ),
+                  ),
+                  _TextLink(
+                    label: l.webFormatViewCompare,
+                    onTap: () {
+                      widget.onTab(WebFormatTab.compare);
+                      widget.reveal.value = reviews.first;
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+    if (_stackStrip) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: MMSpacing.s),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(alignment: Alignment.centerLeft, child: tabs),
             const SizedBox(height: MMSpacing.s),
             Row(
               children: [
@@ -806,7 +888,6 @@ class _WebFormatPaneState extends State<WebFormatPane> {
 
   Widget _content() {
     final session = widget.session;
-    final c = context.mmColors;
     if (widget.tab == WebFormatTab.settings && widget.settings != null) {
       return ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -817,7 +898,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
       if (session.finished && widget.mode == WebCaptureMode.original) return widget.pdf(context);
       final List<Widget> body;
       if (session.finished && widget.mode == WebCaptureMode.markdown) {
-        body = [Text(session.markdown, style: MMTypography.mono.copyWith(color: c.label, height: 1.6))];
+        body = [Text(session.markdown, style: _mono)];
       } else if (session.edited) {
         body = [_body(session.markdown)];
       } else {
@@ -863,18 +944,21 @@ class _WebFormatPaneState extends State<WebFormatPane> {
     final editor = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: 24,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(l.convertMarkdown, style: t.callout.copyWith(color: c.secondaryLabel)),
+        if (!_narrow || session.edited)
+          Padding(
+            padding: const EdgeInsets.only(bottom: MMSpacing.xs),
+            child: SizedBox(
+              height: _phone ? MMSizes.touchTarget : 24,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(l.convertMarkdown, style: t.callout.copyWith(color: c.secondaryLabel)),
+                  ),
+                  if (session.edited) _TextLink(label: l.webFormatRevert, onTap: widget.onRevert),
+                ],
               ),
-              if (session.edited) _TextLink(label: l.webFormatRevert, onTap: widget.onRevert),
-            ],
+            ),
           ),
-        ),
-        const SizedBox(height: MMSpacing.xs),
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(MMSpacing.m),
@@ -892,7 +976,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 textAlignVertical: TextAlignVertical.top,
-                style: MMTypography.mono.copyWith(color: c.label, height: 1.65),
+                style: _mono,
                 decoration: InputDecoration.collapsed(hintText: null, hintStyle: t.bodySecondary),
                 onChanged: session.edit,
               ),
@@ -936,7 +1020,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
     final l = context.l10n, c = context.mmColors, t = context.mmText;
     final session = widget.session;
     final narrow = _narrow;
-    final head = t.callout.copyWith(color: c.secondaryLabel);
+    final head = (_phone ? t.footnote : t.callout).copyWith(color: c.secondaryLabel, fontWeight: FontWeight.w600);
     Widget original(WebFormatSection section) => Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -986,7 +1070,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
                             spacing: MMSpacing.s,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Icon(MMIcons.warning, size: 13, color: c.caution),
+                              Icon(MMIcons.warning, size: _statusIcon(context), color: c.caution),
                               Text(
                                 section.check!.changePercent < 0
                                     ? l.webFormatRemovedHint('${-section.check!.changePercent}')

@@ -210,9 +210,6 @@ abstract final class MMSizes {
   /// the space below the safe area top, and the drag handle strip.
   static const double bottomSheetMedium = 0.62;
   static const double phoneSheetMedium = 0.5;
-
-  /// A sheet whose content is the work itself, such as reviewing a document.
-  static const double phoneSheetWork = 0.94;
   static const double phoneSheetExpanded = 1;
   static const double phoneQuickSheetMedium = 0.7;
   static const double bottomSheetHandle = 20;

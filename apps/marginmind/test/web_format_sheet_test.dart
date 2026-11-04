@@ -94,6 +94,7 @@ class Harness {
     String? initialTitle,
     bool withHost = true,
     bool realRoute = false,
+    bool phone = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -107,6 +108,7 @@ class Harness {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('zh'),
+          builder: phone ? (_, child) => MMInput(touchPlatform: true, phone: true, child: child!) : null,
           home: Scaffold(
             body: Builder(
               builder: (context) => MMButton(
@@ -156,6 +158,12 @@ Future<void> startFormatting(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(MMButton, '开始整理'));
   await tester.pump();
+}
+
+Future<void> startFormattingKeepingGate(WidgetTester tester, Harness h) async {
+  h.gate = Completer<void>();
+  await startFormatting(tester);
+  await tester.pump(const Duration(milliseconds: 100));
 }
 
 void main() {
@@ -422,6 +430,28 @@ void main() {
     final tabs = tester.getRect(find.byType(MMSegmentedControl<WebFormatTab>));
     final status = tester.getRect(find.textContaining('已整理 0/1 段'));
     expect(status.top, greaterThanOrEqualTo(tabs.bottom));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a single column keeps the main action on top and one level of tabs', (tester) async {
+    final h = Harness();
+    await h.pump(tester, size: const Size(390, 844), phone: true);
+    final sheetTitle = tester.getRect(find.text('保存到资料库'));
+    expect((tester.getCenter(find.widgetWithText(MMButton, '保存文档')).dy - sheetTitle.center.dy).abs(), lessThan(24));
+    expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
+    await tester.tap(find.text('预览'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await startFormattingKeepingGate(tester, h);
+    expect(find.text('整理进度'), findsWidgets);
+    await tester.tap(find.text('整理进度').first);
+    await tester.pumpAndSettle();
+    expect(find.text('文档名称'), findsNothing, reason: 'the progress tab is about progress');
+    h.gate!.complete();
+    await finish(tester);
+    expect(find.textContaining('用时'), findsNothing, reason: 'statistics do not earn a row on a single column');
     expect(tester.takeException(), isNull);
   });
 
