@@ -10,7 +10,7 @@
 | [ipad-portrait-dark](ipad-portrait-dark.jpg)、[ipad-portrait-light](ipad-portrait-light.jpg) | iPad Air 11 英寸模拟器，竖屏 | 深色、浅色 |
 | [phone-dark](phone-dark.jpg)、[phone-light](phone-light.jpg) | iPhone 17 模拟器 | 深色、浅色 |
 
-每张总览图包含 21 个状态，从网页入口到重新抓取。修复前后的对比见 [手机](before-after-phone.jpg) 和 [iPad](before-after-ipad.jpg)。
+每张总览图包含 21 个状态（手机多一张 AI 关闭时的预览），从网页入口到重新抓取。手机总览图是最终代码的截图；iPad 和 PC 的总览图截于最后一个手机提交之前，那个提交只在打开开关时增加滚动。修复前后的对比见 [手机第一轮](before-after-phone.jpg)、[手机第二轮](before-after-phone-2.jpg) 和 [iPad](before-after-ipad.jpg)。
 
 ## 发现并修复的问题
 
@@ -62,4 +62,5 @@
 - **iPhone 系统确认框：** 走查没有初始化原生呈现，截到的是共用的 Flutter 弹窗。
 - **Android、Windows：** 没有运行。
 - **真实模型：** 没有调用。
+- **浅色下的 PDF 预览：** 白色页面落在白色弹窗上，没有边界。这是共用的 PDF 预览组件的现状，这次没有改。
 - **网页背景的深浅：** 网页内容按设计不跟随应用外观，弹窗后面的灰色是遮罩盖在白色网页上。
