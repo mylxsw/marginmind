@@ -22,9 +22,11 @@ class VocabularySyncButton extends ConsumerWidget {
     return MMButton(
       key: const ValueKey('vocabulary-sync-open'),
       label: context.l10n.syncTitle,
-      onPressed: () => showModalBottomSheet<void>(
+      onPressed: () => showMMSheet<void>(
         context: context,
-        isScrollControlled: true,
+        width: 600,
+        expand: false,
+        initialFraction: MMSizes.phoneSheetExpanded,
         builder: (_) => const VocabularySyncSheet(),
       ),
     );
@@ -65,9 +67,11 @@ class _VocabularySyncSheetState extends ConsumerState<VocabularySyncSheet> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(MMSpacing.l),
+    return MMSheet(
+      title: l.syncTitle,
+      actions: [MMButton(label: l.closePanel, onPressed: () => Navigator.of(context).pop())],
+      child: SizedBox(
+        width: double.infinity,
         child: ref
             .watch(vocabularySyncProvider)
             .when(
@@ -81,8 +85,6 @@ class _VocabularySyncSheetState extends ConsumerState<VocabularySyncSheet> {
               data: (state) => Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(l.syncTitle, style: context.mmText.title3),
-                  Text(l.syncLocalOnly),
                   if (_error != null) Text(_error!, key: const ValueKey('vocabulary-sync-error')),
                   if (state.repairNeeded) Text(l.syncRepair),
                   if (state.retryFailed) Text(l.syncActionFailed),
@@ -94,8 +96,13 @@ class _VocabularySyncSheetState extends ConsumerState<VocabularySyncSheet> {
                     Text(c.term, style: context.mmText.headline),
                     Text(l.vocabularySyncField(c.field.name)),
                     for (final choice in c.choices)
-                      Padding(
-                        padding: const EdgeInsets.only(top: MMSpacing.s),
+                      Container(
+                        margin: const EdgeInsets.only(top: MMSpacing.s),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.mmColors.quaternaryFill,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -110,25 +117,33 @@ class _VocabularySyncSheetState extends ConsumerState<VocabularySyncSheet> {
                                   ? l.syncAbsent
                                   : choice.text,
                             ),
-                            MMButton(
-                              key: ValueKey('word-choice-${c.entryId}-${c.field.name}-${choice.id}'),
-                              label: l.syncUse,
-                              onPressed: _busy || state.editingEntries.contains(c.entryId)
-                                  ? null
-                                  : () => _action(
-                                      (r) => r.chooseVocabulary(
-                                        c.entryId,
-                                        c.field,
-                                        choice.id,
-                                        expectedRevision: c.revision,
-                                      ),
-                                    ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Semantics(
+                                label: '${c.term} · ${l.vocabularySyncField(c.field.name)} · ${choice.text}',
+                                child: MMButton(
+                                  key: ValueKey('word-choice-${c.entryId}-${c.field.name}-${choice.id}'),
+                                  label: l.syncUse,
+                                  onPressed: _busy || state.editingEntries.contains(c.entryId)
+                                      ? null
+                                      : () => _action(
+                                          (r) => r.chooseVocabulary(
+                                            c.entryId,
+                                            c.field,
+                                            choice.id,
+                                            expectedRevision: c.revision,
+                                          ),
+                                        ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
                   ],
                   const SizedBox(height: MMSpacing.l),
+                  Text(l.syncLocalOnly, style: context.mmText.callout),
                   MMButton(
                     key: const ValueKey('vocabulary-sync-retry'),
                     label: l.syncRetry,

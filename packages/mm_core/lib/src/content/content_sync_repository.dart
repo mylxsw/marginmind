@@ -66,7 +66,11 @@ class ContentSyncConflict {
     required Iterable<ContentSyncDifference> changes,
     required this.canUseCandidate,
     this.concurrentChoices = 0,
+    this.deviceName,
   }) : changes = List.unmodifiable(changes);
+
+  /// Accepted profile name of the candidate author, when registered.
+  final String? deviceName;
   final String id;
   final List<ContentSyncDifference> changes;
   final bool canUseCandidate;

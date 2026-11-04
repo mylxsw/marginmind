@@ -91,6 +91,15 @@ void main() {
     expect((await b.contentSyncStatus(id)).problems, contains(ContentSyncProblem.missingHistory));
   });
 
+  test('conflict preview uses accepted device profiles without exposing raw device IDs', () async {
+    await FileSyncDevices(left).rename('Work Mac', expectedRevision: null);
+    await FileSyncDevices(right).rename('Study iPad', expectedRevision: null);
+    final status = await conflict();
+    final candidate = (await right.history())[status.conflicts.single.id]!;
+    expect(status.conflicts.single.deviceName, candidate.deviceId == 'a' ? 'Work Mac' : 'Study iPad');
+    expect(status.conflicts.single.deviceName, isNot(candidate.deviceId));
+  });
+
   test('stale and editing choices are typed; explicit keep preserves subsequent edits', () async {
     final status = await conflict();
     final choice = status.conflicts.single;

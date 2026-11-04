@@ -133,6 +133,8 @@ void main() {
       conflicts: [choice(concurrentChoices: 2)],
     );
     await pump(tester, width: 390, locale: 'zh');
+    await tester.tap(find.text('选择说明'));
+    await tester.pumpAndSettle();
     expect(find.textContaining('不同设备对同一项修改作出了选择'), findsOneWidget);
     await tap(tester, 'content-sync-use-private-hash');
     expect(repo.choices.single, ('private-hash', 'observed-group', true));

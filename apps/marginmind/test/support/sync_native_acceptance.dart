@@ -232,6 +232,7 @@ void syncNativeAcceptance() {
         const Duration(seconds: 5),
       );
       debugPrint('SYNC_ACCEPTANCE: rename device');
+      await tapKey('sync-nav-devices');
       await tapKey('sync-rename');
       await tester.enterText(
         find.descendant(of: find.byKey(const ValueKey('sync-rename-input')), matching: find.byType(EditableText)),
@@ -240,6 +241,8 @@ void syncNativeAcceptance() {
       await tapKey('sync-rename-save');
       await until(() => settings!.deviceName == 'Native test device' && !settings.busy, 'device name');
       debugPrint('SYNC_ACCEPTANCE: cache');
+      await tapKey('sync-back');
+      await tapKey('sync-nav-advanced');
       await tapKey('sync-cache-inspect');
       await until(() => settings!.cacheUsage != null && !settings.busy, 'cache report');
       expect(settings.failure, isNull);

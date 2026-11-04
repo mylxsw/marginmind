@@ -12386,6 +12386,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started.'**
   String get syncCopyResources;
+
+  /// No description provided for @syncOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync status'**
+  String get syncOverviewTitle;
+
+  /// No description provided for @syncManageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get syncManageTitle;
+
+  /// No description provided for @syncServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a service'**
+  String get syncServiceTitle;
+
+  /// No description provided for @syncServiceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection and account'**
+  String get syncServiceDetail;
+
+  /// No description provided for @syncLibraryDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Library & devices'**
+  String get syncLibraryDevices;
+
+  /// No description provided for @syncFilesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Download files for offline reading'**
+  String get syncFilesDetail;
+
+  /// No description provided for @syncAdvancedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced management'**
+  String get syncAdvancedTitle;
+
+  /// No description provided for @syncAdvancedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy history and manage cache'**
+  String get syncAdvancedDetail;
+
+  /// No description provided for @syncBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sync'**
+  String get syncBack;
+
+  /// No description provided for @syncNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'No service connected'**
+  String get syncNotConnected;
+
+  /// No description provided for @syncConnectIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a service to sync this library with your other devices. Your local content stays here.'**
+  String get syncConnectIntro;
+
+  /// No description provided for @syncSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start using sync'**
+  String get syncSetupTitle;
+
+  /// No description provided for @syncSetupIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a library or join one from another device. After preparing, restart Foliarc to choose your sync service.'**
+  String get syncSetupIntro;
+
+  /// No description provided for @syncSetupReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for restart'**
+  String get syncSetupReady;
+
+  /// No description provided for @syncDeviceExample.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: Work MacBook or Study iPad'**
+  String get syncDeviceExample;
+
+  /// No description provided for @syncICloudIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the iCloud account signed in on this device. Availability depends on this app’s iCloud configuration.'**
+  String get syncICloudIntro;
+
+  /// No description provided for @syncConnectionOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving an existing library?'**
+  String get syncConnectionOptions;
+
+  /// No description provided for @syncCurrentConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current connection'**
+  String get syncCurrentConnection;
+
+  /// No description provided for @syncDisconnectConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get syncDisconnectConfirm;
+
+  /// No description provided for @syncOtherDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Other devices'**
+  String get syncOtherDevices;
+
+  /// No description provided for @syncLibraryCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy this code when joining this library on another device.'**
+  String get syncLibraryCodeHint;
+
+  /// No description provided for @syncFilesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No referenced files to display. Reload after syncing if files are expected.'**
+  String get syncFilesEmpty;
+
+  /// No description provided for @syncChangedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the local original. To obtain the synced version without overwriting it, use another device or an independent library copy.'**
+  String get syncChangedHelp;
+
+  /// No description provided for @syncCacheReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache: {size} · Reclaimable: {unused}'**
+  String syncCacheReadable(String size, String unused);
+
+  /// No description provided for @syncCacheFreed.
+  ///
+  /// In en, this message translates to:
+  /// **'Freed {size} of unreferenced cache.'**
+  String syncCacheFreed(String size);
+
+  /// No description provided for @syncChoiceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'About this choice'**
+  String get syncChoiceDetails;
+
+  /// No description provided for @syncCandidateDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Candidate from {device}'**
+  String syncCandidateDevice(String device);
+
+  /// No description provided for @syncUnknownDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unregistered device'**
+  String get syncUnknownDevice;
+
+  /// No description provided for @syncViewFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'View files & downloads'**
+  String get syncViewFiles;
+
+  /// No description provided for @recoveryIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover deleted content as an independent study set. The original history is preserved.'**
+  String get recoveryIntro;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

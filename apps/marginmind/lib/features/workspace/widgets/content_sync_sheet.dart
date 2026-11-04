@@ -5,12 +5,14 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/sync_details.dart';
 import '../content_sync.dart';
 import 'reading_continuations.dart';
 
 Future<void> showContentSyncSheet(BuildContext context, String studySetId) => showMMSheet<void>(
   context: context,
   width: 680,
+  initialFraction: MMSizes.phoneSheetExpanded,
   builder: (_) => ContentSyncSheet(studySetId: studySetId),
 );
 
@@ -93,9 +95,6 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
           data: (status) => ListView(
             key: const ValueKey('content-sync-status'),
             children: [
-              Text(l.syncLocalOnly, style: context.mmText.callout),
-              if (status.queued > 0)
-                Padding(padding: const EdgeInsets.only(top: 8), child: Text(l.syncWaitingTransfer)),
               if (_error != null) _notice(_error!, key: const ValueKey('content-sync-error')),
               if (status.recoveryId case final recovery?)
                 _notice(
@@ -112,6 +111,15 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
               if (status.retryFailed) _notice(l.syncActionFailed),
               if (status.editing) _notice(l.syncEditing),
               for (final problem in status.problems) _notice(l.syncProblem(problem.name)),
+              if (status.translationConflicts > 0) _notice(l.syncTranslationConflicts(status.translationConflicts)),
+              if (status.conflicts.isNotEmpty)
+                Text(l.syncConflictCount(status.conflicts.length), style: context.mmText.headline),
+              for (final conflict in status.conflicts) _conflict(status, conflict),
+              if (status.enabled && !status.needsAttention) Text(l.syncNoConflicts),
+              ReadingContinuationsSection(studySetId: widget.studySetId),
+              const SizedBox(height: 16),
+              Text(l.syncLocalOnly, style: context.mmText.callout),
+              if (status.queued > 0) _notice(l.syncWaitingTransfer),
               if (status.enabled)
                 Align(
                   alignment: Alignment.centerLeft,
@@ -124,12 +132,6 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
                     ),
                   ),
                 ),
-              if (status.translationConflicts > 0) _notice(l.syncTranslationConflicts(status.translationConflicts)),
-              if (status.conflicts.isNotEmpty)
-                Text(l.syncConflictCount(status.conflicts.length), style: context.mmText.headline),
-              for (final conflict in status.conflicts) _conflict(status, conflict),
-              if (status.enabled && !status.needsAttention) Text(l.syncNoConflicts),
-              ReadingContinuationsSection(studySetId: widget.studySetId),
             ],
           ),
         ),
@@ -165,8 +167,7 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l.syncChoiceHint, style: context.mmText.callout),
-          if (conflict.concurrentChoices > 1) Text(l.syncConcurrentChoiceHint, style: context.mmText.callout),
+          Text(l.syncCandidateDevice(conflict.deviceName ?? l.syncUnknownDevice), style: context.mmText.footnote),
           for (final change in conflict.changes)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -183,8 +184,8 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
                   const SizedBox(height: 8),
                   LayoutBuilder(
                     builder: (_, constraints) {
-                      final current = _value(l.syncCurrent, change.current),
-                          candidate = _value(l.syncCandidate, change.candidate);
+                      final current = _value(l.syncCurrent, change.current, change.candidate),
+                          candidate = _value(l.syncCandidate, change.candidate, change.current);
                       return constraints.maxWidth >= 480
                           ? Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,6 +204,13 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
                 ],
               ),
             ),
+          SyncDetails(
+            title: l.syncChoiceDetails,
+            children: [
+              Text(l.syncChoiceHint, style: context.mmText.callout),
+              if (conflict.concurrentChoices > 1) Text(l.syncConcurrentChoiceHint, style: context.mmText.callout),
+            ],
+          ),
           if (!conflict.canUseCandidate)
             Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(l.syncInvalidCandidate)),
           Wrap(
@@ -244,19 +252,39 @@ class _ContentSyncSheetState extends ConsumerState<ContentSyncSheet> {
     );
   }
 
-  Widget _value(String label, String? value) => Column(
+  Widget _value(String label, String? value, String? other) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(label, style: context.mmText.subheadline),
       const SizedBox(height: 4),
-      SelectableText(
-        value == null
-            ? context.l10n.syncAbsent
-            : value.isEmpty
-            ? context.l10n.syncStructureValue
-            : value,
-        style: context.mmText.body,
-      ),
+      if (value == null || value.isEmpty)
+        Text(value == null ? context.l10n.syncAbsent : context.l10n.syncStructureValue)
+      else
+        SelectableText.rich(_difference(value, other), style: context.mmText.body),
     ],
   );
+
+  TextSpan _difference(String text, String? other) {
+    if (other == text) return TextSpan(text: text);
+    final left = text.runes.toList(), right = (other ?? '').runes.toList();
+    var start = 0, end = 0;
+    while (start < left.length && start < right.length && left[start] == right[start]) {
+      start++;
+    }
+    while (end < left.length - start &&
+        end < right.length - start &&
+        left[left.length - end - 1] == right[right.length - end - 1]) {
+      end++;
+    }
+    return TextSpan(
+      children: [
+        TextSpan(text: String.fromCharCodes(left.take(start))),
+        TextSpan(
+          text: String.fromCharCodes(left.sublist(start, left.length - end)),
+          style: TextStyle(backgroundColor: context.mmColors.accentTint, fontWeight: FontWeight.w600),
+        ),
+        TextSpan(text: String.fromCharCodes(left.skip(left.length - end))),
+      ],
+    );
+  }
 }

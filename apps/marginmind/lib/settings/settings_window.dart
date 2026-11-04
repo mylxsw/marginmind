@@ -29,11 +29,16 @@ enum SettingsTab { general, reading, maps, models, aiTasks, webSearch, voice, sy
 /// language — a floating glass sidebar of sections beside a titled,
 /// scrolling page. Service forms use explicit Save actions. [focus] locates
 /// a feature or model on the AI Features page.
-Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, AiTaskFocus? focus}) {
+Future<void> showSettings(
+  BuildContext context, {
+  SettingsTab tab = SettingsTab.general,
+  AiTaskFocus? focus,
+  SyncSettingsSection syncSection = SyncSettingsSection.overview,
+}) {
   return showMMDialog<void>(
     context: context,
     initialFraction: MMSizes.phoneSheetExpanded,
-    builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus),
+    builder: (_) => SettingsWindow(initialTab: tab, initialFocus: focus, initialSyncSection: syncSection),
   );
 }
 
@@ -53,7 +58,12 @@ class SettingsNavigation extends InheritedWidget {
 }
 
 class SettingsWindow extends ConsumerStatefulWidget {
-  const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.initialFocus});
+  const SettingsWindow({
+    super.key,
+    this.initialTab = SettingsTab.general,
+    this.initialFocus,
+    this.initialSyncSection = SyncSettingsSection.overview,
+  });
 
   static const size = Size(780, 560), minSize = Size(640, 440);
 
@@ -64,6 +74,7 @@ class SettingsWindow extends ConsumerStatefulWidget {
 
   final SettingsTab initialTab;
   final AiTaskFocus? initialFocus;
+  final SyncSettingsSection initialSyncSection;
 
   @override
   ConsumerState<SettingsWindow> createState() => _SettingsWindowState();
@@ -301,7 +312,7 @@ class _SettingsWindowState extends ConsumerState<SettingsWindow> {
       ),
       SettingsTab.webSearch => const WebSearchSettingsPage(),
       SettingsTab.voice => const VoiceSettingsPage(),
-      SettingsTab.sync => const SyncSettingsPage(),
+      SettingsTab.sync => SyncSettingsPage(initialSection: widget.initialSyncSection),
     };
     final page = pageFor(_tab);
     if (MMInput.of(context).phone) {

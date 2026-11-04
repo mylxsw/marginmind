@@ -6809,4 +6809,100 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncCopyResources => '历史文件缺失或校验失败。请保留原服务，使用持有已验证历史文件的设备重新检查；尚未开始新的复制。';
+
+  @override
+  String get syncOverviewTitle => '同步状态';
+
+  @override
+  String get syncManageTitle => '管理';
+
+  @override
+  String get syncServiceTitle => '连接同步服务';
+
+  @override
+  String get syncServiceDetail => '连接与账号';
+
+  @override
+  String get syncLibraryDevices => '资料库与设备';
+
+  @override
+  String get syncFilesDetail => '下载文件，离线阅读';
+
+  @override
+  String get syncAdvancedTitle => '高级管理';
+
+  @override
+  String get syncAdvancedDetail => '复制历史与管理缓存';
+
+  @override
+  String get syncBack => '返回同步概览';
+
+  @override
+  String get syncNotConnected => '尚未连接服务';
+
+  @override
+  String get syncConnectIntro => '连接服务后，可与其他设备同步此资料库。本机资料会保留。';
+
+  @override
+  String get syncSetupTitle => '开始使用同步';
+
+  @override
+  String get syncSetupIntro => '新建同步资料库，或加入另一设备的资料库。准备完成后重启 Foliarc，再选择同步服务。';
+
+  @override
+  String get syncSetupReady => '准备完成，请重启';
+
+  @override
+  String get syncDeviceExample => '例如：工作 MacBook、书房 iPad';
+
+  @override
+  String get syncICloudIntro => '使用此设备已登录的 iCloud 账号。需要此应用已配置可用的 iCloud 容器。';
+
+  @override
+  String get syncConnectionOptions => '迁移已有资料库？';
+
+  @override
+  String get syncCurrentConnection => '当前连接';
+
+  @override
+  String get syncDisconnectConfirm => '确认断开';
+
+  @override
+  String get syncOtherDevices => '其他设备';
+
+  @override
+  String get syncLibraryCodeHint => '在另一设备加入此资料库时，复制并填写此代码。';
+
+  @override
+  String get syncFilesEmpty => '暂无可显示的引用文件。同步后可重新读取状态。';
+
+  @override
+  String get syncChangedHelp => '请保留本机原件。若要获取同步版本，请在另一设备或独立的资料库副本中下载，避免覆盖。';
+
+  @override
+  String syncCacheReadable(String size, String unused) {
+    return '缓存 $size · 可清理 $unused';
+  }
+
+  @override
+  String syncCacheFreed(String size) {
+    return '已清理 $size 无引用缓存。';
+  }
+
+  @override
+  String get syncChoiceDetails => '选择说明';
+
+  @override
+  String syncCandidateDevice(String device) {
+    return '候选来源：$device';
+  }
+
+  @override
+  String get syncUnknownDevice => '未登记名称的设备';
+
+  @override
+  String get syncViewFiles => '查看文件与下载';
+
+  @override
+  String get recoveryIntro => '将已删除内容恢复为独立学习集，原始历史保留。';
 }

@@ -153,11 +153,7 @@ void main() {
       Future<void> snap(String name) async {
         await tester.pumpAndSettle();
         final error = tester.takeException();
-        if (error != null && error.toString().contains('ListTile background color or ink splashes may be invisible')) {
-          debugPrint('AUDIT DIAGNOSTIC $device/$name: $error');
-        } else {
-          expect(error, isNull);
-        }
+        expect(error, isNull);
         await saveVocabularyHintScreenshot(tester, '$device-$name', find.byKey(_capture));
       }
 
@@ -212,29 +208,37 @@ void main() {
       );
       showSettings(context(), tab: SettingsTab.sync);
       await snap('04-sync-connected');
-      await scrollTo('sync-cache-inspect', alignment: .3);
+      Future<void> tapKey(String key) async {
+        await scrollTo(key);
+        await tester.tap(find.byKey(ValueKey(key)));
+        await tester.pumpAndSettle();
+      }
+
+      await tapKey('sync-nav-files');
       await snap('05-resources-cache');
-      await scrollTo('sync-icloud');
+      await tapKey('sync-back');
+      await tapKey('sync-nav-connection');
+      await scrollTo('sync-connect');
       await snap('06-connect-form');
       await tester.enterText(find.byKey(const ValueKey('sync-password')), 'synthetic-test-password');
       service.nextFailure = SyncSettingsFailure.authentication;
-      await tester.tap(find.byKey(const ValueKey('sync-connect')));
+      await tapKey('sync-connect');
       await snap('07-auth-error-location');
       expect(service.failure, SyncSettingsFailure.authentication);
-      expect(find.text('认证失败，请检查账号和应用专用密码。').hitTestable(), findsNothing);
-      // Return to the top to show the actual error notice as a separate capture.
-      tester
-          .state<ScrollableState>(
-            find.descendant(of: find.byType(SettingsPage), matching: find.byType(Scrollable)).first,
-          )
-          .position
-          .jumpTo(0);
+      expect(find.text('认证失败，请检查账号和应用专用密码。').hitTestable(), findsOneWidget);
       await snap('08-auth-error-top');
       service.failure = null;
       service.nextFailure = null;
+      await tapKey('sync-back');
+      await tapKey('sync-nav-advanced');
       await service.previewHistoryCopy();
       await scrollTo('sync-copy-preview', alignment: .1);
       await snap('09-copy-preview');
+      await scrollTo('sync-cache-inspect', alignment: .4);
+      await snap('20-cache-management');
+      await tapKey('sync-back');
+      await tapKey('sync-nav-devices');
+      await snap('21-devices');
       await close();
       content.publish(
         ContentSyncStatus(
@@ -244,6 +248,7 @@ void main() {
           conflicts: [
             ContentSyncConflict(
               id: 'choice',
+              deviceName: '书房 iPad',
               canUseCandidate: true,
               concurrentChoices: 2,
               changes: const [
@@ -262,8 +267,7 @@ void main() {
       showContentSyncSheet(context(), 'demo-1');
       await snap('10-content-conflict');
       if (phone) {
-        await tester.drag(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, -500));
-        await tester.pumpAndSettle();
+        expect(find.text('间隔重复').evaluate().isNotEmpty || find.textContaining('间隔重复').evaluate().isNotEmpty, isTrue);
       }
       await scrollTo('content-sync-use-choice', alignment: .7);
       await snap('11-conflict-actions');
@@ -311,6 +315,9 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('recovery-title')));
         tester.view.viewInsets = const FakeViewPadding(bottom: 320);
         await snap('19-recovery-keyboard-inset');
+        final confirm = find.byKey(const ValueKey('recovery-confirm'));
+        expect(confirm.hitTestable(), findsOneWidget);
+        expect(tester.getRect(confirm).bottom, lessThanOrEqualTo(852 - 320));
         tester.view.resetViewInsets();
       }
       debugDisableShadows = true;

@@ -5,6 +5,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../app/providers.dart';
 import '../../shared/l10n.dart';
+import '../../shared/sync_details.dart';
 import '../workspace/widgets/notices.dart';
 
 final libraryOrganizationProvider = StreamProvider.autoDispose<LibraryOrganization>((ref) {
@@ -17,6 +18,7 @@ final libraryOrganizationProvider = StreamProvider.autoDispose<LibraryOrganizati
 Future<void> showFolderSheet(BuildContext context, {StudySet? move}) => showMMSheet<void>(
   context: context,
   width: 600,
+  initialFraction: MMSizes.phoneSheetExpanded,
   builder: (_) => FolderSheet(move: move),
 );
 
@@ -125,9 +127,10 @@ class _FolderSheetState extends ConsumerState<FolderSheet> {
     return MMSheet(
       title: widget.move == null ? l.manageFolders : l.moveToFolder,
       actions: [MMButton(label: l.closePanel, onPressed: _busy ? null : () => Navigator.of(context).pop())],
-      child: SizedBox(
-        height: (MediaQuery.sizeOf(context).height * .65).clamp(220, 620),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: (MediaQuery.sizeOf(context).height * .65).clamp(220, 620)),
         child: ListView(
+          shrinkWrap: true,
           key: const ValueKey('folder-list'),
           children: [
             if (_error != null)
@@ -182,14 +185,15 @@ class _FolderSheetState extends ConsumerState<FolderSheet> {
                 MMButton(label: l.syncRetry, onPressed: () => ref.invalidate(libraryOrganizationProvider)),
               ],
               data: (organization) => [
-                if (organization.syncEnabled) ...[
-                  Text(l.syncLocalOnly, style: context.mmText.callout),
-                  if (organization.queued > 0) Text(l.syncWaitingTransfer, style: context.mmText.callout),
-                ],
                 if (organization.repairNeeded) Text(l.folderRepairNeeded, style: context.mmText.callout),
                 for (final entry in organization.entries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
+                  Container(
+                    margin: const EdgeInsets.only(bottom: MMSpacing.m),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.mmColors.quaternaryFill,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -228,7 +232,10 @@ class _FolderSheetState extends ConsumerState<FolderSheet> {
                           Text(l.syncProblem(problem.name), style: context.mmText.callout),
                         for (final choice in entry.choices) ...[
                           if (choice.concurrentChoices > 1)
-                            Text(l.syncConcurrentChoiceHint, style: context.mmText.callout),
+                            SyncDetails(
+                              title: l.syncChoiceDetails,
+                              children: [Text(l.syncConcurrentChoiceHint, style: context.mmText.callout)],
+                            ),
                           Text('${l.syncCurrent}: ${entry.folder?.name ?? l.folderUnavailable}'),
                           Text('${l.syncCandidate}: ${choice.name}'),
                           Wrap(
@@ -255,6 +262,10 @@ class _FolderSheetState extends ConsumerState<FolderSheet> {
                       ],
                     ),
                   ),
+                if (organization.syncEnabled) ...[
+                  Text(l.syncLocalOnly, style: context.mmText.callout),
+                  if (organization.queued > 0) Text(l.syncWaitingTransfer, style: context.mmText.callout),
+                ],
                 if (organization.syncEnabled)
                   MMButton(
                     key: const ValueKey('folder-retry'),

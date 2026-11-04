@@ -4309,5 +4309,59 @@
       }
     }
   },
-  "syncCopyResources": "Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started."
+  "syncCopyResources": "Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started.",
+  "syncOverviewTitle": "Sync status",
+  "syncManageTitle": "Manage",
+  "syncServiceTitle": "Connect a service",
+  "syncServiceDetail": "Connection and account",
+  "syncLibraryDevices": "Library & devices",
+  "syncFilesDetail": "Download files for offline reading",
+  "syncAdvancedTitle": "Advanced management",
+  "syncAdvancedDetail": "Copy history and manage cache",
+  "syncBack": "Back to sync",
+  "syncNotConnected": "No service connected",
+  "syncConnectIntro": "Choose a service to sync this library with your other devices. Your local content stays here.",
+  "syncSetupTitle": "Start using sync",
+  "syncSetupIntro": "Create a library or join one from another device. After preparing, restart Foliarc to choose your sync service.",
+  "syncSetupReady": "Ready for restart",
+  "syncDeviceExample": "For example: Work MacBook or Study iPad",
+  "syncICloudIntro": "Uses the iCloud account signed in on this device. Availability depends on this app’s iCloud configuration.",
+  "syncConnectionOptions": "Moving an existing library?",
+  "syncCurrentConnection": "Current connection",
+  "syncDisconnectConfirm": "Disconnect",
+  "syncOtherDevices": "Other devices",
+  "syncLibraryCodeHint": "Copy this code when joining this library on another device.",
+  "syncFilesEmpty": "No referenced files to display. Reload after syncing if files are expected.",
+  "syncChangedHelp": "Keep the local original. To obtain the synced version without overwriting it, use another device or an independent library copy.",
+  "syncCacheReadable": "Cache: {size} · Reclaimable: {unused}",
+  "@syncCacheReadable": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "unused": {
+        "type": "String"
+      }
+    }
+  },
+  "syncCacheFreed": "Freed {size} of unreferenced cache.",
+  "@syncCacheFreed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "syncChoiceDetails": "About this choice",
+  "syncCandidateDevice": "Candidate from {device}",
+  "@syncCandidateDevice": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "syncUnknownDevice": "Unregistered device",
+  "syncViewFiles": "View files & downloads",
+  "recoveryIntro": "Recover deleted content as an independent study set. The original history is preserved."
 }

@@ -5,6 +5,8 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../../settings/settings_window.dart';
+import '../../../settings/sync_settings_page.dart';
 import '../workspace_controller.dart';
 
 final readingContinuationsProvider = StreamProvider.autoDispose.family<ReadingContinuations, String>((ref, id) {
@@ -98,6 +100,13 @@ class _ReadingContinuationsSectionState extends ConsumerState<ReadingContinuatio
                             choice.availability == ReadingContinuationAvailability.documentChanged
                                 ? l.readingVersionChanged
                                 : l.readingResourceMissing,
+                          ),
+                        if (choice.availability == ReadingContinuationAvailability.unavailable)
+                          MMButton(
+                            key: ValueKey('reading-files-${choice.documentId}'),
+                            label: l.syncViewFiles,
+                            onPressed: () =>
+                                showSettings(context, tab: SettingsTab.sync, syncSection: SyncSettingsSection.files),
                           ),
                         MMButton(
                           key: ValueKey('reading-continue-${choice.deviceId}-${choice.documentId}'),

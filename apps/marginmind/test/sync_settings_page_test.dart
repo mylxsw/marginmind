@@ -141,7 +141,13 @@ void main() {
   late _Settings service;
   setUp(() => service = _Settings());
   tearDown(() => service.dispose());
-  Future<void> pump(WidgetTester tester, {String locale = 'en', double width = 700, bool absent = false}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    String locale = 'en',
+    double width = 700,
+    bool absent = false,
+    SyncSettingsSection section = SyncSettingsSection.overview,
+  }) async {
     tester.view.physicalSize = Size(width, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -153,7 +159,7 @@ void main() {
           locale: Locale(locale),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(body: SyncSettingsPage()),
+          home: Scaffold(body: SyncSettingsPage(initialSection: section)),
         ),
       ),
     );
@@ -165,6 +171,12 @@ void main() {
     await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
     await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> selectICloud(WidgetTester tester) async {
+    await tap(tester, 'sync-service-picker');
+    await tester.tap(find.text('iCloud Drive').last);
     await tester.pumpAndSettle();
   }
 
@@ -186,16 +198,18 @@ void main() {
 
   testWidgets('empty destination mode is explicit and passed to connection checks', (tester) async {
     active();
-    await pump(tester, width: 390);
+    await pump(tester, width: 390, section: SyncSettingsSection.connection);
     expect(service.usedCopyDestination, false);
+    await tap(tester, 'sync-connection-options');
     await tap(tester, 'sync-copy-destination');
+    await selectICloud(tester);
     await tap(tester, 'sync-icloud');
     expect(service.usedCopyDestination, true);
   });
 
   testWidgets('history copy shows reviewed target and counts before explicit confirmation', (tester) async {
     active();
-    await pump(tester, locale: 'zh', width: 390);
+    await pump(tester, locale: 'zh', width: 390, section: SyncSettingsSection.advanced);
     expect(find.byKey(const ValueKey('sync-copy-confirm')), findsNothing);
     await tap(tester, 'sync-copy-preview');
     expect(service.actions, ['copy-preview']);
@@ -215,7 +229,7 @@ void main() {
     active();
     service.devices = [const SyncDeviceInfo('private-device', 'My Mac', 'first', local: true)];
     service.deviceProblems = 1;
-    await pump(tester, width: 375);
+    await pump(tester, width: 375, section: SyncSettingsSection.devices);
     await tap(tester, 'sync-rename');
     await tester.enterText(find.byKey(const ValueKey('sync-rename-input')), 'New Mac');
     service.devices = [const SyncDeviceInfo('private-device', 'Remote', 'second', local: true)];
@@ -228,7 +242,11 @@ void main() {
     service.nextFailure = null;
     await tap(tester, 'sync-rename-save');
     expect(find.byKey(const ValueKey('sync-rename-input')), findsNothing);
+    await tap(tester, 'sync-back');
+    await tap(tester, 'sync-nav-connection');
     await tap(tester, 'sync-disconnect');
+    expect(service.actions, isNot(contains('disconnect')));
+    await tap(tester, 'sync-disconnect-confirm');
     expect(service.actions.last, 'disconnect');
     expect(tester.takeException(), isNull);
   });
@@ -241,10 +259,12 @@ void main() {
       location: 'iCloud.test',
       libraryId: 'library-code',
     );
-    await pump(tester, width: 375);
+    await pump(tester, width: 375, section: SyncSettingsSection.connection);
     expect(find.textContaining('does not sign you out'), findsOneWidget);
     expect(find.textContaining('opaque-apple'), findsNothing);
     await tap(tester, 'sync-disconnect');
+    expect(service.actions, isNot(contains('disconnect')));
+    await tap(tester, 'sync-disconnect-confirm');
     expect(service.actions.last, 'disconnect');
   });
 
@@ -277,7 +297,7 @@ void main() {
   testWidgets('credentials stay on failure and clear only after saved connection', (tester) async {
     active();
     service.nextFailure = SyncSettingsFailure.authentication;
-    await pump(tester);
+    await pump(tester, section: SyncSettingsSection.connection);
     await tester.enterText(find.byKey(const ValueKey('sync-password')), 'secret');
     await tap(tester, 'sync-connect');
     final input = tester.widget<MMTextField>(find.byKey(const ValueKey('sync-password')));
@@ -287,6 +307,8 @@ void main() {
     service.nextFailure = null;
     await tap(tester, 'sync-connect');
     expect(input.controller!.text, '');
+    await tap(tester, 'sync-nav-connection');
+    await selectICloud(tester);
     await tap(tester, 'sync-icloud');
     expect(service.actions.last, 'icloud');
   });
@@ -312,12 +334,14 @@ void main() {
 
   testWidgets('Chinese narrow layout keeps status and account controls readable', (tester) async {
     active();
-    await pump(tester, width: 375, locale: 'zh');
+    await pump(tester, width: 375, locale: 'zh', section: SyncSettingsSection.devices);
     expect(find.text('library-code'), findsOneWidget);
-    expect(find.textContaining('本机名称: My Mac'), findsOneWidget);
+    expect(find.text('My Mac'), findsOneWidget);
+    await tap(tester, 'sync-back');
+    await tap(tester, 'sync-nav-connection');
     await tap(tester, 'sync-connect');
     expect(tester.takeException(), isNull);
-    expect(find.textContaining('文件按需下载'), findsOneWidget);
+    expect(find.byKey(const ValueKey('sync-nav-files')), findsOneWidget);
     expect(find.text('private-device'), findsNothing);
   });
 
@@ -337,7 +361,7 @@ void main() {
       const SyncResourceStatus('set', 'ready', 'Ready', 'rev', SyncResourceAvailability.available, 10),
       const SyncResourceStatus('set', 'unknown', 'Unknown', 'rev', SyncResourceAvailability.unverified, 0),
     ];
-    await pump(tester, width: 375);
+    await pump(tester, width: 375, section: SyncSettingsSection.files);
     expect(find.text('Not fully downloaded'), findsOneWidget);
     expect(find.text('Verified and available'), findsOneWidget);
     await tap(tester, 'sync-download-document/missing');
@@ -362,7 +386,7 @@ void main() {
       reclaimableChunks: 1,
       canReclaim: true,
     );
-    await pump(tester, locale: 'zh', width: 390);
+    await pump(tester, locale: 'zh', width: 390, section: SyncSettingsSection.advanced);
     expect(find.textContaining('任何版本仍引用的块均保留'), findsOneWidget);
     await tap(tester, 'sync-cache-inspect');
     expect(service.actions.last, 'cache-inspect');
@@ -383,7 +407,7 @@ void main() {
     );
     service.publish();
     await tester.pumpAndSettle();
-    expect(find.textContaining('已释放 2,048 字节'), findsOneWidget);
+    expect(find.textContaining('已清理 2.0 KiB'), findsOneWidget);
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('sync-cache-reclaim'))).onPressed, isNull);
     service.cacheUsage = const SyncCacheUsage(
       bytes: 2048,
@@ -456,5 +480,43 @@ void main() {
     await tester.tap(find.text('Reload status'));
     await tester.pumpAndSettle();
     expect(service.actions.last, 'initialize');
+  });
+  testWidgets('overview separates daily sync from maintenance and preserves navigation', (tester) async {
+    active();
+    await pump(tester, width: 390);
+    expect(find.byKey(const ValueKey('sync-once')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sync-disconnect')), findsNothing);
+    expect(find.byKey(const ValueKey('sync-copy-preview')), findsNothing);
+    expect(find.byKey(const ValueKey('sync-password')), findsNothing);
+    await tap(tester, 'sync-nav-advanced');
+    expect(find.byKey(const ValueKey('sync-copy-preview')), findsOneWidget);
+    await tap(tester, 'sync-back');
+    await tap(tester, 'sync-nav-devices');
+    expect(find.text('library-code'), findsOneWidget);
+  });
+
+  testWidgets('failed connection is visible at the action and retains the password', (tester) async {
+    active();
+    service.nextFailure = SyncSettingsFailure.authentication;
+    await pump(tester, width: 390, section: SyncSettingsSection.connection);
+    tester.view.physicalSize = const Size(390, 650);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('sync-password')), 'retry me');
+    await tap(tester, 'sync-connect');
+    expect(find.textContaining('Authentication failed').hitTestable(), findsOneWidget);
+    expect(tester.widget<MMTextField>(find.byKey(const ValueKey('sync-password'))).controller!.text, 'retry me');
+    expect(find.byKey(const ValueKey('sync-connect')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('cancelling disconnection preserves the target and credentials', (tester) async {
+    active();
+    await pump(tester, section: SyncSettingsSection.connection);
+    final target = service.target;
+    await tap(tester, 'sync-disconnect');
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(service.actions, isEmpty);
+    expect(service.target, same(target));
   });
 }

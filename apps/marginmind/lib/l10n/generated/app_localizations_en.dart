@@ -7101,4 +7101,104 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncCopyResources =>
       'Historical files are missing or invalid. Keep the original service and use a device with verified historical files, then inspect again. No new copy has been started.';
+
+  @override
+  String get syncOverviewTitle => 'Sync status';
+
+  @override
+  String get syncManageTitle => 'Manage';
+
+  @override
+  String get syncServiceTitle => 'Connect a service';
+
+  @override
+  String get syncServiceDetail => 'Connection and account';
+
+  @override
+  String get syncLibraryDevices => 'Library & devices';
+
+  @override
+  String get syncFilesDetail => 'Download files for offline reading';
+
+  @override
+  String get syncAdvancedTitle => 'Advanced management';
+
+  @override
+  String get syncAdvancedDetail => 'Copy history and manage cache';
+
+  @override
+  String get syncBack => 'Back to sync';
+
+  @override
+  String get syncNotConnected => 'No service connected';
+
+  @override
+  String get syncConnectIntro =>
+      'Choose a service to sync this library with your other devices. Your local content stays here.';
+
+  @override
+  String get syncSetupTitle => 'Start using sync';
+
+  @override
+  String get syncSetupIntro =>
+      'Create a library or join one from another device. After preparing, restart Foliarc to choose your sync service.';
+
+  @override
+  String get syncSetupReady => 'Ready for restart';
+
+  @override
+  String get syncDeviceExample => 'For example: Work MacBook or Study iPad';
+
+  @override
+  String get syncICloudIntro =>
+      'Uses the iCloud account signed in on this device. Availability depends on this app’s iCloud configuration.';
+
+  @override
+  String get syncConnectionOptions => 'Moving an existing library?';
+
+  @override
+  String get syncCurrentConnection => 'Current connection';
+
+  @override
+  String get syncDisconnectConfirm => 'Disconnect';
+
+  @override
+  String get syncOtherDevices => 'Other devices';
+
+  @override
+  String get syncLibraryCodeHint => 'Copy this code when joining this library on another device.';
+
+  @override
+  String get syncFilesEmpty => 'No referenced files to display. Reload after syncing if files are expected.';
+
+  @override
+  String get syncChangedHelp =>
+      'Keep the local original. To obtain the synced version without overwriting it, use another device or an independent library copy.';
+
+  @override
+  String syncCacheReadable(String size, String unused) {
+    return 'Cache: $size · Reclaimable: $unused';
+  }
+
+  @override
+  String syncCacheFreed(String size) {
+    return 'Freed $size of unreferenced cache.';
+  }
+
+  @override
+  String get syncChoiceDetails => 'About this choice';
+
+  @override
+  String syncCandidateDevice(String device) {
+    return 'Candidate from $device';
+  }
+
+  @override
+  String get syncUnknownDevice => 'Unregistered device';
+
+  @override
+  String get syncViewFiles => 'View files & downloads';
+
+  @override
+  String get recoveryIntro => 'Recover deleted content as an independent study set. The original history is preserved.';
 }

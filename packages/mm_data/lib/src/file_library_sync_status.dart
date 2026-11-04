@@ -38,6 +38,10 @@ extension _FileLibrarySyncStatus on FileLibraryStore {
       conflicts.add(
         ContentSyncConflict(
           id: transaction,
+          deviceName: switch (heads['devices/${candidate.deviceId}']) {
+            final profile? when !profile.deleted => SyncDeviceProfile.fromJson(profile.value!).name,
+            _ => null,
+          },
           concurrentChoices: groups[transaction]?.length ?? 0,
           canUseCandidate: valid,
           changes: contentSyncReview(
