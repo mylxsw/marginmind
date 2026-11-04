@@ -37,6 +37,7 @@ void main() {
       await tester.pumpAndSettle();
       final popup = find.byType(MapStylePopover);
       expect(popup, findsOneWidget);
+      expect(find.descendant(of: popup, matching: find.byType(MMGlass)), findsNothing);
       final viewport = tester.getRect(find.ancestor(of: popup, matching: find.byType(SingleChildScrollView)).first);
       expect(viewport.left, greaterThanOrEqualTo(phone.safe.left));
       expect(viewport.right, lessThanOrEqualTo(phone.size.width - phone.safe.right));
@@ -48,6 +49,13 @@ void main() {
       await tester.tap(custom);
       await tester.pumpAndSettle();
       final apply = find.byKey(const ValueKey('highlight-color-apply'));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('highlight-custom-color-picker')),
+          matching: find.byType(MMGlass),
+        ),
+        findsNothing,
+      );
       await tester.ensureVisible(apply);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

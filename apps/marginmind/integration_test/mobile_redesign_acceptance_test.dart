@@ -109,7 +109,7 @@ void main() {
     await tester.tap(find.byWidgetPredicate((w) => w is MMIconButton && w.icon == MMIcons.sidebar).hitTestable().first);
     await shot('01a-library-sidebar');
     if (MMInput.of(context()).phone) {
-      await tester.tap(find.byKey(const ValueKey('library-navigation-close')));
+      await tester.tapAt(Offset(tester.view.physicalSize.width / tester.view.devicePixelRatio - 8, 300));
     } else {
       await tester.tapAt(const Offset(380, 400));
     }
@@ -351,7 +351,7 @@ void main() {
     await idle(tester);
     expect(find.byType(WorkspaceSidebar).hitTestable(), findsOneWidget);
     await shot('07-workspace-sidebar');
-    await tester.tap(find.byKey(const ValueKey('phone-resources-return')));
+    await tester.tapAt(Offset(tester.view.physicalSize.width / tester.view.devicePixelRatio - 8, 300));
     await idle(tester);
     final widgetRef = tester.element(find.byType(MapPane)) as WidgetRef;
     unawaited(showAddWebPage(context(), widgetRef, route.studySetId));

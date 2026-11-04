@@ -180,6 +180,7 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
+    final phone = MMInput.of(context).phone;
     final roots = _roots;
     PdfOutlineEntry? active;
     for (final entry in OutlineTree.flatten(roots)) {
@@ -187,7 +188,7 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
         active = entry;
       }
     }
-    if (_lastPage != widget.pdf.currentPage) {
+    if (!phone && _lastPage != widget.pdf.currentPage) {
       _lastPage = widget.pdf.currentPage;
       bool reveal(List<PdfOutlineEntry> entries) {
         for (final entry in entries) {
@@ -237,11 +238,18 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                   )
                 : ListView.builder(
                     controller: _scroll,
-                    padding: const EdgeInsets.all(4),
+                    padding: phone
+                        ? const EdgeInsets.fromLTRB(
+                            MMReaderNavigationLayout.inset,
+                            MMReaderNavigationLayout.listTop,
+                            MMReaderNavigationLayout.inset,
+                            MMSpacing.s,
+                          )
+                        : const EdgeInsets.all(4),
                     itemCount: rows.length,
                     itemBuilder: (context, index) {
                       final (entry, depth, siblings) = rows[index];
-                      final selected = entry.id == active?.id;
+                      final selected = !phone && entry.id == active?.id;
                       final folded = _collapsed.contains(entry.id);
                       final siblingIndex = siblings.indexWhere((e) => e.id == entry.id);
                       final menu = <MMMenuEntry>[
@@ -282,13 +290,23 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                               : () {},
                           selected: selected,
                           builder: (context, state) => Container(
-                            constraints: BoxConstraints(minHeight: context.mmSidebarRow),
-                            padding: EdgeInsets.fromLTRB(2 + math.min(depth, 6) * 12.0, 2, 2, 2),
+                            constraints: BoxConstraints(
+                              minHeight: phone ? MMReaderNavigationLayout.rowHeight : context.mmSidebarRow,
+                            ),
+                            padding: phone
+                                ? EdgeInsets.only(
+                                    left:
+                                        math.min(depth, MMReaderNavigationLayout.maxDepth) *
+                                        MMReaderNavigationLayout.indent,
+                                  )
+                                : EdgeInsets.fromLTRB(2 + math.min(depth, 6) * 12.0, 2, 2, 2),
                             decoration: BoxDecoration(
                               color: _dropId == entry.id && _drop == OutlineDrop.inside
                                   ? c.accentTint
-                                  : selected
+                                  : selected && !phone
                                   ? c.selectedRow
+                                  : phone && state.pressed
+                                  ? c.pressed
                                   : state.hovered
                                   ? c.hover
                                   : Colors.transparent,
@@ -310,33 +328,34 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                                 : null,
                             child: Row(
                               children: [
-                                SizedBox(
-                                  width: 18,
-                                  height: 20,
-                                  child: entry.children.isEmpty
-                                      ? null
-                                      : MMInteractive(
-                                          key: ValueKey('outline-fold-${entry.id}'),
-                                          semanticLabel: folded ? l.expandSection : l.collapseSection,
-                                          onTap: () => setState(
-                                            () => folded ? _collapsed.remove(entry.id) : _collapsed.add(entry.id),
+                                if (!phone)
+                                  SizedBox(
+                                    width: 18,
+                                    height: 20,
+                                    child: entry.children.isEmpty
+                                        ? null
+                                        : MMInteractive(
+                                            key: ValueKey('outline-fold-${entry.id}'),
+                                            semanticLabel: folded ? l.expandSection : l.collapseSection,
+                                            onTap: () => setState(
+                                              () => folded ? _collapsed.remove(entry.id) : _collapsed.add(entry.id),
+                                            ),
+                                            builder: (context, _) => Icon(
+                                              folded ? MMIcons.chevronRight : MMIcons.chevronDown,
+                                              size: 10,
+                                              color: c.secondaryLabel,
+                                            ),
                                           ),
-                                          builder: (context, _) => Icon(
-                                            folded ? MMIcons.chevronRight : MMIcons.chevronDown,
-                                            size: 10,
-                                            color: c.secondaryLabel,
-                                          ),
-                                        ),
-                                ),
+                                  ),
                                 Expanded(
                                   child: Tooltip(
                                     message: entry.title,
-                                    triggerMode: TooltipTriggerMode.manual,
+                                    triggerMode: phone ? TooltipTriggerMode.longPress : TooltipTriggerMode.manual,
                                     child: Text(
                                       entry.title,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: context.mmText.callout.copyWith(
+                                      style: (phone ? context.mmText.body : context.mmText.callout).copyWith(
                                         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                                         color: entry.page > 0 ? c.label : c.secondaryLabel,
                                       ),
@@ -345,6 +364,14 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                                 ),
                                 if (entry.page > 0)
                                   Padding(padding: const EdgeInsets.only(left: 4), child: MMCount(entry.page)),
+                                if (phone && entry.children.isNotEmpty)
+                                  MMIconButton(
+                                    key: ValueKey('outline-fold-${entry.id}'),
+                                    icon: folded ? MMIcons.chevronRight : MMIcons.chevronDown,
+                                    tooltip: folded ? l.expandSection : l.collapseSection,
+                                    onPressed: () =>
+                                        setState(() => folded ? _collapsed.remove(entry.id) : _collapsed.add(entry.id)),
+                                  ),
                               ],
                             ),
                           ),

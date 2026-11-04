@@ -98,3 +98,8 @@ PATH=/Users/mylxsw/fvm/versions/3.47.2/bin:$PATH \
 ```
 
 重新生成总览和前后对照：在带 Pillow 的 Python 环境中执行 `tool/build_phone_visual_review.py --reference-dir 原始附件目录`。脚本保留系统原图，另生成排版预览；要求采集运行通过、全部图片在本次构建后生成，且待比较的 Dart 源码一致。默认也要求 Swift 一致；本轮针对上述独立原生变更使用 `--allow-native-drift`，同时在清单和画廊显式记录差异，不放宽 Dart 或截图校验。
+
+
+## 后续修复（2026-11-04）
+
+上述记录保留当时验证范围。后续已实现侧滑 Drawer 与目录文档单行标题，并修复继续学习卡片、数量角标及阅读页码在 320 点、150% 中英文字号下的溢出；原生阅读目录与 Flutter 面板也完成层级和初始高度调整。最新运行截图与检查结果见[本轮验证](../mobile-surface-hierarchy-2026-11-04/README.md)。

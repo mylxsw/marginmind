@@ -27,6 +27,7 @@ Future<void> showSelectionTranslation(
 }) => MMInput.of(context).phone
     ? showMMBottomSheet<void>(
         context: context,
+        initialFraction: MMSizes.phonePreviewSheet,
         builder: (_) => inScope(context, SelectionTranslation(studySetId: studySetId, paragraph: paragraph)),
       )
     : showGeneralDialog<void>(
@@ -203,7 +204,8 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
             autofocus: true,
             child: Material(
               type: MaterialType.transparency,
-              child: MMGlass(
+              child: MMModalContent(
+                embedded: MMBottomSheet.contains(context),
                 key: const ValueKey('selection-translation-result'),
                 borderRadius: BorderRadius.circular(16),
                 padding: const EdgeInsets.all(14),

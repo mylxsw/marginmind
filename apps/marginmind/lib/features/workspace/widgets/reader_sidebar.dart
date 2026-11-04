@@ -184,12 +184,14 @@ class ReaderSidebar extends ConsumerWidget {
     return Container(
       width: MMInput.of(context).phone ? width : math.max(0, width - 8),
       margin: MMInput.of(context).phone ? EdgeInsets.zero : const EdgeInsets.all(4),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: MMInput.of(context).phone ? c.windowBackground : c.sidebarOpaque,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.border, width: MMSizes.hairline),
-      ),
+      clipBehavior: MMInput.of(context).phone ? Clip.none : Clip.antiAlias,
+      decoration: MMInput.of(context).phone
+          ? null
+          : BoxDecoration(
+              color: c.sidebarOpaque,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: c.border, width: MMSizes.hairline),
+            ),
       child: ListenableBuilder(
         listenable: pdf,
         builder: (context, _) {
@@ -207,16 +209,25 @@ class ReaderSidebar extends ConsumerWidget {
               ReaderSidebarTabBar(
                 children: [
                   for (final (value, icon, label, shortcut) in tabs)
-                    MMToolbarButton(
-                      iconWidget: Icon(icon, size: context.mmTouchPlatform ? 16 : 14),
-                      compact: !MMInput.of(context).phone,
-                      label: MMInput.of(context).phone ? label : null,
-                      tooltip: AppShortcuts.tip(label, shortcut),
-                      selected: value == shown,
-                      onPressed: controller.canShowReaderPanel(value)
-                          ? () => controller.setReaderPanelMode(value)
-                          : null,
-                    ),
+                    if (MMInput.of(context).phone)
+                      ReaderSidebarTab(
+                        label: label,
+                        selected: value == shown,
+                        onPressed: controller.canShowReaderPanel(value)
+                            ? () => controller.setReaderPanelMode(value)
+                            : null,
+                      )
+                    else
+                      MMToolbarButton(
+                        iconWidget: Icon(icon, size: context.mmTouchPlatform ? 16 : 14),
+                        compact: !MMInput.of(context).phone,
+                        label: MMInput.of(context).phone ? label : null,
+                        tooltip: AppShortcuts.tip(label, shortcut),
+                        selected: value == shown,
+                        onPressed: controller.canShowReaderPanel(value)
+                            ? () => controller.setReaderPanelMode(value)
+                            : null,
+                      ),
                 ],
               ),
               Divider(height: 1, thickness: 1, color: c.separator),

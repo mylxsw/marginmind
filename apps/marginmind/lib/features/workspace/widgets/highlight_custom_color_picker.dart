@@ -16,6 +16,7 @@ Future<MMAnnotationColor?> showPhoneCustomColor(BuildContext context, MMAnnotati
   }
   return showMMBottomSheet<MMAnnotationColor>(
     context: context,
+    expand: false,
     builder: (context) => SingleChildScrollView(
       primary: true,
       child: HighlightCustomColorPicker(
@@ -77,7 +78,8 @@ class _HighlightCustomColorPickerState extends State<HighlightCustomColorPicker>
   @override
   Widget build(BuildContext context) {
     final l = context.l10n, c = context.mmColors;
-    return MMGlass(
+    return MMModalContent(
+      embedded: MMBottomSheet.contains(context),
       key: const ValueKey('highlight-custom-color-picker'),
       borderRadius: BorderRadius.circular(16),
       padding: const EdgeInsets.all(12),

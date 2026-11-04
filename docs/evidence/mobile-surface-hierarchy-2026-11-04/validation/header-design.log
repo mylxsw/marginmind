@@ -1,0 +1,6 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart
+00:00 +0: native forms validate before closing and release their session callbacks
+00:00 +1: native inline actions refresh content and release callbacks on dismissal
+00:00 +2: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.iOS)
+00:00 +3: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.android)
+00:00 +4: All tests passed!

@@ -14,8 +14,6 @@ void main() {
       tester.view.physicalSize = const Size(320, 740);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      var returned = false;
-      final label = language == 'zh' ? '返回阅读' : 'Back to Reading';
       await tester.pumpWidget(
         ProviderScope(
           overrides: await testOverrides(),
@@ -36,8 +34,6 @@ void main() {
               child: PhoneWorkspaceSidebar(
                 title: 'Study set',
                 mapId: 'map',
-                returnLabel: label,
-                onDismiss: () => returned = true,
                 documents: const [],
                 maps: const [],
                 notes: const [],
@@ -55,20 +51,20 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final back = find.text(label);
       final library = find.text(language == 'zh' ? '资料库' : 'Library');
-      expect(tester.renderObject<RenderParagraph>(back).didExceedMaxLines, isFalse);
       expect(tester.renderObject<RenderParagraph>(library).didExceedMaxLines, isFalse);
-      final action = find.byKey(const ValueKey('phone-resources-return'));
+      final action = find.byType(MMPhoneNavigationAction);
       expect(tester.getSize(action).height, greaterThanOrEqualTo(44));
       expect(tester.getRect(action).right, lessThanOrEqualTo(320));
       await tester.tap(action);
-      expect(returned, isTrue);
+      expect(find.byIcon(MMIcons.close), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }
 
-  testWidgets('phone grouped commands, notes expansion and keyboard retain an explicit return action', (tester) async {
+  testWidgets('phone grouped commands, notes expansion and keyboard keep the library destination visible', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -93,7 +89,6 @@ void main() {
                 child: PhoneWorkspaceSidebar(
                   title: 'Study set',
                   mapId: 'map',
-                  onDismiss: () => calls.add('done'),
                   documents: [row('Document')],
                   maps: [row('Map')],
                   notes: [row('Note')],
@@ -115,7 +110,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Back to Content'), findsOneWidget);
+    expect(find.text('Back to Content'), findsNothing);
     expect(find.byIcon(MMIcons.close), findsNothing);
     final list = find.byKey(const ValueKey('phone-drawer-list'));
     await tester.tap(find.byTooltip('Add'));
@@ -143,10 +138,8 @@ void main() {
     expect(calls, contains('new-note'));
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('phone-resources-return')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('phone-resources-return')));
-    expect(calls, contains('done'));
-    expect(tester.getRect(find.byKey(const ValueKey('phone-resources-return'))).bottom, lessThan(552));
+    expect(find.byType(MMPhoneNavigationAction), findsOneWidget);
+    expect(tester.getRect(find.byType(MMPhoneNavigationAction)).bottom, lessThan(552));
     expect(tester.takeException(), isNull);
     // Android landscape IME can leave only 126 logical points for the drawer,
     // including when it is mounted behind the assistant.
@@ -155,7 +148,7 @@ void main() {
     tester.view.viewInsets = const FakeViewPadding(bottom: 285);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(tester.getRect(find.byKey(const ValueKey('phone-resources-return'))).bottom, lessThanOrEqualTo(126));
+    expect(tester.getRect(find.byType(MMPhoneNavigationAction)).bottom, lessThanOrEqualTo(126));
     expect(find.text('Keep search'), findsOneWidget);
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();

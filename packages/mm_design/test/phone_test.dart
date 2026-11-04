@@ -126,12 +126,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Starts at medium height and floats above the home indicator.
+      // A long compact form uses the available height and stays above the home indicator.
       final rect = tester.getRect(sheet);
       expect(rect.bottom, 800 - 30 - MMSizes.phoneSheetPadding);
       expect(rect.left, MMSizes.phoneSheetPadding);
       expect(rect.right, 400 - MMSizes.phoneSheetPadding);
-      expect(rect.height, (800 - 40 - MMSpacing.s - 30 - MMSizes.phoneSheetPadding) * MMSizes.phoneSheetMedium);
+      final availableHeight = 800 - 40 - MMSpacing.s - 30 - MMSizes.phoneSheetPadding;
+      expect(rect.height, availableHeight);
       expect(find.text('OK'), findsOneWidget);
       expect(tester.takeException(), isNull);
       // A short drag springs back.
@@ -148,10 +149,41 @@ void main() {
         builder: (_) => const SizedBox(height: 120, child: Text('Settings')),
       );
       await tester.pumpAndSettle();
-      expect(tester.getRect(sheet).height, rect.height);
+      expect(tester.getRect(sheet).height, availableHeight * MMSizes.phoneSheetMedium);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
+    });
+
+    testWidgets('explicit full-height sheets keep their detent unless content sizing is requested', (tester) async {
+      late BuildContext context;
+      await _phone(
+        tester,
+        Builder(
+          builder: (c) {
+            context = c;
+            return const SizedBox.expand();
+          },
+        ),
+      );
+      for (final expand in [null, false]) {
+        showMMSheet<void>(
+          context: context,
+          expand: expand,
+          initialFraction: MMSizes.phoneSheetExpanded,
+          builder: (_) => const SizedBox(height: 120, child: Text('Panel')),
+        );
+        await tester.pumpAndSettle();
+        final height = tester.getSize(find.byKey(const ValueKey('mm-bottom-sheet'))).height;
+        if (expand == null) {
+          expect(height, 800 - 40 - MMSpacing.s - 30 - MMSizes.phoneSheetPadding);
+        } else {
+          expect(height, lessThan(300), reason: 'Explicit content sizing overrides the initial detent');
+        }
+        expect(tester.takeException(), isNull);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      }
     });
 
     testWidgets('landscape phone forms stay bottom sheets and scroll above a tall keyboard', (tester) async {

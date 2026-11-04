@@ -17,11 +17,16 @@ Future<T?> showMMSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   double width = 420,
-  bool expand = true,
+  bool? expand,
   double initialFraction = MMSizes.phoneSheetMedium,
 }) {
   if (MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact) {
-    return showMMBottomSheet<T>(context: context, builder: builder, expand: expand, initialFraction: initialFraction);
+    return showMMBottomSheet<T>(
+      context: context,
+      builder: builder,
+      expand: expand ?? initialFraction != MMSizes.phoneSheetMedium,
+      initialFraction: initialFraction,
+    );
   }
   final c = context.mmColors;
   final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);

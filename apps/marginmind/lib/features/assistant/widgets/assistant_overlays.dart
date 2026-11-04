@@ -283,6 +283,7 @@ Future<void> showSaveNotePopover(
   if (MMInput.of(context).phone) {
     return showMMBottomSheet<void>(
       context: context,
+      expand: false,
       builder: (_) => inScope(
         context,
         SingleChildScrollView(
@@ -403,7 +404,8 @@ class _SaveNotePopoverState extends ConsumerState<SaveNotePopover> {
         const SingleActivator(LogicalKeyboardKey.enter): () => _save(place),
       },
       child: FocusScope(
-        child: MMGlass(
+        child: MMModalContent(
+          embedded: MMBottomSheet.contains(context),
           key: const ValueKey('save-note-popover'),
           borderRadius: BorderRadius.circular(14),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: MMSpacing.m),

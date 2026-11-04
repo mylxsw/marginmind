@@ -75,7 +75,7 @@ class _MMPhoneDrawerState extends State<MMPhoneDrawer> with SingleTickerProvider
     builder: (context, constraints) {
       final width = widget.fullScreen
           ? constraints.maxWidth
-          : math.min(MMSizes.phoneDrawerWidth, math.max(0.0, constraints.maxWidth - MMSpacing.xxxl));
+          : math.min(MMSizes.phoneDrawerWidth, constraints.maxWidth * MMPhoneNavigation.drawerWidthFraction);
       void start(DragStartDetails _) {
         _position.stop();
         _drag = 0;
@@ -102,7 +102,7 @@ class _MMPhoneDrawerState extends State<MMPhoneDrawer> with SingleTickerProvider
                   opacity: _position.value,
                   child: ModalBarrier(
                     key: const ValueKey('phone-drawer-scrim'),
-                    color: context.mmColors.scrim,
+                    color: Colors.black.withValues(alpha: MMPhoneNavigation.drawerScrimOpacity),
                     semanticsLabel: widget.dismissLabel,
                     onDismiss: () => widget.onChanged(false),
                   ),
@@ -258,10 +258,11 @@ class MMPhoneNavigationGroup extends StatelessWidget {
 }
 
 class MMPhoneNavigationRow extends StatelessWidget {
-  const MMPhoneNavigationRow({super.key, required this.item, this.cautionCount = false});
+  const MMPhoneNavigationRow({super.key, required this.item, this.cautionCount = false, this.maxLines = 2});
 
   final MMSidebarItem item;
   final bool cautionCount;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +270,7 @@ class MMPhoneNavigationRow extends StatelessWidget {
     final trailing = item.trailing;
     final row = MMInteractive(
       semanticLabel: item.label,
+      tooltip: maxLines == 1 ? item.label : null,
       selected: item.selected,
       onTap: item.onTap,
       builder: (context, state) => Container(
@@ -289,7 +291,7 @@ class MMPhoneNavigationRow extends StatelessWidget {
             Expanded(
               child: Text(
                 item.label,
-                maxLines: 2,
+                maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
                 style: context.mmText.body.copyWith(
                   fontSize: MMPhoneNavigation.rowTextSize,

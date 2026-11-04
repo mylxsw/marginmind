@@ -1,0 +1,3 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart
+00:00 +0: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +1: All tests passed!

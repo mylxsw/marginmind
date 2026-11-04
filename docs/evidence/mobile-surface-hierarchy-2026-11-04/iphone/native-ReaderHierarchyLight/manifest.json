@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F7498667-CBDD-44E8-984B-173FF027868F",
+        "deviceName" : "Foliarc UI Polish",
+        "exportedFileName" : "F1925FA0-D01C-4369-978B-27335A20FB92.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "light-03-native-annotations_0_2FB9C152-3D84-46BD-B759-6801A36B4C43.png",
+        "timestamp" : 1793787316.796
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F7498667-CBDD-44E8-984B-173FF027868F",
+        "deviceName" : "Foliarc UI Polish",
+        "exportedFileName" : "F9B7D942-D814-407E-B9E3-64296E0CB6B2.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "light-02-native-bookmarks_0_F3973E94-E2AF-44EE-AA51-2F5B6E595594.png",
+        "timestamp" : 1793787316.373
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F7498667-CBDD-44E8-984B-173FF027868F",
+        "deviceName" : "Foliarc UI Polish",
+        "exportedFileName" : "232143D8-E2D8-4C00-98B8-00BB6BE67FAC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "light-01-native-outline_0_B4F0A22D-4B5B-4C94-BA27-8794B37EA053.png",
+        "timestamp" : 1793787315.963
+      }
+    ],
+    "testIdentifier" : "IntegrationNativePresentationTests/testReaderHierarchyLight()",
+    "testIdentifierURL" : "test://com.apple.xcode/PhoneUI/PhonePresentationTests/IntegrationNativePresentationTests/testReaderHierarchyLight"
+  }
+]

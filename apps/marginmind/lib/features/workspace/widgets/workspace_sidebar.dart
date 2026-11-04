@@ -83,6 +83,7 @@ class WorkspaceSidebar extends ConsumerWidget {
       return MMPhoneNavigationRow(
         key: widget.key,
         cautionCount: cautionCount,
+        maxLines: document ? 1 : 2,
         item: MMSidebarItem(
           icon: widget.icon,
           label: widget.label,
@@ -398,13 +399,6 @@ class WorkspaceSidebar extends ConsumerWidget {
         key: ValueKey(studySetId),
         title: studyTitle ?? '',
         mapId: state.activeMapId,
-        returnLabel: switch (state.tabs.active?.kind) {
-          WorkspaceTabKind.documentMap =>
-            state.layout == MMSplitMode.secondary ? l.backToMap : l.phoneNavigationReturnToReading,
-          WorkspaceTabKind.note => l.phoneNavigationReturnToNote,
-          _ => l.phoneNavigationReturnToContent,
-        },
-        onDismiss: onDismiss ?? controller.toggleSidebar,
         documents: [for (final row in docs) phoneRow(row, mapDestination: false)],
         maps: [for (final row in maps) phoneRow(row, mapDestination: true)],
         notes: [for (final row in notes) phoneRow(row)],

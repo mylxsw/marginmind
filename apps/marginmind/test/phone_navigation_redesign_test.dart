@@ -191,7 +191,7 @@ void main() {
       await tester.dragFrom(const Offset(2, 400), const Offset(190, 0));
       await tester.pumpAndSettle();
       expect(find.byType(PhoneWorkspaceSidebar), findsOneWidget);
-      expect(tester.getRect(find.byKey(const ValueKey('phone-drawer-panel'))), const Rect.fromLTWH(0, 0, 393, 852));
+      expect(tester.getSize(find.byKey(const ValueKey('phone-drawer-panel'))).width, lessThanOrEqualTo(393 * .85));
       expect(find.text('完成').hitTestable(), findsNothing);
       await evidence(tester, 'drawer-${dark ? 'dark' : 'light'}');
       await tester.tap(find.text('学习的底层逻辑').hitTestable());
@@ -199,7 +199,7 @@ void main() {
       expect(find.byKey(const ValueKey('phone-drawer-scrim')), findsNothing);
       await tester.dragFrom(const Offset(2, 400), const Offset(190, 0));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('phone-resources-return')));
+      await tester.tapAt(const Offset(390, 400));
       await tester.pumpAndSettle();
       container.read(navigationProvider.notifier).startReview('demo-1');
       await tester.pumpAndSettle();
@@ -218,7 +218,7 @@ void main() {
     });
   }
 
-  testWidgets('phone library navigation fills the screen and selecting the current filter closes it', (tester) async {
+  testWidgets('phone library drawer exposes content and selecting the current filter closes it', (tester) async {
     await pumpApp(
       tester,
       size: const Size(393, 852),
@@ -226,7 +226,8 @@ void main() {
     );
     await tester.tap(find.byTooltip('Show Sidebar'));
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byType(MMSidebar).hitTestable()).width, 393);
+    expect(tester.getSize(find.byType(MMSidebar).hitTestable()).width, lessThanOrEqualTo(393 * .85));
+    expect(find.byIcon(MMIcons.close).hitTestable(), findsNothing);
     await tester.tap(find.text('All Study Sets').hitTestable().first);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('library-navigation-close')).hitTestable(), findsNothing);
@@ -243,17 +244,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.dragFrom(const Offset(2, 400), const Offset(190, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Back to Reading').hitTestable(), findsOneWidget);
+    expect(find.text('Back to Reading'), findsNothing);
     container.read(workspaceProvider('demo-1').notifier).setLayout(MMSplitMode.secondary);
     await tester.pumpAndSettle();
-    expect(find.text('Back to Map').hitTestable(), findsOneWidget);
+    expect(find.text('Back to Map'), findsNothing);
     await tester.enterText(find.byType(EditableText).hitTestable(), '论文');
     await tester.pumpAndSettle();
     expect(find.text('论文：检索练习效应').hitTestable(), findsOneWidget);
     expect(find.text('学习的底层逻辑').hitTestable(), findsNothing);
     await tester.enterText(find.byType(EditableText).hitTestable(), '');
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('phone-resources-return')));
+    await tester.tapAt(const Offset(390, 400));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('phone-drawer-scrim')), findsNothing);
     expect(container.read(navigationProvider), isA<WorkspaceRoute>());
@@ -271,6 +272,35 @@ void main() {
     expect(container.read(navigationProvider), isA<LibraryRoute>());
     expect(tester.takeException(), isNull);
   });
+
+  for (final language in ['en', 'zh']) {
+    testWidgets('narrow phone library and reader keep content inside their bounds with large $language text', (
+      tester,
+    ) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final container = await pumpApp(
+        tester,
+        size: const Size(320, 740),
+        prefs: {'settings.language': language},
+        overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+      );
+      expect(tester.takeException(), isNull);
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(
+        find.byWidgetPredicate((w) => w is MMIconButton && w.icon == MMIcons.sidebar).hitTestable().first,
+      );
+      await tester.pumpAndSettle();
+      final drawer = tester.getRect(find.byKey(const ValueKey('phone-drawer-panel')));
+      expect(drawer.width, lessThanOrEqualTo(320 * .85));
+      await tester.tapAt(const Offset(315, 350));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('phone-drawer-scrim')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   for (final device in [
     (false, true, const Size(393, 852)),

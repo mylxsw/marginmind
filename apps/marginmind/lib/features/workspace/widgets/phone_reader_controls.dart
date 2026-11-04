@@ -290,9 +290,15 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
                             ),
                           ),
                           const SizedBox(width: MMSpacing.s),
-                          Text(
-                            l.pageOf(page, count),
-                            style: context.mmText.callout.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                          Flexible(
+                            child: Text(
+                              l.pageOf(page, count),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.mmText.callout.copyWith(
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
                           ),
                         ],
                       ),

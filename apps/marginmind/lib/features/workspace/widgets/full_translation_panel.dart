@@ -170,7 +170,8 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
         job.state == TranslationJobState.budget ||
         job.state == TranslationJobState.error;
 
-    return MMGlass(
+    return MMModalContent(
+      embedded: MMBottomSheet.contains(context),
       borderRadius: BorderRadius.circular(16),
       padding: const EdgeInsets.all(14),
       shadows: c.sheetShadow,

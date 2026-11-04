@@ -194,7 +194,8 @@ class _MapStylePopoverState extends State<MapStylePopover> {
       enabled: MMInput.of(context).phone || MMFlatSurface.of(context),
       child: MouseRegion(
         onExit: (_) => widget.onPreview(null),
-        child: MMGlass(
+        child: MMModalContent(
+          embedded: MMBottomSheet.contains(context),
           key: const ValueKey('map-style-popover'),
           borderRadius: BorderRadius.circular(MMRadii.dropdown),
           padding: const EdgeInsets.all(MMSpacing.m),

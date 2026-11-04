@@ -13,10 +13,10 @@ final class IntegrationNativePresentationTests: XCTestCase {
     shot.lifetime = .keepAlways; add(shot)
   }
   func testReaderActionsClose() {
-    let close = app.buttons["native-actions-close"]
-    XCTAssertTrue(close.waitForExistence(timeout: 8), app.debugDescription)
-    close.tap()
-    XCTAssertTrue(close.waitForNonExistence(timeout: 5))
+    let panel = app.tables["native-reader-actions"]
+    XCTAssertTrue(panel.waitForExistence(timeout: 8), app.debugDescription)
+    XCTAssertFalse(app.buttons["native-actions-close"].exists)
+    dismissNativePanel("native-reader-actions")
   }
   func testReaderActionsDark() { testReaderActions() }
   func testReaderActions() {
@@ -62,10 +62,10 @@ final class IntegrationNativePresentationTests: XCTestCase {
     XCTAssertTrue(outline.isHittable)
     outline.tap()
     XCTAssertTrue(panel.waitForNonExistence(timeout: 5))
-    let section = app.buttons["native-reader-section"]
+    let section = readerTab("outline")
     XCTAssertTrue(section.waitForExistence(timeout: 8), app.debugDescription)
     capture("reader-actions-to-outline")
-    app.buttons.matching(NSPredicate(format: "label ==[c] %@", "close")).firstMatch.tap()
+    dismissReaderList()
   }
 
   func testModalConfirm() {
@@ -126,16 +126,12 @@ final class IntegrationNativePresentationTests: XCTestCase {
     waitForExpectations(timeout: 8)
   }
   func testReaderNavigation() {
-    let section = app.buttons["native-reader-section"]
+    let section = readerTab("outline")
     XCTAssertTrue(section.waitForExistence(timeout: 8), app.debugDescription)
     XCTAssertTrue(app.staticTexts["暂无目录"].exists, app.debugDescription)
-    capture("pdf-native-outline-medium")
-    let mediumTop = app.navigationBars.firstMatch.frame.minY
-    app.swipeUp()
-    XCTAssertLessThan(app.navigationBars.firstMatch.frame.minY, mediumTop - 100)
+    XCTAssertLessThan(section.frame.minY, app.frame.height * 0.2)
     capture("pdf-native-outline-expanded")
-    section.tap()
-    let bookmarks = app.buttons["书签"]
+    let bookmarks = readerTab("bookmarks")
     XCTAssertTrue(bookmarks.waitForExistence(timeout: 5), app.debugDescription)
     bookmarks.tap()
     capture("pdf-native-bookmarks")
@@ -145,7 +141,7 @@ final class IntegrationNativePresentationTests: XCTestCase {
     XCTAssertTrue(section.waitForNonExistence(timeout: 5))
   }
   func testReflowNavigation() {
-    let section = app.buttons["native-reader-section"]
+    let section = readerTab("outline")
     XCTAssertTrue(section.waitForExistence(timeout: 8), app.debugDescription)
     capture("reflow-native-outline")
     let entry = app.staticTexts["间隔复习"].firstMatch
@@ -211,11 +207,64 @@ final class IntegrationNativePresentationTests: XCTestCase {
     XCTAssertTrue(picker.waitForNonExistence(timeout: 5))
   }
 
+  private func readerTab(_ id: String) -> XCUIElement {
+    app.otherElements["native-reader-tabs"].firstMatch.buttons["native-reader-tab-" + id].firstMatch
+  }
+  private func dismissReaderList() { dismissNativePanel("native-reader-list") }
+  private func dismissNativePanel(_ identifier: String) {
+    let panel = app.tables[identifier]
+    for _ in 0..<2 {
+      if !panel.exists { break }
+      let top = identifier == "native-reader-list"
+        ? app.otherElements["native-reader-tabs"].firstMatch.frame.minY
+        : app.navigationBars.firstMatch.frame.minY
+      app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: max(0.03, top / app.frame.height - 0.01)))
+        .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.97)))
+    }
+    XCTAssertTrue(panel.waitForNonExistence(timeout: 5))
+  }
+  func testReaderHierarchyDark() { readerHierarchy("dark") }
+  func testReaderHierarchyLight() { readerHierarchy("light") }
+  private func readerHierarchy(_ theme: String) {
+    let panel = app.tables["native-reader-list"]
+    let outline = readerTab("outline")
+    XCTAssertTrue(outline.waitForExistence(timeout: 8), app.debugDescription)
+    XCTAssertLessThan(outline.frame.minY, app.frame.height * 0.2)
+    XCTAssertFalse(app.navigationBars.firstMatch.exists)
+    let manage = app.otherElements["native-reader-tabs"].firstMatch.buttons["native-reader-manage"].firstMatch
+    XCTAssertEqual(outline.frame.midY, manage.frame.midY, accuracy: 1)
+    XCTAssertFalse(app.navigationBars.buttons["关闭"].exists)
+    let first = app.cells["native-reader-row-outline-0"]
+    XCTAssertTrue(first.label.contains("Super-agent"))
+    XCTAssertFalse(panel.cells.containing(NSPredicate(format: "label CONTAINS %@", "文档开头")).firstMatch.exists)
+    for cell in panel.cells.allElementsBoundByIndex { XCTAssertFalse(cell.isSelected) }
+    XCTAssertGreaterThanOrEqual(first.frame.height, 48)
+    let longTitle = app.cells["native-reader-row-outline-1"]
+    XCTAssertTrue(longTitle.label.contains("五个模块构成了支撑上述四个特征的双层架构。"))
+    XCTAssertEqual(longTitle.frame.height, 48, accuracy: 1)
+    let bookmarksTab = readerTab("bookmarks")
+    let annotationsTab = readerTab("annotations")
+    XCTAssertEqual(outline.frame.width, bookmarksTab.frame.width, accuracy: 1)
+    XCTAssertEqual(outline.frame.width, annotationsTab.frame.width, accuracy: 1)
+    capture(theme + "-01-native-outline")
+    let bookmarks = readerTab("bookmarks")
+    bookmarks.tap()
+    XCTAssertTrue(bookmarks.isSelected)
+    capture(theme + "-02-native-bookmarks")
+    let annotations = readerTab("annotations")
+    annotations.tap()
+    XCTAssertTrue(annotations.isSelected)
+    capture(theme + "-03-native-annotations")
+    outline.tap()
+    app.otherElements["native-reader-tabs"].firstMatch.buttons["native-reader-manage"].firstMatch.tap()
+    XCTAssertTrue(panel.waitForNonExistence(timeout: 5))
+  }
+
   func testReaderManageDark() { testReaderManage() }
   func testReaderManage() {
-    let section = app.buttons["native-reader-section"]
+    let section = readerTab("outline")
     XCTAssertTrue(section.waitForExistence(timeout: 8), app.debugDescription)
-    app.buttons["管理"].tap()
+    app.otherElements["native-reader-tabs"].firstMatch.buttons["native-reader-manage"].firstMatch.tap()
     XCTAssertTrue(section.waitForNonExistence(timeout: 5))
     capture("reader-management-opened")
   }

@@ -20,6 +20,7 @@ Future<void> showVocabularyHit(
 }) => MMInput.of(context).phone
     ? showMMBottomSheet<void>(
         context: context,
+        initialFraction: MMSizes.phonePreviewSheet,
         builder: (_) => UncontrolledProviderScope(
           container: ProviderScope.containerOf(context, listen: false),
           child: Material(
@@ -150,7 +151,8 @@ class _VocabularyHitCardState extends ConsumerState<VocabularyHitCard> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).vertical - MMSpacing.xxl * 2,
         ),
-        child: MMGlass(
+        child: MMModalContent(
+          embedded: MMBottomSheet.contains(context),
           padding: const EdgeInsets.all(MMSpacing.m),
           borderRadius: BorderRadius.circular(MMRadii.sidebar),
           child: SingleChildScrollView(

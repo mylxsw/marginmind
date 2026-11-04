@@ -1,0 +1,6 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart
+00:00 +0: phone map style stays on screen at 320pt
+00:01 +1: phone map style stays on screen at 390pt
+00:02 +2: phone map style stays on screen at landscape
+00:02 +3: All tests passed!

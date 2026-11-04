@@ -64,6 +64,7 @@ final class NativePresentation {
     if #available(iOS 15.0, *), let sheet = navigation.sheetPresentationController {
       sheet.preferredCornerRadius = material.radius
       sheet.detents = [.medium(), .large()]
+      sheet.selectedDetentIdentifier = args["initialDetent"] as? String == "large" ? .large : .medium
       sheet.prefersGrabberVisible = true
       sheet.prefersScrollingExpandsWhenScrolledToEdge = true
       sheet.prefersEdgeAttachedInCompactHeight = true
@@ -113,6 +114,7 @@ final class NativePresentation {
       }
       activeList = list
       let navigation = UINavigationController(rootViewController: list)
+      navigation.setNavigationBarHidden(true, animated: false)
       Self.configureSheet(navigation, args: args)
       presenter.present(navigation, animated: true) { navigation.presentationController?.delegate = list }
     case "form":
@@ -445,15 +447,26 @@ private final class NativeGlass: NSObject, FlutterPlatformView {
 }
 
 
+private final class NativeReaderTabButton: UIButton {
+  override var intrinsicContentSize: CGSize {
+    let size = super.intrinsicContentSize
+    return CGSize(width: size.width + 24, height: max(44, size.height + 24))
+  }
+}
+
 private final class NativeListController: NativeModalTableController, UIAdaptivePresentationControllerDelegate {
   private let args: [String: Any]
   private let channel: FlutterMethodChannel
   private let sections: [[String: Any]]
   private var section = 0
+  private var isOutline: Bool { sections.indices.contains(section) && sections[section]["id"] as? String == "outline" }
+  private func metric(_ key: String, _ fallback: CGFloat) -> CGFloat {
+    let values = args["navigationLayout"] as? [String: Any] ?? [:]
+    return CGFloat((values[key] as? NSNumber)?.doubleValue ?? Double(fallback))
+  }
   private var completion: (([String: String]?) -> Void)?
   private let images = NSCache<NSString, UIImage>()
   private var requested = Set<String>()
-  private let sectionButton = UIButton(type: .system)
   private var rows: [[String: Any]] { sections.indices.contains(section) ? sections[section]["rows"] as? [[String: Any]] ?? [] : [] }
 
   init(args: [String: Any], channel: FlutterMethodChannel, completion: @escaping ([String: String]?) -> Void) {
@@ -461,7 +474,7 @@ private final class NativeListController: NativeModalTableController, UIAdaptive
     self.channel = channel
     self.sections = args["sections"] as? [[String: Any]] ?? []
     self.completion = completion
-    super.init(style: .insetGrouped)
+    super.init(style: .plain)
     self.section = sections.firstIndex { ($0["id"] as? String) == args["selectedSection"] as? String } ?? 0
     title = args["title"] as? String
   }
@@ -474,31 +487,18 @@ private final class NativeListController: NativeModalTableController, UIAdaptive
     tableView.estimatedRowHeight = 60
     tableView.rowHeight = UITableView.automaticDimension
     images.countLimit = 48
-    navigationItem.leftBarButtonItem = UIBarButtonItem(title: args["close"] as? String,
-      style: .plain, target: self, action: #selector(close))
-    navigationItem.rightBarButtonItem = UIBarButtonItem(title: args["manage"] as? String, style: .plain, target: self, action: #selector(manage))
-    sectionButton.showsMenuAsPrimaryAction = true
-    sectionButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
-    sectionButton.accessibilityIdentifier = "native-reader-section"
-    navigationItem.titleView = sectionButton
+    tableView.accessibilityLabel = args["title"] as? String
+    tableView.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: metric("inset", 16), bottom: 0, trailing: metric("inset", 16))
+    tableView.accessibilityIdentifier = "native-reader-list"
+    tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+    if #available(iOS 15.0, *) { tableView.sectionHeaderTopPadding = 0 }
     updateSection()
   }
   private func updateSection() {
     guard !sections.isEmpty else { return }
-    var configuration = UIButton.Configuration.plain()
-    configuration.title = sections[section]["title"] as? String ?? ""
-    configuration.image = UIImage(systemName: "chevron.down")
-    configuration.imagePlacement = .trailing
-    configuration.imagePadding = 5
-    sectionButton.configuration = configuration
-    sectionButton.menu = UIMenu(children: sections.enumerated().map { index, item in
-      UIAction(title: item["title"] as? String ?? "", state: index == section ? .on : .off) { [weak self] _ in
-        self?.section = index
-        self?.updateSection()
-      }
-    })
+    tableView.separatorStyle = isOutline ? .none : .singleLine
     tableView.reloadData()
-    if let current = rows.firstIndex(where: { $0["selected"] as? Bool == true }) {
+    if !isOutline, let current = rows.firstIndex(where: { $0["selected"] as? Bool == true }) {
       tableView.scrollToRow(at: IndexPath(row: current, section: 0), at: .middle, animated: false)
     }
     let label = UILabel()
@@ -509,23 +509,110 @@ private final class NativeListController: NativeModalTableController, UIAdaptive
     label.text = sections[section]["empty"] as? String ?? args["empty"] as? String
     tableView.backgroundView = rows.isEmpty ? label : nil
   }
+  override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    max(metric("tabHeight", 44), UIFont.preferredFont(forTextStyle: .body).lineHeight + 20) + metric("listTop", 8)
+  }
+  override func tableView(_ tableView: UITableView, viewForHeaderInSection headerSection: Int) -> UIView? {
+    let header = UIView()
+    header.backgroundColor = modalStyle.background
+    header.accessibilityIdentifier = "native-reader-tabs"
+    header.shouldGroupAccessibilityChildren = true
+    let manageButton = NativeReaderTabButton(type: .custom)
+    manageButton.setTitle(args["manage"] as? String, for: .normal)
+    manageButton.setTitleColor(modalStyle.secondaryLabel, for: .normal)
+    manageButton.titleLabel?.font = .preferredFont(forTextStyle: .body)
+    manageButton.titleLabel?.adjustsFontForContentSizeCategory = true
+    manageButton.titleLabel?.numberOfLines = 1
+    manageButton.accessibilityIdentifier = "native-reader-manage"
+    manageButton.translatesAutoresizingMaskIntoConstraints = false
+    manageButton.setContentHuggingPriority(.required, for: .horizontal)
+    manageButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+    manageButton.addTarget(self, action: #selector(manage), for: .touchUpInside)
+    header.addSubview(manageButton)
+    let scroll = UIScrollView()
+    scroll.showsHorizontalScrollIndicator = false
+    scroll.translatesAutoresizingMaskIntoConstraints = false
+    header.addSubview(scroll)
+    let tabs = UIStackView()
+    tabs.axis = .horizontal
+    tabs.distribution = .fillEqually
+    tabs.translatesAutoresizingMaskIntoConstraints = false
+    scroll.addSubview(tabs)
+    NSLayoutConstraint.activate([
+      scroll.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: metric("inset", 16)),
+      scroll.trailingAnchor.constraint(equalTo: manageButton.leadingAnchor, constant: -8),
+      manageButton.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -metric("inset", 16)),
+      manageButton.topAnchor.constraint(equalTo: scroll.topAnchor),
+      manageButton.bottomAnchor.constraint(equalTo: scroll.bottomAnchor),
+      manageButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44),
+      scroll.topAnchor.constraint(equalTo: header.topAnchor),
+      scroll.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -metric("listTop", 8)),
+      tabs.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+      tabs.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+      tabs.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+      tabs.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+      tabs.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor),
+      tabs.widthAnchor.constraint(greaterThanOrEqualTo: scroll.frameLayoutGuide.widthAnchor),
+    ])
+    for (index, item) in sections.enumerated() {
+      let selected = index == section
+      let button = NativeReaderTabButton(type: .custom)
+      button.setTitle(item["title"] as? String ?? "", for: .normal)
+      let labelColor = selected ? modalStyle.label : modalStyle.secondaryLabel
+      button.setTitleColor(labelColor, for: .normal)
+      button.setTitleColor(labelColor, for: .selected)
+      button.titleLabel?.font = selected ? UIFont.preferredFont(forTextStyle: .headline) : UIFont.preferredFont(forTextStyle: .body)
+      button.isSelected = selected
+      button.titleLabel?.adjustsFontForContentSizeCategory = true
+      button.titleLabel?.numberOfLines = 1
+      button.setContentCompressionResistancePriority(.required, for: .horizontal)
+      button.accessibilityIdentifier = "native-reader-tab-" + (item["id"] as? String ?? "")
+      button.accessibilityTraits = selected ? [.button, .selected] : [.button]
+      button.addAction(UIAction { [weak self] _ in
+        self?.section = index
+        self?.updateSection()
+      }, for: .touchUpInside)
+      tabs.addArrangedSubview(button)
+      button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+      if selected {
+        let line = UIView()
+        line.backgroundColor = modalStyle.label
+        line.translatesAutoresizingMaskIntoConstraints = false
+        button.addSubview(line)
+        NSLayoutConstraint.activate([
+          line.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+          line.widthAnchor.constraint(equalToConstant: metric("underlineWidth", 24)),
+          line.bottomAnchor.constraint(equalTo: button.bottomAnchor),
+          line.heightAnchor.constraint(equalToConstant: 2),
+        ])
+      }
+    }
+    return header
+  }
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rows.count }
   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     let item = rows[indexPath.row]
     let id = item["id"] as? String ?? ""
     let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+    cell.backgroundColor = .clear
+    cell.preservesSuperviewLayoutMargins = false
+    cell.tintColor = modalStyle.secondaryLabel
     cell.accessibilityIdentifier = "native-reader-row-" + id
     cell.textLabel?.text = item["title"] as? String
     cell.textLabel?.textColor = modalStyle.label
-    cell.textLabel?.font = .preferredFont(forTextStyle: .body)
+    let body = UIFont.preferredFont(forTextStyle: .body)
+    cell.textLabel?.font = body
     cell.textLabel?.adjustsFontForContentSizeCategory = true
-    cell.textLabel?.numberOfLines = 2
+    cell.textLabel?.numberOfLines = isOutline || sections[section]["id"] as? String == "bookmarks" ? 1 : 2
+    cell.textLabel?.lineBreakMode = .byTruncatingTail
+    cell.accessibilityLabel = [item["title"] as? String, item["subtitle"] as? String].compactMap { $0 }.joined(separator: ", ")
     cell.detailTextLabel?.text = item["subtitle"] as? String
     cell.detailTextLabel?.font = .preferredFont(forTextStyle: .caption1)
     cell.detailTextLabel?.adjustsFontForContentSizeCategory = true
-    cell.indentationLevel = min(item["depth"] as? Int ?? 0, 6)
-    cell.indentationWidth = 14
-    cell.accessoryType = item["selected"] as? Bool == true ? .checkmark : .none
+    cell.indentationLevel = min(item["depth"] as? Int ?? 0, Int(metric("maxDepth", 4)))
+    cell.indentationWidth = metric("indent", 16)
+    cell.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 8, leading: metric("inset", 16), bottom: 8, trailing: metric("inset", 16))
+    cell.accessoryType = !isOutline && item["selected"] as? Bool == true ? .checkmark : .none
     cell.isUserInteractionEnabled = item["enabled"] as? Bool != false
     if !cell.isUserInteractionEnabled { cell.textLabel?.textColor = .secondaryLabel }
     if item["preview"] as? Bool == true {
@@ -555,12 +642,17 @@ private final class NativeListController: NativeModalTableController, UIAdaptive
     return cell
   }
   override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-    rows[indexPath.row]["preview"] as? Bool == true ? 128 : UITableView.automaticDimension
+    let row = rows[indexPath.row]
+    if row["preview"] as? Bool == true { return 128 }
+    if isOutline {
+      let subtitle = (row["subtitle"] as? String)?.isEmpty == false ? UIFont.preferredFont(forTextStyle: .caption1).lineHeight : 0
+      return max(metric("rowHeight", 48), UIFont.preferredFont(forTextStyle: .body).lineHeight + subtitle + 16)
+    }
+    return UITableView.automaticDimension
   }
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     finish(rows[indexPath.row]["id"] as? String)
   }
-  @objc private func close() { finish(nil) }
   @objc private func manage() { finish("__manage__") }
   private func finish(_ selected: String?) {
     guard let complete = completion else { return }
@@ -623,16 +715,13 @@ private final class NativeActionsController: NativeModalTableController, UIAdapt
 
   private func refresh() {
     title = content[appearance ? "appearanceTitle" : "title"] as? String
-    let close = UIBarButtonItem(title: content["close"] as? String,
-      style: .plain, target: self, action: #selector(closePanel))
-    close.accessibilityLabel = content["close"] as? String
-    close.accessibilityIdentifier = "native-actions-close"
-    navigationItem.leftBarButtonItem = close
+    navigationItem.leftBarButtonItem = nil
     if appearance {
       let back = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(back))
       back.accessibilityLabel = content["back"] as? String
       back.accessibilityIdentifier = "native-actions-back"
-      navigationItem.rightBarButtonItems = [back]
+      navigationItem.leftBarButtonItem = back
+      navigationItem.rightBarButtonItems = nil
     } else {
       let undo = UIBarButtonItem(image: UIImage(systemName: "arrow.uturn.backward"), style: .plain, target: self, action: #selector(undo))
       undo.accessibilityLabel = content["undo"] as? String
@@ -644,7 +733,6 @@ private final class NativeActionsController: NativeModalTableController, UIAdapt
     tableView.reloadData()
   }
 
-  @objc private func closePanel() { finish(nil) }
   @objc private func back() { perform(["id": "back", "inline": true]) }
   @objc private func undo() { finish("undo") }
   private func finish(_ selected: String?) {

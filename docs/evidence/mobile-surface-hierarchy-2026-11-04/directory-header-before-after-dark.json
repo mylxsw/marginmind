@@ -1,0 +1,30 @@
+{
+  "region": [
+    0,
+    0,
+    1206,
+    1500
+  ],
+  "before_build": {
+    "device": "F7498667-CBDD-44E8-984B-173FF027868F",
+    "test": "mobile_surface_hierarchy_acceptance_test.dart",
+    "commit": "a3154825245695399de7f196117fb46732bda43b",
+    "dart_source_sha256": "8dae2dd533cadf35c0f0f9e3f8ddea88caf6603a1445a05f0f4daf5ec9e0b63c",
+    "native_swift_sha256": "06326902ffde1c8bc16259152cf71b59ae349ae03adff6a32e30143967ef4c7e"
+  },
+  "after_build": {
+    "device": "F7498667-CBDD-44E8-984B-173FF027868F",
+    "test": "mobile_surface_hierarchy_acceptance_test.dart",
+    "commit": "a3154825245695399de7f196117fb46732bda43b",
+    "dart_source_sha256": "abd302ab0b7708cc0bbf868de1373619b0f2434620fe1e6e601082d0c33104c5",
+    "native_swift_sha256": "d7a47bdc6bf6b6fce181662ab55eaa46a8c754085308e479fe2568b51475e13c"
+  },
+  "original_sha256": {
+    "reference-directory-header/dark-08-native-outline.png": "95a9b2b7f958569667116401613e55f496a26b12f1608f6a6bd72fbec27639f8",
+    "reference-plain-outline/dark-08-native-outline.png": "f54a81b6481b5ed8646925f17fee331ba785992e29535bb556ab980f4b8945f2",
+    "reference-directory-header/dark-04-reader-management-outline.png": "09524e5149ce35c4bf1fa50c9843cce8c8fa7ef5456cd16892d84f0fdeeef6fb",
+    "reference-plain-outline/dark-04-reader-management-outline.png": "1b3a09b013b01cf51e5e8296278f3af51872c0285ac86bb72e88560cbc2da250",
+    "reference-directory-header/dark-04b-reader-management-bookmarks.png": "d560c7385a0ccefc25034719f3033c2bb5ae25fe0b711e5a7504b3eb7082e412",
+    "reference-plain-outline/dark-04b-reader-management-bookmarks.png": "b09966a7cc2169368e2ceb2ae230a91cda9f58ca8ca041154722e81a8783ea13"
+  }
+}

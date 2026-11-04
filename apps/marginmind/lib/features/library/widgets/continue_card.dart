@@ -24,6 +24,7 @@ class ContinueCard extends StatelessWidget {
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
         padding: const EdgeInsets.all(12),
+        constraints: phone ? const BoxConstraints(minHeight: MMSizes.phoneContinueCardMinHeight) : null,
         decoration: BoxDecoration(
           color: Color.alphaBlend(s.hovered ? c.hover : Colors.transparent, c.quaternaryFill),
           borderRadius: BorderRadius.circular(16),
@@ -70,17 +71,51 @@ class ContinueCard extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 9),
-                  Row(
-                    children: [
-                      if (phone && set.dueCount > 0) ...[
-                        // Large text may shrink the badge, never push the row out.
-                        Flexible(child: MMBadge(l.dueBadge(set.dueCount))),
-                        const SizedBox(width: MMSpacing.s),
-                      ],
-                      Expanded(child: MMProgressBar(value: set.progress)),
-                      const SizedBox(width: 8),
-                      Text('${(set.progress * 100).round()}%', style: t.footnote),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, bounds) {
+                      final due = l.dueBadge(set.dueCount);
+                      final progress = '${(set.progress * 100).round()}%';
+                      double measure(String text, TextStyle style) {
+                        final painter = TextPainter(
+                          text: TextSpan(text: text, style: style),
+                          textDirection: Directionality.of(context),
+                          textScaler: MediaQuery.textScalerOf(context),
+                        )..layout();
+                        final width = painter.width;
+                        painter.dispose();
+                        return width;
+                      }
+
+                      final hasDue = phone && set.dueCount > 0;
+                      final stacked =
+                          hasDue &&
+                          bounds.maxWidth -
+                                  measure(due, t.subheadline) -
+                                  MMSpacing.m -
+                                  MMSpacing.s * 2 -
+                                  measure(progress, t.footnote) <
+                              MMSizes.touchTarget;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (stacked) ...[
+                            Align(alignment: Alignment.centerLeft, child: MMBadge(due)),
+                            const SizedBox(height: MMSpacing.s),
+                          ],
+                          Row(
+                            children: [
+                              if (hasDue && !stacked) ...[
+                                Flexible(child: MMBadge(due)),
+                                const SizedBox(width: MMSpacing.s),
+                              ],
+                              Expanded(child: MMProgressBar(value: set.progress)),
+                              const SizedBox(width: MMSpacing.s),
+                              Text(progress, style: t.footnote),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),

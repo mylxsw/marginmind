@@ -17,6 +17,8 @@ abstract final class MMPhoneNavigation {
   static const tabLabelGap = 2.0;
   static const tabDuration = Duration(milliseconds: 420);
   static const drawerDuration = Duration(milliseconds: 380);
+  static const drawerWidthFraction = .85;
+  static const drawerScrimOpacity = .4;
   static const tabCurve = Cubic(.3, 1.35, .45, 1);
   static const drawerCurve = Cubic(.25, 1, .35, 1);
 

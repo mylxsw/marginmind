@@ -12,8 +12,6 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
     super.key,
     required this.title,
     required this.mapId,
-    required this.onDismiss,
-    this.returnLabel,
     required this.documents,
     required this.maps,
     required this.notes,
@@ -31,10 +29,9 @@ class PhoneWorkspaceSidebar extends ConsumerStatefulWidget {
   });
 
   final String title;
-  final String? returnLabel;
   final ValueChanged<String>? onSearch;
   final String? mapId;
-  final VoidCallback onDismiss, onAddDocument, onAddMap, onAddNote;
+  final VoidCallback onAddDocument, onAddMap, onAddNote;
   final VoidCallback? onAddWebPage, onGenerateMap;
   final List<Widget> documents, maps, notes, learning, results;
   final List<MMPhoneNavigationRow> tags;
@@ -201,21 +198,6 @@ class _PhoneWorkspaceSidebarState extends ConsumerState<PhoneWorkspaceSidebar> {
                     onPressed: () {
                       FocusManager.instance.primaryFocus?.unfocus();
                       ref.read(navigationProvider.notifier).showLibrary();
-                    },
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: MMPhoneNavigationAction(
-                    key: const ValueKey('phone-resources-return'),
-                    label: widget.returnLabel ?? l.phoneNavigationReturnToContent,
-                    color: c.accent,
-                    maxLines: null,
-                    onPressed: () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      widget.onDismiss();
                     },
                   ),
                 ),

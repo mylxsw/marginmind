@@ -17,6 +17,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
     final input = find.byKey(const ValueKey('assistant-input'));
+    expect(tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet'))).top, lessThanOrEqualTo(MMSpacing.s));
     expect(tester.widget<TextField>(input).focusNode!.hasFocus, false);
     await tester.enterText(input, 'Keep this unsent question');
     await tester.pumpAndSettle();

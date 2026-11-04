@@ -243,6 +243,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     try {
       await showMMBottomSheet<void>(
         context: context,
+        expand: false,
         builder: (sheetContext) {
           _styleSheetContext = sheetContext;
           return UncontrolledProviderScope(

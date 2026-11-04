@@ -116,7 +116,7 @@ void main() {
       final full = tester.getRect(sheet);
       expect(full.bottom, phone.size.height - phone.safe.bottom - MMSizes.phoneSheetPadding);
       final room = phone.size.height - phone.safe.top - MMSpacing.s - phone.safe.bottom - MMSizes.phoneSheetPadding;
-      expect(full.height, moreOrLessEquals(room * MMSizes.phoneSheetMedium, epsilon: 1));
+      expect(full.height, moreOrLessEquals(room * MMSizes.phonePreviewSheet, epsilon: 1));
       await tester.fling(find.byKey(const ValueKey('mm-bottom-sheet-handle')), const Offset(0, -80), 1400);
       await tester.pumpAndSettle();
       expect(tester.getSize(sheet).height, moreOrLessEquals(room, epsilon: 1));

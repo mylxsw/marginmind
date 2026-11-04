@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:mm_book/mm_book.dart';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
@@ -1420,23 +1418,12 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     final chapterIds = book.chapters.map((chapter) => chapter.id).toList();
     final state = ref.read(workspaceProvider(widget.studySetId));
     final outline = <MMNativeListRow>[];
-    void addOutline(List<BookTocEntry> entries, int depth) {
-      for (final entry in entries) {
-        final id = 'outline-${outline.length}';
-        outline.add(
-          MMNativeListRow(
-            id,
-            entry.title,
-            depth: depth,
-            selected: entry.chapterId == s.position?.chapterId && entry.title == book.title(s.position!),
-          ),
-        );
-        actions[id] = () => _jump(book.position(entry.chapterId, entry.offset));
-        addOutline(entry.children, depth + 1);
-      }
+    for (final row in book.navigationOutline) {
+      final entry = row.entry;
+      final id = 'outline-${outline.length}';
+      outline.add(MMNativeListRow(id, entry.title, depth: row.depth));
+      actions[id] = () => _jump(book.position(entry.chapterId, entry.offset));
     }
-
-    addOutline(book.toc, 0);
     final bookmarks = <MMNativeListRow>[];
     for (final entry in workspace.content.bookmarksOn(widget.document.id, chapters: chapterIds)) {
       if (entry.position case final TextReadingPosition position) {
@@ -1578,6 +1565,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
 
   Widget _sidebar(ReflowSession s, WorkspaceState state) {
     final book = s.book!, l = context.l10n;
+    final phoneOutline = MMInput.of(context).phone ? book.navigationOutline : null;
     bool needsReview(Annotation a) => a.needsReview || a.textAnchors.any((anchor) => book.resolve(anchor) == null);
     final width = ref.watch(settingsProvider).readerSidebarWidth;
     final mode = state.readerPanelMode == ReaderPanelMode.thumbnails && !widget.document.capabilities().zoom
@@ -1592,6 +1580,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       Color? color,
       IconData? icon,
       bool selected = false,
+      bool outline = false,
+      int depth = 0,
       VoidCallback? onDelete,
       VoidCallback? onRename,
     }) => MMContextMenuRegion(
@@ -1612,18 +1602,33 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
           if (MMInput.of(context).phone) workspace.closeReaderPanel();
         },
         selected: selected,
+        semanticLabel: title,
+        tooltip: outline ? title : null,
         builder: (context, interaction) => Container(
+          constraints: MMInput.of(context).phone
+              ? const BoxConstraints(minHeight: MMReaderNavigationLayout.rowHeight)
+              : null,
           decoration: BoxDecoration(
-            color: selected
+            color: outline && MMInput.of(context).phone && interaction.pressed
+                ? context.mmColors.pressed
+                : selected && !outline
                 ? context.mmColors.selectedRow
                 : interaction.hovered
                 ? context.mmColors.hover
                 : null,
             borderRadius: BorderRadius.circular(MMRadii.row),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: MMInput.of(context).phone
+              ? EdgeInsets.fromLTRB(
+                  MMReaderNavigationLayout.inset +
+                      depth.clamp(0, MMReaderNavigationLayout.maxDepth) * MMReaderNavigationLayout.indent,
+                  MMSpacing.s,
+                  MMReaderNavigationLayout.inset,
+                  MMSpacing.s,
+                )
+              : const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: outline ? CrossAxisAlignment.center : CrossAxisAlignment.start,
             children: [
               if (color != null) ...[
                 Container(width: MMSpacing.xs, height: MMSpacing.xxl, color: color),
@@ -1637,7 +1642,12 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, maxLines: 3, overflow: TextOverflow.ellipsis, style: context.mmText.callout),
+                    Text(
+                      title,
+                      maxLines: outline ? 1 : 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: MMInput.of(context).phone ? context.mmText.body : context.mmText.callout,
+                    ),
                     if (subtitle != null)
                       Text(
                         subtitle,
@@ -1756,13 +1766,15 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       width: MMInput.of(context).phone || MMSizeClass.of(context) == MMSizeClass.compact
           ? double.infinity
           : math.max(0, math.min(width, MediaQuery.sizeOf(context).width * .45) - 8),
-      margin: const EdgeInsets.all(4),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: context.mmColors.sidebarOpaque,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.mmColors.border, width: MMSizes.hairline),
-      ),
+      margin: MMInput.of(context).phone ? EdgeInsets.zero : const EdgeInsets.all(4),
+      clipBehavior: MMInput.of(context).phone ? Clip.none : Clip.antiAlias,
+      decoration: MMInput.of(context).phone
+          ? null
+          : BoxDecoration(
+              color: context.mmColors.sidebarOpaque,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.mmColors.border, width: MMSizes.hairline),
+            ),
       child: Column(
         children: [
           ReaderSidebarTabBar(
@@ -1774,14 +1786,21 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                 (ReaderPanelMode.bookmarks, MMIcons.bookmark, l.readerBookmarks),
                 (ReaderPanelMode.annotations, MMIcons.annotations, l.readerAnnotations),
               ])
-                MMToolbarButton(
-                  iconWidget: Icon(tab.$2, size: context.mmTouchPlatform ? 16 : 14),
-                  compact: !MMInput.of(context).phone,
-                  label: MMInput.of(context).phone ? tab.$3 : null,
-                  tooltip: tab.$3,
-                  selected: mode == tab.$1,
-                  onPressed: workspace.canShowReaderPanel(tab.$1) ? () => workspace.setReaderPanelMode(tab.$1) : null,
-                ),
+                if (MMInput.of(context).phone)
+                  ReaderSidebarTab(
+                    label: tab.$3,
+                    selected: mode == tab.$1,
+                    onPressed: workspace.canShowReaderPanel(tab.$1) ? () => workspace.setReaderPanelMode(tab.$1) : null,
+                  )
+                else
+                  MMToolbarButton(
+                    iconWidget: Icon(tab.$2, size: context.mmTouchPlatform ? 16 : 14),
+                    compact: !MMInput.of(context).phone,
+                    label: MMInput.of(context).phone ? tab.$3 : null,
+                    tooltip: tab.$3,
+                    selected: mode == tab.$1,
+                    onPressed: workspace.canShowReaderPanel(tab.$1) ? () => workspace.setReaderPanelMode(tab.$1) : null,
+                  ),
             ],
           ),
           Divider(height: 1, thickness: 1, color: context.mmColors.separator),
@@ -1796,7 +1815,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
           Expanded(
             child: mode == ReaderPanelMode.bookmarks && bookmarks.isEmpty
                 ? empty(l.noBookmarks)
-                : mode == ReaderPanelMode.outline && book.outline.isEmpty
+                : mode == ReaderPanelMode.outline && (phoneOutline?.isEmpty ?? book.outline.isEmpty)
                 ? empty(l.readerNoOutline)
                 : mode == ReaderPanelMode.annotations &&
                       annotations.isEmpty &&
@@ -1804,7 +1823,11 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                       inkChapters.isEmpty
                 ? empty(l.noAnnotations)
                 : ListView(
-                    padding: mode == ReaderPanelMode.thumbnails ? EdgeInsets.zero : const EdgeInsets.all(4),
+                    padding: mode == ReaderPanelMode.thumbnails
+                        ? EdgeInsets.zero
+                        : MMInput.of(context).phone
+                        ? const EdgeInsets.only(top: MMReaderNavigationLayout.listTop, bottom: MMSpacing.s)
+                        : const EdgeInsets.all(4),
                     children: switch (mode) {
                       ReaderPanelMode.thumbnails => [
                         for (var i = 0; i < book.chapters.length; i++)
@@ -1819,12 +1842,22 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                           ),
                       ],
                       ReaderPanelMode.outline => [
-                        for (final e in book.outline)
-                          entry(
-                            e.title,
-                            () => navigate(book.position(e.chapterId, e.offset)),
-                            selected: e.chapterId == s.position?.chapterId && e.title == book.title(s.position!),
-                          ),
+                        if (MMInput.of(context).phone)
+                          for (final row in phoneOutline!)
+                            entry(
+                              row.entry.title,
+                              () => navigate(book.position(row.entry.chapterId, row.entry.offset)),
+                              key: ValueKey('reader-outline-${row.entry.id}'),
+                              outline: true,
+                              depth: row.depth,
+                            )
+                        else
+                          for (final e in book.outline)
+                            entry(
+                              e.title,
+                              () => navigate(book.position(e.chapterId, e.offset)),
+                              selected: e.chapterId == s.position?.chapterId && e.title == book.title(s.position!),
+                            ),
                       ],
                       ReaderPanelMode.bookmarks => [
                         for (final b in bookmarks)

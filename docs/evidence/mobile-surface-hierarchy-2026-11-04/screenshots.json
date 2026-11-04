@@ -1,0 +1,230 @@
+{
+  "verified_dart_source_sha256": "494b205b36df02118776ebb374c08c8c45810232050a3036f67ce3b198db296d",
+  "verified_native_swift_sha256": "0bda7e391519ad09d490587772f336545019f09e62d9201fd18aba6792f3e8bd",
+  "screenshots": {
+    "dark-00-library.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "d12efe02f53d25b070ccdc8465c6792216c3ba3e540532b2ff5e1db77eb89ba4"
+    },
+    "dark-01-library-drawer.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "35cea942f9486af21ef78d215a60d91fee1112c47f275b7668cbec0c07300619"
+    },
+    "dark-02-study-drawer.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "38e2f52a239cfdb222318bddbb63989d699ae73aed907fab8579ff26f983f310"
+    },
+    "dark-03-add-menu.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "10db972c5504f3db54857cc9b989a3c8f07dcb79e2b8d20becb1f30bc77c45fa"
+    },
+    "dark-04-reader-management-outline.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "996273374bacbb31956c95a52f9eeccdaa9a8c6038eabfa998e9f4b327df85f1"
+    },
+    "dark-04b-reader-management-bookmarks.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "12c1a84176b17146abdcc9f6176c643d53ca5b9c9ad9ff9cc5dbb7554eec6974"
+    },
+    "dark-04c-reader-management-annotations.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "45732f4516ac421e0817e7d88da4b08a85399195fbf1e227deb773c995d3a58d"
+    },
+    "dark-05-assistant-expanded.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "a4b8878a1017b0215500349e0447027d858d7be55afc6112ac39dc9f6be9bb6a"
+    },
+    "dark-05b-assistant-keyboard.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "7bf996802e66bd1911d8b1fb35b85a27c6e25d0651070554f0e06d882cdf924d"
+    },
+    "dark-06-quick-actions.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "75c342915f06781331ac67a1675953de4be2e1460cb7a107c7dabce531ebb40f"
+    },
+    "dark-07-settings.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "869dcda22f1b235f83862e50e1df046194b36467bb147a9dcbb8f369d6179053"
+    },
+    "dark-08-native-annotations.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "b69221a296d95e5fd8e70056e2e450f67f984dc8341e300c54ca6c1d1b7fad26"
+    },
+    "dark-08-native-bookmarks.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "069af4dd07bab4687522f8f34a3cde0573aa2eb2f86cf4c6c83984a7b498f085"
+    },
+    "dark-08-native-outline.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "6acb4620db043b5d11bda350ff3c94687952f828c34bc1d30385028a16c28ba2"
+    },
+    "dark-09-map-style.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "20730f91d49079130a8615b9dce0e01999ea29af0ba77db9f48e0c7bd5026356"
+    },
+    "dark-10-reading-settings.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "ebf173c071559e309e6011b07559bed1b88e68929e96bf3a8ff4e62ddef04c8f"
+    },
+    "light-00-library.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "3ff078c45acb508411f43166226f45674a1582e62232289dc19c5f7008faded9"
+    },
+    "light-01-library-drawer.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "bcc6b4456f8ff894152ab11323a9802fd528e56b6760869f525e3348efa45373"
+    },
+    "light-02-study-drawer.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "78480cf37b239d9b2c86d002b3ab244ae10ce669c8ea28e301feea7b17861d75"
+    },
+    "light-03-add-menu.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "3015bd65c3172ebd75f07ff29ae488a5ed0b038da2553f40c7345774dd73e77a"
+    },
+    "light-04-reader-management-outline.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "d6ec6aeeb9bad40fc8be9d15581e747db552eeaa2b8d5f45ff30569864b327b2"
+    },
+    "light-04b-reader-management-bookmarks.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "0158c698fd4e1c97cebf0d6bfcf9d416a1f46904be44c63cf8b79f35be0d7199"
+    },
+    "light-04c-reader-management-annotations.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "7ab466d3f4b212fc4aeb138babc4f8275220460e24ae492f9239f2f770e8ad0f"
+    },
+    "light-05-assistant-expanded.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "37233f5f682182fa3d68aea7f5862af157bb7cc39ef50a835b7b12839eee255c"
+    },
+    "light-05b-assistant-keyboard.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "880df30485eba6ef90065af323f1c70f37c649ca0837c346f846ebdf99af4a2c"
+    },
+    "light-06-quick-actions.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "bd12f005eb3dfe1c9c5e4440beddbcd87513edc912b4d9dfde44e732c055ad6b"
+    },
+    "light-07-settings.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "5b16909b70fa11247e9dd337effc563b1a52c11ec88dd9bf4cd49fc42798eac8"
+    },
+    "light-08-native-annotations.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "69d70cdaee1f4fc83c811a5263eae291d22f21d1fa86a1e160680b0888b3edc4"
+    },
+    "light-08-native-bookmarks.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "06b960d79f6babdc91b0bae2b5ef17341a6b463dda60fa53288a81080634daff"
+    },
+    "light-08-native-outline.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "d1616cb50c0e3049bec9bfa25f0afe73becf4c8d7542d810b430e842e64232c6"
+    },
+    "light-09-map-style.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "bca02eeca7a4598bd7fa8c0ed5bdbeb870daa834ee0edd35e8abe1c02b54622c"
+    },
+    "light-10-reading-settings.png": {
+      "size": [
+        1206,
+        2622
+      ],
+      "sha256": "052a5b08cf7219fa272609c87c719648677ef7517d1ed75a5904970cac4ee510"
+    }
+  }
+}

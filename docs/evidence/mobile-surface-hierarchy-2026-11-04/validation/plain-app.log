@@ -1,0 +1,34 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reflow_navigation_outline_test.dart: old flat Markdown indexes recover nested headings without changing targets
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:02 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:02 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:02 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:02 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:02 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:02 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:03 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:03 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: empty outline, bookmarks and annotations start directly with tabs
+00:03 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_entry_management_test.dart: personal bookmarks: add, validate page, edit, reorder by mouse, sort, undo
+00:03 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: contents: folds, highlights the current section and supports an empty outline
+00:03 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +19 ~1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +19 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +20 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:06 +21 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:06 +22 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:06 +23 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:07 +24 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:07 +25 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:07 +26 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:08 +27 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:08 +28 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:08 +29 ~2: All tests passed!

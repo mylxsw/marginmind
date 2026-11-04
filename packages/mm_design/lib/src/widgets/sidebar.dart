@@ -45,7 +45,11 @@ class MMSidebar extends StatelessWidget {
 
     Widget panel = Container(
       decoration: BoxDecoration(
-        color: flat ? c.workspaceChrome : (reduce ? c.sidebarOpaque : c.sidebar),
+        color: MMInput.of(context).phone && reduce
+            ? c.windowBackground
+            : flat
+            ? c.workspaceChrome
+            : (reduce ? c.sidebarOpaque : c.sidebar),
         borderRadius: radius,
       ),
       // Desktop removes the outer inset; keep window-button controls at y=26.
@@ -58,22 +62,23 @@ class MMSidebar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: MMSizes.windowButtonsHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Title gestures belong behind controls so double-click
-                  // recognition never holds a button's first click.
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
-                    onDoubleTap: chrome?.onTitleDoubleTap,
-                  ),
-                  Row(children: [const Spacer(), ?topTrailing]),
-                ],
+            if (!MMInput.of(context).phone || topTrailing != null)
+              SizedBox(
+                height: MMSizes.windowButtonsHeight,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Title gestures belong behind controls so double-click
+                    // recognition never holds a button's first click.
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
+                      onDoubleTap: chrome?.onTitleDoubleTap,
+                    ),
+                    Row(children: [const Spacer(), ?topTrailing]),
+                  ],
+                ),
               ),
-            ),
             if (header != null) Padding(padding: const EdgeInsets.only(top: 10), child: header),
             Expanded(
               child: ListView(padding: const EdgeInsets.only(top: 2, bottom: 8), children: children),
@@ -313,7 +318,10 @@ class MMBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     return Container(
-      height: 18,
+      height:
+          (MediaQuery.textScalerOf(context).scale(context.mmText.subheadline.fontSize!) *
+                  (context.mmText.subheadline.height ?? 1))
+              .clamp(18.0, double.infinity),
       constraints: const BoxConstraints(minWidth: 20),
       padding: const EdgeInsets.symmetric(horizontal: 6),
       alignment: Alignment.center,

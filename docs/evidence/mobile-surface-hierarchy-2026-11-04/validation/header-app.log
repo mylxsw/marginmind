@@ -1,0 +1,33 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:02 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:02 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:03 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:03 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:03 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:06 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:07 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:07 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:07 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: entries without a destination are listed but cannot be opened
+00:07 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_entry_management_test.dart: outline: mouse drag reorders whole subtree, nests, and rejects cycles
+00:07 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: bookmarks: empty state, add with the shortcut, rename, delete
+00:07 +19 ~1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: bookmarks: empty state, add with the shortcut, rename, delete
+00:07 +19 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: bookmarks: empty state, add with the shortcut, rename, delete
+00:08 +20 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: bookmarks are per document
+00:09 +21 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: annotations list the highlights of this document only
+00:09 +22 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: area highlights are listed by their tool name
+00:09 +23 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: annotations merge margin notes by page and update after edit, delete, undo and document switch
+00:10 +24 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: find bar: opens focused, shows the state of the search, closes with Esc
+00:10 +25 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: find bar closes with its button and when the document changes
+00:10 +26 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: the page indicator takes a typed page
+00:11 +27 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: keyboard: sidebar, find and page commands reach the reader
+00:11 +28 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/reader_navigation_test.dart: Home and End are the reader's own keys
+00:11 +29 ~2: All tests passed!

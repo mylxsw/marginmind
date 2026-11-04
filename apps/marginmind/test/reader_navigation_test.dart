@@ -9,6 +9,7 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/reader_margin.dart';
 import 'package:marginmind/features/workspace/widgets/reader_find_bar.dart';
 import 'package:marginmind/features/workspace/widgets/reader_sidebar.dart';
+import 'package:marginmind/features/workspace/widgets/reader_outline.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/workspace_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -53,6 +54,40 @@ Future<void> pressWithControl(
 Finder inReaderSidebar(String text) => find.descendant(of: find.byType(ReaderSidebar), matching: find.text(text));
 
 void main() {
+  testWidgets('phone PDF chapter rows stay plain and keep manual folding across reading changes', (tester) async {
+    final container = await pumpApp(
+      tester,
+      size: const Size(393, 852),
+      overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    owner.openDocument('c1');
+    await tester.pumpAndSettle();
+    final pdf = container.read(readerPdfProvider('demo-1'));
+    pdf.debugReport(pageCount: 164, page: 24, outline: [_chapter1, _chapter2]);
+    owner.showReaderPanel(ReaderPanelMode.outline);
+    await tester.pumpAndSettle();
+    final outline = find.byType(ReaderOutline);
+    for (final page in [24, 100]) {
+      pdf.debugReport(page: page);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: outline, matching: find.byIcon(MMIcons.check)), findsNothing);
+      for (final text in ['第一章', '第二章']) {
+        final title = tester.widget<Text>(find.descendant(of: outline, matching: find.text(text)));
+        expect(title.style!.fontWeight, FontWeight.w400);
+      }
+    }
+    await tester.tap(find.byKey(const ValueKey('outline-fold-pdf-0')));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: outline, matching: find.text('1.1 记忆')), findsNothing);
+    pdf.debugReport(page: 21);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: outline, matching: find.text('1.1 记忆')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('iPad sidebar mode buttons stay below the toolbar and accept taps', (tester) async {
     final container = await pumpApp(
       tester,

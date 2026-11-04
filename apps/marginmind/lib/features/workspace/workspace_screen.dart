@@ -702,6 +702,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             ? MMBottomSheet(
                 key: const ValueKey('workspace-panel-sheet'),
                 expand: true,
+                initialFraction: state.panel == RightPanel.assistant
+                    ? MMSizes.phoneSheetExpanded
+                    : MMSizes.phonePreviewSheet,
                 scrim: true,
                 onDismiss: controller.closePanel,
                 child: panel,
@@ -919,6 +922,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           ? MMBottomSheet(
               key: const ValueKey('workspace-panel-sheet'),
               expand: true,
+              initialFraction: state.panel == RightPanel.assistant
+                  ? MMSizes.phoneSheetExpanded
+                  : MMSizes.phonePreviewSheet,
               scrim: true,
               onDismiss: controller.closePanel,
               child: panel,
@@ -937,7 +943,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   }
 
   Widget _phoneDrawer(BuildContext context, Widget child) => MMPhoneDrawer(
-    fullScreen: true,
     open: _drawer,
     onChanged: _setDrawer,
     dismissLabel: context.l10n.phoneNavigationCloseDrawer,

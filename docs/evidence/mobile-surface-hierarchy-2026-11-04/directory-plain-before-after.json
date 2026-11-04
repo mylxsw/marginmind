@@ -1,0 +1,30 @@
+{
+  "region": [
+    0,
+    0,
+    1206,
+    1500
+  ],
+  "before_build": {
+    "device": "F7498667-CBDD-44E8-984B-173FF027868F",
+    "test": "mobile_surface_hierarchy_acceptance_test.dart",
+    "commit": "a3154825245695399de7f196117fb46732bda43b",
+    "dart_source_sha256": "abd302ab0b7708cc0bbf868de1373619b0f2434620fe1e6e601082d0c33104c5",
+    "native_swift_sha256": "d7a47bdc6bf6b6fce181662ab55eaa46a8c754085308e479fe2568b51475e13c"
+  },
+  "after_build": {
+    "device": "F7498667-CBDD-44E8-984B-173FF027868F",
+    "test": "mobile_surface_hierarchy_acceptance_test.dart",
+    "commit": "a3154825245695399de7f196117fb46732bda43b",
+    "dart_source_sha256": "494b205b36df02118776ebb374c08c8c45810232050a3036f67ce3b198db296d",
+    "native_swift_sha256": "0bda7e391519ad09d490587772f336545019f09e62d9201fd18aba6792f3e8bd"
+  },
+  "original_sha256": {
+    "reference-plain-outline/dark-08-native-outline.png": "f54a81b6481b5ed8646925f17fee331ba785992e29535bb556ab980f4b8945f2",
+    "iphone/dark-08-native-outline.png": "6acb4620db043b5d11bda350ff3c94687952f828c34bc1d30385028a16c28ba2",
+    "reference-plain-outline/dark-04-reader-management-outline.png": "1b3a09b013b01cf51e5e8296278f3af51872c0285ac86bb72e88560cbc2da250",
+    "iphone/dark-04-reader-management-outline.png": "996273374bacbb31956c95a52f9eeccdaa9a8c6038eabfa998e9f4b327df85f1",
+    "reference-plain-outline/light-04-reader-management-outline.png": "b0bf9a6a84369747f9b34154971348dac218430460b98184b673569e314896e0",
+    "iphone/light-04-reader-management-outline.png": "d6ec6aeeb9bad40fc8be9d15581e747db552eeaa2b8d5f45ff30569864b327b2"
+  }
+}

@@ -21,49 +21,82 @@ class ReaderEntryHeader extends StatelessWidget {
   final bool canSort;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(title, style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel)),
+  Widget build(BuildContext context) {
+    final sort = Builder(
+      builder: (context) => MMToolbarButton(
+        icon: MMIcons.sort,
+        tooltip: context.l10n.sortTooltip,
+        onPressed: !canSort
+            ? null
+            : () {
+                final box = context.findRenderObject()! as RenderBox;
+                showMMMenu(
+                  context,
+                  position: box.localToGlobal(Offset(0, box.size.height)),
+                  entries: [
+                    MMMenuItem(
+                      context.l10n.readerSortPageAscending,
+                      () => onSort(ReaderEntrySort.pageAscending),
+                      icon: MMIcons.sortAscending,
+                    ),
+                    MMMenuItem(
+                      context.l10n.readerSortPageDescending,
+                      () => onSort(ReaderEntrySort.pageDescending),
+                      icon: MMIcons.sortDescending,
+                    ),
+                    MMMenuItem(
+                      context.l10n.readerSortTitle,
+                      () => onSort(ReaderEntrySort.title),
+                      icon: MMIcons.sortTitle,
+                    ),
+                  ],
+                );
+              },
+      ),
+    );
+    if (MMInput.of(context).phone) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: MMReaderNavigationLayout.inset, vertical: MMSpacing.xs),
+        child: Row(
+          children: [
+            Expanded(
+              child: MMInteractive(
+                onTap: onAdd,
+                semanticLabel: addLabel,
+                tooltip: addLabel,
+                builder: (context, state) => Container(
+                  constraints: const BoxConstraints(minHeight: MMSizes.touchTarget),
+                  color: state.pressed ? context.mmColors.pressed : null,
+                  child: Row(
+                    children: [
+                      Icon(MMIcons.add, size: 20, color: context.mmColors.label),
+                      const SizedBox(width: MMSpacing.s),
+                      Expanded(
+                        child: Text(addLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.body),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            sort,
+          ],
         ),
-        Builder(
-          builder: (context) => MMToolbarButton(
-            icon: MMIcons.sort,
-            tooltip: context.l10n.sortTooltip,
-            onPressed: !canSort
-                ? null
-                : () {
-                    final box = context.findRenderObject()! as RenderBox;
-                    showMMMenu(
-                      context,
-                      position: box.localToGlobal(Offset(0, box.size.height)),
-                      entries: [
-                        MMMenuItem(
-                          context.l10n.readerSortPageAscending,
-                          () => onSort(ReaderEntrySort.pageAscending),
-                          icon: MMIcons.sortAscending,
-                        ),
-                        MMMenuItem(
-                          context.l10n.readerSortPageDescending,
-                          () => onSort(ReaderEntrySort.pageDescending),
-                          icon: MMIcons.sortDescending,
-                        ),
-                        MMMenuItem(
-                          context.l10n.readerSortTitle,
-                          () => onSort(ReaderEntrySort.title),
-                          icon: MMIcons.sortTitle,
-                        ),
-                      ],
-                    );
-                  },
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(title, style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel)),
           ),
-        ),
-        MMToolbarButton(icon: MMIcons.add, tooltip: addLabel, onPressed: onAdd),
-      ],
-    ),
-  );
+          sort,
+          MMToolbarButton(icon: MMIcons.add, tooltip: addLabel, onPressed: onAdd),
+        ],
+      ),
+    );
+  }
 }
 
 Future<({String title, int page})?> showReaderEntryEditor(

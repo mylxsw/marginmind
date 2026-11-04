@@ -46,6 +46,7 @@ Future<void> showSelectionLookup(
   if (MMInput.of(context).phone) {
     return showMMBottomSheet<void>(
       context: context,
+      initialFraction: MMSizes.phonePreviewSheet,
       builder: (_) => inScope(context, SelectionLookup(studySetId: studySetId, paragraph: paragraph, onAsk: onAsk)),
     );
   }
@@ -231,7 +232,8 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
               type: MaterialType.transparency,
               child: SizedBox(
                 width: MMSizes.vocabularyCardWidth,
-                child: MMGlass(
+                child: MMModalContent(
+                  embedded: MMBottomSheet.contains(context),
                   key: const ValueKey('selection-lookup-result'),
                   borderRadius: BorderRadius.circular(MMRadii.sidebar),
                   child: Stack(

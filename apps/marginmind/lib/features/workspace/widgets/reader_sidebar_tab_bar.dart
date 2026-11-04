@@ -8,17 +8,95 @@ class ReaderSidebarTabBar extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => MMCompactToolbarScope(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: LayoutBuilder(
-        builder: (context, bounds) => SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: bounds.maxWidth),
-            child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: children),
+  Widget build(BuildContext context) {
+    if (MMInput.of(context).phone) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: MMReaderNavigationLayout.inset),
+        child: LayoutBuilder(
+          builder: (context, bounds) {
+            var slot = bounds.maxWidth / children.length;
+            for (final tab in children.whereType<ReaderSidebarTab>()) {
+              final painter = TextPainter(
+                text: TextSpan(
+                  text: tab.label,
+                  style: context.mmText.body.copyWith(fontWeight: FontWeight.w600),
+                ),
+                textDirection: Directionality.of(context),
+                textScaler: MediaQuery.textScalerOf(context),
+              )..layout();
+              final required = painter.width + MMSpacing.m * 2;
+              if (required > slot) slot = required;
+              painter.dispose();
+            }
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: slot * children.length,
+                child: Row(children: [for (final child in children) Expanded(child: child)]),
+              ),
+            );
+          },
+        ),
+      );
+    }
+    return MMCompactToolbarScope(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: LayoutBuilder(
+          builder: (context, bounds) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: bounds.maxWidth),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: children,
+              ),
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Phone section navigation uses text and an underline on the panel surface.
+class ReaderSidebarTab extends StatelessWidget {
+  const ReaderSidebarTab({super.key, required this.label, required this.selected, required this.onPressed});
+  final String label;
+  final bool selected;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => MMInteractive(
+    semanticLabel: label,
+    selected: selected,
+    onTap: onPressed,
+    builder: (context, state) => Container(
+      constraints: const BoxConstraints(minHeight: MMReaderNavigationLayout.tabHeight),
+      color: state.pressed ? context.mmColors.pressed : null,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: 10),
+            child: Text(
+              label,
+              maxLines: 1,
+              style: context.mmText.body.copyWith(
+                color: selected ? context.mmColors.label : context.mmColors.secondaryLabel,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ),
+          if (selected)
+            Positioned(
+              bottom: 0,
+              width: MMReaderNavigationLayout.underlineWidth,
+              height: MMSpacing.xxs,
+              child: ColoredBox(color: context.mmColors.label),
+            ),
+        ],
       ),
     ),
   );
@@ -83,45 +161,17 @@ class _PhoneReaderNavigationFrameState extends State<PhoneReaderNavigationFrame>
       }
       return const SizedBox.shrink();
     }
-    return MMNativeGlassScope(
-      enabled: true,
-      child: MMBottomSheet(
-        expand: true,
-        scrim: true,
-        onDismiss: widget.onClose,
-        child: Material(
-          key: const ValueKey('phone-document-navigation'),
-          type: MaterialType.transparency,
-          child: SafeArea(
-            top: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: context.mmText.headline,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      MMModalCloseButton(
-                        key: const ValueKey('phone-document-navigation-close'),
-
-                        tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                        onPressed: widget.onClose,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(child: widget.child),
-              ],
-            ),
-          ),
+    return MMBottomSheet(
+      expand: true,
+      initialFraction: MMSizes.phoneSheetExpanded,
+      scrim: true,
+      onDismiss: widget.onClose,
+      child: Material(
+        key: const ValueKey('phone-document-navigation'),
+        type: MaterialType.transparency,
+        child: SafeArea(
+          top: false,
+          child: Semantics(label: widget.title, container: true, explicitChildNodes: true, child: widget.child),
         ),
       ),
     );

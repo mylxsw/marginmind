@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../tokens/modal.dart';
+import '../tokens/metrics.dart';
 
 /// iPhone presentation only. Business state stays in the original Dart isolate.
 /// iPad, Android, desktop and test hosts retain their existing presentations.
@@ -85,6 +86,16 @@ abstract final class MMNativePresentation {
     if (preview != null) _previews[id] = preview;
     try {
       return await _channel.invokeMapMethod<String, String>('list', {
+        'initialDetent': 'large',
+        'navigationLayout': {
+          'inset': MMReaderNavigationLayout.inset,
+          'rowHeight': MMReaderNavigationLayout.rowHeight,
+          'tabHeight': MMReaderNavigationLayout.tabHeight,
+          'underlineWidth': MMReaderNavigationLayout.underlineWidth,
+          'listTop': MMReaderNavigationLayout.listTop,
+          'indent': MMReaderNavigationLayout.indent,
+          'maxDepth': MMReaderNavigationLayout.maxDepth,
+        },
         'modalStyle': MMModalStyle.nativeConfiguration,
         'id': id,
         'title': title,

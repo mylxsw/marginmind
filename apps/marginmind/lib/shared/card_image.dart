@@ -118,6 +118,7 @@ Future<void> showCardImagePreview(BuildContext context, String fileName) {
   if (MMInput.of(context).phone) {
     return showMMBottomSheet<void>(
       context: context,
+      initialFraction: MMSizes.phoneSheetExpanded,
       builder: (sheetContext) => Material(
         type: MaterialType.transparency,
         child: Column(

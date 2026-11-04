@@ -108,6 +108,57 @@ class ReflowDocument {
     return walk(toc).toList();
   }
 
+  /// Preserve EPUB nesting and recover heading levels in older flat Markdown
+  /// indexes without rewriting imported documents or their reading anchors.
+  List<({BookTocEntry entry, int depth})> get navigationOutline {
+    final rows = <({BookTocEntry entry, int depth})>[];
+    void add(BookTocEntry entry, int depth) => rows.add((entry: entry, depth: depth));
+    if (toc.any((entry) => entry.children.isNotEmpty)) {
+      void walk(List<BookTocEntry> entries, int depth) {
+        for (final entry in entries) {
+          add(entry, depth);
+          walk(entry.children, depth + 1);
+        }
+      }
+
+      walk(toc, 0);
+    } else {
+      final levels = <int>[];
+      String? previousChapter;
+      for (final entry in toc) {
+        if (previousChapter != entry.chapterId) levels.clear();
+        previousChapter = entry.chapterId;
+        final heading = chapter(entry.chapterId)?.blocks
+            .where((block) => block.kind == BlockKind.heading && block.start == entry.offset)
+            .firstOrNull;
+        if (heading == null) {
+          levels.clear();
+          add(entry, 0);
+          continue;
+        }
+        while (levels.isNotEmpty && levels.last >= heading.level) {
+          levels.removeLast();
+        }
+        add(entry, levels.length);
+        levels.add(heading.level);
+      }
+    }
+    // The document heading repeats the identity of the open reader. Omit it
+    // from navigation, promoting only its descendants and preserving anchors.
+    if (rows.isNotEmpty) {
+      final root = rows.first;
+      if (root.entry.chapterId == chapters.first.id &&
+          root.entry.offset == 0 &&
+          root.entry.title.trim() == document.title.trim()) {
+        rows.removeAt(0);
+        for (var i = 0; i < rows.length && rows[i].depth > root.depth; i++) {
+          rows[i] = (entry: rows[i].entry, depth: rows[i].depth - 1);
+        }
+      }
+    }
+    return rows;
+  }
+
   String title(TextReadingPosition position, {String? fallback}) {
     var title = fallback ?? document.title;
     for (final e in outline) {

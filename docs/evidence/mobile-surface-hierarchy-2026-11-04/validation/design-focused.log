@@ -1,0 +1,27 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_navigation_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:00 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:00 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: dragging an expanded sheet down keeps its header and input intact
+00:00 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:00 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:01 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:01 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.iOS)
+00:01 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:01 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:01 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=false
+00:01 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/native_presentation_test.dart: phone sheet drag respects the live PopScope guard (variant: TargetPlatform.android)
+00:01 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=false (variant: TargetPlatform.android)
+00:01 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 320.0, dark=true
+00:01 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=true (variant: TargetPlatform.iOS)
+00:01 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=false
+00:01 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: all modal entry points keep controls and nested menus opaque, dark=true (variant: TargetPlatform.android)
+00:01 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_surface_polish_test.dart: phone leaf and submenu rows align at 390.0, dark=true
+00:01 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.iOS)
+00:02 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: floating form protects edits across keyboard, rotation, scrim, drag and Back (variant: TargetPlatform.android)
+00:02 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: phone dropdown keeps submenus in one sheet and Back returns to the parent (variant: TargetPlatform.iOS)
+00:02 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/packages/mm_design/test/phone_modal_unification_test.dart: phone dropdown keeps submenus in one sheet and Back returns to the parent (variant: TargetPlatform.android)
+00:02 +25: All tests passed!

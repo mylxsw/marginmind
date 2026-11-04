@@ -1,0 +1,7 @@
+{
+  "device": "F7498667-CBDD-44E8-984B-173FF027868F",
+  "test": "mobile_surface_hierarchy_acceptance_test.dart",
+  "commit": "a3154825245695399de7f196117fb46732bda43b",
+  "dart_source_sha256": "494b205b36df02118776ebb374c08c8c45810232050a3036f67ce3b198db296d",
+  "native_swift_sha256": "0bda7e391519ad09d490587772f336545019f09e62d9201fd18aba6792f3e8bd"
+}

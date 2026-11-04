@@ -1,0 +1,15 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:02 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:02 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:03 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:03 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:03 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:03 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +10 ~1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:04 +10 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_document_navigation_test.dart: reflow navigation closes once after locating, and stays closed after async jump
+00:05 +11 ~2: All tests passed!

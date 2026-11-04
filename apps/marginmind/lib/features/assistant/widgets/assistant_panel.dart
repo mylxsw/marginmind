@@ -437,6 +437,7 @@ class AssistantSuggestions extends ConsumerWidget {
       if (topic != null) (MMIcons.review, l.assistantSuggestQuiz(topic.displayText), AssistantSkill.quiz, [topic]),
       if (page != null) (MMIcons.organize, l.assistantSuggestOrganize, AssistantSkill.organize, [page]),
     ];
+    final phone = MMInput.of(context).phone;
     return ListView(
       key: const ValueKey('assistant-suggestions'),
       padding: MMInput.of(context).phone
@@ -448,7 +449,14 @@ class AssistantSuggestions extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 6),
             child: _Suggestion(
               icon: icon,
-              text: text,
+              text: phone && (skill == AssistantSkill.explain || skill == AssistantSkill.quiz)
+                  ? skill == AssistantSkill.explain
+                        ? l.assistantSkillExplain
+                        : l.assistantSkillQuiz
+                  : text,
+              detail: phone && (skill == AssistantSkill.explain || skill == AssistantSkill.quiz)
+                  ? contexts.first.displayText
+                  : null,
               onPressed: () {
                 final notifier = ref.read(assistantUiProvider(studySetId).notifier);
                 for (final c in contexts) {
@@ -464,43 +472,57 @@ class AssistantSuggestions extends ConsumerWidget {
 }
 
 class _Suggestion extends StatelessWidget {
-  const _Suggestion({required this.icon, required this.text, required this.onPressed});
+  const _Suggestion({required this.icon, required this.text, this.detail, required this.onPressed});
 
   final IconData icon;
   final String text;
+  final String? detail;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    final phone = MMInput.of(context).phone;
     return MMInteractive(
       onTap: onPressed,
-      semanticLabel: text,
+      semanticLabel: detail == null ? text : '$text $detail',
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
+        constraints: phone ? const BoxConstraints(minHeight: MMSizes.touchTarget) : null,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: MMSpacing.s),
         decoration: BoxDecoration(
           color: s.hovered ? c.researchTint : Colors.transparent,
-          borderRadius: BorderRadius.circular(MMInput.of(context).phone ? MMRadii.phoneComposer : 10),
-          border: Border.all(
-            color: s.hovered
-                ? c.research.withValues(alpha: .16)
-                : MMInput.of(context).phone
-                ? c.border
-                : c.separator,
-            width: MMInput.of(context).phone ? MMSizes.hairline : 1,
-          ),
+          borderRadius: phone ? null : BorderRadius.circular(10),
+          border: phone
+              ? Border(
+                  bottom: BorderSide(color: c.separator, width: MMSizes.hairline),
+                )
+              : Border.all(color: s.hovered ? c.research.withValues(alpha: .16) : c.separator, width: 1),
         ),
         child: Row(
           children: [
             Icon(icon, size: 16, color: c.research),
             const SizedBox(width: MMSpacing.s),
             Expanded(
-              child: Text(
-                text,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: context.mmText.body.copyWith(color: c.label),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.mmText.body.copyWith(color: c.label),
+                  ),
+                  if (detail != null) ...[
+                    const SizedBox(height: MMSpacing.xs),
+                    Text(
+                      detail!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

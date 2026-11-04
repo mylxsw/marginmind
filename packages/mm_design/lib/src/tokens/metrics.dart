@@ -38,6 +38,17 @@ abstract final class MMToolbarSpacing {
   static const double inset = 2;
 }
 
+/// Shared phone reader navigation geometry, also sent to the UIKit browser.
+abstract final class MMReaderNavigationLayout {
+  static const double inset = 16;
+  static const double rowHeight = 48;
+  static const double tabHeight = 44;
+  static const double underlineWidth = 24;
+  static const double listTop = 8;
+  static const double indent = 16;
+  static const int maxDepth = 4;
+}
+
 /// Concentric radii: inner radius = outer radius − inset.
 abstract final class MMRadii {
   static const double phoneReaderToolbar = 28;
@@ -212,6 +223,8 @@ abstract final class MMSizes {
   static const double phoneSheetMedium = 0.5;
   static const double phoneSheetExpanded = 1;
   static const double phoneQuickSheetMedium = 0.7;
+  static const double phonePreviewSheet = 0.75;
+  static const double phoneContinueCardMinHeight = 120;
   static const double bottomSheetHandle = 20;
 
   /// Review rating button under touch.

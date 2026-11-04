@@ -86,7 +86,8 @@ class ReadingSettingsPanel extends ConsumerWidget {
       }
     }
 
-    return MMGlass(
+    return MMModalContent(
+      embedded: MMBottomSheet.contains(context),
       padding: const EdgeInsets.all(MMSpacing.m),
       borderRadius: BorderRadius.circular(MMRadii.dropdown),
       child: SizedBox(
