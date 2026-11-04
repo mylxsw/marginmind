@@ -42,3 +42,5 @@
 ```sh
 MM_WEB_FORMAT_EVIDENCE=1 flutter test integration_test/web_format_test.dart -d macos --no-pub
 ```
+
+逐屏走查（真实应用、真实抓取和打印，只有模型回复是脚本）：`integration_test/web_format_screens_test.dart`。加 `--dart-define=CAPTURE_UI=true` 后，每个状态会打印 `PHONE_SHOT`，由宿主进程截取真实窗口并回写标记文件。手机上的确认框在正式应用里是系统弹窗，这个测试不初始化原生呈现，所以截到的是共用的 Flutter 弹窗。结果见 [evidence/web-ai-format-review](evidence/web-ai-format-review/README.md)。

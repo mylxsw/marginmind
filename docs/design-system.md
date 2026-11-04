@@ -244,7 +244,7 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 
 独立表单、确认、设置和内容面板统一经过 `showMMSheet` / `showMMDialog` / `showMMBottomSheet`，使用 `MMBottomSheet` 的悬浮半屏与展开状态。iPhone 简单表单、目录和阅读菜单沿用 UIKit 系统 Sheet；复杂 Flutter 内容与安卓共用不透明的 `windowBackground` 背景和一层细边框，支持返回键和键盘避让。玻璃材质只用于悬浮操作控件，不用于承载长文本、菜单和编辑区。
 
-手机容器四周留 `MMSizes.phoneSheetPadding`（12），避开底部手势区；默认高度为可用高度的 `MMSizes.phoneSheetMedium`（0.5），AI 快捷操作使用 `phoneQuickSheetMedium`（0.7）以容纳完整菜单，横屏或键盘弹出时使用可用最大高度。iPhone 圆角 `MMRadii.phoneSheet` 与安卓 `MMRadii.androidSheet` 均为 28。短操作菜单按内容高度显示，子菜单在同一个容器内切换。选区颜色与划线工具条仍贴着原文定位，避开安全区和键盘；系统文件选择、分享、权限及原生颜色选择器遵循平台交互。
+手机容器四周留 `MMSizes.phoneSheetPadding`（12），避开底部手势区；默认高度为可用高度的 `MMSizes.phoneSheetMedium`（0.5），AI 快捷操作使用 `phoneQuickSheetMedium`（0.7）以容纳完整菜单，内容本身就是工作区的弹窗（如网页 AI 整理）使用 `phoneSheetWork`（0.94），横屏或键盘弹出时使用可用最大高度。iPhone 圆角 `MMRadii.phoneSheet` 与安卓 `MMRadii.androidSheet` 均为 28。短操作菜单按内容高度显示，子菜单在同一个容器内切换。选区颜色与划线工具条仍贴着原文定位，避开安全区和键盘；系统文件选择、分享、权限及原生颜色选择器遵循平台交互。
 
 手机根级操作菜单直接显示操作列表，不绘制“添加”“更多”等重复标题及其分割线；触发按钮的名称仍保留在无障碍菜单标签中。进入子菜单后才使用 `MMPhoneSheetHeader` 显示返回按钮与具体标题；系统返回先回到上一级，再关闭菜单。两种 AI 面板继续使用共用标题栏，承载助手身份及会话操作。这些可下拉面板均不重复显示关闭按钮，从顶部下拉或点遮罩关闭；容器暴露无障碍关闭动作，返回与 Escape 继续生效。向下关闭时整体移动面板，不压缩标题和输入区。子内容不再绘制第二层面板外框。手机菜单的叶子行与子菜单行共用 52 点最小行高、20 点图标和正文样式，字号增大时允许内容自然换行。
 

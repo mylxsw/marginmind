@@ -50,6 +50,7 @@ final page = BrowserDocumentCapture(
 class Harness {
   Harness({this.answer = '# 干净标题\n\n## 小节\n\n第一段正文内容第一段正文内容'});
   String answer;
+  Map<String, Uint8List> resources = const {};
   String sourceText = '首页 分享\n\n第一段正文内容第一段正文内容';
   Object? failure;
   Completer<void>? gate;
@@ -70,7 +71,7 @@ class Harness {
       if (failure != null) throw failure!;
       return answer;
     },
-    load: () async => (markdown: sourceText, pageTitle: page.title, resources: page.resources),
+    load: () async => (markdown: sourceText, pageTitle: page.title, resources: resources),
     prepare: (mode, body, title, origin) async {
       bodies.add(body);
       origins.add(origin);
@@ -397,6 +398,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('开始整理'), findsNothing);
     expect(find.text('保存文档'), findsOneWidget);
+  });
+
+  testWidgets('captured images show in the preview, and a missing one is labeled', (tester) async {
+    final png = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVYsAAAAASUVORK5CYII=',
+    );
+    final h = Harness(answer: '## 小节\n\n![曲线](⟦R1⟧)\n\n![没有的图](⟦R2⟧)')
+      ..sourceText = '![](<resources/image-1.png>)\n\n![](<resources/gone.png>)'
+      ..resources = {'resources/image-1.png': png};
+    await h.pump(tester);
+    await startFormatting(tester);
+    await finish(tester);
+    expect(find.byWidgetPredicate((w) => w is Image && w.image is MemoryImage), findsOneWidget);
+    expect(find.text('没有的图'), findsOneWidget);
   });
 
   testWidgets('a narrow split pane stacks its status instead of cutting it off', (tester) async {
