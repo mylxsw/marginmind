@@ -49,7 +49,7 @@ void main() {
         maxChars: 2000,
       );
       expect(sections.map((s) => s.id), ['s1', 's2', 's3']);
-      expect(sections.map((s) => s.title), ['一、开始', '二、接着', '三']);
+      expect(sections.map((s) => s.title), ['开始', '接着', '三']);
       final long = splitWebMarkdown(List.filled(5, 'x' * 900).join('\n\n'), maxChars: 2000);
       expect(long.length, 3);
       expect(long.every((s) => s.text.length <= 2000), isTrue);

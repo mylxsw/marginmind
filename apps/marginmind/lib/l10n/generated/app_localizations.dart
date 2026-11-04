@@ -11642,6 +11642,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Image'**
   String get webFormatImage;
+
+  /// No description provided for @webFormatSectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sections'**
+  String webFormatSectionCount(String count);
+
+  /// No description provided for @webFormatTabCompareShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get webFormatTabCompareShort;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -2591,5 +2591,7 @@
   "webFormatInterruptedHint": "可以继续整理，或用已有内容保存；没有整理的部分保留原始内容。",
   "webFormatSourceNote": "AI 整理",
   "webFormatPdfFailed": "无法生成 PDF，请重试或换一种格式。",
-  "webFormatImage": "图片"
+  "webFormatImage": "图片",
+  "webFormatSectionCount": "{count} 段",
+  "webFormatTabCompareShort": "对照"
 }

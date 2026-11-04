@@ -16,6 +16,7 @@ import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/settings/ai_task_settings.dart' show AiTaskFocusTask;
 import 'package:marginmind/features/workspace/web_format_runtime.dart';
 import 'package:marginmind/features/workspace/workspace_browser.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
@@ -265,10 +266,12 @@ void main() {
     Finder button(String label) => find.widgetWithText(MMButton, label);
     bool has(Finder finder) => finder.evaluate().isNotEmpty;
 
-    /// A single column shares the pane between content and settings.
+    /// A single column keeps settings in the pane's own segmented control.
     Future<void> pane(String label) async {
-      final segment = find.descendant(of: find.byType(MMSegmentedControl<bool>), matching: find.text(label));
-      if (has(segment)) await tap(segment.first);
+      if (!has(find.byType(MMSegmentedControl<int>)) && !has(find.text('设置'))) return;
+      final running = has(find.byType(MMSegmentedControl<int>));
+      final name = label == '设置' ? (running ? '整理进度' : '设置') : (running ? '排版' : '预览');
+      await tap(find.text(name).last);
     }
 
     Future<void> until(bool Function() done, {int seconds = 60}) async {
@@ -356,19 +359,18 @@ void main() {
     await pane('内容');
     await tap(button('取消'));
     await shot('09-close-confirm');
-    await tap(button('继续整理'));
+    await tap(button('取消').last);
     await tap(find.textContaining('停止整理').first);
     await shot('10-stopped');
 
     script = _Script();
     await tap(button('继续整理'));
-    await until(() => has(find.text('对照原文')) && !has(button('停止整理')));
+    await until(() => has(find.text('编辑')) && !has(button('停止整理')));
     await shot('11-done');
     await pane('设置');
     await tester.ensureVisible(find.text('查看对照'));
     await shot('12-done-settings');
     await tap(find.text('查看对照'));
-    await pane('内容');
     await shot('13-compare');
     await tap(find.text('编辑'));
     await shot('14-edit');
@@ -400,7 +402,7 @@ void main() {
     await until(() => has(find.textContaining('没有整理成功')) && !has(button('停止整理')));
     await tester.ensureVisible(find.textContaining('没有整理成功'));
     await shot('18-section-failed');
-    await tap(button('取消'));
+    await tap(button('取消').first);
     await tap(button('放弃'));
     await idle(10);
 
@@ -412,8 +414,19 @@ void main() {
     await tap(button('开始整理'));
     await until(() => has(find.byKey(const ValueKey('web-format-run-error'))));
     await shot('19-interrupted');
-    await tap(button('取消'));
+    await tap(button('取消').first);
     await tap(button('放弃'));
+    await idle(10);
+
+    final saved = container
+        .read(workspaceProvider('demo-1').notifier)
+        .content
+        .documents
+        .firstWhere((d) => d.origin?.formatting != null);
+    final refetch = await browse(documentId: saved.id);
+    await openSheet(refetch);
+    await shot('21-refetch');
+    await tap(button('取消').first);
     await idle(10);
 
     final settingsContext = tester.element(find.byType(MMBrowserView));

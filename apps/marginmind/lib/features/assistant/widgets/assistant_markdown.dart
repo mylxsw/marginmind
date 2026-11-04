@@ -162,6 +162,7 @@ class _AnswerBodyState extends State<AnswerBody> {
     final blocks = _blocksOf(done);
     final children = renderer.blocks(blocks, conclusion: widget.conclusion);
     if (widget.cursor) {
+      if (children.isNotEmpty) children.add(const SizedBox(height: 10));
       children.add(
         Text.rich(
           TextSpan(

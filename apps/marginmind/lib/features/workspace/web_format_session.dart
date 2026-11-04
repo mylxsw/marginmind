@@ -30,7 +30,11 @@ class WebFormatSection {
   /// Headings of finished text replace the guess made from the extraction.
   String get title {
     final heading = RegExp(r'^#{2,6} (.+)$', multiLine: true).firstMatch(_draft);
-    return heading == null ? source.title : heading[1]!.trim();
+    if (heading != null) return heading[1]!.trim();
+    // Without a heading, name it after what was kept: the extraction's first
+    // line is often the page debris formatting just removed.
+    final body = _bodyWithTokens.trim();
+    return formatted && body.isNotEmpty ? webFormatPlainTitle(body) : source.title;
   }
 
   bool get formatted => state == WebFormatSectionState.done;

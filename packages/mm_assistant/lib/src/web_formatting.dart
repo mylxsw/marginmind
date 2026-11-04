@@ -191,10 +191,12 @@ List<String> webMarkdownBlocks(String markdown) {
   return blocks;
 }
 
-String _plainTitle(String block) {
+String webFormatPlainTitle(String block) {
   final first = block.split('\n').first.trim();
   final text = first
       .replaceFirst(RegExp(r'^#{1,6}\s*'), '')
+      .replaceFirst(RegExp(r'^\*\*(?=[一二三四五六七八九十]+[、.．])'), '')
+      .replaceFirst(RegExp(r'^[一二三四五六七八九十]+[、.．]\s*'), '')
       .replaceAll(RegExp(r'\*\*|[`\\]'), '')
       .replaceAll(RegExp(r'!?\[([^\]]*)\]\([^)]*\)'), r'$1')
       .trim();
@@ -220,7 +222,7 @@ List<WebFormatSource> splitWebMarkdown(String markdown, {int minChars = 1200, in
       if (blocks.isNotEmpty)
         WebFormatSource(
           id: 's${i + 1}',
-          title: _plainTitle(blocks.firstWhere(_headingLike.hasMatch, orElse: () => blocks.first)),
+          title: webFormatPlainTitle(blocks.firstWhere(_headingLike.hasMatch, orElse: () => blocks.first)),
           text: blocks.join('\n\n'),
         ),
   ];

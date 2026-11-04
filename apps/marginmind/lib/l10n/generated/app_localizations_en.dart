@@ -6604,4 +6604,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webFormatImage => 'Image';
+
+  @override
+  String webFormatSectionCount(String count) {
+    return '$count sections';
+  }
+
+  @override
+  String get webFormatTabCompareShort => 'Compare';
 }

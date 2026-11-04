@@ -6356,4 +6356,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get webFormatImage => '图片';
+
+  @override
+  String webFormatSectionCount(String count) {
+    return '$count 段';
+  }
+
+  @override
+  String get webFormatTabCompareShort => '对照';
 }

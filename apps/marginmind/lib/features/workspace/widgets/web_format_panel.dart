@@ -18,7 +18,35 @@ import '../../assistant/widgets/assistant_markdown.dart';
 import '../web_format_runtime.dart';
 import '../web_format_session.dart';
 
-enum WebFormatTab { preview, edit, compare }
+/// [settings] exists only in a single column, where it shares the pane.
+enum WebFormatTab { preview, edit, compare, settings }
+
+/// An inline action that lines up with the text around it.
+class _TextLink extends StatelessWidget {
+  const _TextLink({required this.label, required this.onTap, this.color});
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+  @override
+  Widget build(BuildContext context) => MMInteractive(
+    semanticLabel: label,
+    onTap: onTap,
+    builder: (context, state) => ConstrainedBox(
+      constraints: BoxConstraints(minHeight: context.mmTouchPlatform ? MMSizes.touchTarget : 24),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        widthFactor: 1,
+        child: Text(
+          label,
+          style: context.mmText.callout.copyWith(
+            color: color ?? context.mmColors.accent,
+            decoration: state.hovered ? TextDecoration.underline : null,
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 String _clock(Duration d) =>
     '${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
@@ -91,7 +119,8 @@ class WebFormatCard extends ConsumerWidget {
                     style: t.footnote.copyWith(color: issue == null ? c.secondaryLabel : c.critical),
                   ),
                 ),
-                MMButton(label: l.webFormatOpenSettings, variant: MMButtonVariant.plain, onPressed: openSettings),
+                const SizedBox(width: MMSpacing.s),
+                _TextLink(label: l.webFormatOpenSettings, onTap: openSettings),
               ],
             ),
           ],
@@ -167,7 +196,12 @@ class WebFormatProgress extends StatelessWidget {
           Text(l.webFormatProgressTitle, style: label),
           const SizedBox(height: MMSpacing.s),
           _stage(context, l.webFormatStageRead, done: session.sections.isNotEmpty, running: session.sections.isEmpty),
-          _stage(context, l.webFormatStageSplit, done: session.sections.isNotEmpty, note: '${session.sections.length}'),
+          _stage(
+            context,
+            l.webFormatStageSplit,
+            done: session.sections.isNotEmpty,
+            note: l.webFormatSectionCount('${session.sections.length}'),
+          ),
           _stage(
             context,
             l.webFormatStageFormat,
@@ -227,7 +261,7 @@ class WebFormatProgress extends StatelessWidget {
         const SizedBox(height: MMSpacing.s),
         Align(
           alignment: Alignment.centerLeft,
-          child: MMButton(label: l.webFormatDiscardAction, variant: MMButtonVariant.plain, onPressed: onDiscard),
+          child: _TextLink(label: l.webFormatDiscardAction, color: c.secondaryLabel, onTap: onDiscard),
         ),
       ],
     );
@@ -253,18 +287,11 @@ class WebFormatProgress extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(percent < 0 ? l.webFormatShorterHint : l.webFormatLongerHint, style: t.footnote),
-          Row(
+          Wrap(
+            spacing: MMSpacing.l,
             children: [
-              MMButton(
-                label: l.webFormatViewCompare,
-                variant: MMButtonVariant.plain,
-                onPressed: () => onCompare(index),
-              ),
-              MMButton(
-                label: l.webFormatAcknowledge,
-                variant: MMButtonVariant.plain,
-                onPressed: () => session.acknowledge(index),
-              ),
+              _TextLink(label: l.webFormatViewCompare, onTap: () => onCompare(index)),
+              _TextLink(label: l.webFormatAcknowledge, onTap: () => session.acknowledge(index)),
             ],
           ),
         ],
@@ -310,42 +337,63 @@ class WebFormatProgress extends StatelessWidget {
       _ => Center(child: _dot(c)),
     };
     final settled = section.formatted || section.state == WebFormatSectionState.running;
-    return MMInteractive(
-      semanticLabel: section.title,
-      onTap: () => onReveal(index),
-      builder: (context, state) => Container(
-        constraints: const BoxConstraints(minHeight: 26),
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        decoration: BoxDecoration(
-          color: section.state == WebFormatSectionState.running
-              ? c.accentTint
-              : state.hovered
-              ? c.hover
-              : null,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          children: [
-            SizedBox(width: 14, height: 14, child: icon),
-            const SizedBox(width: MMSpacing.s),
-            Expanded(
-              child: Text(
-                section.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: settled ? t.body : t.bodySecondary,
-              ),
+    final canRerun = session.finished && !session.edited && section.state != WebFormatSectionState.waiting;
+    return Row(
+      children: [
+        Expanded(
+          child: MMInteractive(
+            semanticLabel: section.title,
+            onTap: () => onReveal(index),
+            builder: (context, state) => Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // The highlight overhangs, so icons line up with the labels above.
+                Positioned(
+                  left: -6,
+                  right: -6,
+                  top: 0,
+                  bottom: 0,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: section.state == WebFormatSectionState.running
+                          ? c.accentTint
+                          : state.hovered
+                          ? c.hover
+                          : null,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+                Container(
+                  constraints: const BoxConstraints(minHeight: 26),
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      SizedBox(width: 14, height: 14, child: icon),
+                      const SizedBox(width: MMSpacing.s),
+                      Expanded(
+                        child: Text(
+                          section.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: settled ? t.body : t.bodySecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            if (session.finished && !session.edited && (state.hovered || context.mmTouchPlatform))
-              MMButton(
-                key: ValueKey('web-format-rerun-$index'),
-                label: l.webFormatRerun,
-                variant: MMButtonVariant.plain,
-                onPressed: () => session.rerun(index),
-              ),
-          ],
+          ),
         ),
-      ),
+        if (canRerun)
+          MMIconButton(
+            key: ValueKey('web-format-rerun-$index'),
+            icon: MMIcons.regenerate,
+            tooltip: l.webFormatRerun,
+            onPressed: () => session.rerun(index),
+          ),
+      ],
     );
   }
 }
@@ -363,6 +411,7 @@ class WebFormatPane extends StatefulWidget {
     required this.pdf,
     required this.reveal,
     required this.onRevert,
+    this.settings,
   });
   final WebFormatSession session;
   final WebCaptureMode mode;
@@ -379,6 +428,9 @@ class WebFormatPane extends StatefulWidget {
 
   final VoidCallback onRevert;
 
+  /// Name, format and progress, when they have no column of their own.
+  final Widget? settings;
+
   @override
   State<WebFormatPane> createState() => _WebFormatPaneState();
 }
@@ -387,7 +439,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
   final _scroll = ScrollController();
   final _editor = TextEditingController();
   final _sectionKeys = <int, GlobalKey>{};
-  bool _follow = true, _source = false, _narrow = false;
+  bool _follow = true, _source = false, _narrow = false, _wasRunning = true;
 
   @override
   void initState() {
@@ -420,7 +472,15 @@ class _WebFormatPaneState extends State<WebFormatPane> {
   void _changed() {
     if (!mounted) return;
     _syncEditor();
+    final finishedNow = _wasRunning && widget.session.phase == WebFormatPhase.done;
+    _wasRunning = widget.session.running;
     setState(() {});
+    // Following the output ends at the bottom; review starts from the title.
+    if (finishedNow && _follow) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scroll.hasClients) _scroll.jumpTo(0);
+      });
+    }
     if (_follow && widget.session.running) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
@@ -569,7 +629,8 @@ class _WebFormatPaneState extends State<WebFormatPane> {
             ],
           ),
           const SizedBox(height: 6),
-          Text('${aiInvocationError(l, section.error!)} ${l.webFormatSectionFailedHint}', style: t.bodySecondary),
+          Text(aiInvocationError(l, section.error!), style: t.bodySecondary),
+          Text(l.webFormatSectionFailedHint, style: t.bodySecondary),
           const SizedBox(height: MMSpacing.s),
           Wrap(
             spacing: MMSpacing.s,
@@ -591,37 +652,62 @@ class _WebFormatPaneState extends State<WebFormatPane> {
   Widget _strip() {
     final l = context.l10n, c = context.mmColors, t = context.mmText;
     final session = widget.session;
+    final narrow = widget.settings != null;
+    final meta = t.footnote.copyWith(color: c.secondaryLabel);
     if (session.running) {
       final active = session.activeIndex;
+      final status = session.checking
+          ? l.webFormatChecking
+          : active == null
+          ? l.webFormatPreparing
+          : l.webFormatProgress('${active + 1}', '${session.sections.length}');
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: MMSpacing.s,
-            runSpacing: MMSpacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          if (narrow)
+            Padding(
+              padding: const EdgeInsets.only(bottom: MMSpacing.s),
+              child: MMSegmentedControl<int>(
+                expand: true,
+                segments: [
+                  MMSegment(value: 0, label: l.webFormatViewLayout),
+                  MMSegment(value: 1, label: l.convertMarkdown),
+                  MMSegment(value: 2, label: l.webFormatProgressTitle),
+                ],
+                value: widget.tab == WebFormatTab.settings ? 2 : (_source ? 1 : 0),
+                onChanged: (value) {
+                  if (value < 2) setState(() => _source = value == 1);
+                  widget.onTab(value == 2 ? WebFormatTab.settings : WebFormatTab.preview);
+                },
+              ),
+            ),
+          Row(
             children: [
               const CupertinoActivityIndicator(radius: 7),
-              Text(
-                session.checking
-                    ? l.webFormatChecking
-                    : active == null
-                    ? l.webFormatPreparing
-                    : l.webFormatProgress('${active + 1}', '${session.sections.length}'),
-                style: t.headline,
+              const SizedBox(width: MMSpacing.s),
+              Flexible(
+                child: Text(status, maxLines: 1, overflow: TextOverflow.ellipsis, style: t.headline),
               ),
-              Text(
-                l.webFormatOutputMeta('${session.outputChars}', _clock(session.elapsed)),
-                style: t.footnote.copyWith(color: c.secondaryLabel),
+              const SizedBox(width: MMSpacing.s),
+              Expanded(
+                child: Text(
+                  l.webFormatOutputMeta('${session.outputChars}', _clock(session.elapsed)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: meta,
+                ),
               ),
-              MMSegmentedControl<bool>(
-                segments: [
-                  MMSegment(value: false, label: l.webFormatViewLayout),
-                  MMSegment(value: true, label: l.convertMarkdown),
-                ],
-                value: _source,
-                onChanged: (value) => setState(() => _source = value),
-              ),
+              if (!narrow) ...[
+                const SizedBox(width: MMSpacing.s),
+                MMSegmentedControl<bool>(
+                  segments: [
+                    MMSegment(value: false, label: l.webFormatViewLayout),
+                    MMSegment(value: true, label: l.convertMarkdown),
+                  ],
+                  value: _source,
+                  onChanged: (value) => setState(() => _source = value),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: MMSpacing.s),
@@ -639,37 +725,65 @@ class _WebFormatPaneState extends State<WebFormatPane> {
       );
     }
     final total = session.sections.length, done = session.formattedCount;
+    final canResume =
+        !session.edited &&
+        session.sections.any(
+          (s) => s.state == WebFormatSectionState.waiting || s.state == WebFormatSectionState.failed,
+        );
+    final summary = done < total
+        ? Text(
+            l.webFormatPartial('$done', '$total'),
+            maxLines: narrow ? 2 : 1,
+            overflow: TextOverflow.ellipsis,
+            style: t.footnote.copyWith(color: c.caution),
+          )
+        : Text(
+            [
+              l.webFormatDoneMeta('$total', '${session.outputChars}', _clock(session.elapsed)),
+              if (session.edited) l.webFormatEditedMark,
+            ].join(' · '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: meta,
+          );
+    final tabs = MMSegmentedControl<WebFormatTab>(
+      expand: narrow,
+      segments: [
+        MMSegment(value: WebFormatTab.preview, label: l.webFormatTabPreview),
+        MMSegment(value: WebFormatTab.edit, label: l.webFormatTabEdit),
+        MMSegment(value: WebFormatTab.compare, label: narrow ? l.webFormatTabCompareShort : l.webFormatTabCompare),
+        if (narrow) MMSegment(value: WebFormatTab.settings, label: l.webFormatTabSettings),
+      ],
+      value: widget.tab,
+      onChanged: widget.onTab,
+    );
+    final resume = canResume ? MMButton(label: l.webFormatResume, onPressed: session.resume) : null;
+    if (narrow) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: MMSpacing.s),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            tabs,
+            const SizedBox(height: MMSpacing.s),
+            Row(
+              children: [
+                Expanded(child: summary),
+                if (resume != null) ...[const SizedBox(width: MMSpacing.s), resume],
+              ],
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: MMSpacing.s),
-      child: Wrap(
-        spacing: MMSpacing.s,
-        runSpacing: MMSpacing.xs,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Row(
         children: [
-          MMSegmentedControl<WebFormatTab>(
-            segments: [
-              MMSegment(value: WebFormatTab.preview, label: l.webFormatTabPreview),
-              MMSegment(value: WebFormatTab.edit, label: l.webFormatTabEdit),
-              MMSegment(value: WebFormatTab.compare, label: l.webFormatTabCompare),
-            ],
-            value: widget.tab,
-            onChanged: widget.onTab,
-          ),
-          if (done < total)
-            Text(l.webFormatPartial('$done', '$total'), style: t.footnote.copyWith(color: c.caution))
-          else
-            Text(
-              [
-                l.webFormatDoneMeta('$total', '${session.outputChars}', _clock(session.elapsed)),
-                if (session.edited) l.webFormatEditedMark,
-              ].join(' · '),
-              style: t.footnote.copyWith(color: c.secondaryLabel),
-            ),
-          if (!session.edited &&
-              session.sections.any(
-                (s) => s.state == WebFormatSectionState.waiting || s.state == WebFormatSectionState.failed,
-              ))
-            MMButton(label: l.webFormatResume, onPressed: session.resume),
+          tabs,
+          const SizedBox(width: MMSpacing.s),
+          Expanded(child: summary),
+          if (resume != null) ...[const SizedBox(width: MMSpacing.s), resume],
         ],
       ),
     );
@@ -678,7 +792,13 @@ class _WebFormatPaneState extends State<WebFormatPane> {
   Widget _content() {
     final session = widget.session;
     final c = context.mmColors;
-    if (session.running || widget.tab == WebFormatTab.preview) {
+    if (widget.tab == WebFormatTab.settings && widget.settings != null) {
+      return ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: SingleChildScrollView(primary: false, child: widget.settings),
+      );
+    }
+    if (session.running || widget.tab == WebFormatTab.preview || widget.tab == WebFormatTab.settings) {
       if (session.finished && widget.mode == WebCaptureMode.original) return widget.pdf(context);
       final List<Widget> body;
       if (session.finished && widget.mode == WebCaptureMode.markdown) {
@@ -728,14 +848,16 @@ class _WebFormatPaneState extends State<WebFormatPane> {
     final editor = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(l.convertMarkdown, style: t.callout.copyWith(color: c.secondaryLabel)),
-            ),
-            if (session.edited)
-              MMButton(label: l.webFormatRevert, variant: MMButtonVariant.plain, onPressed: widget.onRevert),
-          ],
+        SizedBox(
+          height: 24,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(l.convertMarkdown, style: t.callout.copyWith(color: c.secondaryLabel)),
+              ),
+              if (session.edited) _TextLink(label: l.webFormatRevert, onTap: widget.onRevert),
+            ],
+          ),
         ),
         const SizedBox(height: MMSpacing.xs),
         Expanded(
@@ -775,7 +897,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                height: MMSizes.field,
+                height: 24,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(l.webFormatLivePreview, style: t.callout.copyWith(color: c.secondaryLabel)),
@@ -822,7 +944,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
     Widget result(WebFormatSection section) => section.formatted
         ? _body(section.output, size: 13)
         : Text(l.webFormatNotFormatted, style: t.footnote.copyWith(color: c.secondaryLabel));
-    return ScrollConfiguration(
+    final body = ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
       child: SingleChildScrollView(
         key: const ValueKey('web-format-compare'),
@@ -830,16 +952,6 @@ class _WebFormatPaneState extends State<WebFormatPane> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (!narrow)
-              Row(
-                children: [
-                  Expanded(child: Text(l.webFormatSourceColumn, style: head)),
-                  const SizedBox(width: MMSpacing.xl),
-                  Expanded(
-                    child: Text(session.edited ? l.webFormatResultColumnEdited : l.webFormatResultColumn, style: head),
-                  ),
-                ],
-              ),
             for (final (i, section) in session.sections.indexed)
               KeyedSubtree(
                 key: _sectionKeys.putIfAbsent(i, GlobalKey.new),
@@ -866,7 +978,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
                                     : l.webFormatAddedHint('${section.check!.changePercent}'),
                                 style: t.footnote.copyWith(color: c.caution),
                               ),
-                              MMButton(label: l.webFormatAcknowledge, onPressed: () => session.acknowledge(i)),
+                              _TextLink(label: l.webFormatAcknowledge, onTap: () => session.acknowledge(i)),
                             ],
                           ),
                         ),
@@ -894,6 +1006,22 @@ class _WebFormatPaneState extends State<WebFormatPane> {
           ],
         ),
       ),
+    );
+    if (narrow) return body;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(l.webFormatSourceColumn, style: head)),
+            const SizedBox(width: MMSpacing.xl),
+            Expanded(
+              child: Text(session.edited ? l.webFormatResultColumnEdited : l.webFormatResultColumn, style: head),
+            ),
+          ],
+        ),
+        Expanded(child: body),
+      ],
     );
   }
 
@@ -929,7 +1057,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              _narrow = constraints.maxWidth < 560;
+              _narrow = widget.settings != null || constraints.maxWidth < 560;
               return _content();
             },
           ),

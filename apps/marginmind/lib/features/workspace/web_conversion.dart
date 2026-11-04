@@ -17,6 +17,7 @@ import '../assistant/settings/ai_task_status.dart' show routingIssueBlocks;
 import 'web_document.dart';
 import 'web_format_runtime.dart';
 import 'web_format_session.dart';
+import 'widgets/notices.dart' show showConfirmSheet;
 import 'widgets/web_format_panel.dart';
 import 'workspace_browser.dart';
 import 'workspace_controller.dart';
@@ -147,6 +148,7 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
       prepared = await showMMSheet<PreparedWebDocument>(
         context: context,
         width: MMSizes.webConversionSheetWidth,
+        initialFraction: MMSizes.phoneSheetWork,
         builder: (_) => WebConversionSheet(
           prepare: prepare,
           formatting: formatting,
@@ -243,7 +245,7 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   WebFormatPageSource? _pageSource;
   WebFormatSession? _session;
   WebFormatTab _tab = WebFormatTab.preview;
-  bool _settingsShown = false, _closing = false, _saving = false, _saveFailed = false;
+  bool _closing = false, _saving = false, _saveFailed = false;
   (String, String, Future<PreparedWebDocument>)? _formattedPdf;
   String? _appliedTitle;
 
@@ -315,28 +317,8 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
     session.dispose();
     _session = null;
     _tab = WebFormatTab.preview;
-    _settingsShown = false;
     _formattedPdf = null;
   }
-
-  Future<bool> _confirm(String title, String body, String keep, String discard, {bool destructive = true}) async =>
-      await showMMSheet<bool>(
-        context: context,
-        builder: (context) => MMSheet(
-          title: title,
-          actions: [
-            MMButton(label: keep, onPressed: () => Navigator.of(context).pop(false)),
-            MMButton(
-              label: discard,
-              variant: MMButtonVariant.primary,
-              destructive: destructive,
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-          child: Text(body, style: context.mmText.body),
-        ),
-      ) ??
-      false;
 
   bool get _hasWork {
     final session = _session;
@@ -350,11 +332,11 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
       return;
     }
     {
-      final discard = await _confirm(
-        l.webFormatConfirmCloseTitle,
-        _session!.edited ? l.webFormatConfirmCloseEdited : l.webFormatConfirmClose,
-        _session!.running ? l.webFormatResume : l.webFormatBack,
-        l.webFormatDiscard,
+      final discard = await showConfirmSheet(
+        context,
+        title: l.webFormatConfirmCloseTitle,
+        message: _session!.edited ? l.webFormatConfirmCloseEdited : l.webFormatConfirmClose,
+        confirmLabel: l.webFormatDiscard,
       );
       if (!discard || !mounted) return;
     }
@@ -368,11 +350,11 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   Future<void> _discardFormatting() async {
     final l = context.l10n;
     final session = _session!;
-    final discard = await _confirm(
-      l.webFormatConfirmDiscardTitle,
-      session.edited ? l.webFormatConfirmDiscardEdited : l.webFormatConfirmDiscard,
-      l.webFormatBack,
-      l.webFormatDiscard,
+    final discard = await showConfirmSheet(
+      context,
+      title: l.webFormatConfirmDiscardTitle,
+      message: session.edited ? l.webFormatConfirmDiscardEdited : l.webFormatConfirmDiscard,
+      confirmLabel: l.webFormatDiscard,
     );
     if (!discard || !mounted || _session != session) return;
     setState(() {
@@ -388,11 +370,11 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   Future<void> _revert() async {
     final l = context.l10n;
     final session = _session!;
-    final revert = await _confirm(
-      l.webFormatConfirmRevertTitle,
-      l.webFormatConfirmRevert,
-      l.webFormatBack,
-      l.webFormatRevertAction,
+    final revert = await showConfirmSheet(
+      context,
+      title: l.webFormatConfirmRevertTitle,
+      message: l.webFormatConfirmRevert,
+      confirmLabel: l.webFormatRevertAction,
     );
     if (revert && mounted && _session == session) {
       session.revertEdits();
@@ -444,17 +426,13 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
   }
 
   void _openCompare(int index) {
-    setState(() {
-      _tab = WebFormatTab.compare;
-      _settingsShown = false;
-    });
+    setState(() => _tab = WebFormatTab.compare);
     _reveal.value = index;
   }
 
   void _revealSection(int index) {
     final session = _session!;
     setState(() {
-      _settingsShown = false;
       if (session.finished && (session.edited || _mode != WebCaptureMode.readable)) {
         _tab = WebFormatTab.compare;
       } else {
@@ -533,45 +511,46 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
             ],
           );
           final session = activeSession;
-          final previewChild = session != null
-              ? WebFormatPane(
-                  session: session,
-                  mode: _mode,
-                  tab: _tab,
-                  onTab: (tab) => setState(() => _tab = tab),
-                  header: _FormatHeader(host: value?.package.document.origin, title: _title.text.trim()),
-                  resources: _pageSource?.resources ?? const {},
-                  pdf: (_) => _formattedPdfPreview(session),
-                  reveal: _reveal,
-                  onRevert: _revert,
+          Widget plainPreview() => snapshot.hasError
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(l.docSaveFailed, style: context.mmText.body),
+                      const SizedBox(height: MMSpacing.m),
+                      MMButton(
+                        label: l.webRetry,
+                        onPressed: () => setState(() {
+                          _prepared.remove(_mode);
+                        }),
+                      ),
+                    ],
+                  ),
                 )
-              : null;
-          final preview = Semantics(
+              : value == null
+              ? const Center(child: CircularProgressIndicator())
+              : _Preview(value: value, mode: _aiReady ? WebCaptureMode.readable : _mode);
+          // Always the same widget in the same place: its scroll position,
+          // follow state and pending reveal must survive switching tabs.
+          Widget previewPane({Widget? settings}) => Semantics(
             label: l.convertPreview,
             container: true,
             child: SizedBox.expand(
               key: const ValueKey('web-conversion-preview'),
-              child:
-                  previewChild ??
-                  (snapshot.hasError
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(l.docSaveFailed, style: context.mmText.body),
-                              const SizedBox(height: MMSpacing.m),
-                              MMButton(
-                                label: l.webRetry,
-                                onPressed: () => setState(() {
-                                  _prepared.remove(_mode);
-                                }),
-                              ),
-                            ],
-                          ),
-                        )
-                      : value == null
-                      ? const Center(child: CircularProgressIndicator())
-                      : _Preview(value: value, mode: _aiReady ? WebCaptureMode.readable : _mode)),
+              child: session != null
+                  ? WebFormatPane(
+                      session: session,
+                      mode: _mode,
+                      tab: _tab,
+                      onTab: (tab) => setState(() => _tab = tab),
+                      header: _FormatHeader(host: value?.package.document.origin, title: _title.text.trim()),
+                      resources: _pageSource?.resources ?? const {},
+                      pdf: (_) => _formattedPdfPreview(session),
+                      reveal: _reveal,
+                      onRevert: _revert,
+                      settings: settings,
+                    )
+                  : plainPreview(),
             ),
           );
           final save = MMButton(
@@ -631,95 +610,92 @@ class _WebConversionSheetState extends State<WebConversionSheet> {
             onPressed: value == null || _title.text.trim().isEmpty ? null : () => unawaited(_start()),
           );
           final running = session?.running ?? false;
-          return MMSheet(
-            title: l.convertTitle,
-            footer: running
-                ? Text(l.webFormatStopNote, style: context.mmText.footnote.copyWith(color: c.secondaryLabel))
-                : _saveFailed
-                ? Text(l.docSaveFailed, style: context.mmText.footnote.copyWith(color: c.critical))
-                : null,
-            actions: [
-              MMButton(label: l.cancel, onPressed: () => unawaited(_close())),
-              if (running) MMButton(label: l.webFormatStop, icon: MMIcons.stop, onPressed: session!.stop),
-              if (session == null && _aiReady) start else save,
-            ],
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final settings = Column(
-                  key: const ValueKey('web-conversion-settings'),
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    section(l.convertDocumentName, titleField),
-                    const SizedBox(height: MMSpacing.xxl),
-                    section(l.convertFormat, segments),
-                    if (session != null) ...[
+          final compact = MMBottomSheet.contains(context);
+          return LayoutBuilder(
+            builder: (context, sheet) => MMSheet(
+              title: l.convertTitle,
+              footer: running && !compact
+                  ? Text(l.webFormatStopNote, style: context.mmText.footnote.copyWith(color: c.secondaryLabel))
+                  : _saveFailed
+                  ? Text(l.docSaveFailed, style: context.mmText.footnote.copyWith(color: c.critical))
+                  : null,
+              actions: [
+                MMButton(label: l.cancel, onPressed: () => unawaited(_close())),
+                if (running) MMButton(label: l.webFormatStop, icon: MMIcons.stop, onPressed: session!.stop),
+                if (session == null && _aiReady) start else if (!running || !compact) save,
+              ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final settings = Column(
+                    key: const ValueKey('web-conversion-settings'),
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      section(l.convertDocumentName, titleField),
                       const SizedBox(height: MMSpacing.xxl),
-                      WebFormatProgress(
-                        session: session,
-                        onReveal: _revealSection,
-                        onCompare: _openCompare,
-                        onDiscard: () => unawaited(_discardFormatting()),
-                      ),
-                    ] else if (card != null) ...[
-                      const SizedBox(height: MMSpacing.xxl),
-                      section(l.webFormatSectionLabel, card),
-                    ],
-                  ],
-                );
-                final split = constraints.maxWidth >= 720;
-                final wide = split && session != null && session.finished && _tab != WebFormatTab.preview;
-                final previewHeight =
-                    (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom - 210).clamp(
-                      220.0,
-                      600.0,
-                    );
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (wide)
-                      SizedBox(height: previewHeight, child: preview)
-                    else if (split)
-                      SizedBox(
-                        height: previewHeight,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(flex: 65, child: preview),
-                            const SizedBox(width: MMSpacing.xl),
-                            VerticalDivider(width: 1, thickness: 0.5, color: c.hairline),
-                            const SizedBox(width: MMSpacing.xl),
-                            Expanded(flex: 35, child: SingleChildScrollView(child: settings)),
-                          ],
+                      section(l.convertFormat, segments),
+                      if (session != null) ...[
+                        const SizedBox(height: MMSpacing.xxl),
+                        WebFormatProgress(
+                          session: session,
+                          onReveal: _revealSection,
+                          onCompare: _openCompare,
+                          onDiscard: () => unawaited(_discardFormatting()),
                         ),
-                      )
-                    else if (session != null) ...[
-                      MMSegmentedControl<bool>(
-                        expand: true,
-                        segments: [
-                          MMSegment(value: false, label: l.webFormatTabContent),
-                          MMSegment(value: true, label: l.webFormatTabSettings),
-                        ],
-                        value: _settingsShown,
-                        onChanged: (value) => setState(() => _settingsShown = value),
-                      ),
-                      const SizedBox(height: MMSpacing.s),
-                      SizedBox(
-                        height: (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom - 260)
-                            .clamp(300.0, 700.0),
-                        child: _settingsShown ? SingleChildScrollView(child: settings) : preview,
-                      ),
-                    ] else ...[
-                      settings,
-                      const SizedBox(height: MMSpacing.xl),
-                      SizedBox(height: 300, child: preview),
+                      ] else if (card != null) ...[
+                        const SizedBox(height: MMSpacing.xxl),
+                        section(l.webFormatSectionLabel, card),
+                      ],
                     ],
-                    const SizedBox(height: MMSpacing.m),
-                    Divider(height: 1, thickness: 0.5, color: c.hairline),
-                  ],
-                );
-              },
+                  );
+                  final split = constraints.maxWidth >= 720;
+                  final wide =
+                      split &&
+                      session != null &&
+                      session.finished &&
+                      (_tab == WebFormatTab.edit || _tab == WebFormatTab.compare);
+                  final previewHeight =
+                      (MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom - 210).clamp(
+                        220.0,
+                        600.0,
+                      );
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (split)
+                        SizedBox(
+                          height: previewHeight,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(flex: 65, child: previewPane()),
+                              if (!wide) ...[
+                                const SizedBox(width: MMSpacing.xl),
+                                VerticalDivider(width: 1, thickness: 0.5, color: c.hairline),
+                                const SizedBox(width: MMSpacing.xl),
+                                Expanded(flex: 35, child: SingleChildScrollView(child: settings)),
+                              ],
+                            ],
+                          ),
+                        )
+                      else if (session != null)
+                        // The whole sheet is the work area, above any keyboard.
+                        SizedBox(
+                          height: (sheet.maxHeight - 140).clamp(300.0, double.infinity),
+                          child: previewPane(settings: settings),
+                        )
+                      else ...[
+                        settings,
+                        const SizedBox(height: MMSpacing.xl),
+                        SizedBox(height: 300, child: previewPane()),
+                      ],
+                      const SizedBox(height: MMSpacing.m),
+                      Divider(height: 1, thickness: 0.5, color: c.hairline),
+                    ],
+                  );
+                },
+              ),
             ),
           );
         },

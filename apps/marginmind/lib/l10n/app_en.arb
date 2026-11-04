@@ -3314,5 +3314,8 @@
   "webFormatInterruptedHint": "Continue formatting, or save what you have; unformatted parts stay as captured.",
   "webFormatSourceNote": "AI formatted",
   "webFormatPdfFailed": "Couldn’t create the PDF. Try again or choose another format.",
-  "webFormatImage": "Image"
+  "webFormatImage": "Image",
+  "webFormatSectionCount": "{count} sections",
+  "webFormatTabCompareShort": "Compare",
+  "@webFormatSectionCount": { "placeholders": {"count": {"type": "String"}} }
 }

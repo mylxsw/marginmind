@@ -165,4 +165,13 @@ void main() {
     session.dispose();
     session.stop();
   });
+
+  test('a section without a heading is named after what was kept, not the removed debris', () async {
+    final fake = FakeExecutor({'s1': '# 标题\n\n真正的第一句话。'});
+    final session = WebFormatSession(executor: fake.call, pageTitle: '页')..start('首页 / 分享到 微信\n\n真正的第一句话。');
+    expect(session.sections.single.title, '首页 / 分享到 微信');
+    await settled(session);
+    expect(session.sections.single.title, '真正的第一句话。');
+    session.dispose();
+  });
 }

@@ -50,6 +50,7 @@ final page = BrowserDocumentCapture(
 class Harness {
   Harness({this.answer = '# 干净标题\n\n## 小节\n\n第一段正文内容第一段正文内容'});
   String answer;
+  String sourceText = '首页 分享\n\n第一段正文内容第一段正文内容';
   Object? failure;
   Completer<void>? gate;
   final calls = <Map<String, dynamic>>[];
@@ -69,7 +70,7 @@ class Harness {
       if (failure != null) throw failure!;
       return answer;
     },
-    load: () async => (markdown: '首页 分享\n\n第一段正文内容第一段正文内容', pageTitle: page.title, resources: page.resources),
+    load: () async => (markdown: sourceText, pageTitle: page.title, resources: page.resources),
     prepare: (mode, body, title, origin) async {
       bodies.add(body);
       origins.add(origin);
@@ -270,7 +271,7 @@ void main() {
     await tester.tap(find.text('还原 AI 结果'));
     await tester.pumpAndSettle();
     expect(find.text('还原 AI 结果？'), findsOneWidget);
-    await tester.tap(find.text('返回'));
+    await tester.tap(find.widgetWithText(MMButton, '取消').last);
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(MMButton, '保存文档'));
@@ -292,6 +293,24 @@ void main() {
     await tester.tap(find.text('没问题'));
     await tester.pumpAndSettle();
     expect(find.textContaining('删除的内容已划线'), findsNothing);
+  });
+
+  testWidgets('tabs keep the pane: comparison reveals its section and review starts at the top', (tester) async {
+    final filler = List.filled(40, '第一段正文内容第一段正文内容第一段正文内容。').join('\n\n');
+    final h = Harness(answer: '## 小节\n\n$filler')..sourceText = '$filler\n\n**二、后面**\n\n$filler\n\n**三、最后**\n\n$filler';
+    await h.pump(tester);
+    await startFormatting(tester);
+    await finish(tester);
+    final scroll = find.byKey(const ValueKey('web-format-scroll'));
+    expect(tester.widget<SingleChildScrollView>(scroll).controller!.offset, 0, reason: 'review starts from the title');
+    final state = tester.state(find.byType(WebFormatPane));
+    await tester.tap(find.text('对照原文'));
+    await tester.pumpAndSettle();
+    expect(tester.state(find.byType(WebFormatPane)), same(state), reason: 'switching tabs must not rebuild the pane');
+    expect(find.text('AI 整理后'), findsOneWidget);
+    await tester.drag(find.byKey(const ValueKey('web-format-compare')), const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(find.text('AI 整理后'), findsOneWidget, reason: 'column heads stay in place');
   });
 
   testWidgets('a failed section offers retry and captured text, without blocking save', (tester) async {
@@ -331,7 +350,7 @@ void main() {
     await tester.tap(find.widgetWithText(MMButton, '取消'));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('放弃整理结果？'), findsOneWidget);
-    await tester.tap(find.text('继续整理'));
+    await tester.tap(find.widgetWithText(MMButton, '取消').last);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(WebConversionSheet), findsOneWidget);
     await tester.tap(find.widgetWithText(MMButton, '取消'));
@@ -389,8 +408,9 @@ void main() {
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
-    await tester.tap(find.text('内容'));
+    await tester.tap(find.text('预览'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
