@@ -224,7 +224,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('OCR'));
     await tester.pumpAndSettle();
-    expect(find.text('Not fully downloaded'), findsOneWidget);
+    expect(find.text('Download incomplete'), findsOneWidget);
     expect(find.text('Sync'), findsOneWidget);
     expect(service.inspections, 0);
     expect(service.starts, 0);

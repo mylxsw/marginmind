@@ -12566,6 +12566,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recover deleted content as an independent study set. The original history is preserved.'**
   String get recoveryIntro;
+
+  /// No description provided for @webFormatSectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sections'**
+  String webFormatSectionCount(String count);
+
+  /// No description provided for @webFormatTabCompareShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get webFormatTabCompareShort;
+
+  /// No description provided for @webFormatNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sections need review'**
+  String webFormatNeedsReview(String count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

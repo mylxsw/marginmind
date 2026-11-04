@@ -4363,5 +4363,10 @@
   },
   "syncUnknownDevice": "Unnamed device",
   "syncViewFiles": "Go to downloads",
-  "recoveryIntro": "Recover deleted content as an independent study set. The original history is preserved."
+  "recoveryIntro": "Recover deleted content as an independent study set. The original history is preserved.",
+  "webFormatSectionCount": "{count} sections",
+  "webFormatTabCompareShort": "Compare",
+  "@webFormatSectionCount": { "placeholders": {"count": {"type": "String"}} },
+  "webFormatNeedsReview": "{count} sections need review",
+  "@webFormatNeedsReview": { "placeholders": {"count": {"type": "String"}} }
 }

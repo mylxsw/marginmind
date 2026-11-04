@@ -3273,7 +3273,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// excerpt's is cleared), or drops a node created for this edit.
   Future<void> finishEditing(String text, [TextFormat? format]) async {
     final session = _editing;
-    if (session == null) return;
+    // A field closing with the workspace confirms too late to save anything.
+    if (session == null || !ref.mounted) return;
     final lease = _takeContentLease();
     _editing = null;
     final title = text.trim();

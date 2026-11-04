@@ -6903,4 +6903,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get recoveryIntro => '将已删除内容恢复为独立学习集，原始历史保留。';
+
+  @override
+  String webFormatSectionCount(String count) {
+    return '$count 段';
+  }
+
+  @override
+  String get webFormatTabCompareShort => '对照';
+
+  @override
+  String webFormatNeedsReview(String count) {
+    return '$count 段需要确认';
+  }
 }

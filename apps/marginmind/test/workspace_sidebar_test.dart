@@ -62,7 +62,7 @@ void main() {
     await tester.tap(find.text('New Mind Map…'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, 'Created from footer');
-    await tester.tap(find.text('Save').last);
+    await tester.tap(find.text('Create').last);
     await tester.pumpAndSettle();
     expect(owner.content.map(c.read(workspaceProvider('demo-1')).activeMapId)!.title, 'Created from footer');
     expect(tester.takeException(), isNull);

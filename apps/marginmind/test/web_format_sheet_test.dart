@@ -50,6 +50,8 @@ final page = BrowserDocumentCapture(
 class Harness {
   Harness({this.answer = '# 干净标题\n\n## 小节\n\n第一段正文内容第一段正文内容'});
   String answer;
+  Map<String, Uint8List> resources = const {};
+  String sourceText = '首页 分享\n\n第一段正文内容第一段正文内容';
   Object? failure;
   Completer<void>? gate;
   final calls = <Map<String, dynamic>>[];
@@ -69,7 +71,7 @@ class Harness {
       if (failure != null) throw failure!;
       return answer;
     },
-    load: () async => (markdown: '首页 分享\n\n第一段正文内容第一段正文内容', pageTitle: page.title, resources: page.resources),
+    load: () async => (markdown: sourceText, pageTitle: page.title, resources: resources),
     prepare: (mode, body, title, origin) async {
       bodies.add(body);
       origins.add(origin);
@@ -92,6 +94,7 @@ class Harness {
     String? initialTitle,
     bool withHost = true,
     bool realRoute = false,
+    bool phone = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -105,6 +108,7 @@ class Harness {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('zh'),
+          builder: phone ? (_, child) => MMInput(touchPlatform: true, phone: true, child: child!) : null,
           home: Scaffold(
             body: Builder(
               builder: (context) => MMButton(
@@ -113,6 +117,7 @@ class Harness {
                   showMMSheet<PreparedWebDocument>(
                     context: context,
                     width: MMSizes.webConversionSheetWidth,
+                    initialFraction: MMSizes.phoneSheetExpanded,
                     builder: (_) => WebConversionSheet(
                       prepare: (mode) {
                         plain.add(mode);
@@ -150,10 +155,18 @@ Finder get toggle =>
     find.descendant(of: find.byKey(const ValueKey('web-format-card')), matching: find.byType(MMSwitch));
 
 Future<void> startFormatting(WidgetTester tester) async {
+  await tester.ensureVisible(toggle);
+  await tester.pumpAndSettle();
   await tester.tap(toggle);
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(MMButton, '开始整理'));
   await tester.pump();
+}
+
+Future<void> startFormattingKeepingGate(WidgetTester tester, Harness h) async {
+  h.gate = Completer<void>();
+  await startFormatting(tester);
+  await tester.pump(const Duration(milliseconds: 100));
 }
 
 void main() {
@@ -270,7 +283,7 @@ void main() {
     await tester.tap(find.text('还原 AI 结果'));
     await tester.pumpAndSettle();
     expect(find.text('还原 AI 结果？'), findsOneWidget);
-    await tester.tap(find.text('返回'));
+    await tester.tap(find.widgetWithText(MMButton, '取消').last);
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(MMButton, '保存文档'));
@@ -292,6 +305,24 @@ void main() {
     await tester.tap(find.text('没问题'));
     await tester.pumpAndSettle();
     expect(find.textContaining('删除的内容已划线'), findsNothing);
+  });
+
+  testWidgets('tabs keep the pane: comparison reveals its section and review starts at the top', (tester) async {
+    final filler = List.filled(40, '第一段正文内容第一段正文内容第一段正文内容。').join('\n\n');
+    final h = Harness(answer: '## 小节\n\n$filler')..sourceText = '$filler\n\n**二、后面**\n\n$filler\n\n**三、最后**\n\n$filler';
+    await h.pump(tester);
+    await startFormatting(tester);
+    await finish(tester);
+    final scroll = find.byKey(const ValueKey('web-format-scroll'));
+    expect(tester.widget<SingleChildScrollView>(scroll).controller!.offset, 0, reason: 'review starts from the title');
+    final state = tester.state(find.byType(WebFormatPane));
+    await tester.tap(find.text('对照原文'));
+    await tester.pumpAndSettle();
+    expect(tester.state(find.byType(WebFormatPane)), same(state), reason: 'switching tabs must not rebuild the pane');
+    expect(find.text('AI 整理后'), findsOneWidget);
+    await tester.drag(find.byKey(const ValueKey('web-format-compare')), const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(find.text('AI 整理后'), findsOneWidget, reason: 'column heads stay in place');
   });
 
   testWidgets('a failed section offers retry and captured text, without blocking save', (tester) async {
@@ -331,7 +362,7 @@ void main() {
     await tester.tap(find.widgetWithText(MMButton, '取消'));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('放弃整理结果？'), findsOneWidget);
-    await tester.tap(find.text('继续整理'));
+    await tester.tap(find.widgetWithText(MMButton, '取消').last);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(WebConversionSheet), findsOneWidget);
     await tester.tap(find.widgetWithText(MMButton, '取消'));
@@ -380,6 +411,68 @@ void main() {
     expect(find.text('保存文档'), findsOneWidget);
   });
 
+  testWidgets('captured images show in the preview, and a missing one is labeled', (tester) async {
+    final png = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVYsAAAAASUVORK5CYII=',
+    );
+    final h = Harness(answer: '## 小节\n\n![曲线](⟦R1⟧)\n\n![没有的图](⟦R2⟧)')
+      ..sourceText = '![](<resources/image-1.png>)\n\n![](<resources/gone.png>)'
+      ..resources = {'resources/image-1.png': png};
+    await h.pump(tester);
+    await startFormatting(tester);
+    await finish(tester);
+    expect(find.byWidgetPredicate((w) => w is Image && w.image is MemoryImage), findsOneWidget);
+    expect(find.text('没有的图'), findsOneWidget);
+  });
+
+  testWidgets('a narrow split pane stacks its status instead of cutting it off', (tester) async {
+    final h = Harness()..failure = const ResearchFailure(ResearchFailureKind.network);
+    await h.pump(tester, size: const Size(820, 900));
+    await startFormatting(tester);
+    await finish(tester);
+    final tabs = tester.getRect(find.byType(MMSegmentedControl<WebFormatTab>));
+    final status = tester.getRect(find.textContaining('已整理 0/1 段'));
+    expect(status.top, greaterThanOrEqualTo(tabs.bottom));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('turning it on brings the destination into view on a phone', (tester) async {
+    final h = Harness();
+    await h.pump(tester, size: const Size(390, 700), phone: true);
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('web-format-disclosure')).hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a single column keeps the main action on top and one level of tabs', (tester) async {
+    final h = Harness();
+    await h.pump(tester, size: const Size(390, 844), phone: true);
+    final sheetTitle = tester.getRect(find.text('保存到资料库'));
+    expect((tester.getCenter(find.widgetWithText(MMButton, '保存文档')).dy - sheetTitle.center.dy).abs(), lessThan(24));
+    final sheetScroll = tester.state<ScrollableState>(
+      find.ancestor(of: find.byType(MMSegmentedControl<bool>), matching: find.byType(Scrollable)).first,
+    );
+    expect(sheetScroll.position.maxScrollExtent, 0, reason: 'tabs stay pinned: only the pane below them scrolls');
+    expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
+    await tester.tap(find.text('预览'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await startFormattingKeepingGate(tester, h);
+    expect(find.text('整理进度'), findsWidgets);
+    await tester.tap(find.text('整理进度').first);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('文档名称'), findsNothing, reason: 'the progress tab is about progress');
+    h.gate!.complete();
+    await finish(tester);
+    expect(find.textContaining('用时'), findsNothing, reason: 'statistics do not earn a row on a single column');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a single column shares the pane with settings', (tester) async {
     final h = Harness();
     await h.pump(tester, size: const Size(600, 900));
@@ -389,8 +482,9 @@ void main() {
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('web-conversion-settings')), findsOneWidget);
-    await tester.tap(find.text('内容'));
+    await tester.tap(find.text('预览'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('web-conversion-settings')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

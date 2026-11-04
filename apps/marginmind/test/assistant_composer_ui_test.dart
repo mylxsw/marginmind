@@ -70,17 +70,17 @@ void main() {
   for (final width in [1000.0, 1600.0]) {
     testWidgets('model menu stays above its button at window width $width', (tester) async {
       await _open(tester, size: Size(width, 760));
-      final button = find.byKey(const ValueKey('assistant-model'));
+      final button = find.byType(ModelRoutePicker);
       final anchor = tester.getRect(button);
       await tester.tap(button);
       await tester.pumpAndSettle();
-      final menu = tester.getRect(find.ancestor(of: find.text('管理模型…'), matching: find.byType(MMGlass)).first);
+      final menu = tester.getRect(find.ancestor(of: find.text('跟随设置'), matching: find.byType(MMGlass)).first);
       expect(menu.right, closeTo(anchor.right, 1));
       expect(menu.bottom, closeTo(anchor.top - 4, 1));
       expect(menu.left, greaterThanOrEqualTo(8));
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
-      expect(find.text('管理模型…'), findsNothing);
+      expect(find.text('跟随设置'), findsNothing);
     });
   }
 
@@ -222,8 +222,9 @@ void main() {
     scope.invalidate(assistantCredentialStateProvider);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-messages')), findsOneWidget);
-    expect(find.byKey(const ValueKey('assistant-input')), findsNothing);
-    expect(find.byKey(const ValueKey('assistant-configure-models')), findsOneWidget);
+    // Credentials are checked on the next send: no preflight notice replaces the composer.
+    expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
     await tester.tap(find.text('p.24'));
     await pumpFor(tester);
     expect(app.container.read(workspaceProvider('demo-1')).reveal?.page, 24);

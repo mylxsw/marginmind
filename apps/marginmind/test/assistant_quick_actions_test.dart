@@ -334,12 +334,12 @@ void main() {
     await stream.close();
   });
 
-  testWidgets('unconfigured AI opens setup locally without sending', (tester) async {
+  testWidgets('unconfigured AI opens quick actions without a setup notice or a request', (tester) async {
     final client = ScriptClient([]);
     final app = await openAssistantApp(tester, key: false, client: client);
     await select(tester, app);
     await open(tester);
-    expect(find.byKey(const ValueKey('assistant-configure-models')), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
     expect(find.byType(AssistantPanel), findsNothing);
     expect(client.calls, 0);
   });

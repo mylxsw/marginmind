@@ -269,6 +269,8 @@ Future<bool> showConfirmSheet(
   }
   final ok = await showMMSheet<bool>(
     context: context,
+    // A question fits its content; half a screen of blank sheet says nothing.
+    expand: false,
     builder: (context) => MMSheet(
       title: title,
       actions: [
@@ -276,6 +278,8 @@ Future<bool> showConfirmSheet(
         MMButton(
           label: confirmLabel,
           variant: MMButtonVariant.primary,
+          // Same meaning as the native sheet's destructive action.
+          color: context.mmColors.critical,
           autofocus: true,
           onPressed: () => Navigator.of(context).pop(true),
         ),

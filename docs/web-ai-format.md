@@ -12,6 +12,7 @@
 - 完成后可预览、编辑、对照原文。手动编辑后不能再按段重新整理，可以还原。
 - 有整理内容时关闭弹窗需要确认。第一版整理不转入后台。
 - 用户没改过名称时，采用模型给出的干净标题。
+- 手机上弹窗展开到最大高度，主操作在标题行右侧（整理中是“停止整理”）。表单、预览和进度用一层分段切换，分段固定不滚动。统计信息不占行，只有未整理完或需要确认时才多一行提示。
 
 ## 内容边界
 
@@ -42,3 +43,5 @@
 ```sh
 MM_WEB_FORMAT_EVIDENCE=1 flutter test integration_test/web_format_test.dart -d macos --no-pub
 ```
+
+逐屏走查（真实应用、真实抓取和打印，只有模型回复是脚本）：`integration_test/web_format_screens_test.dart`。加 `--dart-define=CAPTURE_UI=true` 后，每个状态会打印 `PHONE_SHOT`，由宿主进程截取真实窗口并回写标记文件。手机上的确认框在正式应用里是系统弹窗，这个测试不初始化原生呈现，所以截到的是共用的 Flutter 弹窗。结果见 [evidence/web-ai-format-review](evidence/web-ai-format-review/README.md)。

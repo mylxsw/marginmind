@@ -166,6 +166,10 @@ void main() {
       expect(find.text('整理这个分支…'), findsOneWidget);
       expect(find.text('为这个分支出复习题…'), findsOneWidget);
       await tester.tap(find.text(item));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      // Quiz confirms its model in the task setup sheet before sending.
+      if (item.contains('复习题')) await tester.tap(find.widgetWithText(TextButton, '发送'));
       await pumpFor(tester, 20);
     }
 

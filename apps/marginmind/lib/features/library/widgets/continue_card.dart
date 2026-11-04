@@ -73,7 +73,8 @@ class ContinueCard extends StatelessWidget {
                   Row(
                     children: [
                       if (phone && set.dueCount > 0) ...[
-                        MMBadge(l.dueBadge(set.dueCount)),
+                        // Large text may shrink the badge, never push the row out.
+                        Flexible(child: MMBadge(l.dueBadge(set.dueCount))),
                         const SizedBox(width: MMSpacing.s),
                       ],
                       Expanded(child: MMProgressBar(value: set.progress)),

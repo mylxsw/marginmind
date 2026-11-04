@@ -7182,4 +7182,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recoveryIntro => 'Recover deleted content as an independent study set. The original history is preserved.';
+
+  @override
+  String webFormatSectionCount(String count) {
+    return '$count sections';
+  }
+
+  @override
+  String get webFormatTabCompareShort => 'Compare';
+
+  @override
+  String webFormatNeedsReview(String count) {
+    return '$count sections need review';
+  }
 }

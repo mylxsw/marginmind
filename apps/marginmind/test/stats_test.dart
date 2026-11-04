@@ -88,7 +88,8 @@ void main() {
     expect(container.read(workspaceProvider('demo-1')).tabs.activeId, 'statistics');
     expect(find.byKey(const ValueKey('workspace-tab-statistics')), findsOneWidget);
     final sidebar = tester.widget<MMSidebarItem>(find.byKey(const ValueKey('sidebar-statistics')));
-    expect(sidebar.selected, isTrue);
+    // Sidebar tool entries open tabs; the tab, not the entry, shows what is active.
+    expect(sidebar.selected, isFalse);
     expect(find.byTooltip('Back to Study Set'), findsNothing);
     expect(value(tester, 'stats-reviewed').data, '4');
 

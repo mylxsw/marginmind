@@ -325,9 +325,12 @@ void main() {
     expect(container.read(navigationProvider), isA<WorkspaceRoute>());
     expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.vocabulary.id);
     expect(find.byType(PhoneTabBar), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('close-workspace-tab-vocabulary')));
+    // Phones have no tab strip: system back returns to the documents tab.
+    expect(find.byKey(const ValueKey('close-workspace-tab-vocabulary')), findsNothing);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(container.read(navigationProvider), isA<WorkspaceRoute>());
+    expect(container.read(workspaceProvider('demo-1')).tabs.activeId, WorkspaceTab.documents.id);
     expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
     expect(tester.takeException(), isNull);
   });

@@ -155,7 +155,16 @@ void main() {
     controller.dispose();
     await library.dispose();
     await vocabulary.dispose();
-    await root.delete(recursive: true);
+    // A background journal write can still be landing; only cleanup may retry.
+    for (var attempt = 0; ; attempt++) {
+      try {
+        await root.delete(recursive: true);
+        return;
+      } on FileSystemException {
+        if (attempt >= 4) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    }
   });
   Future<void> connect({
     String account = 'alice',

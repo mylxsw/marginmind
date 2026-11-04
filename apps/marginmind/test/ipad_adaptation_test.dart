@@ -71,7 +71,7 @@ void main() {
       expect(t.getRect(view).width, greaterThan(0));
       final readerToolbar = t.widget<MMAdaptiveToolbar>(find.byType(MMAdaptiveToolbar).first);
       // Documents are tabs now; layout and the assistant sit in the window tab row,
-      // split by a hairline divider with 10pt on each side.
+      // split by a hairline divider with 6pt on each side.
       expect(readerToolbar.items.any((item) => item.id == 'compare'), false);
       expect(readerToolbar.items.any((item) => item.id == 'documents'), false);
       final tabRow = find.byKey(const ValueKey('workspace-tab-row'));
@@ -79,7 +79,7 @@ void main() {
       final assistantButton = find.byKey(const ValueKey('toolbar-assistant'));
       expect(find.descendant(of: tabRow, matching: layoutControls), findsOneWidget);
       expect(find.descendant(of: tabRow, matching: assistantButton), findsOneWidget);
-      expect(t.getRect(assistantButton).left - t.getRect(layoutControls).right, 21);
+      expect(t.getRect(assistantButton).left - t.getRect(layoutControls).right, 13);
       expect(t.getRect(assistantButton).center.dy, closeTo(t.getRect(layoutControls).center.dy, .5));
       expect(find.byKey(const ValueKey('toolbar-organize-note')), findsNothing);
       await t.tap(find.byKey(const ValueKey('reader-more')));
@@ -104,7 +104,7 @@ void main() {
         expect(find.text(label), findsNothing);
       }
       for (final label in ['多选']) {
-        final row = find.ancestor(of: find.text(label), matching: find.byType(MMDropdownItem<VoidCallback>));
+        final row = find.ancestor(of: find.text(label), matching: find.byType(MenuItemButton));
         expect(row, findsOneWidget);
         expect(
           find.descendant(

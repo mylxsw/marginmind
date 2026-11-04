@@ -256,10 +256,13 @@ void main() {
           toolbar: const MMToolbar(key: ValueKey('toolbar'), title: 'Title'),
           body: const SizedBox.expand(),
         ),
+        touchPlatform: true,
       ),
     );
     await tester.pumpAndSettle();
-    expect(tester.getRect(find.byType(MMSidebar)).left, 62);
+    // The drawer fills the window edge; its content keeps clear of the inset.
+    expect(tester.getRect(find.byType(MMSidebar)).left, 0);
+    expect(tester.getRect(find.text('Side')).left, greaterThanOrEqualTo(62));
     expect(tester.getRect(find.byKey(const ValueKey('toolbar'))).left, 62);
     await tester.tapAt(const Offset(850, 200));
     expect(dismissed, 1);

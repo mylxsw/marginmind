@@ -3053,5 +3053,8 @@
   "syncCandidateDevice": "来自 {device}",
   "syncUnknownDevice": "未命名设备",
   "syncViewFiles": "前往下载",
-  "recoveryIntro": "将已删除内容恢复为独立学习集，原始历史保留。"
+  "recoveryIntro": "将已删除内容恢复为独立学习集，原始历史保留。",
+  "webFormatSectionCount": "{count} 段",
+  "webFormatTabCompareShort": "对照",
+  "webFormatNeedsReview": "{count} 段需要确认"
 }

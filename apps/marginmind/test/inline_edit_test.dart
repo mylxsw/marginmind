@@ -249,7 +249,7 @@ void main() {
     // Hiding the map confirms the edit instead of keeping an unseen field.
     await doubleTap(tester, find.text('第二个'));
     tester.testTextInput.enterText('藏起来');
-    await tester.tap(find.byIcon(MMIcons.layoutReader));
+    await tester.tap(find.byKey(const ValueKey('toolbar-layout-reader')));
     await tester.pumpAndSettle();
     expect(container.read(workspaceProvider('demo-1')).editingCardId, isNull);
     expect(controller.content.cards.where((c) => c.title == '藏起来'), hasLength(1));

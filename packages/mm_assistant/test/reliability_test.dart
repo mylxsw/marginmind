@@ -318,13 +318,21 @@ void main() {
     );
   });
 
-  test('every skill carries the style contract', () {
+  test('every answering skill carries the style contract; translate outputs only the translation', () {
     for (final skill in assistantSkills([])) {
-      expect(skill.systemPrompt, contains(assistantAnswerStyle));
+      if (skill.name == 'translate') {
+        expect(skill.systemPrompt, isNot(contains(assistantAnswerStyle)));
+        expect(skill.systemPrompt, contains('只输出完整译文'));
+      } else {
+        expect(skill.systemPrompt, contains(assistantAnswerStyle));
+      }
     }
     for (final token in ['150', '表格', '句末', 'web_search', 'fetch_source', '用户提问的语言', '不反问']) {
-      expect(assistantSystemPrompt, contains(token));
+      expect(assistantAnswerStyle, contains(token));
     }
+    // Style moved out of the shared prompt so tasks with their own output format do not inherit it.
+    expect(assistantSystemPrompt, isNot(contains(assistantAnswerStyle)));
+    expect(assistantSystemPrompt, contains('遵守当前任务的输出格式'));
   });
 
   test('timeline keeps narration order, merges adjacent actions and roundtrips time', () {

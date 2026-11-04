@@ -255,22 +255,24 @@ void main() {
       expect(find.byType(MapPane).hitTestable(), findsNothing);
     });
 
-    testWidgets('find in the sidebar brings it back and focuses the search field', (tester) async {
+    testWidgets('a search request leaves the sidebar alone while its field is hidden', (tester) async {
       final container = await openSet(tester, size: const Size(900, 820));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(MMSidebar), matching: find.byType(TextField)), findsNothing);
+      container.read(provider.notifier).toggleSidebar();
       await tester.pumpAndSettle();
       container.read(focusRequestsProvider.notifier).request(FocusTarget.search);
       await tester.pumpAndSettle();
-      expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
-      final field = tester.widget<TextField>(find.byType(TextField).first);
-      expect(field.focusNode?.hasFocus, isTrue);
+      expect(container.read(provider).sidebarVisible, isFalse);
+      expect(find.text('Mind Maps').hitTestable(), findsNothing);
     });
 
-    testWidgets('a hidden sidebar is shown by the same commands in a wide window', (tester) async {
+    testWidgets('a hidden sidebar is shown by the same command in a wide window', (tester) async {
       final container = await openSet(tester, size: const Size(1400, 820));
       container.read(provider.notifier).toggleSidebar();
       await tester.pumpAndSettle();
       expect(find.text('Mind Maps').hitTestable(), findsNothing);
-      container.read(focusRequestsProvider.notifier).request(FocusTarget.search);
+      container.read(provider.notifier).toggleSidebar();
       await tester.pumpAndSettle();
       expect(container.read(provider).sidebarVisible, isTrue);
       expect(container.read(provider).layout, MMSplitMode.split);

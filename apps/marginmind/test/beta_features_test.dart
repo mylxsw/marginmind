@@ -74,7 +74,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('add-map-menu')));
     await tester.pumpAndSettle();
     expect(find.text('从文档生成…'), findsNothing);
-    expect(find.text('新建脑图…'), findsOneWidget);
+    // Sheet titles drop the menu label's trailing ellipsis.
+    expect(find.text('新建脑图'), findsOneWidget);
     Navigator.of(tester.element(find.byType(Navigator).first)).pop();
     await tester.pumpAndSettle();
 

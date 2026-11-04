@@ -296,7 +296,7 @@ void main() {
       controller.openDocument('c2');
       await tester.pumpAndSettle();
       expect(find.byType(WorkspaceSidebar).hitTestable(), findsNothing);
-      container.read(focusRequestsProvider.notifier).request(FocusTarget.search);
+      await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
       expect(find.byType(WorkspaceSidebar).hitTestable(), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('mm-drawer-scrim')).first, warnIfMissed: false);
@@ -318,8 +318,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(panel, findsNothing);
 
-      // Touch-sized toolbar buttons.
-      expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), const Size.square(MMSizes.touchTarget));
+      // Compact window chrome: a 36pt cell inside the 40pt tablet title row.
+      expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), const Size.square(36));
       // The reader tools stay on one line; zoom and appearance are under More.
       expect(find.byKey(const ValueKey('reader-more')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('reader-more')));
@@ -389,7 +389,11 @@ void main() {
       await tester.pumpAndSettle();
       // A compact window raises the panel from the bottom (GUL-542).
       expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
-      expect(tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet'))).width, iphone.size.width);
+      // The phone sheet floats with a margin on each side.
+      expect(
+        tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet'))).width,
+        iphone.size.width - 2 * MMSizes.phoneSheetPadding,
+      );
       expect(tester.takeException(), isNull);
       await settleHud(tester);
     });
@@ -411,16 +415,18 @@ void main() {
     testWidgets('a tablet keeps stable target sizes while switching between trackpad and finger', (tester) async {
       await openWorkspace(tester, ipadLandscape);
       final assistant = find.byKey(const ValueKey('toolbar-assistant'));
-      expect(tester.getSize(assistant), const Size.square(MMSizes.touchTarget));
+      // Compact window chrome: a 36pt cell inside the 40pt tablet title row.
+      const chromeTarget = Size.square(36);
+      expect(tester.getSize(assistant), chromeTarget);
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await mouse.addPointer(location: const Offset(600, 500));
       await mouse.moveTo(const Offset(610, 500));
       await tester.pumpAndSettle();
-      expect(tester.getSize(assistant), const Size.square(MMSizes.touchTarget));
+      expect(tester.getSize(assistant), chromeTarget);
       await mouse.removePointer();
       await tester.tapAt(const Offset(610, 500));
       await tester.pumpAndSettle();
-      expect(tester.getSize(assistant), const Size.square(MMSizes.touchTarget));
+      expect(tester.getSize(assistant), chromeTarget);
     });
 
     testWidgets('library on a phone: drawer sidebar and a narrow toolbar', (tester) async {

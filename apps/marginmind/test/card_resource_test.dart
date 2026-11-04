@@ -79,7 +79,7 @@ void main() {
     expect(find.byType(Image), findsNothing);
     repo.changes.add(ReferencedResource(DocumentResourceAvailability.missing));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Not fully downloaded'), findsOneWidget);
+    expect(find.byTooltip('Download incomplete'), findsOneWidget);
     repo.changes.add(ReferencedResource(DocumentResourceAvailability.ready, png));
     await tester.pumpAndSettle();
     expect(find.byType(Image), findsOneWidget);
@@ -91,7 +91,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(Image), findsNothing);
     expect(
-      find.byWidgetPredicate((w) => w is Tooltip && (w.message?.contains('Local file differs') ?? false)),
+      find.byWidgetPredicate((w) => w is Tooltip && (w.message?.contains('File differs') ?? false)),
       findsNWidgets(2),
     );
     repo.changes.addError(StateError('read failed'));

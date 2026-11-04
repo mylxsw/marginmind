@@ -167,6 +167,7 @@ class AssistantConversationRouteControl extends ConsumerWidget {
       ],
       selected: selected,
       followLabel: l.aiTasksUseSetting,
+      opensAbove: true,
       semanticLabel: l.assistantModel,
       semanticValue: row?.modelLabel ?? '',
       onChanged: conversation.running

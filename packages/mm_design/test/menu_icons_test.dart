@@ -70,7 +70,8 @@ void main() {
         ],
       );
       await tester.pumpAndSettle();
-      expect(find.byIcon(MMIcons.document), findsOneWidget);
+      // The phone sheet has one leading slot: the mark takes the selected row's icon.
+      expect(find.byIcon(MMIcons.document), phone ? findsNothing : findsOneWidget);
       expect(find.byIcon(MMIcons.generateMap), findsOneWidget);
       expect(find.byIcon(MMIcons.check), findsOneWidget);
       expect(find.byType(MMBetaBadge), findsOneWidget);

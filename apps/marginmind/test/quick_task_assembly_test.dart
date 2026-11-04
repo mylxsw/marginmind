@@ -108,12 +108,28 @@ void main() {
         ],
       );
       final execute = container.read(quickTaskExecutorProvider('study'));
+      // A profile is optional, but a model the user turned off is refused before dispatch.
+      final current = await services.load();
+      await services.save(
+        AssistantServices(
+          services: [
+            service.copyWith(
+              models: [
+                const ServiceModel(id: 'fixture-model'),
+                const ServiceModel(id: 'title-model', enabled: false),
+              ],
+            ),
+          ],
+          defaultModel: current.defaultModel,
+        ),
+      );
       await expectLater(
         execute(TaskType.titleGenerate, {'question': 'question'}, CancellationToken()),
-        throwsA(isA<ConfigurationFailure>()),
+        throwsA(isA<ConfigurationFailure>().having((e) => e.code, 'code', 'modelOff')),
       );
       expect(bodies, isEmpty);
-      // Synthetic admission is test-only. No production profile is installed.
+      await services.save(current);
+      // Synthetic metadata is test-only. No production profile is installed.
       for (final model in service.models) {
         profiles.put(
           ModelCapabilityProfile(

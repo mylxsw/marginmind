@@ -298,6 +298,7 @@ class _SplitDividerState extends State<_SplitDivider> {
           onVerticalDragUpdate: widget.vertical ? (d) => widget.onDelta(d.delta.dy) : null,
           onDoubleTap: widget.onReset,
           child: Semantics(
+            container: true,
             label: 'Divider',
             slider: true,
             child: SizedBox.expand(

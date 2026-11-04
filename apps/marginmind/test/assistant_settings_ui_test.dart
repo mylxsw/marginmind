@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/assistant_services.dart';
+import 'package:marginmind/features/assistant/assistant_routing.dart';
 import 'package:marginmind/features/assistant/settings/model_route_picker.dart';
 import 'package:marginmind/features/assistant/settings/web_search_settings.dart';
 import 'package:marginmind/features/assistant/widgets/service_logo.dart';
@@ -49,6 +50,16 @@ Future<TestGesture> _hover(WidgetTester tester, Finder finder) async {
   addTearDown(gesture.removePointer);
   await tester.pumpAndSettle();
   return gesture;
+}
+
+/// Credentials are checked on send: the failed answer is the way into Model Settings.
+Future<void> _openSettingsFromFailedSend(WidgetTester tester) async {
+  await tester.enterText(find.byKey(const ValueKey('assistant-input')), '解释这段内容');
+  await tester.pump();
+  await tester.tap(find.byKey(const ValueKey('assistant-send')));
+  await pumpFor(tester, 20);
+  await tester.tap(find.byKey(const ValueKey('assistant-open-settings')));
+  await tester.pumpAndSettle();
 }
 
 AssistantServices _services(AssistantApp app) => app.container.read(assistantServicesProvider).value!;
@@ -244,8 +255,7 @@ void main() {
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
     expect(find.byKey(const ValueKey('connect-anthropic')), findsNothing);
     expect(catalog.checked, isEmpty);
-    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
-    await tester.pumpAndSettle();
+    await _openSettingsFromFailedSend(tester);
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
     expect(find.byKey(const ValueKey('settings-general')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
@@ -297,7 +307,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-window')), findsNothing);
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
-    expect(find.byKey(const ValueKey('assistant-suggestions')), findsOneWidget);
+    // The failed answer stays; the composer is ready to ask again.
+    expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
   }, semanticsEnabled: false);
 
   testWidgets('the settings link keeps the selected service when providers are shared', (tester) async {
@@ -322,8 +333,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
-    await tester.pumpAndSettle();
+    await _openSettingsFromFailedSend(tester);
     secrets
       ..blockReads = false
       ..blockWrites = false;
@@ -427,31 +437,33 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('ai-tasks-save')));
     await tester.pumpAndSettle();
     expect(tester.widget<ModelRoutePicker>(heavyDefault).selected, ModelReference(service.id, 'gpt-5'));
-    // Until every caller resolves through routing, the heavy default is mirrored for them.
-    expect(_services(app).defaultModel!.modelId, 'gpt-5');
-    // The empty conversation follows the new default.
-    expect(conversationOf(tester).model.model, 'gpt-5');
+    // Task routing owns the new default; the legacy catalog default is only migration input.
+    expect(app.container.read(assistantRoutingProvider).value!.defaultModel(TaskCategory.heavy)!.modelId, 'gpt-5');
+    expect(_services(app).defaultModel!.modelId, 'claude-opus-5-5');
 
     await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
-    expect(find.text('GPT-5'), findsOneWidget); // The model button.
-    await tester.tap(find.byKey(const ValueKey('assistant-model')));
+    // The empty conversation follows the new default.
+    final picker = find.byType(ModelRoutePicker);
+    expect(find.descendant(of: picker, matching: find.text('GPT-5')), findsOneWidget);
+    await tester.tap(picker);
     await tester.pumpAndSettle();
-    // Grouped by service, names only, then “Manage Models…”.
+    // Follow Settings, then models grouped by service, names only.
+    expect(find.text('跟随设置'), findsOneWidget);
     expect(find.text('OpenAI'), findsOneWidget);
     expect(find.text('claude'), findsOneWidget);
     expect(find.text('my-model'), findsNothing);
-    expect(find.text('管理模型…'), findsOneWidget);
     await tester.tap(find.text('claude-opus-5-5'));
     await tester.pumpAndSettle();
     // Only this conversation changes; the default stays.
     expect(conversationOf(tester).model.model, 'claude-opus-5-5');
-    expect(_services(app).defaultModel!.modelId, 'gpt-5');
-    await tester.tap(find.byKey(const ValueKey('assistant-model')));
+    expect(find.descendant(of: picker, matching: find.text('claude-opus-5-5')), findsOneWidget);
+    expect(app.container.read(assistantRoutingProvider).value!.defaultModel(TaskCategory.heavy)!.modelId, 'gpt-5');
+    await tester.tap(picker);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('管理模型…'));
+    await tester.tap(find.text('跟随设置'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
+    expect(find.descendant(of: picker, matching: find.text('GPT-5')), findsOneWidget);
   }, semanticsEnabled: false);
 
   testWidgets('a service card: failure reason, hidden key, address, rename, remove model, off, remove', (tester) async {
@@ -682,7 +694,7 @@ void main() {
     expect(app.container.read(webSearchSettingsProvider).backend, WebSearchBackend.none);
   });
 
-  testWidgets('an unconfigured assistant routes to models and updates after setup', (tester) async {
+  testWidgets('an unconfigured assistant keeps its composer and updates after setup', (tester) async {
     final catalog = FakeCatalog(
       models: const [
         ServiceModel(id: 'gpt-5'),
@@ -697,13 +709,11 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.text('添加模型后即可使用'), findsOneWidget);
-    expect(find.byKey(const ValueKey('assistant-input')), findsNothing);
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
+    expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
     expect(find.byKey(const ValueKey('connect-button')), findsNothing);
-    expect(find.byKey(const ValueKey('quick-explain')), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
-    await tester.pumpAndSettle();
+    await openAssistantModelSettings(tester);
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
     expect(catalog.checked, isEmpty);
     await tester.tap(find.byKey(const ValueKey('settings-add-service')));

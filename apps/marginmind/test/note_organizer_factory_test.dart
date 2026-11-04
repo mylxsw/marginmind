@@ -170,13 +170,12 @@ void main() {
     expect(root.usage.quality, UsageQuality.reported);
     reopened.close();
   });
-  test('unknown profile blocks production before dispatch', () async {
+  test('a model without a profile still reaches the provider', () async {
     fixture.profiles.clear();
-    await expectLater(
-      createModelNoteOrganizer(assembly: fixture.assembly, sessionId: 'unknown'),
-      throwsA(isA<ConfigurationFailure>()),
-    );
-    expect(fixture.bodies, isEmpty);
+    final organizer = await createModelNoteOrganizer(assembly: fixture.assembly, sessionId: 'unknown');
+    addTearDown(organizer.close);
+    expect(await organizer.rewrite('generated prose', NoteRewrite.concise), 'validated');
+    expect(fixture.bodies, hasLength(1));
   });
   test('save failure resumes validated output without another model call', () async {
     final stages = await PersistentNoteStages.open(fixture.assembly, 'save');

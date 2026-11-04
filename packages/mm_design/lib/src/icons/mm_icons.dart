@@ -155,7 +155,7 @@ abstract final class MMIcons {
   static const IconData send = LucideIcons.arrowUp;
   static const IconData evidence = LucideIcons.messageSquareQuote;
   static const IconData summarize = LucideIcons.alignLeft;
-  static const IconData organize = LucideIcons.wandSparkles;
+  static const IconData organize = LucideIcons.wand;
   static const IconData eye = LucideIcons.eye;
   static const IconData eyeSlash = LucideIcons.eyeOff;
   static const IconData remove = LucideIcons.circleMinus;

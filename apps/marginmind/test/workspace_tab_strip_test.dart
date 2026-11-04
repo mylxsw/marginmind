@@ -180,18 +180,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  for (final width in [500.0, 834.0]) {
-    testWidgets('touch close controls stay visible and reachable at $width', (tester) async {
-      final c = await openTabs(tester, size: Size(width, 1000), touch: true);
-      final owner = c.read(workspaceProvider('demo-1').notifier);
-      owner.openStudyNote('written');
-      await tester.pumpAndSettle();
-      expect(closeOpacity(tester, 'documentMap'), 1);
-      expect(tester.getSize(close('note:written')), const Size.square(44));
-      await tester.tap(close('note:written'));
-      await tester.pumpAndSettle();
-      expect(owner.state.tabs.activeId, WorkspaceTab.documents.id);
-      expect(tester.takeException(), isNull);
-    });
-  }
+  testWidgets('touch close controls stay visible and reachable on a tablet', (tester) async {
+    final c = await openTabs(tester, size: const Size(834, 1000), touch: true);
+    final owner = c.read(workspaceProvider('demo-1').notifier);
+    owner.openStudyNote('written');
+    await tester.pumpAndSettle();
+    expect(closeOpacity(tester, 'documentMap'), 1);
+    // Compact window chrome: a 36pt cell inside the 40pt tablet title row.
+    expect(tester.getSize(close('note:written')), const Size.square(36));
+    await tester.tap(close('note:written'));
+    await tester.pumpAndSettle();
+    expect(owner.state.tabs.activeId, WorkspaceTab.documents.id);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a phone has no tab strip; back leaves a note for the documents', (tester) async {
+    final c = await openTabs(tester, size: const Size(500, 1000), touch: true);
+    final owner = c.read(workspaceProvider('demo-1').notifier);
+    owner.openStudyNote('written');
+    await tester.pumpAndSettle();
+    expect(close('note:written'), findsNothing);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(owner.state.tabs.activeId, WorkspaceTab.documents.id);
+    expect(tester.takeException(), isNull);
+  });
 }

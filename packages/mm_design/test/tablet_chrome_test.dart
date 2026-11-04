@@ -63,11 +63,15 @@ void main() {
       expect(t.getSize(find.byKey(const ValueKey('button'))).height, tablet ? 44 : 30);
       expect(t.getSize(find.byKey(const ValueKey('icon'))).height, tablet ? 44 : 28);
       expect(t.getSize(find.byKey(const ValueKey('field'))).height, tablet ? 44 : 28);
-      expect(t.getSize(find.byKey(const ValueKey('switch'))).height, tablet ? 44 : 16);
+      // Phones use the platform switch, at its own height above the minimum target.
+      expect(
+        t.getSize(find.byKey(const ValueKey('switch'))).height,
+        device == 'phone' ? greaterThanOrEqualTo(MMSizes.touchTarget) : (tablet ? 44 : 16),
+      );
       expect(t.getSize(find.byKey(const ValueKey('check'))).height, tablet ? 44 : 15);
       expect(t.getSize(find.byKey(const ValueKey('compact'))).height, tablet ? 44 : 26);
       expect(context.mmContentText.body.fontSize, 13);
-      expect(context.mmText.body.fontSize, tablet ? 15 : 13);
+      expect(context.mmText.body.fontSize, device == 'phone' ? 17 : (tablet ? 15 : 13));
       await t.tapAt(t.getBottomLeft(find.byKey(const ValueKey('button'))) + const Offset(4, -2));
       await t.pump();
       expect(taps, 1);

@@ -13,6 +13,18 @@ import 'package:mm_design/mm_design.dart';
 import 'helpers.dart';
 import 'study_notes_ui_test.dart' show noteFixture, openNote;
 
+/// Tablets close the reference with its button; a phone's bottom sheet has none.
+Future<void> closeReference(WidgetTester tester, {required bool phone}) async {
+  if (phone) {
+    expect(find.byTooltip('关闭'), findsNothing);
+    await tester.drag(find.byKey(const ValueKey('mm-bottom-sheet-handle')).hitTestable(), const Offset(0, 300));
+  } else {
+    expect(find.byTooltip('关闭').hitTestable(), findsOneWidget);
+    await tester.tap(find.byTooltip('关闭').hitTestable());
+  }
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('note owns the page; one More keeps note and workspace commands', (tester) async {
     await openNote(tester);
@@ -146,7 +158,8 @@ void main() {
 
   for (final size in [const Size(393, 852), const Size(852, 393), const Size(820, 1180), const Size(1180, 820)]) {
     testWidgets('note source closes back to retained note at $size', (tester) async {
-      final container = await openNote(tester, size: size, language: 'zh', touch: true, phone: size.shortestSide < 600);
+      final phone = size.shortestSide < 600;
+      final container = await openNote(tester, size: size, language: 'zh', touch: true, phone: phone);
       final owner = container.read(workspaceProvider('demo-1').notifier);
       final noteState = tester.state(find.byType(StudyNoteView));
       expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
@@ -157,16 +170,14 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('note-source-quote')));
       await tester.pumpAndSettle();
       expect(find.byType(ReaderPane), findsOneWidget);
-      expect(find.byTooltip('关闭').hitTestable(), findsOneWidget);
-      await tester.tap(find.byTooltip('关闭').hitTestable());
-      await tester.pumpAndSettle();
+      await closeReference(tester, phone: phone);
+      expect(find.byType(ReaderPane), findsNothing);
       expect(identical(tester.state(find.byType(StudyNoteView)), noteState), isTrue);
       expect(container.read(workspaceProvider('demo-1')).activeNoteId, 'written');
       owner.showNoteReference(NoteReference.map);
       await tester.pumpAndSettle();
-      expect(find.byTooltip('关闭').hitTestable(), findsOneWidget);
-      await tester.tap(find.byTooltip('关闭').hitTestable());
-      await tester.pumpAndSettle();
+      expect(find.byType(MapPane), findsOneWidget);
+      await closeReference(tester, phone: phone);
       expect(find.byType(MapPane), findsNothing);
       expect(tester.takeException(), isNull);
       await settleHud(tester);
