@@ -439,7 +439,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
   final _scroll = ScrollController();
   final _editor = TextEditingController();
   final _sectionKeys = <int, GlobalKey>{};
-  bool _follow = true, _source = false, _narrow = false, _wasRunning = true;
+  bool _follow = true, _source = false, _narrow = false, _stackStrip = false, _wasRunning = true;
 
   @override
   void initState() {
@@ -681,6 +681,21 @@ class _WebFormatPaneState extends State<WebFormatPane> {
                 },
               ),
             ),
+          if (!narrow && _stackStrip)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: MMSpacing.s),
+                child: MMSegmentedControl<bool>(
+                  segments: [
+                    MMSegment(value: false, label: l.webFormatViewLayout),
+                    MMSegment(value: true, label: l.convertMarkdown),
+                  ],
+                  value: _source,
+                  onChanged: (value) => setState(() => _source = value),
+                ),
+              ),
+            ),
           Row(
             children: [
               const CupertinoActivityIndicator(radius: 7),
@@ -697,7 +712,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
                   style: meta,
                 ),
               ),
-              if (!narrow) ...[
+              if (!narrow && !_stackStrip) ...[
                 const SizedBox(width: MMSpacing.s),
                 MMSegmentedControl<bool>(
                   segments: [
@@ -733,7 +748,7 @@ class _WebFormatPaneState extends State<WebFormatPane> {
     final summary = done < total
         ? Text(
             l.webFormatPartial('$done', '$total'),
-            maxLines: narrow ? 2 : 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: t.footnote.copyWith(color: c.caution),
           )
@@ -758,13 +773,13 @@ class _WebFormatPaneState extends State<WebFormatPane> {
       onChanged: widget.onTab,
     );
     final resume = canResume ? MMButton(label: l.webFormatResume, onPressed: session.resume) : null;
-    if (narrow) {
+    if (narrow || _stackStrip) {
       return Padding(
         padding: const EdgeInsets.only(bottom: MMSpacing.s),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            tabs,
+            if (narrow) tabs else Align(alignment: Alignment.centerLeft, child: tabs),
             const SizedBox(height: MMSpacing.s),
             Row(
               children: [
@@ -1029,40 +1044,46 @@ class _WebFormatPaneState extends State<WebFormatPane> {
   Widget build(BuildContext context) {
     final l = context.l10n, c = context.mmColors, t = context.mmText;
     final error = widget.session.runError;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _strip(),
-        if (error != null)
-          Container(
-            key: const ValueKey('web-format-run-error'),
-            margin: const EdgeInsets.only(bottom: MMSpacing.s),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: c.critical.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(MMRadii.row),
-            ),
-            child: Text.rich(
-              TextSpan(
-                children: [
+    return LayoutBuilder(
+      builder: (context, bounds) {
+        // A split pane on a small window can't hold tabs and status on one line.
+        _stackStrip = bounds.maxWidth < 560;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _strip(),
+            if (error != null)
+              Container(
+                key: const ValueKey('web-format-run-error'),
+                margin: const EdgeInsets.only(bottom: MMSpacing.s),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: c.critical.withValues(alpha: .1),
+                  borderRadius: BorderRadius.circular(MMRadii.row),
+                ),
+                child: Text.rich(
                   TextSpan(
-                    text: '${aiInvocationError(l, error)} ',
-                    style: t.footnote.copyWith(color: c.critical, fontWeight: FontWeight.w600),
+                    children: [
+                      TextSpan(
+                        text: '${aiInvocationError(l, error)} ',
+                        style: t.footnote.copyWith(color: c.critical, fontWeight: FontWeight.w600),
+                      ),
+                      TextSpan(text: l.webFormatInterruptedHint, style: t.footnote),
+                    ],
                   ),
-                  TextSpan(text: l.webFormatInterruptedHint, style: t.footnote),
-                ],
+                ),
+              ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  _narrow = widget.settings != null || constraints.maxWidth < 560;
+                  return _content();
+                },
               ),
             ),
-          ),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              _narrow = widget.settings != null || constraints.maxWidth < 560;
-              return _content();
-            },
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

@@ -399,6 +399,17 @@ void main() {
     expect(find.text('保存文档'), findsOneWidget);
   });
 
+  testWidgets('a narrow split pane stacks its status instead of cutting it off', (tester) async {
+    final h = Harness()..failure = const ResearchFailure(ResearchFailureKind.network);
+    await h.pump(tester, size: const Size(820, 900));
+    await startFormatting(tester);
+    await finish(tester);
+    final tabs = tester.getRect(find.byType(MMSegmentedControl<WebFormatTab>));
+    final status = tester.getRect(find.textContaining('已整理 0/1 段'));
+    expect(status.top, greaterThanOrEqualTo(tabs.bottom));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a single column shares the pane with settings', (tester) async {
     final h = Harness();
     await h.pump(tester, size: const Size(600, 900));
