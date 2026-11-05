@@ -33,6 +33,7 @@ import '../features/workspace/reader_compare.dart';
 import '../features/workspace/translation_task_summary.dart';
 import '../features/workspace/widgets/full_translation_sheet.dart';
 import '../features/workspace/widgets/full_translation_panel.dart';
+import '../features/workspace/widgets/document_export_sheet.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../features/workspace/workspace_browser.dart';
@@ -168,6 +169,7 @@ AppCommand paragraphMarginCommand(
 /// Global shortcuts. Defined in macOS terms; [primaryShortcut] swaps ⌘ for
 /// Ctrl on Windows and Linux.
 abstract final class AppShortcuts {
+  static SingleActivator get exportDocument => primaryShortcut(LogicalKeyboardKey.keyS, shift: true);
   static SingleActivator get organizeStudyNote => primaryShortcut(LogicalKeyboardKey.keyP, alt: true);
   static SingleActivator get settings => primaryShortcut(LogicalKeyboardKey.comma);
   static SingleActivator get newStudySet => primaryShortcut(LogicalKeyboardKey.keyN);
@@ -668,6 +670,14 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       );
     }
+    final activeDocument = workspaceState?.activeDocumentId;
+    file.add(
+      AppCommand(
+        l.documentExportMenu,
+        activeDocument == null ? null : () => showDocumentExportSheet(context, workspaceId!, activeDocument),
+        shortcut: AppShortcuts.exportDocument,
+      ),
+    );
     file.add(AppCommand(l.exportMap, inWorkspace ? () => showMapExportSheet(context, ref, workspaceId) : null));
     Future<void> undoOrRedo({required bool redo}) async {
       // A focused text field keeps ⌘Z for its own text.

@@ -7195,4 +7195,142 @@ class AppLocalizationsEn extends AppLocalizations {
   String webFormatNeedsReview(String count) {
     return '$count sections need review';
   }
+
+  @override
+  String get documentExportMenu => 'Export Copy…';
+
+  @override
+  String get documentExportTitle => 'Export Copy';
+
+  @override
+  String get documentExportMarkedSuffix => ' (Annotated)';
+
+  @override
+  String get documentExportCleanSuffix => ' (Copy)';
+
+  @override
+  String get documentExportEverything => 'With all my annotations';
+
+  @override
+  String get documentExportMarksOnly => 'Highlights and underlines only';
+
+  @override
+  String get documentExportClean => 'Without annotations';
+
+  @override
+  String get documentExportCopy => 'Export this document';
+
+  @override
+  String get documentExportCleanDetail => 'Same as the file you imported';
+
+  @override
+  String get documentExportCleanCaptureDetail => 'Text only';
+
+  @override
+  String get documentExportWithoutNotesAndInk => 'Leaves out notes and pen strokes';
+
+  @override
+  String get documentExportWithoutNotes => 'Leaves out notes';
+
+  @override
+  String get documentExportWithoutInk => 'Leaves out pen strokes';
+
+  @override
+  String get documentExportListSeparator => ', ';
+
+  @override
+  String documentExportAsFormat(String detail, String format) {
+    return '$detail · Saved as $format';
+  }
+
+  @override
+  String documentExportHighlights(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count highlights', one: '1 highlight');
+    return '$_temp0';
+  }
+
+  @override
+  String documentExportUnderlines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count underlines', one: '1 underline');
+    return '$_temp0';
+  }
+
+  @override
+  String documentExportNotes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count notes', one: '1 note');
+    return '$_temp0';
+  }
+
+  @override
+  String documentExportInk(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count pen strokes', one: '1 pen stroke');
+    return '$_temp0';
+  }
+
+  @override
+  String get documentExportHighlightsOption => 'Highlights';
+
+  @override
+  String get documentExportUnderlinesOption => 'Underlines';
+
+  @override
+  String get documentExportNotesOption => 'Margin Notes';
+
+  @override
+  String get documentExportInkOption => 'Pen Strokes';
+
+  @override
+  String documentExportColor(int count) {
+    return 'Highlights in this color: $count';
+  }
+
+  @override
+  String get documentExportPages => 'Pages';
+
+  @override
+  String get documentExportPagesAll => 'All';
+
+  @override
+  String get documentExportPagesMarked => 'With Annotations';
+
+  @override
+  String get documentExportPagesCustom => 'Specific';
+
+  @override
+  String documentExportPagesHint(int count) {
+    return 'For example 1-5, 8 ($count pages)';
+  }
+
+  @override
+  String documentExportPagesInvalid(int count) {
+    return 'Enter pages from 1 to $count, for example 1-5, 8';
+  }
+
+  @override
+  String get documentExportMoreOptions => 'More Options';
+
+  @override
+  String get documentExportFewerOptions => 'Fewer Options';
+
+  @override
+  String get documentExportProtected =>
+      'The author of this PDF doesn\'t allow annotations, so only a copy without them can be exported.';
+
+  @override
+  String get documentExportWebLimit =>
+      'The web version can\'t write annotations into a PDF yet. Export from the desktop or mobile app.';
+
+  @override
+  String documentExportUnplaced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count annotations need their position confirmed and won\'t be exported.',
+      one: '1 annotation needs its position confirmed and won\'t be exported.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get documentExportInkDropped => 'Pen strokes can only be written into a PDF, so they won\'t be exported.';
 }

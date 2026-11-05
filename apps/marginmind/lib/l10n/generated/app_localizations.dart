@@ -12584,6 +12584,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} sections need review'**
   String webFormatNeedsReview(String count);
+
+  /// No description provided for @documentExportMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Copy…'**
+  String get documentExportMenu;
+
+  /// No description provided for @documentExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Copy'**
+  String get documentExportTitle;
+
+  /// No description provided for @documentExportMarkedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' (Annotated)'**
+  String get documentExportMarkedSuffix;
+
+  /// No description provided for @documentExportCleanSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' (Copy)'**
+  String get documentExportCleanSuffix;
+
+  /// No description provided for @documentExportEverything.
+  ///
+  /// In en, this message translates to:
+  /// **'With all my annotations'**
+  String get documentExportEverything;
+
+  /// No description provided for @documentExportMarksOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights and underlines only'**
+  String get documentExportMarksOnly;
+
+  /// No description provided for @documentExportClean.
+  ///
+  /// In en, this message translates to:
+  /// **'Without annotations'**
+  String get documentExportClean;
+
+  /// No description provided for @documentExportCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Export this document'**
+  String get documentExportCopy;
+
+  /// No description provided for @documentExportCleanDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as the file you imported'**
+  String get documentExportCleanDetail;
+
+  /// No description provided for @documentExportCleanCaptureDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Text only'**
+  String get documentExportCleanCaptureDetail;
+
+  /// No description provided for @documentExportWithoutNotesAndInk.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaves out notes and pen strokes'**
+  String get documentExportWithoutNotesAndInk;
+
+  /// No description provided for @documentExportWithoutNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaves out notes'**
+  String get documentExportWithoutNotes;
+
+  /// No description provided for @documentExportWithoutInk.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaves out pen strokes'**
+  String get documentExportWithoutInk;
+
+  /// No description provided for @documentExportListSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get documentExportListSeparator;
+
+  /// No description provided for @documentExportAsFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{detail} · Saved as {format}'**
+  String documentExportAsFormat(String detail, String format);
+
+  /// No description provided for @documentExportHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 highlight} other{{count} highlights}}'**
+  String documentExportHighlights(int count);
+
+  /// No description provided for @documentExportUnderlines.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 underline} other{{count} underlines}}'**
+  String documentExportUnderlines(int count);
+
+  /// No description provided for @documentExportNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 note} other{{count} notes}}'**
+  String documentExportNotes(int count);
+
+  /// No description provided for @documentExportInk.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 pen stroke} other{{count} pen strokes}}'**
+  String documentExportInk(int count);
+
+  /// No description provided for @documentExportHighlightsOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights'**
+  String get documentExportHighlightsOption;
+
+  /// No description provided for @documentExportUnderlinesOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Underlines'**
+  String get documentExportUnderlinesOption;
+
+  /// No description provided for @documentExportNotesOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin Notes'**
+  String get documentExportNotesOption;
+
+  /// No description provided for @documentExportInkOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Pen Strokes'**
+  String get documentExportInkOption;
+
+  /// No description provided for @documentExportColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights in this color: {count}'**
+  String documentExportColor(int count);
+
+  /// No description provided for @documentExportPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get documentExportPages;
+
+  /// No description provided for @documentExportPagesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get documentExportPagesAll;
+
+  /// No description provided for @documentExportPagesMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'With Annotations'**
+  String get documentExportPagesMarked;
+
+  /// No description provided for @documentExportPagesCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Specific'**
+  String get documentExportPagesCustom;
+
+  /// No description provided for @documentExportPagesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example 1-5, 8 ({count} pages)'**
+  String documentExportPagesHint(int count);
+
+  /// No description provided for @documentExportPagesInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter pages from 1 to {count}, for example 1-5, 8'**
+  String documentExportPagesInvalid(int count);
+
+  /// No description provided for @documentExportMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More Options'**
+  String get documentExportMoreOptions;
+
+  /// No description provided for @documentExportFewerOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer Options'**
+  String get documentExportFewerOptions;
+
+  /// No description provided for @documentExportProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'The author of this PDF doesn\'t allow annotations, so only a copy without them can be exported.'**
+  String get documentExportProtected;
+
+  /// No description provided for @documentExportWebLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The web version can\'t write annotations into a PDF yet. Export from the desktop or mobile app.'**
+  String get documentExportWebLimit;
+
+  /// No description provided for @documentExportUnplaced.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 annotation needs its position confirmed and won\'t be exported.} other{{count} annotations need their position confirmed and won\'t be exported.}}'**
+  String documentExportUnplaced(int count);
+
+  /// No description provided for @documentExportInkDropped.
+  ///
+  /// In en, this message translates to:
+  /// **'Pen strokes can only be written into a PDF, so they won\'t be exported.'**
+  String get documentExportInkDropped;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

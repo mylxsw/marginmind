@@ -18,6 +18,16 @@ final class IntegrationNativePresentationTests: XCTestCase {
     XCTAssertFalse(app.buttons["native-actions-close"].exists)
     dismissNativePanel("native-reader-actions")
   }
+  func testExportCopyRow() {
+    let panel = app.tables["native-reader-actions"]
+    XCTAssertTrue(panel.waitForExistence(timeout: 8), app.debugDescription)
+    let row = app.cells["native-actions-export-copy"]
+    for _ in 0..<4 where !row.isHittable { panel.swipeUp() }
+    XCTAssertTrue(row.isHittable, app.debugDescription)
+    capture("reader-actions-export-copy")
+    row.tap()
+    XCTAssertFalse(panel.waitForExistence(timeout: 1) && panel.isHittable)
+  }
   func testReaderActionsDark() { testReaderActions() }
   func testReaderActions() {
     let panel = app.tables["native-reader-actions"]

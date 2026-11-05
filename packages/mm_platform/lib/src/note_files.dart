@@ -17,6 +17,8 @@ abstract final class MMNoteFiles {
       'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'png' => 'image/png',
       'html' => 'text/html',
+      'epub' => 'application/epub+zip',
+      'mobi' || 'azw' || 'azw3' => 'application/octet-stream',
       _ => 'text/markdown',
     };
     if (kIsWeb) {

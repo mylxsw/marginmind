@@ -238,6 +238,11 @@ abstract final class MMSizes {
   static const double noteProgressSheetWidth = 820;
   static const double noteSetupSheetWidth = 640;
   static const double noteExportSheetWidth = 900;
+
+  /// Export Copy sheet: one tap per choice, so it stays narrow.
+  static const double documentExportSheetWidth = 440;
+  static const double documentExportChoiceHeight = 56;
+  static const double documentExportColorDot = 18;
   static const double noteExportOptionsWidth = 280;
   static const double noteExportBodyHeight = 520;
   static const double noteShareSheetWidth = 860;

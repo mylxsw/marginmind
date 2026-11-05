@@ -2,6 +2,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:mm_core/mm_core.dart' show TextAnchor;
@@ -26,6 +27,7 @@ part 'src/mobi.dart';
 part 'src/mobi_compression.dart';
 part 'src/mobi_index.dart';
 part 'src/web.dart';
+part 'src/export.dart';
 
 enum BlockKind { paragraph, heading, list, quote, code, image, table, rule, footnote }
 

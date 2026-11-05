@@ -29,6 +29,7 @@ import '../../../settings/app_settings.dart';
 import '../../research/widgets/research_note_popover.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
+import 'document_export_sheet.dart';
 import 'reader_find_bar.dart';
 import '../reader_crop.dart';
 import '../reader_compare.dart';
@@ -797,6 +798,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       if (readingEntries.isNotEmpty) ...[MMDropdownHeader<VoidCallback>(l.readerMenuReading), ...readingEntries],
       if (readingEntries.isNotEmpty && displayEntries.isNotEmpty) const PopupMenuDivider(),
       if (displayEntries.isNotEmpty) ...[MMDropdownHeader<VoidCallback>(l.readerMenuPage), ...displayEntries],
+      if (document != null) ...[
+        const PopupMenuDivider(),
+        MMDropdownItem<VoidCallback>(
+          key: const ValueKey('reader-export-copy'),
+          value: () => showDocumentExportSheet(context, widget.studySetId, document.id),
+          child: _menuRow(MMIcons.export, l.documentExportMenu),
+        ),
+      ],
     ];
     _paneChrome?.bindReader(this, WorkspacePaneCommands(state.activeDocumentId, commands));
     return ReaderAnnotationTools(

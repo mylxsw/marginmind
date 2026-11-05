@@ -15,6 +15,8 @@ dependencies:
   mm_core:
     path: ../mm_core
   pdfrx: ^2.10.1
+  pdfium_dart: 0.4.0
+  ffi: ^2.2.0
 
 dev_dependencies:
   window_manager: ^0.5.1
