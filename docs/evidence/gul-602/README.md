@@ -11,7 +11,7 @@
 
 状态依次是：入口菜单、三个选项、更多选项、页码出错、页码正确、导出成功提示、没有标注的文档、EPUB 的选项和更多选项、Markdown 的选项、系统存储或分享面板（只在带 `--real-save` 的那次运行里有）。
 
-iPhone 的「⋯」在正式应用里是原生面板，这个测试默认看到的是共用的 Flutter 面板。原生面板由 `--native-menu` 模式验证：XCTest 点击 `native-actions-export-copy`，导出面板随后打开。
+iPhone 的「⋯」在正式应用里是原生面板，这个测试默认看到的是共用的 Flutter 面板。原生面板由 `--native-menu` 模式验证：XCTest 点击 `native-actions-export-copy`，导出面板随后打开（[截图](iphone-native-menu-to-sheet.jpg)）。
 
 [exported-pdf-in-pdfkit](exported-pdf-in-pdfkit.jpg) 是导出的 PDF 用 PDFKit（macOS“预览”的引擎）渲染的结果，高亮、下划线、批注图标和画笔都与阅读器位置一致。
 
