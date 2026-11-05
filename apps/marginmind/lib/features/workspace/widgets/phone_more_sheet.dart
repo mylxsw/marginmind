@@ -13,6 +13,7 @@ import '../../vocabulary/vocabulary_hints.dart';
 import '../reader_margin.dart';
 import '../workspace_controller.dart';
 import '../workspace_pane_chrome_controller.dart';
+import 'document_export_sheet.dart';
 import 'phone_reader_appearance_sheet.dart';
 import 'phone_native_more_sheet.dart';
 
@@ -475,6 +476,19 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                     ref.read(workspaceProvider(widget.studySetId).notifier).activateTab(WorkspaceTab.vocabulary);
                   },
                 ),
+                if (docId != null) ...[
+                  Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
+                  _PhoneSheetRow(
+                    key: const ValueKey('phone-row-export-copy'),
+                    icon: MMIcons.export,
+                    title: l.documentExportTitle,
+                    hasChevron: true,
+                    onTap: () {
+                      _close();
+                      showDocumentExportSheet(widget.workspaceContext ?? context, widget.studySetId, docId);
+                    },
+                  ),
+                ],
               ],
             ),
           ),

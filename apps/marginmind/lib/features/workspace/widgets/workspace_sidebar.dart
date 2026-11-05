@@ -28,6 +28,7 @@ import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../../study_notes/note_setup_sheet.dart';
 import '../../study_notes/note_updates.dart';
 import '../../study_notes/note_export_sheet.dart';
+import 'document_export_sheet.dart';
 import 'notices.dart';
 import 'phone_workspace_sidebar.dart';
 import 'content_sync_sheet.dart';
@@ -652,6 +653,11 @@ class WorkspaceSidebar extends ConsumerWidget {
             icon: MMIcons.generateMap,
           ),
 
+        MMMenuItem(
+          l.documentExportMenu,
+          () => showDocumentExportSheet(context, studySetId, doc.id),
+          icon: MMIcons.export,
+        ),
         MMMenuItem(l.renameEllipsis, () async {
           await showContentRenameSheet(
             context,

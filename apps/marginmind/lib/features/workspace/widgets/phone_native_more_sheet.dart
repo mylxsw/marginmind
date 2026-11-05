@@ -11,6 +11,7 @@ import '../../vocabulary/vocabulary_hints.dart';
 import '../reader_margin.dart';
 import '../workspace_controller.dart';
 import '../workspace_pane_chrome_controller.dart';
+import 'document_export_sheet.dart';
 
 /// Uses the same UIKit presenter as the reader's outline and bookmarks.
 Future<void> showPhoneNativeMoreSheet(
@@ -124,6 +125,7 @@ Future<void> showPhoneNativeMoreSheet(
           if (settings.betaFeaturesEnabled) row('organize-notes', l.organizeNotes, 'note.text'),
           row('review', l.review, 'brain', value: (studySet?.dueCount ?? 0) > 0 ? '${studySet!.dueCount}' : null),
           row('vocabulary', l.vocabularyTitle, 'book.closed'),
+          if (doc != null) row('export-copy', l.documentExportTitle, 'square.and.arrow.down'),
         ],
       ],
     };
@@ -202,5 +204,9 @@ Future<void> showPhoneNativeMoreSheet(
       controller.activateTab(WorkspaceTab.review);
     case 'vocabulary':
       controller.activateTab(WorkspaceTab.vocabulary);
+    case 'export-copy':
+      final doc = container.read(workspaceProvider(studySetId)).activeDocumentId;
+      final target = workspaceContext ?? context;
+      if (doc != null && target.mounted) await showDocumentExportSheet(target, studySetId, doc);
   }
 }

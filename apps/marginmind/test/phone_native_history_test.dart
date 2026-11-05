@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/features/workspace/widgets/document_export_sheet.dart';
 import 'package:marginmind/features/workspace/widgets/phone_native_more_sheet.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/workspace_screen.dart';
@@ -43,5 +46,28 @@ void main() {
     await open();
     expect(tester.takeException(), isNull);
     await settleHud(tester);
+  });
+
+  testWidgets('native more offers the export copy sheet for the open document', (tester) async {
+    final container = await openTabs(tester, size: const Size(393, 852), touch: true);
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    final document = owner.content.documents.first;
+    owner.openDocument(document.id);
+    await tester.pumpAndSettle();
+    const channel = MethodChannel('marginmind/presentation');
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    MMNativePresentation.available = true;
+    addTearDown(() {
+      MMNativePresentation.available = false;
+      messenger.setMockMethodCallHandler(channel, null);
+    });
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      final rows = ((call.arguments as Map)['groups'] as List).expand((group) => group as List).cast<Map>();
+      expect(rows.singleWhere((row) => row['id'] == 'export-copy')['icon'], 'square.and.arrow.down');
+      return 'export-copy';
+    });
+    unawaited(showPhoneNativeMoreSheet(tester.element(find.byType(WorkspaceScreen)), studySetId: 'demo-1'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DocumentExportSheet), findsOneWidget);
   });
 }

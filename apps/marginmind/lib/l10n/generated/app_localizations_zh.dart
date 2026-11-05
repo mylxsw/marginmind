@@ -6916,4 +6916,130 @@ class AppLocalizationsZh extends AppLocalizations {
   String webFormatNeedsReview(String count) {
     return '$count 段需要确认';
   }
+
+  @override
+  String get documentExportMenu => '导出副本…';
+
+  @override
+  String get documentExportTitle => '导出副本';
+
+  @override
+  String get documentExportMarkedSuffix => '（标注版）';
+
+  @override
+  String get documentExportCleanSuffix => '（副本）';
+
+  @override
+  String get documentExportEverything => '包含全部标注';
+
+  @override
+  String get documentExportMarksOnly => '只保留高亮和下划线';
+
+  @override
+  String get documentExportClean => '不带标注';
+
+  @override
+  String get documentExportCopy => '导出这份文档';
+
+  @override
+  String get documentExportCleanDetail => '与导入时的文件相同';
+
+  @override
+  String get documentExportCleanCaptureDetail => '仅正文';
+
+  @override
+  String get documentExportWithoutNotesAndInk => '不含批注和画笔';
+
+  @override
+  String get documentExportWithoutNotes => '不含批注';
+
+  @override
+  String get documentExportWithoutInk => '不含画笔';
+
+  @override
+  String get documentExportListSeparator => ' · ';
+
+  @override
+  String documentExportAsFormat(String detail, String format) {
+    return '$detail · 导出为 $format';
+  }
+
+  @override
+  String documentExportHighlights(int count) {
+    return '高亮 $count';
+  }
+
+  @override
+  String documentExportUnderlines(int count) {
+    return '下划线 $count';
+  }
+
+  @override
+  String documentExportNotes(int count) {
+    return '批注 $count';
+  }
+
+  @override
+  String documentExportInk(int count) {
+    return '画笔 $count';
+  }
+
+  @override
+  String get documentExportHighlightsOption => '高亮';
+
+  @override
+  String get documentExportUnderlinesOption => '下划线';
+
+  @override
+  String get documentExportNotesOption => '页边批注';
+
+  @override
+  String get documentExportInkOption => '画笔';
+
+  @override
+  String documentExportColor(int count) {
+    return '这种颜色的高亮，$count 处';
+  }
+
+  @override
+  String get documentExportPages => '页面';
+
+  @override
+  String get documentExportPagesAll => '全部';
+
+  @override
+  String get documentExportPagesMarked => '有标注的页';
+
+  @override
+  String get documentExportPagesCustom => '指定页';
+
+  @override
+  String documentExportPagesHint(int count) {
+    return '例如 1-5, 8（共 $count 页）';
+  }
+
+  @override
+  String documentExportPagesInvalid(int count) {
+    return '请输入 1 到 $count 之间的页码，例如 1-5, 8';
+  }
+
+  @override
+  String get documentExportMoreOptions => '更多选项';
+
+  @override
+  String get documentExportFewerOptions => '收起选项';
+
+  @override
+  String get documentExportProtected => '这份 PDF 的作者不允许添加标注，只能导出不带标注的副本。';
+
+  @override
+  String get documentExportWebLimit => '网页版暂时无法把标注写入 PDF，请在桌面或移动端导出。';
+
+  @override
+  String documentExportUnplaced(int count) {
+    return '$count 处标注的位置需要确认，不会导出。';
+  }
+
+  @override
+  String get documentExportInkDropped => '画笔只能写入 PDF，不会导出。';
 }
